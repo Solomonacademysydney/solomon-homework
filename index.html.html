@@ -1,0 +1,1852 @@
+<!DOCTYPE html>
+<html lang="en" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google" content="notranslate">
+<meta http-equiv="Content-Language" content="en">
+<title>Solomon Math Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Baloo+2:wght@600;700;800&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:#162040; --gold:#d4af37; --gold2:#b8960c;
+  --green:#22c55e; --red:#ef4444; --orange:#f97316;
+  --bg:#f8f6ef; --card:#fff; --text:#1e293b; --muted:#64748b; --border:#e2e8f0;
+  --radius:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* ── LOGIN ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+#loginScreen{min-height:100vh;display:flex;align-items:stretch;background:#0b1220;}
+.login-left{
+  flex:1.1;background:linear-gradient(160deg,#0b1220,#162040,#1e2e55);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:60px 48px;position:relative;overflow:hidden;
+}
+.login-left::before{
+  content:'';position:absolute;inset:0;
+  background-image:linear-gradient(rgba(212,175,55,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,55,.07) 1px,transparent 1px);
+  background-size:48px 48px;pointer-events:none;
+}
+.login-crest-wrap{animation:fadeUp .8s ease both,float 5s ease-in-out infinite;margin-bottom:28px;}
+.login-crest{width:160px;height:160px;filter:drop-shadow(0 0 20px rgba(212,175,55,.3));}
+.login-title{font-family:'Cinzel',serif;font-size:34px;font-weight:700;color:#fff;text-align:center;text-shadow:0 2px 20px rgba(212,175,55,.3);animation:fadeUp .9s .15s ease both;}
+.login-title span{color:var(--gold);}
+.login-sub-title{font-family:'Cinzel',serif;font-size:14px;color:rgba(255,255,255,.45);letter-spacing:6px;text-transform:uppercase;margin-top:6px;text-align:center;}
+.login-divider{width:120px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:22px auto;animation:fadeUp .9s .25s ease both;}
+.login-tagline{font-size:12px;color:rgba(255,255,255,.35);letter-spacing:2px;text-transform:uppercase;text-align:center;}
+.login-right{
+  flex:.9;background:#f8f6ef;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:60px 48px;position:relative;
+}
+.login-right::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:linear-gradient(180deg,transparent,var(--gold) 30%,var(--gold) 70%,transparent);}
+.login-form-wrap{width:100%;max-width:360px;animation:fadeUp .8s .2s ease both;}
+.login-form-title{font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:var(--navy);margin-bottom:4px;}
+.login-form-sub{font-size:13px;color:#94a3b8;margin-bottom:28px;}
+.role-tabs{display:flex;background:#edeae0;border-radius:12px;padding:4px;margin-bottom:24px;}
+.role-tab{flex:1;padding:9px;border:none;background:none;border-radius:10px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;font-size:13px;color:var(--muted);transition:all .2s;}
+.role-tab.active{background:#fff;color:var(--navy);box-shadow:0 2px 8px rgba(0,0,0,.1);}
+.form-group{margin-bottom:16px;}
+.form-group label{display:block;font-weight:700;font-size:13px;color:var(--navy);margin-bottom:6px;}
+.form-group input{width:100%;padding:12px 16px;border:2px solid var(--border);border-radius:12px;font-family:'Nunito',sans-serif;font-size:15px;outline:none;transition:border-color .2s;}
+.form-group input:focus{border-color:var(--gold2);}
+.btn-login{width:100%;padding:14px;background:var(--navy);color:#fff;border:none;border-radius:12px;font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;cursor:pointer;transition:all .2s;margin-top:8px;}
+.btn-login:hover{background:linear-gradient(90deg,#0d1526,var(--navy));transform:translateY(-1px);}
+.login-error{color:var(--red);font-size:13px;margin-top:10px;display:none;font-weight:700;}
+
+/* ── APP SHELL ── */
+#app{display:none;min-height:100vh;}
+.topbar{background:linear-gradient(90deg,#0d1526,var(--navy));color:#fff;padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(26,39,68,.3);}
+.topbar-logo{font-family:'Baloo 2',cursive;font-size:19px;font-weight:800;}
+.topbar-logo span{color:var(--gold);}
+.topbar-right{display:flex;align-items:center;gap:14px;}
+.topbar-user{font-size:13px;font-weight:700;opacity:.85;}
+.btn-logout{padding:6px 14px;background:rgba(255,255,255,.15);border:none;border-radius:8px;color:#fff;font-family:'Nunito',sans-serif;font-weight:700;font-size:13px;cursor:pointer;}
+.btn-logout:hover{background:rgba(255,255,255,.25);}
+.main{padding:28px;max-width:1000px;margin:0 auto;}
+
+/* ── TEACHER ── */
+.page-title{font-family:'Baloo 2',cursive;font-size:24px;font-weight:800;color:var(--navy);margin-bottom:6px;}
+.page-sub{font-size:14px;color:var(--muted);margin-bottom:24px;}
+.week-bar{display:flex;align-items:center;gap:12px;background:#fff;border-radius:var(--radius);padding:16px 20px;margin-bottom:24px;box-shadow:0 2px 10px rgba(0,0,0,.05);}
+.week-bar label{font-weight:800;font-size:14px;color:var(--navy);}
+.week-bar input{width:70px;padding:8px 12px;border:2px solid var(--border);border-radius:10px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;text-align:center;outline:none;}
+.week-bar input:focus{border-color:var(--gold2);}
+.btn-sm{padding:8px 18px;border:none;border-radius:10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;transition:all .2s;}
+.btn-navy{background:var(--navy);color:#fff;}
+.btn-navy:hover{background:#0d1526;}
+.btn-gold{background:var(--gold);color:var(--navy);}
+.btn-gold:hover{background:var(--gold2);}
+.btn-green{background:var(--green);color:#fff;}
+.btn-green:hover{background:#16a34a;}
+.btn-red{background:#fee2e2;color:var(--red);}
+.btn-red:hover{background:var(--red);color:#fff;}
+.btn-blue{background:#dbeafe;color:#1d4ed8;}
+.btn-blue:hover{background:#1d4ed8;color:#fff;}
+
+.student-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:24px;}
+.student-card{background:#fff;border-radius:var(--radius);padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.06);border:2px solid transparent;cursor:pointer;transition:all .2s;}
+.student-card:hover{border-color:var(--gold);transform:translateY(-2px);}
+.student-card.active{border-color:var(--navy);background:#f8f9ff;}
+.sc-top{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.sc-avatar{width:44px;height:44px;border-radius:12px;background:var(--navy);color:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;flex-shrink:0;}
+.sc-name{font-weight:800;font-size:16px;color:var(--navy);}
+.sc-year{font-size:12px;color:var(--muted);font-weight:600;}
+.sc-status{display:flex;align-items:center;gap:8px;margin-top:4px;}
+.status-dot{width:8px;height:8px;border-radius:50%;}
+.dot-none{background:#cbd5e1;}
+.dot-set{background:var(--gold);}
+.dot-submitted{background:var(--green);}
+.status-text{font-size:13px;font-weight:700;color:var(--muted);}
+.sc-actions{display:flex;gap:8px;margin-top:14px;}
+
+/* ── HOMEWORK EDITOR ── */
+.hw-editor{background:#fff;border-radius:var(--radius);padding:28px;box-shadow:0 2px 12px rgba(0,0,0,.08);margin-bottom:24px;border:2px solid var(--navy);}
+.hw-editor-title{font-family:'Baloo 2',cursive;font-size:20px;color:var(--navy);margin-bottom:6px;}
+.hw-editor-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+.paste-area{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.paste-col label{display:block;font-weight:800;font-size:13px;color:var(--navy);margin-bottom:6px;}
+.paste-col textarea{width:100%;height:260px;padding:14px;border:2px solid var(--border);border-radius:12px;font-family:'Nunito',sans-serif;font-size:13px;resize:vertical;outline:none;transition:border-color .2s;line-height:1.6;}
+.paste-col textarea:focus{border-color:var(--gold2);}
+.format-hint{background:#f8f6ef;border-radius:10px;padding:12px 16px;font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.8;}
+.format-hint b{color:var(--navy);}
+.editor-actions{display:flex;gap:10px;align-items:center;}
+
+/* ── PARSE PREVIEW ── */
+.preview-list{margin-top:20px;}
+.preview-q{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:#f8f6ef;border-radius:12px;margin-bottom:8px;}
+.preview-num{width:32px;height:32px;background:var(--navy);color:var(--gold);border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;flex-shrink:0;}
+.preview-info{flex:1;}
+.preview-text{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;}
+.preview-meta{display:flex;gap:8px;align-items:center;}
+.type-badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:800;text-transform:uppercase;}
+.badge-mc{background:#fef8e1;color:#7a6200;}
+.badge-sa{background:#dbeafe;color:#1d4ed8;}
+.badge-ox{background:#f3e8ff;color:#7c3aed;}
+.ans-tag{font-size:12px;font-weight:700;color:var(--green);}
+
+/* ── EXAM (STUDENT) ── */
+.exam-wrap{max-width:680px;margin:0 auto;}
+.exam-header-card{background:linear-gradient(135deg,var(--navy),#1e2e55);color:#fff;border-radius:var(--radius);padding:24px 28px;margin-bottom:16px;}
+.exam-header-top{display:flex;justify-content:space-between;align-items:flex-start;}
+.exam-title{font-family:'Baloo 2',cursive;font-size:22px;font-weight:800;}
+.exam-sub{font-size:13px;opacity:.7;margin-top:4px;}
+.exam-counter{text-align:right;}
+.exam-counter .big{font-size:32px;font-weight:900;color:var(--gold);line-height:1;}
+.exam-counter .lbl{font-size:11px;opacity:.7;}
+.progress-wrap{margin-top:16px;}
+.progress-track{height:6px;background:rgba(255,255,255,.2);border-radius:99px;overflow:hidden;}
+.progress-fill{height:100%;background:var(--gold);border-radius:99px;transition:width .3s;}
+.progress-lbl{display:flex;justify-content:space-between;font-size:11px;opacity:.7;margin-top:5px;}
+
+.q-nav{display:flex;flex-wrap:wrap;gap:6px;padding:16px;background:#fff;border-radius:var(--radius);margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.05);}
+.qn-btn{width:34px;height:34px;border-radius:8px;border:2px solid var(--border);background:#fff;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;cursor:pointer;color:var(--muted);transition:all .15s;}
+.qn-btn:hover{border-color:var(--gold2);}
+.qn-btn.cur{background:var(--navy);color:var(--gold);border-color:var(--navy);}
+.qn-btn.done{background:#dbeafe;color:#1d4ed8;border-color:#93c5fd;}
+.qn-btn.ok{background:#dcfce7;color:#166534;border-color:#86efac;}
+.qn-btn.wrong{background:#fee2e2;color:#991b1b;border-color:#fca5a5;}
+
+.question-card{background:#fff;border-radius:var(--radius);padding:32px 36px;box-shadow:0 4px 20px rgba(0,0,0,.08);margin-bottom:16px;border:2px solid transparent;}
+.qc-num-row{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+.qc-num{width:40px;height:40px;background:var(--navy);color:var(--gold);border-radius:11px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;}
+.qc-text{font-size:17px;font-weight:700;color:var(--navy);line-height:1.55;margin-bottom:24px;}
+
+.options{display:flex;flex-direction:column;gap:10px;}
+.opt-btn{display:flex;align-items:center;gap:14px;padding:14px 18px;border:2px solid var(--border);border-radius:13px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;font-size:15px;background:#fff;text-align:left;transition:all .15s;}
+.opt-btn:hover:not([disabled]){border-color:var(--gold2);background:#fef8e1;}
+.opt-btn.sel{border-color:var(--navy);background:#eef2ff;}
+.opt-btn.correct{border-color:var(--green);background:#dcfce7;color:#166534;}
+.opt-btn.wrong{border-color:var(--red);background:#fee2e2;color:#991b1b;}
+.opt-btn[disabled]{cursor:default;}
+.opt-circle{width:30px;height:30px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;flex-shrink:0;color:var(--navy);}
+.opt-btn.sel .opt-circle{background:var(--navy);color:var(--gold);}
+.opt-btn.correct .opt-circle{background:var(--green);color:#fff;}
+.opt-btn.wrong .opt-circle{background:var(--red);color:#fff;}
+
+.ox-row{display:flex;gap:14px;}
+.ox-btn{flex:1;padding:18px;border:2px solid var(--border);border-radius:14px;font-size:24px;cursor:pointer;background:#fff;font-weight:900;transition:all .15s;font-family:'Nunito',sans-serif;}
+.ox-btn:hover:not([disabled]){transform:scale(1.04);}
+.ox-btn.sel-o{border-color:var(--gold2);background:#fef8e1;}
+.ox-btn.sel-x{border-color:var(--orange);background:#fff7ed;}
+.ox-btn.correct{border-color:var(--green);background:#dcfce7;}
+.ox-btn.wrong{border-color:var(--red);background:#fee2e2;}
+
+.sa-input{width:100%;max-width:320px;padding:13px 16px;border:2px solid var(--border);border-radius:12px;font-family:'Nunito',sans-serif;font-size:16px;font-weight:700;outline:none;transition:border-color .2s;}
+.sa-input:focus{border-color:var(--gold2);}
+.sa-input.correct-i{border-color:var(--green);background:#f0fdf4;}
+.sa-input.wrong-i{border-color:var(--red);background:#fff5f5;}
+
+.qc-feedback{margin-top:18px;padding:13px 16px;border-radius:11px;font-size:14px;font-weight:700;}
+.fb-correct{background:#dcfce7;color:#166534;}
+.fb-wrong{background:#fee2e2;color:#991b1b;}
+
+.nav-row{display:flex;justify-content:space-between;align-items:center;gap:12px;}
+.btn-nav{padding:12px 26px;border:2px solid var(--border);border-radius:12px;background:#fff;font-family:'Nunito',sans-serif;font-weight:800;font-size:15px;cursor:pointer;color:var(--navy);transition:all .2s;}
+.btn-nav:hover:not([disabled]){border-color:var(--navy);background:var(--navy);color:#fff;}
+.btn-nav[disabled]{opacity:.35;cursor:default;}
+.btn-submit-all{padding:13px 32px;background:var(--green);color:#fff;border:none;border-radius:12px;font-family:'Nunito',sans-serif;font-weight:800;font-size:16px;cursor:pointer;transition:all .2s;}
+.btn-submit-all:hover:not([disabled]){background:#16a34a;transform:translateY(-1px);}
+.btn-submit-all[disabled]{background:var(--border);color:var(--muted);cursor:default;transform:none;}
+
+/* ── SCORE BANNER ── */
+.score-banner{background:linear-gradient(135deg,#166534,var(--green));color:#fff;border-radius:var(--radius);padding:32px;text-align:center;margin-bottom:24px;}
+.score-big{font-size:72px;font-weight:900;font-family:'Baloo 2',cursive;line-height:1;}
+.score-msg{font-size:18px;font-weight:700;opacity:.9;margin-top:10px;}
+
+/* ── RESULTS TABLE ── */
+.results-wrap{background:#fff;border-radius:var(--radius);padding:24px;box-shadow:0 2px 10px rgba(0,0,0,.06);}
+.results-wrap h3{font-family:'Baloo 2',cursive;font-size:20px;color:var(--navy);margin-bottom:16px;}
+.res-q{padding:11px 14px;border-radius:10px;font-size:14px;font-weight:600;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;}
+.res-ok{background:#f0fdf4;border-left:4px solid var(--green);}
+.res-wrong{background:#fff5f5;border-left:4px solid var(--red);}
+.res-pending{background:#fefce8;border-left:4px solid var(--gold);}
+.res-none{background:var(--bg);border-left:4px solid var(--border);}
+
+/* ── TEACHER RESULTS ── */
+.results-table{width:100%;border-collapse:collapse;}
+.results-table th{background:linear-gradient(90deg,#0d1526,var(--navy));color:#fff;padding:13px 16px;text-align:left;font-size:13px;font-weight:800;}
+.results-table th:first-child{border-radius:12px 0 0 0;}
+.results-table th:last-child{border-radius:0 12px 0 0;}
+.results-table td{padding:13px 16px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600;background:#fff;}
+.results-table tr:hover td{background:#f8faff;}
+.score-pill{display:inline-block;padding:3px 12px;border-radius:20px;font-weight:800;font-size:13px;}
+.pill-a{background:#dcfce7;color:#166534;}
+.pill-b{background:#fef8e1;color:#7a6200;}
+.pill-c{background:#fee2e2;color:#991b1b;}
+.pill-none{background:var(--border);color:var(--muted);}
+
+/* ── SET LIST (STUDENT) ── */
+.set-list{display:flex;flex-direction:column;gap:14px;margin-bottom:24px;}
+.set-card{background:#fff;border-radius:var(--radius);padding:22px 26px;box-shadow:0 2px 10px rgba(0,0,0,.06);display:flex;align-items:center;gap:18px;border:2px solid transparent;transition:all .2s;}
+.set-card.unlocked{cursor:pointer;}
+.set-card.unlocked:hover{border-color:var(--gold);transform:translateY(-2px);}
+.set-card.locked{opacity:.5;background:#f1f5f9;cursor:default;}
+.set-card.done{border-color:var(--green);background:#f0fdf4;}
+.set-icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;}
+.set-icon-locked{background:#e2e8f0;}
+.set-icon-open{background:var(--navy);}
+.set-icon-done{background:var(--green);}
+.set-info{flex:1;}
+.set-name{font-family:'Baloo 2',cursive;font-size:18px;font-weight:800;color:var(--navy);}
+.set-meta{font-size:13px;color:var(--muted);margin-top:3px;}
+
+/* ── PARENT ── */
+.parent-header{background:linear-gradient(135deg,var(--navy),#1e2e55);color:#fff;border-radius:var(--radius);padding:26px 30px;margin-bottom:20px;display:flex;align-items:center;gap:18px;}
+.parent-avatar{font-size:48px;}
+.parent-child-name{font-family:'Baloo 2',cursive;font-size:26px;font-weight:800;color:var(--gold);}
+.parent-child-sub{font-size:14px;opacity:.7;margin-top:3px;}
+.info-card{background:#fff;border-radius:var(--radius);padding:22px 26px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,.06);}
+.info-card h3{font-family:'Baloo 2',cursive;font-size:18px;color:var(--navy);margin-bottom:14px;}
+
+/* ── SETTINGS ── */
+.settings-card{background:#fff;border-radius:var(--radius);padding:26px;box-shadow:0 2px 10px rgba(0,0,0,.06);margin-bottom:20px;}
+.settings-card h2{font-family:'Baloo 2',cursive;font-size:20px;color:var(--navy);margin-bottom:16px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-weight:800;font-size:13px;color:var(--navy);margin-bottom:6px;}
+.field input,.field select{width:100%;padding:10px 13px;border:2px solid var(--border);border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;transition:border-color .2s;}
+.field input:focus,.field select:focus{border-color:var(--gold2);}
+.success-msg{color:var(--green);font-weight:800;font-size:14px;margin-top:10px;display:none;}
+.empty{text-align:center;padding:40px;color:var(--muted);font-weight:700;}
+
+/* ── MODAL ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:999;align-items:center;justify-content:center;padding:20px;}
+.modal-bg.open{display:flex;}
+.modal-box{background:#fff;border-radius:20px;max-width:92vw;max-height:92vh;overflow:auto;padding:28px;position:relative;}
+.modal-close{position:absolute;top:12px;right:16px;background:none;border:none;font-size:24px;cursor:pointer;color:var(--muted);}
+
+@media(max-width:768px){
+  #loginScreen{flex-direction:column;}
+  .login-left{padding:40px 24px 32px;flex:none;}
+  .login-right{flex:none;padding:32px 24px 40px;}
+  .paste-area{grid-template-columns:1fr;}
+  .student-grid{grid-template-columns:1fr;}
+  .field-row{grid-template-columns:1fr;}
+  .main{padding:16px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="loginScreen">
+  <div class="login-left">
+    <div class="login-crest-wrap">
+      <img class="login-crest" src="solomon_academy_logo_transparent.png" alt="Solomon Math Academy Logo">
+    </div>
+    <div class="login-title">Solomon <span>Math</span></div>
+    <div class="login-sub-title">Academy</div>
+    <div class="login-divider"></div>
+    <div class="login-tagline">God is Love &nbsp;✦&nbsp; Excellence in Learning</div>
+  </div>
+  <div class="login-right">
+    <div class="login-form-wrap">
+      <div class="login-form-title">Welcome Back</div>
+      <div class="login-form-sub">Sign in to access your homework portal</div>
+      <div class="role-tabs">
+        <button class="role-tab active" onclick="setRole('student')">🎒 Student</button>
+        <button class="role-tab" onclick="setRole('teacher')">👩‍🏫 Teacher</button>
+        <button class="role-tab" onclick="setRole('parent')">👨‍👩‍👧 Parent</button>
+      </div>
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="loginId" placeholder="e.g. student01" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="loginPw" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="btn-login" onclick="doLogin()">Sign In →</button>
+      <div class="login-error" id="loginError">❌ Incorrect ID or password.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <img src="solomon_academy_logo_transparent.png" alt="Solomon Math Academy" style="height:42px;width:auto;object-fit:contain;">
+      <div class="topbar-logo">Solomon <span>Math</span> Academy</div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-user" id="topbarUser"></div>
+      <button class="btn-logout" onclick="doLogout()">Log Out</button>
+    </div>
+  </div>
+  <div class="main" id="mainContent"></div>
+</div>
+
+<!-- ══ MODAL ══ -->
+<div class="modal-bg" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box" id="modalBox">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+//  DATA STORE
+// ═══════════════════════════════════════
+const STORE_KEY = 'solomon_hw_v3';
+
+function saveStore(d) { localStorage.setItem(STORE_KEY, JSON.stringify(d)); }
+
+function initStore() {
+  const d = {
+    users: [
+      { id:'teacher',   pw:'solomon2024', role:'teacher', name:'Teacher' },
+      { id:'student01', pw:'math2024',    role:'student', name:'Alex',   year:5 },
+      { id:'student02', pw:'math2024',    role:'student', name:'Sophie', year:7 },
+      { id:'student03', pw:'math2024',    role:'student', name:'Liam',   year:3 },
+      { id:'student04', pw:'math2024',    role:'student', name:'Mia',    year:9 },
+      { id:'student05', pw:'math2024',    role:'student', name:'Ethan',  year:6 },
+      { id:'parent01',  pw:'parent2024',  role:'parent',  name:"Alex's Parent",   childIds:['student01'] },
+      { id:'parent02',  pw:'parent2024',  role:'parent',  name:"Sophie's Parent", childIds:['student02'] },
+    ],
+    currentPeriod: { year: new Date().getFullYear(), month: new Date().getMonth()+1, week: 1 },
+    homeworkSets: {},
+    submissions: {}
+  };
+  saveStore(d);
+  return d;
+}
+
+// period = { year, month, week }
+function hwKey(yearLevel, p) { return `y${yearLevel}_${p.year}_m${String(p.month).padStart(2,'0')}_w${p.week}`; }
+function subKey(sid, p, setIdx=0) { return `${sid}_${p.year}_m${String(p.month).padStart(2,'0')}_w${p.week}_s${setIdx}`; }
+function periodLabel(p)      { return `${p.year} – Month ${p.month} Week ${p.week}`; }
+
+function getStore() {
+  const raw = localStorage.getItem(STORE_KEY);
+  if (!raw) return initStore();
+  const d = JSON.parse(raw);
+  // migrate old currentWeek → currentPeriod
+  if (d.currentWeek !== undefined && !d.currentPeriod) {
+    d.currentPeriod = { year: new Date().getFullYear(), month: new Date().getMonth()+1, week: d.currentWeek };
+    delete d.currentWeek;
+  }
+  // migrate v3 homeworkSets (questions直接) → v4 (sets array)
+  let migrated = false;
+  Object.keys(d.homeworkSets||{}).forEach(key => {
+    const hw = d.homeworkSets[key];
+    if (hw.questions && !hw.sets) {
+      hw.sets = [{ setIdx:0, title:'Set 1', questions:hw.questions, createdAt:hw.createdAt||'' }];
+      delete hw.questions; delete hw.createdAt; delete hw.title;
+      migrated = true;
+    }
+  });
+  // migrate v3 submissions (no _s0 suffix) → v4 (with _s0)
+  Object.keys(d.submissions||{}).forEach(key => {
+    if (!/_s\d+$/.test(key)) {
+      d.submissions[key + '_s0'] = d.submissions[key];
+      delete d.submissions[key];
+      migrated = true;
+    }
+  });
+  // migrate parent childId (string) → childIds (array) and auto-generate name
+  d.users.filter(u=>u.role==='parent').forEach(p => {
+    if (p.childId !== undefined && !p.childIds) {
+      p.childIds = p.childId ? [p.childId] : [];
+      delete p.childId;
+      migrated = true;
+    }
+    const autoName = parentDisplayName(p.childIds || []);
+    if (p.name !== autoName) { p.name = autoName; migrated = true; }
+  });
+  // migrate Korean set titles (세트 N) → English (Set N)
+  Object.keys(d.homeworkSets||{}).forEach(key => {
+    (d.homeworkSets[key].sets||[]).forEach((s,i) => {
+      if (/^세트\s*\d+/.test(s.title||'')) {
+        s.title = `Set ${i+1}`;
+        migrated = true;
+      }
+    });
+  });
+  if (migrated) localStorage.setItem(STORE_KEY, JSON.stringify(d));
+  return d;
+}
+
+// ═══════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════
+function englishName(id) {
+  const base = (id || '').replace(/\d+/g, '').trim();
+  return base.charAt(0).toUpperCase() + base.slice(1);
+}
+
+function parentDisplayName(childIds) {
+  if (!childIds || !childIds.length) return 'Parent';
+  const names = childIds.map(id => englishName(id));
+  if (names.length === 1) return names[0] + "'s Parent";
+  return names.slice(0, -1).join(', ') + ' & ' + names[names.length - 1] + "'s Parent";
+}
+
+// ═══════════════════════════════════════
+//  AUTH
+// ═══════════════════════════════════════
+let currentUser = null;
+let loginRole = 'student';
+
+function setRole(r) {
+  loginRole = r;
+  document.querySelectorAll('.role-tab').forEach((t,i) =>
+    t.classList.toggle('active', (i===0&&r==='student')||(i===1&&r==='teacher')||(i===2&&r==='parent')));
+  document.getElementById('loginId').placeholder =
+    r==='teacher' ? 'e.g. teacher' : r==='parent' ? 'e.g. parent01' : 'e.g. student01';
+}
+
+function doLogin() {
+  const id = document.getElementById('loginId').value.trim();
+  const pw = document.getElementById('loginPw').value;
+  const store = getStore();
+  const user = store.users.find(u => u.id === id && u.pw === pw && u.role === loginRole);
+  if (!user) { document.getElementById('loginError').style.display='block'; return; }
+  currentUser = user;
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('topbarUser').textContent =
+    user.role==='teacher' ? `Teacher`
+    : user.role==='parent' ? `${parentDisplayName(user.childIds)} 👨‍👩‍👧`
+    : `${englishName(user.id)} (Year ${user.year})`;
+  document.getElementById('loginError').style.display = 'none';
+  if (user.role==='teacher') renderTeacher();
+  else if (user.role==='parent') renderParent();
+  else { qIdx=0; currentSetIdx=null; renderStudent(); }
+}
+
+function doLogout() {
+  currentUser = null;
+  selectedStudentId = null;
+  currentSetIdx = null;
+  editingSetIdx = null;
+  currentParentChildId = null;
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loginId').value = '';
+  document.getElementById('loginPw').value = '';
+}
+
+// ═══════════════════════════════════════
+//  TEACHER
+// ═══════════════════════════════════════
+let selectedYear = null;       // currently selected year level
+let parsedQuestions = [];
+let editingSetIdx = null;      // -1=new set, 0+=editing existing set
+let editingCalcRanges = [];   // [{from, to, allowed}]
+
+function renderTeacher() {
+  const store    = getStore();
+  const p        = store.currentPeriod;
+  const students = store.users.filter(u => u.role==='student');
+  const years    = [...new Set(students.map(s=>s.year))].sort((a,b)=>a-b);
+
+  const yearOpts  = [2024,2025,2026,2027,2028].map(y=>`<option value="${y}"${y===p.year?'selected':''}>${y}</option>`).join('');
+  const monthOpts = Array.from({length:12},(_,i)=>i+1).map(m=>`<option value="${m}"${m===p.month?'selected':''}>${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1]}</option>`).join('');
+  const weekOpts  = [1,2,3,4,5].map(w=>`<option value="${w}"${w===p.week?'selected':''}>${w===1?'Week 1':w===2?'Week 2':w===3?'Week 3':w===4?'Week 4':'Week 5'}</option>`).join('');
+
+  let html = `
+    <div class="page-title">📋 Weekly Homework Management</div>
+    <div class="page-sub">Select a year group to assign the same homework to all students in that year.</div>
+    <div class="week-bar">
+      <label>Select period:</label>
+      <select id="selYear">${yearOpts}</select>
+      <select id="selMonth">${monthOpts}</select>
+      <select id="selWeek">${weekOpts}</select>
+      <button class="btn-sm btn-navy" onclick="setPeriod()">Apply</button>
+      <span style="font-size:13px;color:var(--muted);margin-left:8px;">Current: <b>${periodLabel(p)}</b></span>
+    </div>
+    <div class="student-grid">`;
+
+  years.forEach(yr => {
+    const yrStudents = students.filter(s=>s.year===yr);
+    const hw  = store.homeworkSets[hwKey(yr, p)];
+    const sets = hw?.sets || [];
+    const totalSets = sets.length;
+    const totalQ = sets.reduce((n,s)=>n+s.questions.length, 0);
+    const allCompleted = yrStudents.filter(s =>
+      sets.length > 0 && sets.every((_,idx) => store.submissions[subKey(s.id,p,idx)]?.submitted)
+    ).length;
+    const anyStarted = yrStudents.filter(s =>
+      sets.some((_,idx) => store.submissions[subKey(s.id,p,idx)]?.submitted)
+    ).length;
+    const isActive  = selectedYear === yr;
+    let dotCls='dot-none', statusTxt='No homework', pillHtml='';
+    if (hw && totalSets > 0) {
+      dotCls = allCompleted>0 ? (allCompleted===yrStudents.length?'dot-submitted':'dot-set') : 'dot-set';
+      statusTxt = allCompleted>0 ? `${allCompleted}/${yrStudents.length} all done` : anyStarted>0 ? `${anyStarted}/${yrStudents.length} in progress` : `${totalSets} set${totalSets>1?'s':''} assigned`;
+      pillHtml = `<span class="score-pill pill-a" style="margin-left:6px;">${totalSets} set${totalSets>1?'s':''} · ${totalQ}q</span>`;
+    }
+    html += `
+      <div class="student-card ${isActive?'active':''}" onclick="selectYear(${yr})">
+        <div class="sc-top">
+          <div class="sc-avatar" style="font-size:18px;font-weight:900;">Y${yr}</div>
+          <div>
+            <div class="sc-name">Year ${yr}</div>
+            <div class="sc-year">${yrStudents.map(s=>s.name).join(', ')}</div>
+          </div>
+        </div>
+        <div class="sc-status">
+          <div class="status-dot ${dotCls}"></div>
+          <div class="status-text">${statusTxt}${pillHtml}</div>
+        </div>
+        <div class="sc-actions">
+          <button class="btn-sm btn-gold" onclick="event.stopPropagation();selectYear(${yr})">
+            ${hw&&totalSets>0?'✏️ Manage Sets':'➕ Add Homework'}
+          </button>
+          ${hw&&totalSets>0 ? `<button class="btn-sm btn-blue" onclick="event.stopPropagation();previewHomework(${yr})">👁 Preview</button>` : ''}
+          ${anyStarted>0 ? `<button class="btn-sm btn-navy" onclick="event.stopPropagation();viewResults(${yr})">📊 Results</button>` : ''}
+        </div>
+      </div>`;
+  });
+  html += `</div>`;
+
+  // ── homework editor ──────────────────────────────
+  if (selectedYear !== null) {
+    const hw = store.homeworkSets[hwKey(selectedYear, p)];
+    const sets = hw?.sets || [];
+    const yrStudents = students.filter(s=>s.year===selectedYear);
+    html += `
+      <div class="hw-editor" id="hwEditor">
+        <div class="hw-editor-title">📝 Year ${selectedYear} – ${periodLabel(p)} Set Management</div>
+        <div class="hw-editor-sub">
+          Students: ${yrStudents.map(s=>`<b>${s.name}</b>`).join(', ')} (${yrStudents.length}) — Sets must be completed in order.
+        </div>`;
+
+    // existing set list
+    if (sets.length > 0) {
+      html += `<div style="margin-bottom:20px;">
+        <div style="font-weight:800;color:var(--navy);font-size:14px;margin-bottom:10px;">📋 Registered Sets</div>`;
+      sets.forEach((set, idx) => {
+        const isEditing = editingSetIdx === idx;
+        html += `<div style="display:flex;align-items:center;gap:10px;background:${isEditing?'#eef2ff':'#f8f6ef'};border-radius:10px;padding:12px 16px;margin-bottom:8px;${isEditing?'border:2px solid var(--navy);':''}">
+          <div style="font-weight:800;color:var(--navy);flex:1;">
+            ${isEditing?'✏️ ':''}${set.title}
+            <span style="color:var(--muted);font-weight:600;font-size:13px;"> (${set.questions.length} questions)</span>
+          </div>
+          <button class="btn-sm btn-gold" onclick="editSet(${idx})">✏️ Edit</button>
+          <button class="btn-sm btn-red" onclick="deleteSet(${idx})">🗑 Delete</button>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // editor (new set or editing existing set)
+    if (editingSetIdx !== null) {
+      const targetSet = editingSetIdx >= 0 ? sets[editingSetIdx] : null;
+      const existQText = targetSet ? questionsToText(targetSet.questions) : '';
+      const existAText = targetSet ? answersToText(targetSet.questions) : '';
+      const setNum = editingSetIdx >= 0 ? editingSetIdx + 1 : sets.length + 1;
+      html += `
+        <div style="border-top:2px solid var(--border);padding-top:20px;margin-top:${sets.length>0?'4px':'0'};">
+          <div style="font-weight:800;color:var(--navy);font-size:15px;margin-bottom:14px;">
+            ${editingSetIdx >= 0 ? `Edit Set ${setNum}` : `New Set ${setNum}`}
+          </div>
+          ${selectedYear >= 7 ? `
+          <div style="margin-bottom:16px;background:#f0f4ff;border-radius:12px;padding:14px 16px;border:2px solid #c7d2fe;">
+            <div style="font-weight:800;color:var(--navy);font-size:13px;margin-bottom:10px;">🔢 Calculator Range Settings <span style="color:var(--muted);font-weight:600;">(Year 7+)</span></div>
+            <div id="calcRangeList">${editingCalcRanges.length === 0
+              ? '<div style="color:var(--muted);font-size:13px;margin-bottom:8px;">No ranges set (calculator badge hidden)</div>'
+              : editingCalcRanges.map((r,i) => `
+                <div style="display:flex;align-items:center;gap:8px;background:#fff;border-radius:8px;padding:8px 12px;margin-bottom:6px;">
+                  <span style="font-weight:700;color:var(--navy);">Q${r.from} ~ Q${r.to}</span>
+                  <span style="font-weight:800;${r.allowed?'color:#166534':'color:#991b1b'}">${r.allowed?'🔢 Allowed':'🚫 Not Allowed'}</span>
+                  <button onclick="removeCalcRange(${i})" style="margin-left:auto;background:#fee2e2;border:none;border-radius:6px;cursor:pointer;color:#991b1b;font-size:12px;padding:2px 8px;font-weight:700;">Delete</button>
+                </div>`).join('')
+            }</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px;">
+              <input type="number" id="cr_from" min="1" placeholder="From Q#" style="width:74px;padding:6px 8px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;">
+              <span style="font-weight:700;color:var(--navy);">~</span>
+              <input type="number" id="cr_to" min="1" placeholder="To Q#" style="width:74px;padding:6px 8px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;">
+              <select id="cr_allowed" style="padding:6px 8px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;">
+                <option value="0">🚫 Not Allowed</option>
+                <option value="1">🔢 Allowed</option>
+              </select>
+              <button class="btn-sm btn-navy" onclick="addCalcRange()">+ Add</button>
+            </div>
+          </div>` : ''}
+          <div class="format-hint">
+            <b>Question format:</b> Number. Question → Options A) B) C) D) → Multiple Choice &nbsp;|&nbsp; True or False → O/X &nbsp;|&nbsp; No options → Short Answer<br>
+            <b>Answer format:</b> 1. B &nbsp; 2. O &nbsp; 3. 6
+          </div>
+          <div class="paste-area">
+            <div class="paste-col">
+              <label>📄 Paste Questions</label>
+              <textarea id="qText" placeholder="1. What is 3/4 + 1/2?&#10;A) 1&#10;B) 5/4&#10;C) 4/6&#10;D) 1/4&#10;&#10;2. True or False: 9 × 6 = 54">${existQText}</textarea>
+            </div>
+            <div class="paste-col">
+              <label>✅ Paste Answers</label>
+              <textarea id="aText" placeholder="1. B&#10;2. O&#10;3. 3">${existAText}</textarea>
+            </div>
+          </div>
+          <div class="editor-actions">
+            <button class="btn-sm btn-navy" onclick="doParse()">🔍 Parse & Preview</button>
+            <button class="btn-sm btn-green" id="saveBtn" onclick="doSave()" style="display:none;">✅ Save</button>
+            <button class="btn-sm btn-red" onclick="cancelEditor()">✕ Cancel</button>
+          </div>
+          <div id="parsePreview"></div>
+        </div>`;
+    } else {
+      html += `<div style="display:flex;gap:10px;margin-top:${sets.length>0?'4px':'0'};">
+        <button class="btn-sm btn-navy" onclick="editSet(-1)">➕ Add New Set</button>
+        <button class="btn-sm btn-red" onclick="cancelEditor()">✕ Close</button>
+      </div>`;
+    }
+    html += `</div>`; // hw-editor
+  }
+
+  // ── student status by year ──────────────────────────
+  html += `<div class="settings-card" style="margin-top:8px;">
+    <h2>👨‍🎓 Student Status by Year — ${periodLabel(p)}</h2>`;
+  years.forEach(yr => {
+    const yrStudents = students.filter(s=>s.year===yr);
+    const hw = store.homeworkSets[hwKey(yr, p)];
+    const sets = hw?.sets || [];
+    html += `<div style="margin-bottom:16px;">
+      <div style="font-weight:800;color:var(--navy);font-size:14px;margin-bottom:6px;">Year ${yr}</div>
+      <table class="results-table">
+        <thead><tr><th>Name</th><th>ID</th><th>Status</th><th>Score per Set</th><th>Reset</th></tr></thead><tbody>`;
+    yrStudents.forEach(s => {
+      let status = sets.length > 0 ? 'Not submitted' : 'No homework';
+      let scoreHtml = '-';
+      if (sets.length > 0) {
+        const setResults = sets.map((set, idx) => {
+          const sub = store.submissions[subKey(s.id, p, idx)];
+          if (!sub?.submitted) return `<span style="color:var(--muted);font-size:12px;">Set${idx+1}:⏳</span>`;
+          const autoQs = set.questions.filter(q=>q.type!=='written');
+          const correct = autoQs.filter(q=>sub.answers[q.id]===q.answer).length;
+          const pct = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
+          const cls = pct>=80?'pill-a':pct>=60?'pill-b':'pill-c';
+          return `<span style="font-size:12px;">Set${idx+1}:</span><span class="score-pill ${cls}" style="font-size:11px;">${pct}%</span>`;
+        });
+        const doneCount = sets.filter((_,idx) => store.submissions[subKey(s.id,p,idx)]?.submitted).length;
+        if (doneCount === sets.length) status = '✅ All done';
+        else if (doneCount > 0) status = `🔄 ${doneCount}/${sets.length} sets done`;
+        else {
+          const anyAnswered = sets.some((_,idx) => Object.keys(store.submissions[subKey(s.id,p,idx)]?.answers||{}).length > 0);
+          if (anyAnswered) status = '🔄 In progress';
+        }
+        scoreHtml = `<div style="display:flex;gap:6px;flex-wrap:wrap;">${setResults.join('')}</div>`;
+      }
+      const resetBtns = sets.map((_,idx) => {
+        const sk = subKey(s.id, p, idx);
+        const hasSub = store.submissions[sk] && (store.submissions[sk].submitted || Object.keys(store.submissions[sk].answers||{}).length > 0);
+        return hasSub ? `<button class="btn-sm btn-red" style="padding:2px 7px;font-size:11px;" onclick="resetSubmission('${s.id}',${idx})">↺ Set ${idx+1}</button>` : '';
+      }).join('');
+      html += `<tr><td><b>${s.name}</b></td><td>${s.id}</td><td>${status}</td><td>${scoreHtml}</td><td style="white-space:nowrap;">${resetBtns||'-'}</td></tr>`;
+    });
+    html += `</tbody></table></div>`;
+  });
+  html += `</div>`;
+
+  document.getElementById('mainContent').innerHTML = html;
+  document.getElementById('mainContent').innerHTML += renderTeacherSettings(store);
+
+  if (selectedYear !== null) {
+    document.getElementById('hwEditor')?.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+}
+
+function setPeriod() {
+  const store = getStore();
+  store.currentPeriod = {
+    year:  parseInt(document.getElementById('selYear').value),
+    month: parseInt(document.getElementById('selMonth').value),
+    week:  parseInt(document.getElementById('selWeek').value)
+  };
+  saveStore(store);
+  selectedYear = null;
+  renderTeacher();
+}
+
+function selectYear(yr) {
+  selectedYear = selectedYear===yr ? null : yr;
+  parsedQuestions = [];
+  editingSetIdx = null;
+  editingCalcRanges = [];
+  renderTeacher();
+}
+
+function cancelEditor() {
+  if (editingSetIdx !== null) {
+    editingSetIdx = null;
+    parsedQuestions = [];
+    editingCalcRanges = [];
+    renderTeacher();
+  } else {
+    selectedYear = null;
+    parsedQuestions = [];
+    editingCalcRanges = [];
+    renderTeacher();
+  }
+}
+
+function editSet(idx) {
+  editingSetIdx = idx;
+  parsedQuestions = [];
+  const store = getStore();
+  const hw = store.homeworkSets[hwKey(selectedYear, store.currentPeriod)];
+  editingCalcRanges = idx >= 0 ? [...(hw?.sets?.[idx]?.calculatorRanges || [])] : [];
+  renderTeacher();
+}
+
+function deleteSet(idx) {
+  const store = getStore();
+  const p = store.currentPeriod;
+  const key = hwKey(selectedYear, p);
+  const hw = store.homeworkSets[key];
+  if (!hw?.sets) return;
+  const setTitle = hw.sets[idx]?.title || `Set ${idx+1}`;
+  if (!confirm(`Delete '${setTitle}'?\n(All student submissions for this set will also be deleted)`)) return;
+  const yrStudents = store.users.filter(u=>u.role==='student'&&u.year===selectedYear);
+  // delete submissions from this set onwards
+  yrStudents.forEach(s => {
+    for (let i = idx; i <= hw.sets.length; i++) {
+      delete store.submissions[subKey(s.id, p, i)];
+    }
+  });
+  hw.sets.splice(idx, 1);
+  // re-index remaining sets
+  hw.sets.forEach((s,i) => { s.setIdx=i; s.title=`Set ${i+1}`; });
+  if (hw.sets.length === 0) delete store.homeworkSets[key];
+  saveStore(store);
+  editingSetIdx = null;
+  parsedQuestions = [];
+  renderTeacher();
+}
+
+function resetSubmission(sid, setIdx) {
+  const store = getStore();
+  const p = store.currentPeriod;
+  const student = store.users.find(u=>u.id===sid);
+  const setLabel = `Set ${setIdx+1}`;
+  if (!confirm(`Reset ${student?.name || sid}'s submission for ${setLabel}?\nThis will delete their answers and allow them to redo it.`)) return;
+  delete store.submissions[subKey(sid, p, setIdx)];
+  saveStore(store);
+  renderTeacher();
+}
+
+// Convert saved questions back to text for editing
+function questionsToText(qs) {
+  return qs.map((q,i) => {
+    let txt = `${i+1}. ${q.text}`;
+    if (q.type==='mc' && q.options) {
+      const letters=['A','B','C','D','E'];
+      txt += '\n' + q.options.map((o,j)=>`${letters[j]}) ${o}`).join('\n');
+    }
+    return txt;
+  }).join('\n\n');
+}
+function answersToText(qs) {
+  return qs.map((q,i) => `${i+1}. ${q.answer||''}`).join('\n');
+}
+
+// ─── PARSE ─────────────────────────────
+function doParse() {
+  const qRaw = document.getElementById('qText').value.trim();
+  const aRaw = document.getElementById('aText').value.trim();
+  if (!qRaw) { alert('Please enter questions first.'); return; }
+
+  const questions = parseQuestions(qRaw);
+  const answers   = parseAnswers(aRaw);
+
+  // Merge answers
+  questions.forEach(q => {
+    const ans = answers[q.num];
+    if (ans === undefined) return;
+    if (q.type === 'mc' && q.options) {
+      // If answer is letter (A-E), map to option text or keep as letter
+      const letters = ['A','B','C','D','E'];
+      const idx = letters.indexOf(ans.toUpperCase());
+      q.answer = idx >= 0 ? letters[idx] : ans; // store as letter
+    } else {
+      q.answer = ans;
+    }
+  });
+
+  parsedQuestions = questions;
+
+  if (questions.length === 0) {
+    document.getElementById('parsePreview').innerHTML = `
+      <div style="margin-top:16px;background:#fef2f2;border:2px solid var(--red);border-radius:12px;padding:16px 20px;">
+        <div style="font-weight:800;color:#991b1b;font-size:15px;">⚠️ No questions recognised.</div>
+        <div style="margin-top:10px;font-size:13px;color:#7f1d1d;line-height:1.7;">
+          Check the question number format. It must be one of:<br>
+          <code>1. Question text</code> &nbsp;or&nbsp; <code>1) Question text</code> &nbsp;or&nbsp; <code>Q1. Question text</code><br><br>
+          <b>First line of pasted text:</b><br>
+          <code style="background:#fff;display:block;padding:8px;border-radius:6px;margin-top:4px;">${qRaw.split('\n')[0].replace(/</g,'&lt;').substring(0,120)}</code>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const mcN  = questions.filter(q=>q.type==='mc').length;
+  const oxN  = questions.filter(q=>q.type==='ox').length;
+  const saN  = questions.filter(q=>q.type==='sa').length;
+  const ansN = questions.filter(q=>q.answer).length;
+
+  let html = `
+    <div style="margin-top:16px;background:#f0fdf4;border:2px solid var(--green);border-radius:12px;padding:16px 20px;margin-bottom:14px;">
+      <div style="font-weight:800;color:#166534;font-size:16px;">✅ ${questions.length} questions parsed</div>
+      <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">
+        <span class="score-pill pill-b">MC: ${mcN}</span>
+        <span class="score-pill" style="background:#dbeafe;color:#1d4ed8;">Short Answer: ${saN}</span>
+        <span class="score-pill" style="background:#f3e8ff;color:#7c3aed;">O/X ${oxN}</span>
+        <span class="score-pill pill-a">Answers: ${ansN}</span>
+      </div>
+    </div>
+    <div class="preview-list">`;
+
+  const letters=['A','B','C','D','E'];
+  questions.forEach(q => {
+    const typeLabel = {mc:'MC',sa:'Short Answer',ox:'O/X'}[q.type];
+    const badgeCls  = {mc:'badge-mc',sa:'badge-sa',ox:'badge-ox'}[q.type];
+    let optStr = '';
+    if (q.type==='mc'&&q.options) {
+      optStr = `<div style="font-size:12px;color:var(--muted);margin-top:4px;">${q.options.map((o,i)=>`${letters[i]}) ${o}`).join(' &nbsp;|&nbsp; ')}</div>`;
+    }
+    html += `
+      <div class="preview-q">
+        <div class="preview-num">${q.num}</div>
+        <div class="preview-info">
+          <div class="preview-text">${q.text}</div>
+          ${optStr}
+          <div class="preview-meta">
+            <span class="type-badge ${badgeCls}">${typeLabel}</span>
+            ${q.answer ? `<span class="ans-tag">→ Answer: ${q.answer}</span>` : '<span style="color:var(--red);font-size:12px;font-weight:700;">No answer</span>'}
+          </div>
+        </div>
+      </div>`;
+  });
+
+  html += `</div>`;
+  document.getElementById('parsePreview').innerHTML = html;
+  document.getElementById('saveBtn').style.display = 'inline-block';
+}
+
+function doSave() {
+  if (!parsedQuestions.length) { alert('Please parse the questions first.'); return; }
+  const store = getStore();
+  const p     = store.currentPeriod;
+  const key   = hwKey(selectedYear, p);
+  const yrStudents = store.users.filter(u=>u.role==='student' && u.year===selectedYear);
+  const qs = parsedQuestions.map((q,i) => ({ ...q, id:`q${i}` }));
+
+  if (!store.homeworkSets[key]) {
+    store.homeworkSets[key] = { year: selectedYear, period: p, sets: [] };
+  }
+  const hw = store.homeworkSets[key];
+  const isNew = editingSetIdx === -1 || editingSetIdx === null;
+  const actualIdx = isNew ? hw.sets.length : editingSetIdx;
+  const setTitle = `Set ${actualIdx + 1}`;
+  const setObj = { setIdx: actualIdx, title: setTitle, questions: qs, createdAt: new Date().toLocaleDateString('en-US'), calculatorRanges: selectedYear >= 7 ? [...editingCalcRanges] : [] };
+
+  if (isNew) {
+    hw.sets.push(setObj);
+  } else {
+    hw.sets[actualIdx] = setObj;
+  }
+
+  // reset unsubmitted entries for this set
+  yrStudents.forEach(s => {
+    const sk = subKey(s.id, p, actualIdx);
+    if (store.submissions[sk] && !store.submissions[sk].submitted) delete store.submissions[sk];
+  });
+
+  saveStore(store);
+  alert(`✅ ${setTitle} saved! (${qs.length} questions)\nAssigned to ${yrStudents.length} student${yrStudents.length!==1?'s':''}.`);
+  parsedQuestions = [];
+  editingSetIdx = null;
+  renderTeacher();
+}
+
+// ─── TEACHER PREVIEW ───────────────────
+function previewHomework(yr) {
+  const store = getStore();
+  const p     = store.currentPeriod;
+  const hw    = store.homeworkSets[hwKey(yr, p)];
+  if (!hw?.sets?.length) return;
+
+  let html = `<h2 style="font-family:'Baloo 2',cursive;color:var(--navy);margin-bottom:16px;">👁 Year ${yr} – ${periodLabel(p)} Preview</h2>`;
+  const letters=['A','B','C','D','E'];
+  hw.sets.forEach((set, si) => {
+    html += `<div style="font-family:'Baloo 2',cursive;font-size:16px;color:var(--navy);margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--gold);">🔢 ${set.title} (${set.questions.length} questions)</div>`;
+    set.questions.forEach((q,i) => {
+      const typeLabel={mc:'MC',sa:'Short Answer',ox:'O/X'}[q.type];
+      const badgeCls={mc:'badge-mc',sa:'badge-sa',ox:'badge-ox'}[q.type];
+      html += `<div style="background:#f8f6ef;border-radius:12px;padding:16px 20px;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div class="preview-num">${i+1}</div>
+          <span class="type-badge ${badgeCls}">${typeLabel}</span>
+          ${q.answer?`<span class="ans-tag">Answer: ${q.answer}</span>`:''}
+        </div>
+        <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:8px;">${q.text}</div>
+        ${q.type==='mc'&&q.options ? `<div style="font-size:13px;color:var(--muted);">${q.options.map((o,j)=>`<b>${letters[j]})</b> ${o}`).join(' &nbsp; ')}</div>` : ''}
+      </div>`;
+    });
+  });
+
+  document.getElementById('modalContent').innerHTML = html;
+  document.getElementById('modal').classList.add('open');
+}
+
+function viewResults(yr) {
+  const store    = getStore();
+  const p        = store.currentPeriod;
+  const hw       = store.homeworkSets[hwKey(yr, p)];
+  if (!hw?.sets?.length) return;
+  const yrStudents = store.users.filter(u=>u.role==='student' && u.year===yr);
+
+  let html = `<h2 style="font-family:'Baloo 2',cursive;color:var(--navy);margin-bottom:16px;">📊 Year ${yr} – ${periodLabel(p)} Results</h2>`;
+
+  yrStudents.forEach(s => {
+    html += `<div style="background:#f8f6ef;border-radius:12px;padding:16px 20px;margin-bottom:14px;">
+      <div style="font-size:20px;font-weight:900;color:var(--navy);margin-bottom:10px;">${s.name}</div>`;
+    hw.sets.forEach((set, setIdx) => {
+      const sub = store.submissions[subKey(s.id, p, setIdx)];
+      html += `<div style="font-weight:800;color:var(--navy);margin:10px 0 6px;">${set.title}</div>`;
+      if (!sub?.submitted) {
+        html += `<div class="res-q res-none" style="font-size:13px;"><span>Not submitted</span></div>`;
+        return;
+      }
+      const autoQs = set.questions.filter(q=>q.type!=='written');
+      const correct = autoQs.filter(q=>sub.answers[q.id]===q.answer).length;
+      const pct = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
+      const cls = pct>=80?'pill-a':pct>=60?'pill-b':'pill-c';
+      html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        <span class="score-pill ${cls}">${pct}%</span>
+        <span style="font-size:13px;color:var(--muted);">${correct}/${autoQs.length} correct</span>
+      </div>`;
+      set.questions.forEach((q,i) => {
+        const ans = sub.answers[q.id];
+        let cls2='res-none', status='No answer';
+        if (ans!==undefined) {
+          const ok = ans===q.answer;
+          cls2 = ok?'res-ok':'res-wrong';
+          status = ok ? `✅ Correct` : `❌ Wrong (answered: ${ans} / correct: ${q.answer})`;
+        }
+        html += `<div class="res-q ${cls2}" style="font-size:13px;">
+          <b>Q${i+1}.</b>
+          <span style="flex:1;">${q.text.substring(0,60)}${q.text.length>60?'...':''} — ${status}</span>
+        </div>`;
+      });
+    });
+    html += `</div>`;
+  });
+
+  document.getElementById('modalContent').innerHTML = html;
+  document.getElementById('modal').classList.add('open');
+}
+
+function renderTeacherSettings(store) {
+  const students = store.users.filter(u=>u.role==='student');
+  const parents  = store.users.filter(u=>u.role==='parent');
+  const yearSel  = [3,4,5,6,7,8,9].map(y=>`<option value="${y}">Year ${y}</option>`).join('');
+
+  const studentRows = students.map(s => `
+    <tr id="srow_${s.id}">
+      <td><input id="se_id_${s.id}" value="${s.id}" style="width:90px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:13px;"></td>
+      <td><input id="se_name_${s.id}" value="${s.name}" style="width:100px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:13px;"></td>
+      <td><select id="se_year_${s.id}" style="border:1px solid var(--border);border-radius:6px;padding:3px 4px;font-size:13px;">
+        ${[3,4,5,6,7,8,9].map(y=>`<option value="${y}"${y===s.year?'selected':''}>${y}</option>`).join('')}
+      </select></td>
+      <td><input id="se_pw_${s.id}" value="${s.pw}" style="width:90px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:13px;"></td>
+      <td style="white-space:nowrap;">
+        <button class="btn-sm btn-green" style="padding:3px 8px;" onclick="saveStudentEdit('${s.id}')">Save</button>
+        <button class="btn-sm btn-red"   style="padding:3px 8px;" onclick="deleteStudent('${s.id}')">Delete</button>
+      </td>
+    </tr>`).join('');
+
+
+  return `
+    <div class="settings-card" style="margin-top:8px;">
+      <h2>👨‍🎓 Student Management</h2>
+      <table class="results-table" style="margin-bottom:20px;">
+        <thead><tr><th>ID</th><th>Name</th><th>Year</th><th>Password</th><th>Edit</th></tr></thead>
+        <tbody>${studentRows}</tbody>
+      </table>
+      <h3 style="font-family:'Baloo 2',cursive;color:var(--navy);margin-bottom:14px;">Add Student</h3>
+      <div class="field-row">
+        <div class="field"><label>ID</label><input id="ns_id" placeholder="student06"></div>
+        <div class="field"><label>Name</label><input id="ns_name" placeholder="Full name"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Year</label><select id="ns_year">${yearSel}</select></div>
+        <div class="field"><label>Password</label><input id="ns_pw" value="math2024"></div>
+      </div>
+      <button class="btn-sm btn-navy" onclick="addStudent()">Add Student ✓</button>
+      <div class="success-msg" id="ns_ok">✅ Added!</div>
+    </div>
+    <div class="settings-card" id="parentMgmt">
+      <h2>👨‍👩‍👧 Parent Management</h2>
+      <div id="parentCardsList">${buildParentCards(store)}</div>
+      <div style="border-top:2px solid var(--border);padding-top:20px;margin-top:4px;">
+        <h3 style="font-family:'Baloo 2',cursive;color:var(--navy);margin-bottom:14px;">Add New Parent Account</h3>
+        <div class="field-row">
+          <div class="field"><label>Parent ID</label><input id="np_id" placeholder="e.g. parent03"></div>
+          <div class="field"><label>Password</label><input id="np_pw" value="parent2024"></div>
+        </div>
+        <div class="field">
+          <label>First child's student ID</label>
+          <input id="np_child_id" placeholder="e.g. jimin01" style="width:100%;padding:10px 13px;border:2px solid var(--border);border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;">
+          <div style="font-size:12px;color:var(--muted);margin-top:4px;">More children can be added after creating the account.</div>
+        </div>
+        <button class="btn-sm btn-navy" style="margin-top:6px;" onclick="addParent()">Create Parent Account ✓</button>
+        <div class="success-msg" id="np_ok">✅ Created!</div>
+      </div>
+    </div>`;
+}
+
+function saveStudentEdit(oldId) {
+  const store  = getStore();
+  const u      = store.users.find(u=>u.id===oldId);
+  if (!u) return;
+  const newId  = document.getElementById(`se_id_${oldId}`).value.trim();
+  if (!newId) { alert('Please enter an ID.'); return; }
+  if (newId !== oldId && store.users.find(u=>u.id===newId)) {
+    alert('This ID already exists.'); return;
+  }
+  // update submission record keys when ID changes
+  if (newId !== oldId) {
+    Object.keys(store.submissions).forEach(k => {
+      if (k.startsWith(oldId + '_')) {
+        store.submissions[k.replace(oldId + '_', newId + '_')] = store.submissions[k];
+        delete store.submissions[k];
+      }
+    });
+    // update parent's childIds
+    store.users.filter(u=>u.role==='parent').forEach(p => {
+      if (p.childIds) {
+        const i = p.childIds.indexOf(oldId);
+        if (i !== -1) p.childIds[i] = newId;
+      }
+    });
+    u.id = newId;
+  }
+  u.name = document.getElementById(`se_name_${oldId}`).value.trim() || u.name;
+  u.year = parseInt(document.getElementById(`se_year_${oldId}`).value);
+  u.pw   = document.getElementById(`se_pw_${oldId}`).value.trim() || u.pw;
+  saveStore(store);
+  alert(`✅ ${u.name}'s info updated.`);
+  renderTeacher();
+}
+
+function deleteStudent(id) {
+  if (!confirm(`Delete student '${id}'?\n(All their submission records will also be deleted)`)) return;
+  const store = getStore();
+  store.users = store.users.filter(u=>u.id!==id);
+  // delete associated submission records
+  Object.keys(store.submissions).forEach(k=>{if(k.startsWith(id+'_'))delete store.submissions[k];});
+  saveStore(store);
+  renderTeacher();
+}
+
+const childColors = ['#dbeafe|#1d4ed8','#dcfce7|#166534','#fef9c3|#854d0e','#fce7f3|#9d174d','#ede9fe|#6d28d9','#ffedd5|#c2410c'];
+
+function buildParentCards(store) {
+  const students = store.users.filter(u=>u.role==='student');
+  const parents  = store.users.filter(u=>u.role==='parent');
+  if (!parents.length) return `<div class="empty" style="padding:20px 0;">No parent accounts yet.</div>`;
+  return parents.map(p => {
+    const linked   = p.childIds || [];
+    const autoName = parentDisplayName(linked);
+    const childList = linked.length === 0
+      ? `<div style="color:var(--muted);font-size:13px;padding:8px 0;">No children linked yet.</div>`
+      : linked.map((id, ti) => {
+          const s = students.find(st=>st.id===id);
+          const [bg, col] = childColors[ti % childColors.length].split('|');
+          return `
+          <div style="display:flex;align-items:center;gap:10px;background:${bg};border-radius:10px;padding:10px 14px;margin-bottom:6px;">
+            <div style="flex:1;">
+              <div style="font-weight:900;font-size:15px;color:${col};">${englishName(id)}</div>
+              <div style="font-size:12px;color:${col};opacity:.75;">ID: ${id}${s ? ` · Year ${s.year}` : ' · (not found)'}</div>
+            </div>
+            <button onclick="removeChildFromParent('${p.id}','${id}')"
+              style="background:none;border:2px solid ${col};border-radius:8px;color:${col};font-size:12px;font-weight:800;padding:3px 10px;cursor:pointer;">
+              Remove
+            </button>
+          </div>`;
+        }).join('');
+    return `
+    <div style="border:2px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:16px;" id="pcard_${p.id}">
+      <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+        <div style="flex:1;min-width:180px;">
+          <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Parent ID</div>
+          <input id="pe_id_${p.id}" value="${p.id}"
+            style="width:100%;padding:7px 10px;border:2px solid var(--border);border-radius:9px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;outline:none;">
+        </div>
+        <div style="flex:2;min-width:200px;">
+          <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Display Name</div>
+          <input id="pe_name_${p.id}" value="${autoName}"
+            style="width:100%;padding:7px 10px;border:2px solid var(--border);border-radius:9px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;outline:none;">
+        </div>
+        <div style="min-width:110px;">
+          <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Password</div>
+          <input id="pe_pw_${p.id}" value="${p.pw}"
+            style="width:100%;padding:7px 10px;border:2px solid var(--border);border-radius:9px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;">
+        </div>
+        <div style="display:flex;gap:6px;padding-bottom:1px;">
+          <button class="btn-sm btn-green" onclick="saveParentEdit('${p.id}')">Save</button>
+          <button class="btn-sm btn-red"   onclick="deleteParent('${p.id}')">Delete</button>
+        </div>
+      </div>
+      <div style="font-weight:800;font-size:13px;color:var(--navy);margin-bottom:8px;">
+        📚 Linked Children (${linked.length})
+      </div>
+      ${childList}
+      <div style="margin-top:12px;padding-top:12px;border-top:2px dashed var(--border);">
+        <div style="font-weight:700;font-size:13px;color:var(--navy);margin-bottom:6px;">➕ Add another child?</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input id="add_child_${p.id}" placeholder="Enter student ID (e.g. jimin02)"
+            style="flex:1;padding:8px 12px;border:2px solid var(--border);border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;"
+            onkeydown="if(event.key==='Enter')addChildToParent('${p.id}')">
+          <button class="btn-sm btn-navy" onclick="addChildToParent('${p.id}')">+ Add</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function rebuildParentCards() {
+  const el = document.getElementById('parentCardsList');
+  if (!el) { renderTeacher(); setTimeout(()=>document.getElementById('parentMgmt')?.scrollIntoView({behavior:'smooth',block:'start'}),50); return; }
+  const store = getStore();
+  el.innerHTML = buildParentCards(store);
+}
+
+function addChildToParent(pid) {
+  const input = document.getElementById(`add_child_${pid}`);
+  const cid = (input?.value || '').trim();
+  if (!cid) { input?.focus(); return; }
+  const store = getStore();
+  const student = store.users.find(u=>u.id===cid && u.role==='student');
+  if (!student) { alert(`Student ID "${cid}" not found.`); return; }
+  const parent = store.users.find(u=>u.id===pid);
+  if (!parent) return;
+  if (!parent.childIds) parent.childIds = [];
+  if (parent.childIds.includes(cid)) { alert(`${englishName(cid)} is already linked.`); return; }
+  parent.childIds.push(cid);
+  parent.name = parentDisplayName(parent.childIds);
+  saveStore(store);
+  rebuildParentCards();
+}
+
+function removeChildFromParent(pid, cid) {
+  if (!confirm(`Remove ${englishName(cid)} from this parent account?`)) return;
+  const store = getStore();
+  const parent = store.users.find(u=>u.id===pid);
+  if (!parent) return;
+  parent.childIds = (parent.childIds||[]).filter(id=>id!==cid);
+  parent.name = parentDisplayName(parent.childIds);
+  saveStore(store);
+  rebuildParentCards();
+}
+
+function saveParentEdit(oldId) {
+  const store = getStore();
+  const u = store.users.find(u=>u.id===oldId);
+  if (!u) return;
+  const newId   = document.getElementById(`pe_id_${oldId}`).value.trim();
+  const newName = document.getElementById(`pe_name_${oldId}`).value.trim();
+  const newPw   = document.getElementById(`pe_pw_${oldId}`).value.trim();
+  if (!newId) { alert('Please enter an ID.'); return; }
+  if (newId !== oldId && store.users.find(u=>u.id===newId)) {
+    alert('This ID already exists.'); return;
+  }
+  if (newId !== oldId) u.id = newId;
+  if (newName) u.name = newName;
+  if (newPw)   u.pw   = newPw;
+  saveStore(store);
+  renderTeacher();
+  setTimeout(()=>{ document.getElementById('parentMgmt')?.scrollIntoView({behavior:'smooth',block:'start'}); }, 50);
+}
+
+function deleteParent(id) {
+  if (!confirm(`Delete parent '${id}'?`)) return;
+  const store = getStore();
+  store.users = store.users.filter(u=>u.id!==id);
+  saveStore(store);
+  renderTeacher();
+}
+
+function addStudent() {
+  const id=document.getElementById('ns_id').value.trim();
+  const name=document.getElementById('ns_name').value.trim();
+  const year=parseInt(document.getElementById('ns_year').value);
+  const pw=document.getElementById('ns_pw').value.trim();
+  if(!id||!name||!pw){alert('Please fill in all fields.');return;}
+  const store=getStore();
+  if(store.users.find(u=>u.id===id)){alert('This ID already exists.');return;}
+  store.users.push({id,pw,role:'student',name,year});
+  saveStore(store);
+  document.getElementById('ns_ok').style.display='block';
+  setTimeout(()=>renderTeacher(),800);
+}
+
+function addParent() {
+  const id=document.getElementById('np_id').value.trim();
+  const pw=document.getElementById('np_pw').value.trim();
+  const firstChildId=document.getElementById('np_child_id').value.trim();
+  if(!id||!pw){alert('Please fill in ID and password.');return;}
+  const store=getStore();
+  if(store.users.find(u=>u.id===id)){alert('This ID already exists.');return;}
+  const childIds=[];
+  if(firstChildId){
+    const student=store.users.find(u=>u.id===firstChildId&&u.role==='student');
+    if(!student){alert(`Student ID "${firstChildId}" not found.`);return;}
+    childIds.push(firstChildId);
+  }
+  const name=parentDisplayName(childIds);
+  store.users.push({id,pw,role:'parent',name,childIds});
+  saveStore(store);
+  renderTeacher();
+  setTimeout(()=>{ document.getElementById('parentMgmt')?.scrollIntoView({behavior:'smooth',block:'start'}); }, 50);
+}
+
+// ═══════════════════════════════════════
+//  STUDENT EXAM
+// ═══════════════════════════════════════
+let qIdx = 0;
+let currentSetIdx = null;      // null=set list screen, 0+=active set index
+
+function renderStudent() {
+  const store = getStore();
+  const p     = store.currentPeriod;
+  const hw    = store.homeworkSets[hwKey(currentUser.year, p)];
+
+  if (!hw || !hw.sets || hw.sets.length === 0) {
+    document.getElementById('mainContent').innerHTML = `
+      <div class="exam-wrap">
+        <div class="empty" style="background:#fff;border-radius:var(--radius);padding:60px;box-shadow:0 2px 10px rgba(0,0,0,.06);">
+          <div style="font-size:48px;margin-bottom:16px;">📭</div>
+          <div style="font-size:18px;font-weight:800;color:var(--navy);">No homework assigned yet for ${periodLabel(p)}</div>
+          <div style="margin-top:8px;color:var(--muted);">Your teacher will post homework here when it's ready!</div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  // no set selected → show set list
+  if (currentSetIdx === null) { renderSetList(hw, store, p); return; }
+
+  const set = hw.sets[currentSetIdx];
+  if (!set) { currentSetIdx = null; renderStudent(); return; }
+
+  const qs  = set.questions;
+  const key = subKey(currentUser.id, p, currentSetIdx);
+  if (!store.submissions[key]) {
+    store.submissions[key] = { answers:{}, submitted:false, submitTime:null };
+    saveStore(store);
+  }
+  const sub = store.submissions[key];
+  if (qIdx >= qs.length) qIdx = Math.max(0, qs.length-1);
+
+  const answered = Object.keys(sub.answers).length;
+  const total    = qs.length;
+  const pct      = Math.round((qIdx+1)/total*100);
+
+  // submitted → show results screen
+  if (sub.submitted) {
+    const autoQs  = qs.filter(q=>q.type!=='written');
+    const correct = autoQs.filter(q=>sub.answers[q.id]===q.answer).length;
+    const score   = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
+    const scoreMsg = score>=90?'🎉 Outstanding!':score>=70?'👍 Well done!':score>=50?'💪 Keep going!':'📚 Study more!';
+
+    let html = `
+      <div class="exam-wrap">
+        <div class="score-banner">
+          <div class="score-big">${score}%</div>
+          <div class="score-msg">${scoreMsg} &nbsp;${correct}/${autoQs.length} correct</div>
+        </div>
+        <div style="text-align:center;margin-bottom:20px;">
+          <button class="btn-nav" onclick="currentSetIdx=null;renderStudent()">← Back to Set List</button>
+        </div>
+        <div class="results-wrap">
+          <h3>📝 ${set.title} Results</h3>`;
+
+    qs.forEach((q,i) => {
+      const ans = sub.answers[q.id];
+      let cls='res-none', status='No answer';
+      if (ans!==undefined) {
+        const ok = q.answer && ans===q.answer;
+        cls = ok?'res-ok':'res-wrong';
+        status = ok ? `✅ Correct (${ans})` : `❌ Wrong — Your answer: ${ans}, Correct: ${q.answer||'?'}`;
+      }
+      html += `<div class="res-q ${cls}">
+        <b>Q${i+1}.</b>
+        <span style="flex:1;">${q.text.substring(0,80)}${q.text.length>80?'...':''} — ${status}</span>
+      </div>`;
+    });
+    html += `</div></div>`;
+    document.getElementById('mainContent').innerHTML = html;
+    return;
+  }
+
+  // quiz screen
+  const q = qs[qIdx];
+  const userAns = sub.answers[q.id];
+  const letters = ['A','B','C','D','E'];
+
+  let html = `<div class="exam-wrap">
+    <div style="margin-bottom:12px;">
+      <button class="btn-nav" style="font-size:13px;padding:8px 16px;" onclick="currentSetIdx=null;qIdx=0;renderStudent()">← Set List</button>
+    </div>
+    <div class="exam-header-card">
+      <div class="exam-header-top">
+        <div>
+          <div class="exam-title">📝 ${set.title}</div>
+          <div class="exam-sub"><span translate="no">${englishName(currentUser.id)}</span> · ${periodLabel(p)} · ${total} questions</div>
+        </div>
+        <div class="exam-counter">
+          <div class="big">${answered}/${total}</div>
+          <div class="lbl">answered</div>
+        </div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+        <div class="progress-lbl"><span>Q${qIdx+1} / ${total}</span><span>${pct}%</span></div>
+      </div>
+    </div>
+
+    <div class="q-nav">`;
+
+  qs.forEach((qq,i) => {
+    const done = sub.answers[qq.id]!==undefined;
+    const cur  = i===qIdx;
+    let cls='qn-btn';
+    if(cur) cls+=' cur';
+    else if(done) cls+=' done';
+    html += `<button class="${cls}" onclick="goQ(${i})">${i+1}</button>`;
+  });
+  html += `</div>
+
+    <div class="question-card">
+      <div class="qc-num-row">
+        <div class="qc-num">${qIdx+1}</div>
+        <span class="type-badge ${q.type==='mc'?'badge-mc':q.type==='ox'?'badge-ox':'badge-sa'}">
+          ${q.type==='mc'?'Multiple Choice':q.type==='ox'?'O/X':'Short Answer'}
+        </span>
+        ${(() => {
+          if (currentUser.year < 7) return '';
+          const ca = getCalcAllowed(set.calculatorRanges, qIdx+1);
+          if (ca === null) return '';
+          return ca
+            ? '<span style="background:#dcfce7;color:#166534;font-size:12px;font-weight:800;padding:3px 10px;border-radius:20px;">🔢 Calculator Allowed</span>'
+            : '<span style="background:#fee2e2;color:#991b1b;font-size:12px;font-weight:800;padding:3px 10px;border-radius:20px;">🚫 No Calculator</span>';
+        })()}
+      </div>
+      <div class="qc-text">${q.text}</div>`;
+
+  if (q.type==='mc' && q.options) {
+    html += `<div class="options">`;
+    q.options.forEach((opt,i) => {
+      const letter = letters[i];
+      const sel = userAns===letter ? 'sel' : '';
+      html += `<button class="opt-btn ${sel}" onclick="answerMC('${q.id}','${letter}')">
+        <span class="opt-circle">${letter}</span>${opt}
+      </button>`;
+    });
+    html += `</div>`;
+  } else if (q.type==='ox') {
+    const oSel = userAns==='O'?'sel-o':'';
+    const xSel = userAns==='X'?'sel-x':'';
+    html += `<div class="ox-row">
+      <button class="ox-btn ${oSel}" onclick="answerOX('${q.id}','O')">⭕ True</button>
+      <button class="ox-btn ${xSel}" onclick="answerOX('${q.id}','X')">❌ False</button>
+    </div>`;
+  } else {
+    html += `<input class="sa-input" id="sa_${q.id}" type="text"
+      placeholder="Enter your answer..." value="${userAns||''}"
+      oninput="answerSA('${q.id}',this.value)">`;
+  }
+
+  html += `</div><!-- end question-card -->
+
+    <div class="nav-row">
+      <button class="btn-nav" onclick="goQ(${qIdx-1})" ${qIdx===0?'disabled':''}>← Previous</button>`;
+
+  if (qIdx===total-1) {
+    const allDone = qs.every(qq=>sub.answers[qq.id]!==undefined);
+    html += `<button class="btn-submit-all" onclick="doSubmit()" ${allDone?'':'disabled'}>
+      Submit ✓
+    </button>`;
+  } else {
+    html += `<button class="btn-nav" onclick="goQ(${qIdx+1})">Next →</button>`;
+  }
+  html += `</div></div>`; // nav-row, exam-wrap
+
+  document.getElementById('mainContent').innerHTML = html;
+}
+
+// ── calculator range management ─────────────────────────────
+function addCalcRange() {
+  const from = parseInt(document.getElementById('cr_from').value);
+  const to   = parseInt(document.getElementById('cr_to').value);
+  const allowed = document.getElementById('cr_allowed').value === '1';
+  if (isNaN(from) || isNaN(to) || from < 1 || to < from) {
+    alert('Please enter a valid range (From ≤ To).'); return;
+  }
+  editingCalcRanges.push({ from, to, allowed });
+  renderCalcRangeList();
+  document.getElementById('cr_from').value = '';
+  document.getElementById('cr_to').value = '';
+}
+
+function removeCalcRange(idx) {
+  editingCalcRanges.splice(idx, 1);
+  renderCalcRangeList();
+}
+
+function renderCalcRangeList() {
+  const el = document.getElementById('calcRangeList');
+  if (!el) return;
+  if (editingCalcRanges.length === 0) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:13px;margin-bottom:8px;">No ranges set (calculator badge hidden)</div>';
+    return;
+  }
+  el.innerHTML = editingCalcRanges.map((r,i) => `
+    <div style="display:flex;align-items:center;gap:8px;background:#fff;border-radius:8px;padding:8px 12px;margin-bottom:6px;">
+      <span style="font-weight:700;color:var(--navy);">Q${r.from} ~ Q${r.to}</span>
+      <span style="font-weight:800;${r.allowed?'color:#166534':'color:#991b1b'}">${r.allowed?'🔢 Allowed':'🚫 Not Allowed'}</span>
+      <button onclick="removeCalcRange(${i})" style="margin-left:auto;background:#fee2e2;border:none;border-radius:6px;cursor:pointer;color:#991b1b;font-size:12px;padding:2px 8px;font-weight:700;">Delete</button>
+    </div>`).join('');
+}
+
+// return calculator permission for the given question number (null = not configured)
+function getCalcAllowed(ranges, qNum) {
+  if (!ranges || ranges.length === 0) return null;
+  for (const r of ranges) {
+    if (qNum >= r.from && qNum <= r.to) return r.allowed;
+  }
+  return null;
+}
+
+function renderSetList(hw, store, p) {
+  const sets = hw.sets;
+  let html = `<div class="exam-wrap">
+    <div class="exam-header-card" style="margin-bottom:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div class="exam-title">📚 ${periodLabel(p)} Homework</div>
+          <div class="exam-sub">${sets.length} set${sets.length>1?'s':''} assigned</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:20px;font-weight:900;color:var(--gold);" translate="no">${englishName(currentUser.id)}</div>
+          <div style="font-size:12px;opacity:.7;">Year ${currentUser.year}</div>
+        </div>
+      </div>
+    </div>
+    <div class="set-list">`;
+
+  sets.forEach((set, idx) => {
+    const key     = subKey(currentUser.id, p, idx);
+    const sub     = store.submissions[key];
+    const prevKey = idx > 0 ? subKey(currentUser.id, p, idx-1) : null;
+    const prevOk  = idx === 0 || store.submissions[prevKey]?.submitted;
+    const isSubmitted = !!sub?.submitted;
+    const isLocked    = !prevOk && !isSubmitted;
+    const answered    = sub ? Object.keys(sub.answers||{}).length : 0;
+
+    let iconClass, iconEmoji, cardClass, statusText, scoreHtml='';
+    if (isLocked) {
+      iconClass='set-icon-locked'; iconEmoji='🔒'; cardClass='locked';
+      statusText='Complete the previous set to unlock';
+    } else if (isSubmitted) {
+      const autoQs = set.questions.filter(q=>q.type!=='written');
+      const correct = autoQs.filter(q=>sub.answers[q.id]===q.answer).length;
+      const pct = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
+      const cls = pct>=80?'pill-a':pct>=60?'pill-b':'pill-c';
+      iconClass='set-icon-done'; iconEmoji='✅'; cardClass='done';
+      statusText='Completed';
+      scoreHtml=`<span class="score-pill ${cls}" style="margin-left:8px;">${pct}%</span>`;
+    } else {
+      iconClass='set-icon-open'; iconEmoji=answered>0?'📝':'📖'; cardClass='unlocked';
+      statusText = answered>0 ? `In progress (${answered}/${set.questions.length} questions)` : `${set.questions.length} questions`;
+    }
+
+    html += `
+      <div class="set-card ${cardClass}" ${!isLocked ? `onclick="startSet(${idx})"` : ''}>
+        <div class="set-icon ${iconClass}" style="color:${isLocked?'#94a3b8':isSubmitted?'#fff':'var(--gold)'};">${iconEmoji}</div>
+        <div class="set-info">
+          <div class="set-name">${set.title}</div>
+          <div class="set-meta">${statusText}${scoreHtml}</div>
+        </div>
+        ${!isLocked && !isSubmitted ? `<button class="btn-sm btn-navy" onclick="event.stopPropagation();startSet(${idx})">${answered>0?'Continue →':'Start →'}</button>` : ''}
+        ${isSubmitted ? `<button class="btn-sm" style="background:#dcfce7;color:#166534;" onclick="event.stopPropagation();startSet(${idx})">View Results</button>` : ''}
+      </div>`;
+  });
+
+  html += `</div></div>`;
+  document.getElementById('mainContent').innerHTML = html;
+}
+
+function startSet(idx) {
+  currentSetIdx = idx;
+  qIdx = 0;
+  renderStudent();
+}
+
+function goQ(i) {
+  const store=getStore();
+  const hw=store.homeworkSets[hwKey(currentUser.year,store.currentPeriod)];
+  const qs=hw?.sets?.[currentSetIdx]?.questions||[];
+  if(i<0||i>=qs.length) return;
+  qIdx=i;
+  renderStudent();
+}
+
+function saveAnswer(qid, val) {
+  const store=getStore();
+  const key=subKey(currentUser.id,store.currentPeriod,currentSetIdx??0);
+  if(!store.submissions[key]) store.submissions[key]={answers:{},submitted:false,submitTime:null};
+  if(store.submissions[key].submitted) return;
+  store.submissions[key].answers[qid]=val;
+  saveStore(store);
+}
+
+function answerMC(qid, letter) {
+  saveAnswer(qid, letter);
+  // Auto-advance after short delay
+  setTimeout(()=>{ qIdx++; renderStudent(); }, 300);
+}
+function answerOX(qid, val) {
+  saveAnswer(qid, val);
+  setTimeout(()=>{ qIdx++; renderStudent(); }, 300);
+}
+function answerSA(qid, val) {
+  saveAnswer(qid, val.trim());
+}
+
+function doSubmit() {
+  if(!confirm('Submit your homework? You cannot make changes after submitting.')) return;
+  const store=getStore();
+  const key=subKey(currentUser.id,store.currentPeriod,currentSetIdx??0);
+  store.submissions[key].submitted=true;
+  store.submissions[key].submitTime=new Date().toISOString();
+  saveStore(store);
+  qIdx=0;
+  renderStudent(); // show results screen (includes back-to-set-list button)
+}
+
+// ═══════════════════════════════════════
+//  PARENT
+// ═══════════════════════════════════════
+let currentParentChildId = null;
+
+function selectParentChild(id) {
+  currentParentChildId = id;
+  renderParent();
+}
+
+function renderParent() {
+  const store = getStore();
+  const childIds = currentUser.childIds || [];
+  const children = store.users.filter(u => u.role==='student' && childIds.includes(u.id));
+
+  if (!children.length) {
+    document.getElementById('mainContent').innerHTML='<div class="empty">No children linked to this account.</div>';
+    return;
+  }
+
+  // 선택된 자녀가 없거나 유효하지 않으면 첫 번째 자녀 선택
+  if (!currentParentChildId || !children.find(c=>c.id===currentParentChildId)) {
+    currentParentChildId = children[0].id;
+  }
+  const child = children.find(c=>c.id===currentParentChildId);
+  const p = store.currentPeriod;
+  const hw = store.homeworkSets[hwKey(child.year, p)];
+
+  // ── 헤더 + 자녀 탭 ──
+  let html = `
+    <div class="parent-header">
+      <div class="parent-avatar">👨‍👩‍👧</div>
+      <div style="flex:1;">
+        <div class="parent-child-name">${parentDisplayName(currentUser.childIds)}</div>
+        <div class="parent-child-sub">${children.map(c=>`${englishName(c.id)} (Y${c.year})`).join(' · ')} · ${periodLabel(p)}</div>
+      </div>
+    </div>`;
+
+  // 자녀가 2명 이상이면 탭 표시
+  if (children.length > 1) {
+    html += `<div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">`;
+    children.forEach(c => {
+      const isActive = c.id === currentParentChildId;
+      html += `<button onclick="selectParentChild('${c.id}')" style="
+        padding:10px 20px;border-radius:12px;border:2px solid ${isActive?'var(--navy)':'var(--border)'};
+        background:${isActive?'var(--navy)':'#fff'};color:${isActive?'#fff':'var(--navy)'};
+        font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;cursor:pointer;">
+        ${englishName(c.id)} <span style="font-size:12px;opacity:.7;">(Y${c.year})</span>
+      </button>`;
+    });
+    html += `</div>`;
+  }
+
+  if (!hw || !hw.sets || hw.sets.length === 0) {
+    html += `<div class="info-card"><div class="empty">No homework assigned yet.</div></div>`;
+    document.getElementById('mainContent').innerHTML=html;
+    return;
+  }
+
+  const doneCount = hw.sets.filter((_,idx) => store.submissions[subKey(child.id,p,idx)]?.submitted).length;
+  html += `<div class="info-card">
+    <h3>📚 ${periodLabel(p)} Homework Progress</h3>
+    <div style="font-size:15px;color:var(--muted);margin-bottom:16px;">
+      ${doneCount}/${hw.sets.length} set${hw.sets.length>1?'s':''} completed
+    </div>`;
+
+  hw.sets.forEach((set, idx) => {
+    const sub = store.submissions[subKey(child.id, p, idx)];
+    const answered = sub ? Object.keys(sub.answers||{}).length : 0;
+    if (!sub?.submitted) {
+      html += `<div style="background:#f8f6ef;border-radius:10px;padding:14px 18px;margin-bottom:10px;">
+        <div style="font-weight:800;color:var(--navy);">${set.title}</div>
+        <div style="font-size:14px;color:var(--muted);margin-top:4px;">
+          ${answered>0 ? `🔄 In progress (${answered}/${set.questions.length} questions)` : '⏳ Not started yet'}
+        </div>
+      </div>`;
+    } else {
+      const autoQs = set.questions.filter(q=>q.type!=='written');
+      const correct = autoQs.filter(q=>sub.answers[q.id]===q.answer).length;
+      const pct = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
+      const cls = pct>=80?'pill-a':pct>=60?'pill-b':'pill-c';
+      const scoreMsg = pct>=80?'🎉 Excellent!':pct>=60?'👍 Good job!':'💪 Keep it up!';
+      html += `<div style="background:#f0fdf4;border-radius:10px;padding:14px 18px;margin-bottom:10px;border-left:4px solid var(--green);">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="font-weight:800;color:var(--navy);">${set.title}</div>
+          <span class="score-pill ${cls}">${pct}%</span>
+          <span style="font-size:13px;color:var(--muted);">${correct}/${autoQs.length} correct · ${scoreMsg}</span>
+        </div>
+      </div>`;
+    }
+  });
+  html += `</div>`;
+
+  document.getElementById('mainContent').innerHTML=html;
+}
+
+// ═══════════════════════════════════════
+//  PARSE HELPERS
+// ═══════════════════════════════════════
+function parseQuestions(raw) {
+  // ── 1. Normalize ──────────────────────────────────────────
+  let text = raw
+    .replace(/\r\n/g,'\n').replace(/\r/g,'\n')
+    .replace(/[\u200B\u200C\u200D\uFEFF]/g,'')   // zero-width chars
+    .replace(/\u00A0/g,' ')                        // non-breaking space
+    .replace(/[""]/g,'"').replace(/['']/g,"'");   // smart quotes
+
+  const lines = text.split('\n');
+  const result = [];
+  let cur = null, body = [];
+
+  // ── 2. Helpers ────────────────────────────────────────────
+  // Question start: "1.", "1)", "Q1.", "Q1:", etc.
+  const RE_QSTART = /^(?:[Qq]uestion|[Qq]|문제)?\s*(\d+)\s*(?:[.)．、:：번호])\s*(.*)/i;
+
+  // Split a line into individual options (handles 2+ options on one line)
+  // e.g. "A) foo   B) bar" or "(A) foo  (B) bar" → ["foo", "bar"]
+  const splitOptions = line => {
+    // Convert (A)-(E) to A)-(E) format first, then split by option markers
+    // (^|\s) condition prevents replacing parentheses within question content
+    const norm = line.replace(/(^|\s)\(\s*([A-E])\s*\)\s*/g, '$1$2) ');
+    const RE_MARKER = /(?=(?:[A-Ea-e]|[①②③④⑤]|[가나다라마])\s*[.)．])/g;
+    const parts = norm.split(RE_MARKER).map(p=>p.trim()).filter(Boolean);
+    return parts.map(p => p.replace(/^(?:[A-Ea-e①②③④⑤가나다라마])\s*[.)．]\s*/, '').trim())
+                .filter(Boolean);
+  };
+
+  // Detect option lines: A) a) ① format + (A)-(E) uppercase bracket format
+  const RE_OPT_START = /^(?:[A-Ea-e]|[①②③④⑤]|[가나다라마])\s*[.)．]/;
+  const isOptLine = s => {
+    const t = s.trim();
+    return RE_OPT_START.test(t) || /^\(\s*[A-E]\s*\)/.test(t);
+  };
+
+  // ── 3. Flush current question into result ─────────────────
+  const flush = () => {
+    if (!cur) return;
+    const trimmed = body.map(l=>l.trim()).filter(Boolean);
+
+    // Expand lines that have multiple options on one line
+    const expanded = [];
+    for (const l of trimmed) {
+      if (isOptLine(l)) {
+        splitOptions(l).forEach(opt => expanded.push('__OPT__' + opt));
+      } else {
+        expanded.push(l);
+      }
+    }
+
+    const optTexts    = expanded.filter(l=>l.startsWith('__OPT__')).map(l=>l.slice(7));
+    const nonOptLines = expanded.filter(l=>!l.startsWith('__OPT__'));
+
+    // If question text was empty (number only on its line), grab first non-option line
+    let qText = cur.text || nonOptLines[0] || '';
+
+    let type = 'sa', options = null;
+
+    if (optTexts.length >= 2) {
+      type = 'mc';
+      options = optTexts;
+    } else {
+      const full = (qText + ' ' + trimmed.join(' ')).toLowerCase();
+      if (/true.{0,6}false|t\s*\/\s*f|\[ox\]|ox\s*문제|참.*거짓|맞.*틀/.test(full)) {
+        type = 'ox';
+      }
+    }
+
+    if (qText) result.push({num:cur.num, text:qText.trim(), type, options, answer:null});
+    cur = null; body = [];
+  };
+
+  // ── 4. Parse line by line ─────────────────────────────────
+  for (const line of lines) {
+    const t = line.trim();
+    if (!t) continue;                    // skip blank lines
+    const m = t.match(RE_QSTART);
+    if (m) {
+      flush();
+      cur = { num: parseInt(m[1]), text: m[2].trim() };
+      body = [];
+    } else if (cur) {
+      body.push(t);
+    }
+  }
+  flush();
+
+  return result.sort((a,b) => a.num - b.num);
+}
+
+function parseAnswers(raw) {
+  const ans = {};
+  if (!raw) return ans;
+
+  const normalize = a => {
+    a = a.trim();
+    if (!a) return null;
+    if (/^(o|true|yes|t|맞|참|○|〇)$/i.test(a)) return 'O';
+    if (/^(x|false|no|f|틀|거짓|×)$/i.test(a)) return 'X';
+    return a.toUpperCase();
+  };
+
+  const text = raw.replace(/\r\n/g,'\n').replace(/\r/g,'\n')
+                   .replace(/[\u200B\u200C\u200D\uFEFF]/g,'')
+                   .replace(/\u00A0/g,' ');
+
+  for (const line of text.split('\n')) {
+    const t = line.trim();
+    if (!t) continue;
+
+    // ── table (tab-separated) format: "1\tB" or "1\tB\t2\tC\t3\tD ..." ──
+    if (t.includes('\t')) {
+      const cells = t.split('\t').map(c=>c.trim()).filter(Boolean);
+      // read in pairs: [num, ans, num, ans, ...]
+      for (let i = 0; i < cells.length - 1; i += 2) {
+        const num = parseInt(cells[i]);
+        const val = normalize(cells[i+1]);
+        if (!isNaN(num) && val) ans[num] = val;
+      }
+      // if odd count, first cell may be a header; try offset by 1
+      if (cells.length % 2 !== 0) {
+        for (let i = 1; i < cells.length - 1; i += 2) {
+          const num = parseInt(cells[i]);
+          const val = normalize(cells[i+1]);
+          if (!isNaN(num) && val && !ans[num]) ans[num] = val;
+        }
+      }
+      continue;
+    }
+
+    // ── Q prefix + Answer: + (bracket) format: "Q1. Answer: (D) explanation..." ──
+    // Only recognise uppercase A-E + O/X (avoid misreading lowercase math expressions)
+    const mQA = t.match(/^[Qq]?\s*(\d+)\s*[.):\-]?\s*(?:[Aa]nswer\s*[：:]\s*)?\(\s*([A-EOoXx])\s*\)/);
+    if (mQA) {
+      const num = parseInt(mQA[1]);
+      const val = normalize(mQA[2]);
+      if (!isNaN(num) && val) ans[num] = val;
+      continue;
+    }
+
+    // ── Q prefix + Answer: keyword format: "Q1. Answer: D explanation..." ──
+    const mAW = t.match(/^[Qq]?\s*(\d+)\s*[.):\-]?\s*[Aa]nswer\s*[：:]\s*([A-Ea-eOoXx①②③④⑤\w])/);
+    if (mAW) {
+      const num = parseInt(mAW[1]);
+      const val = normalize(mAW[2]);
+      if (!isNaN(num) && val) ans[num] = val;
+      continue;
+    }
+
+    // ── Q prefix general format: "Q1. B" / "Q32. D" ──
+    const mQ = t.match(/^[Qq]\s*(\d+)\s*[.):\-]?\s*([A-Ea-eOoXx①②③④⑤가-힣\w]+)/);
+    if (mQ) {
+      const num = parseInt(mQ[1]);
+      const val = normalize(mQ[2]);
+      if (!isNaN(num) && val) ans[num] = val;
+      continue;
+    }
+
+    // ── general format: "1. B" / "1) B" / "1 B" / "1:B" ──
+    const m = t.match(/^(\d+)\s*[.):\-]?\s*([A-Ea-eOoXx①②③④⑤가-힣\w]+)/);
+    if (m) {
+      const num = parseInt(m[1]);
+      const val = normalize(m[2]);
+      if (!isNaN(num) && val) ans[num] = val;
+    }
+  }
+  return ans;
+}
+
+// ═══════════════════════════════════════
+//  MODAL
+// ═══════════════════════════════════════
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+</script>
+</body>
+</html>
