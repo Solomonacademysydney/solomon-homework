@@ -1031,6 +1031,11 @@ function renderTeacherSettings(store) {
         <div class="field"><label>New Password</label><input id="ta_pw" type="password" placeholder="Leave blank to keep current"></div>
       </div>
       <button class="btn-sm btn-navy" onclick="saveTeacherAccount()">Save Account ✓</button>
+      <div style="margin-top:16px;padding-top:16px;border-top:2px solid var(--border);">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">📡 Firebase 동기화</div>
+        <button class="btn-sm btn-gold" onclick="forceUploadToFirebase()">⬆️ 이 컴 데이터 → Firebase 업로드</button>
+        <button class="btn-sm btn-blue" onclick="forceDownloadFromFirebase()" style="margin-left:8px;">⬇️ Firebase → 이 컴으로 다운로드</button>
+      </div>
     </div>
     <div class="settings-card" style="margin-top:8px;">
       <h2>👨‍🎓 Student Management</h2>
@@ -1942,6 +1947,29 @@ function saveMyAccount() {
   setTimeout(() => { const el = document.getElementById('myPwOk'); if(el) el.style.display='none'; }, 3000);
 }
 
+function forceUploadToFirebase() {
+  if (!window.FB_REF) { alert('Firebase가 연결되지 않았습니다.'); return; }
+  const localData = localStorage.getItem(STORE_KEY);
+  if (!localData) { alert('로컬 데이터가 없습니다.'); return; }
+  if (!confirm('이 컴퓨터의 데이터를 Firebase로 업로드합니다.\n다른 기기의 데이터는 덮어써집니다. 계속할까요?')) return;
+  window.FB_REF.set(JSON.parse(localData), (err) => {
+    if (err) alert('업로드 실패: ' + err.message);
+    else alert('✅ Firebase 업로드 완료! 이제 다른 기기에서도 같은 데이터가 보입니다.');
+  });
+}
+
+function forceDownloadFromFirebase() {
+  if (!window.FB_REF) { alert('Firebase가 연결되지 않았습니다.'); return; }
+  if (!confirm('Firebase 데이터를 이 컴퓨터로 다운로드합니다.\n로컬 데이터는 덮어써집니다. 계속할까요?')) return;
+  window.FB_REF.once('value', (snapshot) => {
+    const data = snapshot.val();
+    if (!data) { alert('Firebase에 데이터가 없습니다.'); return; }
+    localStorage.setItem(STORE_KEY, JSON.stringify(data));
+    alert('✅ 다운로드 완료!');
+    renderTeacher();
+  });
+}
+
 function saveTeacherAccount() {
   const newId = document.getElementById('ta_id').value.trim();
   const newPw = document.getElementById('ta_pw').value.trim();
@@ -2005,15 +2033,37 @@ const firebaseConfig = {
     window.FB_REF.once('value', (snapshot) => {
       clearTimeout(loadingTimeout);
       const fbData = snapshot.val();
-      if (fbData) {
-        // Firebase에 데이터 있으면 → 로컬에 반영
+      const localRaw = localStorage.getItem(STORE_KEY);
+      const localData = localRaw ? JSON.parse(localRaw) : null;
+
+      if (fbData && localData) {
+        // 둘 다 있으면 유저 수가 많은 쪽이 최신 데이터
+        const fbUsers = (fbData.users || []).length;
+        const localUsers = (localData.users || []).length;
+        if (localUsers > fbUsers) {
+          // 로컬이 더 많으면 Firebase로 업로드
+          window.FB_REF.set(localData);
+        } else {
+          // Firebase가 더 많으면 로컬에 반영
+          localStorage.setItem(STORE_KEY, JSON.stringify(fbData));
+        }
+      } else if (fbData) {
         localStorage.setItem(STORE_KEY, JSON.stringify(fbData));
-      } else {
-        // Firebase가 비어있으면 → 로컬 데이터를 Firebase로 업로드
-        const localData = localStorage.getItem(STORE_KEY);
-        if (localData) window.FB_REF.set(JSON.parse(localData));
+      } else if (localData) {
+        window.FB_REF.set(localData);
       }
+
       window.fbReady = true;
       document.getElementById('loadingOverlay').style.display = 'none';
     }, () => {
-      clearTime
+      clearTimeout(loadingTimeout);
+      window.fbReady = false;
+      document.getElementById('loadingOverlay').style.display = 'none';
+    });
+  } catch(e) {
+    document.getElementById('loadingOverlay').style.display = 'none';
+  }
+})();
+</script>
+</body>
+</html>
