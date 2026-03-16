@@ -7,6 +7,8 @@
 <meta http-equiv="Content-Language" content="en">
 <title>Solomon Math Academy</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Baloo+2:wght@600;700;800&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
 :root {
   --navy:#162040; --gold:#d4af37; --gold2:#b8960c;
@@ -16,6 +18,12 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* ── LOADING OVERLAY ── */
+#loadingOverlay{position:fixed;inset:0;background:#0b1220;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:20px;}
+.loading-spinner{width:52px;height:52px;border:4px solid rgba(212,175,55,.2);border-top-color:#d4af37;border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{color:#d4af37;font-family:'Cinzel',serif;font-size:14px;letter-spacing:4px;text-transform:uppercase;}
 
 /* ── LOGIN ── */
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
@@ -272,6 +280,12 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 </head>
 <body>
 
+<!-- ══ LOADING ══ -->
+<div id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Loading...</div>
+</div>
+
 <!-- ══ LOGIN ══ -->
 <div id="loginScreen">
   <div class="login-left">
@@ -335,7 +349,12 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 // ═══════════════════════════════════════
 const STORE_KEY = 'solomon_hw_v3';
 
-function saveStore(d) { localStorage.setItem(STORE_KEY, JSON.stringify(d)); }
+function saveStore(d) {
+  localStorage.setItem(STORE_KEY, JSON.stringify(d));
+  if (window.fbReady && window.FB_REF) {
+    window.FB_REF.set(JSON.parse(JSON.stringify(d)));
+  }
+}
 
 function initStore() {
   const d = {
@@ -1950,6 +1969,48 @@ function saveTeacherAccount() {
 function closeModal() {
   document.getElementById('modal').classList.remove('open');
 }
+
+// ═══════════════════════════════════════
+//  FIREBASE 설정 ← 여기에 본인 설정값 입력
+// ═══════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "AIzaSyDvj7CDHZ7_Wci0palB9KpbjvCUkvcCRZY",
+  authDomain:        "solomon-76715.firebaseapp.com",
+  databaseURL:       "https://solomon-76715-default-rtdb.firebaseio.com",
+  projectId:         "solomon-76715",
+  storageBucket:     "solomon-76715.appspot.com",
+  messagingSenderId: "",
+  appId:             ""
+};
+
+(function initFirebase() {
+  try {
+    firebase.initializeApp(firebaseConfig);
+    window.FB_REF = firebase.database().ref('solomon_hw_v3');
+    window.fbReady = false;
+
+    // 다른 기기에서 변경 시 실시간 반영
+    window.FB_REF.on('value', (snapshot) => {
+      if (!window.fbReady) return;
+      const data = snapshot.val();
+      if (data) localStorage.setItem(STORE_KEY, JSON.stringify(data));
+    });
+
+    // 시작 시 Firebase에서 데이터 불러오기
+    window.FB_REF.once('value', (snapshot) => {
+      const data = snapshot.val();
+      if (data) localStorage.setItem(STORE_KEY, JSON.stringify(data));
+      window.fbReady = true;
+      document.getElementById('loadingOverlay').style.display = 'none';
+    }, () => {
+      // Firebase 실패해도 로컬로 계속 진행
+      window.fbReady = false;
+      document.getElementById('loadingOverlay').style.display = 'none';
+    });
+  } catch(e) {
+    document.getElementById('loadingOverlay').style.display = 'none';
+  }
+})();
 </script>
 </body>
 </html>
