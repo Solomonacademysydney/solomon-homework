@@ -1860,29 +1860,64 @@ function parseAnswers(raw) {
 function renderMyAccountCard() {
   return `
     <div class="settings-card" style="margin-top:16px;">
-      <h2>🔑 Change My Password</h2>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">Your ID: <b>${currentUser.id}</b></div>
+      <h2>🔑 My Account Settings</h2>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">Current ID: <b>${currentUser.id}</b></div>
       <div class="field-row">
-        <div class="field"><label>New Password</label><input id="myNewPw" type="password" placeholder="Enter new password"></div>
-        <div class="field"><label>Confirm Password</label><input id="myConfirmPw" type="password" placeholder="Confirm new password"></div>
+        <div class="field"><label>New ID</label><input id="myNewId" placeholder="Leave blank to keep current"></div>
+        <div class="field"><label>New Password</label><input id="myNewPw" type="password" placeholder="Leave blank to keep current"></div>
       </div>
-      <button class="btn-sm btn-navy" onclick="saveMyPassword()">Change Password ✓</button>
-      <div class="success-msg" id="myPwOk">✅ Password changed!</div>
+      <div class="field-row">
+        <div class="field"><label>Confirm New Password</label><input id="myConfirmPw" type="password" placeholder="Confirm new password"></div>
+      </div>
+      <button class="btn-sm btn-navy" onclick="saveMyAccount()">Save Changes ✓</button>
+      <div class="success-msg" id="myPwOk">✅ Account updated!</div>
     </div>`;
 }
 
-function saveMyPassword() {
-  const newPw = document.getElementById('myNewPw').value.trim();
-  const confirmPw = document.getElementById('myConfirmPw').value.trim();
-  if (!newPw) { alert('Please enter a new password.'); return; }
-  if (newPw !== confirmPw) { alert('Passwords do not match.'); return; }
+function saveMyAccount() {
+  const newId  = document.getElementById('myNewId').value.trim();
+  const newPw  = document.getElementById('myNewPw').value.trim();
+  const confPw = document.getElementById('myConfirmPw').value.trim();
+  if (!newId && !newPw) { alert('Please enter a new ID or password.'); return; }
+  if (newPw && newPw !== confPw) { alert('Passwords do not match.'); return; }
   const store = getStore();
-  const u = store.users.find(u => u.id === currentUser.id);
+  const oldId = currentUser.id;
+  const u = store.users.find(u => u.id === oldId);
   if (!u) return;
-  u.pw = newPw;
-  currentUser.pw = newPw;
+
+  if (newId && newId !== oldId) {
+    if (store.users.find(x => x.id === newId)) { alert('This ID already exists.'); return; }
+    // 학생이면 제출 기록 키도 업데이트
+    if (currentUser.role === 'student') {
+      Object.keys(store.submissions).forEach(k => {
+        if (k.startsWith(oldId + '_')) {
+          store.submissions[k.replace(oldId + '_', newId + '_')] = store.submissions[k];
+          delete store.submissions[k];
+        }
+      });
+      // 부모 childIds 업데이트
+      store.users.filter(u => u.role === 'parent').forEach(p => {
+        if (p.childIds) {
+          const i = p.childIds.indexOf(oldId);
+          if (i !== -1) p.childIds[i] = newId;
+        }
+      });
+    }
+    u.id = newId;
+    currentUser.id = newId;
+  }
+
+  if (newPw) { u.pw = newPw; currentUser.pw = newPw; }
   saveStore(store);
+
+  // 상단 바 이름 즉시 업데이트
+  document.getElementById('topbarUser').textContent =
+    currentUser.role === 'parent'
+      ? `${parentDisplayName(currentUser.childIds)} 👨‍👩‍👧`
+      : `${englishName(currentUser.id)} (Year ${currentUser.year})`;
+
   document.getElementById('myPwOk').style.display = 'block';
+  document.getElementById('myNewId').value = '';
   document.getElementById('myNewPw').value = '';
   document.getElementById('myConfirmPw').value = '';
   setTimeout(() => { const el = document.getElementById('myPwOk'); if(el) el.style.display='none'; }, 3000);
@@ -1904,6 +1939,7 @@ function saveTeacherAccount() {
   currentUser.id = newId;
   if (newPw) currentUser.pw = newPw;
   saveStore(store);
+  document.getElementById('topbarUser').textContent = 'Teacher';
   alert('✅ Teacher account updated.');
   renderTeacher();
 }
