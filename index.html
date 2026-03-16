@@ -1976,7 +1976,7 @@ function closeModal() {
 const firebaseConfig = {
   apiKey:            "AIzaSyDvj7CDHZ7_Wci0palB9KpbjvCUkvcCRZY",
   authDomain:        "solomon-76715.firebaseapp.com",
-  databaseURL:       "https://solomon-76715-default-rtdb.firebaseio.com",
+  databaseURL:       "https://solomon-76715-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId:         "solomon-76715",
   storageBucket:     "solomon-76715.appspot.com",
   messagingSenderId: "",
@@ -1996,14 +1996,20 @@ const firebaseConfig = {
       if (data) localStorage.setItem(STORE_KEY, JSON.stringify(data));
     });
 
+    // 5초 안에 Firebase 응답 없으면 강제로 로딩 해제
+    const loadingTimeout = setTimeout(() => {
+      document.getElementById('loadingOverlay').style.display = 'none';
+    }, 5000);
+
     // 시작 시 Firebase에서 데이터 불러오기
     window.FB_REF.once('value', (snapshot) => {
+      clearTimeout(loadingTimeout);
       const data = snapshot.val();
       if (data) localStorage.setItem(STORE_KEY, JSON.stringify(data));
       window.fbReady = true;
       document.getElementById('loadingOverlay').style.display = 'none';
     }, () => {
-      // Firebase 실패해도 로컬로 계속 진행
+      clearTimeout(loadingTimeout);
       window.fbReady = false;
       document.getElementById('loadingOverlay').style.display = 'none';
     });
