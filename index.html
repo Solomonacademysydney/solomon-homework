@@ -2004,19 +2004,16 @@ const firebaseConfig = {
     // 시작 시 Firebase에서 데이터 불러오기
     window.FB_REF.once('value', (snapshot) => {
       clearTimeout(loadingTimeout);
-      const data = snapshot.val();
-      if (data) localStorage.setItem(STORE_KEY, JSON.stringify(data));
+      const fbData = snapshot.val();
+      if (fbData) {
+        // Firebase에 데이터 있으면 → 로컬에 반영
+        localStorage.setItem(STORE_KEY, JSON.stringify(fbData));
+      } else {
+        // Firebase가 비어있으면 → 로컬 데이터를 Firebase로 업로드
+        const localData = localStorage.getItem(STORE_KEY);
+        if (localData) window.FB_REF.set(JSON.parse(localData));
+      }
       window.fbReady = true;
       document.getElementById('loadingOverlay').style.display = 'none';
     }, () => {
-      clearTimeout(loadingTimeout);
-      window.fbReady = false;
-      document.getElementById('loadingOverlay').style.display = 'none';
-    });
-  } catch(e) {
-    document.getElementById('loadingOverlay').style.display = 'none';
-  }
-})();
-</script>
-</body>
-</html>
+      clearTime
