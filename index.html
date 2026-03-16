@@ -385,6 +385,11 @@ function getStore() {
   const raw = localStorage.getItem(STORE_KEY);
   if (!raw) return initStore();
   const d = JSON.parse(raw);
+  // 필수 필드 누락 시 기본값 보완
+  if (!d.users)        d.users = [];
+  if (!d.homeworkSets) d.homeworkSets = {};
+  if (!d.submissions)  d.submissions = {};
+  if (!d.currentPeriod) d.currentPeriod = { year: new Date().getFullYear(), month: new Date().getMonth()+1, week: 1 };
   // migrate old currentWeek → currentPeriod
   if (d.currentWeek !== undefined && !d.currentPeriod) {
     d.currentPeriod = { year: new Date().getFullYear(), month: new Date().getMonth()+1, week: d.currentWeek };
@@ -474,9 +479,17 @@ function doLogin() {
     : user.role==='parent' ? `${parentDisplayName(user.childIds)} 👨‍👩‍👧`
     : `${englishName(user.id)} (Year ${user.year})`;
   document.getElementById('loginError').style.display = 'none';
-  if (user.role==='teacher') renderTeacher();
-  else if (user.role==='parent') renderParent();
-  else { qIdx=0; currentSetIdx=null; renderStudent(); }
+  try {
+    if (user.role==='teacher') renderTeacher();
+    else if (user.role==='parent') renderParent();
+    else { qIdx=0; currentSetIdx=null; renderStudent(); }
+  } catch(e) {
+    document.getElementById('mainContent').innerHTML =
+      `<div style="padding:40px;color:red;font-weight:800;">
+        ⚠️ 화면 로딩 오류:<br><br>${e.message}<br><br>
+        <pre style="font-size:12px;white-space:pre-wrap;">${e.stack}</pre>
+      </div>`;
+  }
 }
 
 function doLogout() {
