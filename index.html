@@ -1733,13 +1733,23 @@ function renderParent() {
 // ═══════════════════════════════════════
 //  PARSE HELPERS
 // ═══════════════════════════════════════
+function toSuperscript(str) {
+  const map = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴',
+               '5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻'};
+  // (-3)3 패턴을 (-3)³ 으로 변환
+  return str.replace(/\)(\d+)/g, (_, n) =>
+    ')' + n.split('').map(c => map[c]||c).join('')
+  );
+}
+
 function parseQuestions(raw) {
   // ── 1. Normalize ──────────────────────────────────────────
   let text = raw
     .replace(/\r\n/g,'\n').replace(/\r/g,'\n')
     .replace(/[\u200B\u200C\u200D\uFEFF]/g,'')   // zero-width chars
     .replace(/\u00A0/g,' ')                        // non-breaking space
-    .replace(/[""]/g,'"').replace(/['']/g,"'");   // smart quotes
+    .replace(/[""]/g,'"').replace(/['']/g,"'")    // smart quotes
+    .split('\n').map(toSuperscript).join('\n');    // (-3)3 → (-3)³
 
   const lines = text.split('\n');
   const result = [];
@@ -1882,8 +1892,8 @@ function parseAnswers(raw) {
       continue;
     }
 
-    // ── Q prefix general format: "Q1. B" / "Q32. D" ──
-    const mQ = t.match(/^[Qq]\s*(\d+)\s*[.):\-]?\s*([A-Ea-eOoXx①②③④⑤가-힣\w]+)/);
+    // ── Q prefix general format: "Q1. B" / "Q32. D" / "Q1 -43" ──
+    const mQ = t.match(/^[Qq]\s*(\d+)\s*[.):]\s*(.+)$/) || t.match(/^[Qq]\s*(\d+)\s+(.+)$/);
     if (mQ) {
       const num = parseInt(mQ[1]);
       const val = normalize(mQ[2]);
@@ -1891,11 +1901,11 @@ function parseAnswers(raw) {
       continue;
     }
 
-    // ── general format: "1. B" / "1) B" / "1 B" / "1:B" ──
-    const m = t.match(/^(\d+)\s*[.):\-]?\s*([A-Ea-eOoXx①②③④⑤가-힣\w]+)/);
+    // ── general format: "1 B" / "1 -43" / "1 7/12" / "1 $45 and $75" ──
+    const m = t.match(/^(\d+)\s+(.+)$/);
     if (m) {
       const num = parseInt(m[1]);
-      const val = normalize(m[2]);
+      const val = normalize(m[2].trim());
       if (!isNaN(num) && val) ans[num] = val;
     }
   }
