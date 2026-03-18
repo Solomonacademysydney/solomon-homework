@@ -456,6 +456,7 @@ function parentDisplayName(childIds) {
 // ═══════════════════════════════════════
 let currentUser = null;
 let loginRole = 'student';
+let studentPeriod = null;  // 학생 로그인 시 period 고정 — 교사가 period 변경해도 학생 세션 유지
 
 function setRole(r) {
   loginRole = r;
@@ -493,7 +494,7 @@ function doLogin() {
   try {
     if (user.role==='teacher') renderTeacher();
     else if (user.role==='parent') renderParent();
-    else { qIdx=0; currentSetIdx=null; renderStudent(); }
+    else { qIdx=0; currentSetIdx=null; studentPeriod=getStore().currentPeriod; renderStudent(); }
   } catch(e) {
     document.getElementById('mainContent').innerHTML =
       `<div style="padding:40px;color:red;font-weight:800;">
@@ -509,6 +510,7 @@ function doLogout() {
   currentSetIdx = null;
   editingSetIdx = null;
   currentParentChildId = null;
+  studentPeriod = null;
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
   document.getElementById('loginId').value = '';
@@ -1313,7 +1315,7 @@ let currentSetIdx = null;      // null=set list screen, 0+=active set index
 
 function renderStudent() {
   const store = getStore();
-  const p     = store.currentPeriod;
+  const p     = studentPeriod || store.currentPeriod;
   const hw    = store.homeworkSets[hwKey(currentUser.year, p)];
 
   if (!hw || !hw.sets || hw.sets.length === 0) {
@@ -1342,6 +1344,7 @@ function renderStudent() {
     saveStore(store);
   }
   const sub = store.submissions[key];
+  if (!sub.answers) { sub.answers = {}; saveStore(store); }
   if (qIdx >= qs.length) qIdx = Math.max(0, qs.length-1);
 
   const answered = Object.keys(sub.answers).length;
@@ -1587,12 +1590,20 @@ function renderSetList(hw, store, p) {
 function startSet(idx) {
   currentSetIdx = idx;
   qIdx = 0;
-  renderStudent();
+  try {
+    renderStudent();
+  } catch(e) {
+    document.getElementById('mainContent').innerHTML =
+      `<div style="padding:40px;color:red;font-weight:800;">
+        ⚠️ 문제 화면 로딩 오류: ${e.message}
+        <br><button onclick="currentSetIdx=null;renderStudent()" style="margin-top:16px;padding:10px 20px;background:#162040;color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:800;">← Set 목록으로 돌아가기</button>
+      </div>`;
+  }
 }
 
 function goQ(i) {
   const store=getStore();
-  const hw=store.homeworkSets[hwKey(currentUser.year,store.currentPeriod)];
+  const hw=store.homeworkSets[hwKey(currentUser.year,studentPeriod||store.currentPeriod)];
   const qs=hw?.sets?.[currentSetIdx]?.questions||[];
   if(i<0||i>=qs.length) return;
   qIdx=i;
@@ -1601,7 +1612,7 @@ function goQ(i) {
 
 function saveAnswer(qid, val) {
   const store=getStore();
-  const key=subKey(currentUser.id,store.currentPeriod,currentSetIdx??0);
+  const key=subKey(currentUser.id,studentPeriod||store.currentPeriod,currentSetIdx??0);
   if(!store.submissions[key]) store.submissions[key]={answers:{},submitted:false,submitTime:null};
   if(store.submissions[key].submitted) return;
   store.submissions[key].answers[qid]=val;
@@ -1624,7 +1635,7 @@ function answerSA(qid, val) {
 function doSubmit() {
   if(!confirm('Submit your homework? You cannot make changes after submitting.')) return;
   const store=getStore();
-  const key=subKey(currentUser.id,store.currentPeriod,currentSetIdx??0);
+  const key=subKey(currentUser.id,studentPeriod||store.currentPeriod,currentSetIdx??0);
   store.submissions[key].submitted=true;
   store.submissions[key].submitTime=new Date().toISOString();
   saveStore(store);
