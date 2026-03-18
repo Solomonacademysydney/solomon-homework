@@ -1886,7 +1886,7 @@ function parseAnswers(raw) {
 
     // ── Q prefix + Answer: + (bracket) format: "Q1. Answer: (D) explanation..." ──
     // Only recognise uppercase A-E + O/X (avoid misreading lowercase math expressions)
-    const mQA = t.match(/^[Qq]?\s*(\d+)\s*[.):\-]?\s*(?:[Aa]nswer\s*[：:]\s*)?\(\s*([A-EOoXx])\s*\)/);
+    const mQA = t.match(/^[Qq]?\s*(\d+)\s*[.):\-]?\s*(?:[Aa][Nn][Ss][Ww][Ee][Rr]\s*[：:]\s*)?\(\s*([A-EOoXx])\s*\)/);
     if (mQA) {
       const num = parseInt(mQA[1]);
       const val = normalize(mQA[2]);
@@ -1894,11 +1894,14 @@ function parseAnswers(raw) {
       continue;
     }
 
-    // ── Q prefix + Answer: keyword format: "Q1. Answer: D explanation..." ──
-    const mAW = t.match(/^[Qq]?\s*(\d+)\s*[.):\-]?\s*[Aa]nswer\s*[：:]\s*([A-Ea-eOoXx①②③④⑤\w])/);
+    // ── ANSWER: keyword format (case-insensitive, full answer captured) ──
+    // Handles: "1. ANSWER: 29, 34" / "Q1. Answer: B" / "1 answer: 42"
+    const mAW = t.match(/^[Qq]?\s*(\d+)\s*[.):\-]?\s*answer\s*[：:]\s*(.+)/i);
     if (mAW) {
       const num = parseInt(mAW[1]);
-      const val = normalize(mAW[2]);
+      // Strip any trailing "Solution:" / explanation after " — " or " - "
+      const raw2 = mAW[2].replace(/\s*[—–\-]{1,2}\s*[Ss]olution.*$/,'').trim();
+      const val = normalize(raw2);
       if (!isNaN(num) && val) ans[num] = val;
       continue;
     }
@@ -1908,6 +1911,16 @@ function parseAnswers(raw) {
     if (mQ) {
       const num = parseInt(mQ[1]);
       const val = normalize(mQ[2]);
+      if (!isNaN(num) && val) ans[num] = val;
+      continue;
+    }
+
+    // ── dot/paren format: "1. B" / "1. 29, 34" / "1) 42" ──
+    // Must come before the plain-space format to catch "1. answer" correctly
+    const mDot = t.match(/^(\d+)\s*[.)]\s+(.+)$/);
+    if (mDot) {
+      const num = parseInt(mDot[1]);
+      const val = normalize(mDot[2].trim());
       if (!isNaN(num) && val) ans[num] = val;
       continue;
     }
