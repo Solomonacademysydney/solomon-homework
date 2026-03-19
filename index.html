@@ -128,7 +128,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .preview-q{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:#f8f6ef;border-radius:12px;margin-bottom:8px;}
 .preview-num{width:32px;height:32px;background:var(--navy);color:var(--gold);border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;flex-shrink:0;}
 .preview-info{flex:1;}
-.preview-text{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;}
+.preview-text{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;white-space:pre-wrap;word-break:break-word;}
 .preview-meta{display:flex;gap:8px;align-items:center;}
 .type-badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:800;text-transform:uppercase;}
 .badge-mc{background:#fef8e1;color:#7a6200;}
@@ -161,7 +161,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .question-card{background:#fff;border-radius:var(--radius);padding:32px 36px;box-shadow:0 4px 20px rgba(0,0,0,.08);margin-bottom:16px;border:2px solid transparent;}
 .qc-num-row{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
 .qc-num{width:40px;height:40px;background:var(--navy);color:var(--gold);border-radius:11px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;}
-.qc-text{font-size:17px;font-weight:700;color:var(--navy);line-height:1.55;margin-bottom:24px;}
+.qc-text{font-size:17px;font-weight:700;color:var(--navy);line-height:1.55;margin-bottom:24px;white-space:pre-wrap;word-break:break-word;}
 
 .options{display:flex;flex-direction:column;gap:10px;}
 .opt-btn{display:flex;align-items:center;gap:14px;padding:14px 18px;border:2px solid var(--border);border-radius:13px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;font-size:15px;background:#fff;text-align:left;transition:all .15s;}
@@ -704,7 +704,14 @@ function renderTeacher() {
           const sub = store.submissions[subKey(s.id, p, idx)];
           if (!sub?.submitted) return `<span style="color:var(--muted);font-size:12px;">Set${idx+1}:⏳</span>`;
           const autoQs = set.questions.filter(q=>q.type!=='written');
-          const correct = autoQs.filter(q=>sub.answers[q.id]===q.answer).length;
+          const correct = autoQs.filter(q => {
+            if (q.subParts && q.subParts.length >= 2 && q.subAnswers) {
+              return Object.entries(q.subAnswers).every(([p,v]) =>
+                (sub.answers[q.id+'_'+p]||'').toUpperCase() === (v||'').toUpperCase()
+              );
+            }
+            return (sub.answers[q.id]||'').toUpperCase() === (q.answer||'').toUpperCase();
+          }).length;
           const pct = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
           const cls = pct>=80?'pill-a':pct>=60?'pill-b':'pill-c';
           return `<span style="font-size:12px;">Set${idx+1}:</span><span class="score-pill ${cls}" style="font-size:11px;">${pct}%</span>`;
@@ -828,7 +835,12 @@ function questionsToText(qs) {
   }).join('\n\n');
 }
 function answersToText(qs) {
-  return qs.map((q,i) => `${i+1}. ${q.answer||''}`).join('\n');
+  return qs.map((q,i) => {
+    if (q.subAnswers && Object.keys(q.subAnswers).length > 0) {
+      return Object.entries(q.subAnswers).map(([p,v]) => `${i+1}. (${p}) ${v||''}`).join('\n');
+    }
+    return `${i+1}. ${q.answer||''}`;
+  }).join('\n');
 }
 
 // ─── PARSE ─────────────────────────────
@@ -840,17 +852,30 @@ function doParse() {
   const questions = parseQuestions(qRaw);
   const answers   = parseAnswers(aRaw);
 
-  // Merge answers
+  // Merge answers — sub-part questions get subAnswers object, others get plain answer
   questions.forEach(q => {
-    const ans = answers[q.num];
-    if (ans === undefined) return;
-    if (q.type === 'mc' && q.options) {
-      // If answer is letter (A-E), map to option text or keep as letter
-      const letters = ['A','B','C','D','E'];
-      const idx = letters.indexOf(ans.toUpperCase());
-      q.answer = idx >= 0 ? letters[idx] : ans; // store as letter
+    if (q.subParts && q.subParts.length >= 2) {
+      // Collect (a), (b), ... answers by composite key e.g. '7a', '7b'
+      const sub = {};
+      q.subParts.forEach(p => {
+        const val = answers['' + q.num + p];
+        if (val) sub[p] = val;
+      });
+      if (Object.keys(sub).length > 0) {
+        q.subAnswers = sub;
+        // Store a combined answer string for basic compatibility
+        q.answer = Object.entries(sub).map(([p,v])=>`(${p}) ${v}`).join(' / ');
+      }
     } else {
-      q.answer = ans;
+      const ans = answers[q.num];
+      if (ans === undefined) return;
+      if (q.type === 'mc' && q.options) {
+        const letters = ['A','B','C','D','E'];
+        const idx = letters.indexOf(ans.toUpperCase());
+        q.answer = idx >= 0 ? letters[idx] : ans;
+      } else {
+        q.answer = ans;
+      }
     }
   });
 
@@ -903,7 +928,11 @@ function doParse() {
           ${optStr}
           <div class="preview-meta">
             <span class="type-badge ${badgeCls}">${typeLabel}</span>
-            ${q.answer ? `<span class="ans-tag">→ Answer: ${q.answer}</span>` : '<span style="color:var(--red);font-size:12px;font-weight:700;">No answer</span>'}
+            ${q.subAnswers && Object.keys(q.subAnswers).length > 0
+              ? Object.entries(q.subAnswers).map(([p,v])=>`<span class="ans-tag" style="margin-right:8px;">→ (${p}) ${v}</span>`).join('')
+              : q.answer
+                ? `<span class="ans-tag">→ Answer: ${q.answer}</span>`
+                : '<span style="color:var(--red);font-size:12px;font-weight:700;">No answer</span>'}
           </div>
         </div>
       </div>`;
@@ -1000,7 +1029,14 @@ function viewResults(yr) {
         return;
       }
       const autoQs = set.questions.filter(q=>q.type!=='written');
-      const correct = autoQs.filter(q=>sub.answers[q.id]===q.answer).length;
+      const correct = autoQs.filter(q => {
+        if (q.subParts && q.subParts.length >= 2 && q.subAnswers) {
+          return Object.entries(q.subAnswers).every(([p,v]) =>
+            (sub.answers[q.id+'_'+p]||'').toUpperCase() === (v||'').toUpperCase()
+          );
+        }
+        return (sub.answers[q.id]||'').toUpperCase() === (q.answer||'').toUpperCase();
+      }).length;
       const pct = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
       const cls = pct>=80?'pill-a':pct>=60?'pill-b':'pill-c';
       html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
@@ -1008,17 +1044,35 @@ function viewResults(yr) {
         <span style="font-size:13px;color:var(--muted);">${correct}/${autoQs.length} correct</span>
       </div>`;
       set.questions.forEach((q,i) => {
-        const ans = sub.answers[q.id];
-        let cls2='res-none', status='No answer';
-        if (ans!==undefined) {
-          const ok = ans===q.answer;
-          cls2 = ok?'res-ok':'res-wrong';
-          status = ok ? `✅ Correct` : `❌ Wrong (answered: ${ans} / correct: ${q.answer})`;
+        if (q.subParts && q.subParts.length >= 2 && q.subAnswers) {
+          const partResults = q.subParts.map(p => {
+            const a = sub.answers[q.id+'_'+p];
+            const e = q.subAnswers[p];
+            if (!a) return `<span style="color:var(--muted);">(${p}) No answer</span>`;
+            const ok = (a||'').toUpperCase() === (e||'').toUpperCase();
+            return ok
+              ? `<span style="color:#166534;">✅ (${p}) ${a}</span>`
+              : `<span style="color:#991b1b;">❌ (${p}) ${a} / ✓${e}</span>`;
+          });
+          html += `<div class="res-q res-none" style="font-size:13px;">
+            <b>Q${i+1}.</b>
+            <span style="flex:1;">${q.text.substring(0,50)}${q.text.length>50?'...':''}
+              <span style="margin-left:8px;">${partResults.join(' &nbsp; ')}</span>
+            </span>
+          </div>`;
+        } else {
+          const ans = sub.answers[q.id];
+          let cls2='res-none', status='No answer';
+          if (ans!==undefined) {
+            const ok = (ans||'').toUpperCase() === (q.answer||'').toUpperCase();
+            cls2 = ok?'res-ok':'res-wrong';
+            status = ok ? `✅ Correct` : `❌ Wrong (answered: ${ans} / correct: ${q.answer})`;
+          }
+          html += `<div class="res-q ${cls2}" style="font-size:13px;">
+            <b>Q${i+1}.</b>
+            <span style="flex:1;">${q.text.substring(0,60)}${q.text.length>60?'...':''} — ${status}</span>
+          </div>`;
         }
-        html += `<div class="res-q ${cls2}" style="font-size:13px;">
-          <b>Q${i+1}.</b>
-          <span style="flex:1;">${q.text.substring(0,60)}${q.text.length>60?'...':''} — ${status}</span>
-        </div>`;
       });
     });
     html += `</div>`;
@@ -1354,7 +1408,14 @@ function renderStudent() {
   // submitted → show results screen
   if (sub.submitted) {
     const autoQs  = qs.filter(q=>q.type!=='written');
-    const correct = autoQs.filter(q=>sub.answers[q.id]===q.answer).length;
+    const correct = autoQs.filter(q => {
+      if (q.subParts && q.subParts.length >= 2 && q.subAnswers) {
+        return Object.entries(q.subAnswers).every(([p,v]) =>
+          (sub.answers[q.id+'_'+p]||'').toUpperCase() === (v||'').toUpperCase()
+        );
+      }
+      return (sub.answers[q.id]||'').toUpperCase() === (q.answer||'').toUpperCase();
+    }).length;
     const score   = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
     const scoreMsg = score>=90?'🎉 Outstanding!':score>=70?'👍 Well done!':score>=50?'💪 Keep going!':'📚 Study more!';
 
@@ -1371,17 +1432,37 @@ function renderStudent() {
           <h3>📝 ${set.title} Results</h3>`;
 
     qs.forEach((q,i) => {
-      const ans = sub.answers[q.id];
-      let cls='res-none', status='No answer';
-      if (ans!==undefined) {
-        const ok = q.answer && ans===q.answer;
-        cls = ok?'res-ok':'res-wrong';
-        status = ok ? `✅ Correct (${ans})` : `❌ Wrong — Your answer: ${ans}, Correct: ${q.answer||'?'}`;
+      if (q.subParts && q.subParts.length >= 2 && q.subAnswers) {
+        // Multi-part question: show one card with each sub-part result
+        const partResults = q.subParts.map(p => {
+          const partAns = sub.answers[q.id + '_' + p];
+          const expected = q.subAnswers[p];
+          if (partAns === undefined) return { p, cls:'res-none', status:'No answer' };
+          const ok = expected && partAns.toUpperCase() === expected.toUpperCase();
+          return { p, cls: ok?'res-ok':'res-wrong',
+            status: ok ? `✅ (${p}) Correct` : `❌ (${p}) Your: ${partAns} / Correct: ${expected||'?'}` };
+        });
+        const allOk = partResults.every(r=>r.cls==='res-ok');
+        const overallCls = allOk ? 'res-ok' : partResults.some(r=>r.cls==='res-wrong') ? 'res-wrong' : 'res-none';
+        html += `<div class="res-q ${overallCls}">
+          <b>Q${i+1}.</b>
+          <span style="flex:1;">${q.text.substring(0,60)}${q.text.length>60?'...':''}
+            <div style="margin-top:4px;">${partResults.map(r=>`<span style="margin-right:12px;">${r.status}</span>`).join('')}</div>
+          </span>
+        </div>`;
+      } else {
+        const ans = sub.answers[q.id];
+        let cls='res-none', status='No answer';
+        if (ans!==undefined) {
+          const ok = q.answer && ans.toUpperCase() === q.answer.toUpperCase();
+          cls = ok?'res-ok':'res-wrong';
+          status = ok ? `✅ Correct (${ans})` : `❌ Wrong — Your answer: ${ans}, Correct: ${q.answer||'?'}`;
+        }
+        html += `<div class="res-q ${cls}">
+          <b>Q${i+1}.</b>
+          <span style="flex:1;">${q.text.substring(0,80)}${q.text.length>80?'...':''} — ${status}</span>
+        </div>`;
       }
-      html += `<div class="res-q ${cls}">
-        <b>Q${i+1}.</b>
-        <span style="flex:1;">${q.text.substring(0,80)}${q.text.length>80?'...':''} — ${status}</span>
-      </div>`;
     });
     html += `</div></div>`;
     document.getElementById('mainContent').innerHTML = html;
@@ -1417,7 +1498,9 @@ function renderStudent() {
     <div class="q-nav">`;
 
   qs.forEach((qq,i) => {
-    const done = sub.answers[qq.id]!==undefined;
+    const done = qq.subParts && qq.subParts.length >= 2
+      ? qq.subParts.some(p => sub.answers[qq.id+'_'+p] !== undefined)
+      : sub.answers[qq.id] !== undefined;
     const cur  = i===qIdx;
     let cls='qn-btn';
     if(cur) cls+=' cur';
@@ -1460,6 +1543,16 @@ function renderStudent() {
       <button class="ox-btn ${oSel}" onclick="answerOX('${q.id}','O')">⭕ True</button>
       <button class="ox-btn ${xSel}" onclick="answerOX('${q.id}','X')">❌ False</button>
     </div>`;
+  } else if (q.subParts && q.subParts.length >= 2) {
+    q.subParts.forEach(p => {
+      const subVal = sub.answers[q.id + '_' + p] || '';
+      html += `<div style="margin-bottom:14px;">
+        <div style="font-weight:800;color:var(--navy);font-size:15px;margin-bottom:6px;">(${p})</div>
+        <input class="sa-input" id="sa_${q.id}_${p}" type="text"
+          placeholder="Enter answer for (${p})..." value="${subVal}"
+          oninput="answerSA('${q.id}','${p}',this.value)">
+      </div>`;
+    });
   } else {
     html += `<input class="sa-input" id="sa_${q.id}" type="text"
       placeholder="Enter your answer..." value="${userAns||''}"
@@ -1472,7 +1565,11 @@ function renderStudent() {
       <button class="btn-nav" onclick="goQ(${qIdx-1})" ${qIdx===0?'disabled':''}>← Previous</button>`;
 
   if (qIdx===total-1) {
-    const allDone = qs.every(qq=>sub.answers[qq.id]!==undefined);
+    const allDone = qs.every(qq => {
+      if (qq.subParts && qq.subParts.length >= 2)
+        return qq.subParts.every(p => sub.answers[qq.id+'_'+p] !== undefined);
+      return sub.answers[qq.id] !== undefined;
+    });
     html += `<button class="btn-submit-all" onclick="doSubmit()" ${allDone?'':'disabled'}>
       Submit ✓
     </button>`;
@@ -1628,8 +1725,14 @@ function answerOX(qid, val) {
   saveAnswer(qid, val);
   setTimeout(()=>{ qIdx++; renderStudent(); }, 300);
 }
-function answerSA(qid, val) {
-  saveAnswer(qid, val.trim());
+function answerSA(qid, partOrVal, val) {
+  if (val !== undefined) {
+    // sub-part: answerSA(qid, 'a', val)
+    saveAnswer(qid + '_' + partOrVal, val.trim());
+  } else {
+    // regular: answerSA(qid, val)
+    saveAnswer(qid, partOrVal.trim());
+  }
 }
 
 function doSubmit() {
@@ -1807,8 +1910,9 @@ function parseQuestions(raw) {
     const optTexts    = expanded.filter(l=>l.startsWith('__OPT__')).map(l=>l.slice(7));
     const nonOptLines = expanded.filter(l=>!l.startsWith('__OPT__'));
 
-    // If question text was empty (number only on its line), grab first non-option line
-    let qText = cur.text || nonOptLines[0] || '';
+    // Combine all non-option lines into full question text
+    const allTextLines = cur.text ? [cur.text, ...nonOptLines] : nonOptLines;
+    let qText = allTextLines.join('\n').trim();
 
     let type = 'sa', options = null;
 
@@ -1822,7 +1926,12 @@ function parseQuestions(raw) {
       }
     }
 
-    if (qText) result.push({num:cur.num, text:qText.trim(), type, options, answer:null});
+    // ── Detect (a)(b)... sub-parts — keep as ONE question, tag subParts ──
+    const SUB_RE = /\(\s*([a-z])\s*\)\s*.+/gm;
+    const subMatches = [...qText.matchAll(SUB_RE)];
+    const subParts = subMatches.length >= 2 ? subMatches.map(m => m[1]) : null;
+
+    if (qText) result.push({num:cur.num, text:qText.trim(), type, options, answer:null, subParts, subAnswers:null});
     cur = null; body = [];
   };
 
@@ -1856,81 +1965,108 @@ function parseAnswers(raw) {
     return a.toUpperCase();
   };
 
+  const extractValue = str => {
+    str = str.trim();
+    const colonMatch = str.match(/[：:]\s*(.+)$/);
+    if (colonMatch) str = colonMatch[1].trim().split(/\s{2,}|\s*[—–]\s*/)[0].trim();
+    const eqMatch = str.match(/=\s*([^=]+)$/);
+    if (eqMatch) {
+      return eqMatch[1].trim()
+        .replace(/\s+(tiles?|sticks?|squares?|matches?|marbles?|cm|km|m)\s*$/i, '').trim();
+    }
+    return str.replace(/\s+(tiles?|sticks?|squares?|matches?|marbles?|cm|km|m)\s*$/i, '').trim();
+  };
+
   const text = raw.replace(/\r\n/g,'\n').replace(/\r/g,'\n')
                    .replace(/[\u200B\u200C\u200D\uFEFF]/g,'')
                    .replace(/\u00A0/g,' ');
+
+  let lastNum = null;
 
   for (const line of text.split('\n')) {
     const t = line.trim();
     if (!t) continue;
 
-    // ── table (tab-separated) format: "1\tB" or "1\tB\t2\tC\t3\tD ..." ──
+    // ── tab-separated: "1\tB\t2\tC" ──
     if (t.includes('\t')) {
       const cells = t.split('\t').map(c=>c.trim()).filter(Boolean);
-      // read in pairs: [num, ans, num, ans, ...]
       for (let i = 0; i < cells.length - 1; i += 2) {
         const num = parseInt(cells[i]);
         const val = normalize(cells[i+1]);
-        if (!isNaN(num) && val) ans[num] = val;
+        if (!isNaN(num) && val) { ans[num] = val; lastNum = num; }
       }
-      // if odd count, first cell may be a header; try offset by 1
       if (cells.length % 2 !== 0) {
         for (let i = 1; i < cells.length - 1; i += 2) {
           const num = parseInt(cells[i]);
           const val = normalize(cells[i+1]);
-          if (!isNaN(num) && val && !ans[num]) ans[num] = val;
+          if (!isNaN(num) && val && !ans[num]) { ans[num] = val; lastNum = num; }
         }
       }
       continue;
     }
 
-    // ── Q prefix + Answer: + (bracket) format: "Q1. Answer: (D) explanation..." ──
-    // Only recognise uppercase A-E + O/X (avoid misreading lowercase math expressions)
-    const mQA = t.match(/^[Qq]?\s*(\d+)\s*[.):\-]?\s*(?:[Aa][Nn][Ss][Ww][Ee][Rr]\s*[：:]\s*)?\(\s*([A-EOoXx])\s*\)/);
+    // ── "1.  ANSWER:  31, 36" ──
+    const mANS = t.match(/^[Qq]?\s*(\d+)\s*[.):\-]?\s*[Aa][Nn][Ss][Ww][Ee][Rr]\s*[：:]\s*(.+)$/);
+    if (mANS) {
+      const num = parseInt(mANS[1]);
+      const raw2 = mANS[2].trim().split(/\s{2,}|\s*[—–]\s*/)[0].trim();
+      const val = normalize(raw2);
+      if (!isNaN(num) && val) { ans[num] = val; lastNum = num; }
+      continue;
+    }
+
+    // ── "7.  (a)  Formula: 4n+1"  — question num + sub-part ──
+    const mPart = t.match(/^[Qq]?\s*(\d+)\s*[.):\-]?\s*\(\s*([a-z])\s*\)\s*(.+)$/i);
+    if (mPart) {
+      const num = parseInt(mPart[1]);
+      const partLabel = mPart[2].toLowerCase();
+      const val = normalize(extractValue(mPart[3]));
+      if (!isNaN(num) && val) { ans['' + num + partLabel] = val; lastNum = num; }
+      continue;
+    }
+
+    // ── "(b)  Stage 18 = 73 tiles"  — continuation sub-part ──
+    const mCont = t.match(/^\(\s*([a-z])\s*\)\s*(.+)$/i);
+    if (mCont && lastNum !== null) {
+      const partLabel = mCont[1].toLowerCase();
+      const val = normalize(extractValue(mCont[2]));
+      if (val) ans['' + lastNum + partLabel] = val;
+      continue;
+    }
+
+    // ── "Q1. Answer: (D)" ──
+    const mQA = t.match(/^[Qq]?\s*(\d+)\s*[.):\-]?\s*(?:[Aa]nswer\s*[：:]\s*)?\(\s*([A-EOoXx])\s*\)/);
     if (mQA) {
       const num = parseInt(mQA[1]);
       const val = normalize(mQA[2]);
-      if (!isNaN(num) && val) ans[num] = val;
+      if (!isNaN(num) && val) { ans[num] = val; lastNum = num; }
       continue;
     }
 
-    // ── ANSWER: keyword format (case-insensitive, full answer captured) ──
-    // Handles: "1. ANSWER: 29, 34" / "Q1. Answer: B" / "1 answer: 42"
-    const mAW = t.match(/^[Qq]?\s*(\d+)\s*[.):\-]?\s*answer\s*[：:]\s*(.+)/i);
+    // ── "Q1. Answer: D" ──
+    const mAW = t.match(/^[Qq]?\s*(\d+)\s*[.):\-]?\s*[Aa]nswer\s*[：:]\s*([A-Ea-eOoXx①②③④⑤\w])/);
     if (mAW) {
       const num = parseInt(mAW[1]);
-      // Strip any trailing "Solution:" / explanation after " — " or " - "
-      const raw2 = mAW[2].replace(/\s*[—–\-]{1,2}\s*[Ss]olution.*$/,'').trim();
-      const val = normalize(raw2);
-      if (!isNaN(num) && val) ans[num] = val;
+      const val = normalize(mAW[2]);
+      if (!isNaN(num) && val) { ans[num] = val; lastNum = num; }
       continue;
     }
 
-    // ── Q prefix general format: "Q1. B" / "Q32. D" / "Q1 -43" ──
+    // ── "Q1. B" / "Q32. D" ──
     const mQ = t.match(/^[Qq]\s*(\d+)\s*[.):]\s*(.+)$/) || t.match(/^[Qq]\s*(\d+)\s+(.+)$/);
     if (mQ) {
       const num = parseInt(mQ[1]);
       const val = normalize(mQ[2]);
-      if (!isNaN(num) && val) ans[num] = val;
+      if (!isNaN(num) && val) { ans[num] = val; lastNum = num; }
       continue;
     }
 
-    // ── dot/paren format: "1. B" / "1. 29, 34" / "1) 42" ──
-    // Must come before the plain-space format to catch "1. answer" correctly
-    const mDot = t.match(/^(\d+)\s*[.)]\s+(.+)$/);
-    if (mDot) {
-      const num = parseInt(mDot[1]);
-      const val = normalize(mDot[2].trim());
-      if (!isNaN(num) && val) ans[num] = val;
-      continue;
-    }
-
-    // ── general format: "1 B" / "1 -43" / "1 7/12" / "1 $45 and $75" ──
+    // ── "1 B" / "1 -43" / "1 7/12" ──
     const m = t.match(/^(\d+)\s+(.+)$/);
     if (m) {
       const num = parseInt(m[1]);
       const val = normalize(m[2].trim());
-      if (!isNaN(num) && val) ans[num] = val;
+      if (!isNaN(num) && val) { ans[num] = val; lastNum = num; }
     }
   }
   return ans;
