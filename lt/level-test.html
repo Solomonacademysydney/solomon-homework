@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solomon Academy – Free Level Test</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0a1628;
+    --navy2: #112240;
+    --gold: #c9a84c;
+    --gold2: #f0d080;
+    --white: #f8f6f0;
+    --gray: #8a9bb0;
+    --red: #e05252;
+    --green: #4caf7d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--navy);
+    color: var(--white);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(135deg, var(--navy2) 0%, #0d1f3c 100%);
+    border-bottom: 2px solid var(--gold);
+    padding: 18px 24px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  header .title { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: var(--gold2); }
+  header .sub { font-size: 0.75rem; color: var(--gray); margin-top: 2px; }
+
+  /* ── MAIN CONTAINER ── */
+  .container { max-width: 680px; margin: 0 auto; padding: 32px 20px 60px; }
+
+  /* ── SCREEN ── */
+  .screen { display: none; }
+  .screen.active { display: block; animation: fadeUp .4s ease; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--navy2);
+    border: 1px solid rgba(201,168,76,.25);
+    border-radius: 16px; padding: 32px 28px; margin-bottom: 20px;
+  }
+
+  /* ── HERO ── */
+  .hero-badge {
+    display: inline-block; background: linear-gradient(90deg, var(--gold), var(--gold2));
+    color: var(--navy); font-size: .72rem; font-weight: 700;
+    padding: 5px 14px; border-radius: 20px; margin-bottom: 18px; letter-spacing: .5px;
+  }
+  h1.hero-title {
+    font-family: 'Playfair Display', serif; font-size: 2.1rem; line-height: 1.25;
+    color: var(--white); margin-bottom: 10px;
+  }
+  h1.hero-title span { color: var(--gold); }
+  .hero-desc { color: var(--gray); font-size: .92rem; line-height: 1.65; margin-bottom: 24px; }
+  .features { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+  .feature {
+    display: flex; align-items: center; gap: 10px;
+    font-size: .88rem; color: var(--white);
+  }
+  .feature .icon {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold), var(--gold2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: .75rem; color: var(--navy); flex-shrink: 0;
+  }
+
+  /* ── FORM ── */
+  .form-group { margin-bottom: 18px; }
+  label { display: block; font-size: .82rem; color: var(--gold2); margin-bottom: 7px; font-weight: 500; }
+  input[type="text"], input[type="tel"], input[type="email"] {
+    width: 100%; background: rgba(255,255,255,.06);
+    border: 1px solid rgba(201,168,76,.3);
+    border-radius: 10px; padding: 13px 16px;
+    color: var(--white); font-size: .95rem; font-family: 'Noto Sans KR', sans-serif;
+    transition: border-color .2s;
+  }
+  input:focus { outline: none; border-color: var(--gold); background: rgba(255,255,255,.09); }
+  input::placeholder { color: var(--gray); }
+
+  /* ── YEAR GRID ── */
+  .year-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 8px;
+  }
+  .year-btn {
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(201,168,76,.2);
+    border-radius: 10px; padding: 12px 6px;
+    text-align: center; cursor: pointer;
+    transition: all .2s; color: var(--white); font-size: .85rem; font-weight: 500;
+  }
+  .year-btn:hover { border-color: var(--gold); background: rgba(201,168,76,.1); }
+  .year-btn.selected { background: linear-gradient(135deg, var(--gold), var(--gold2)); color: var(--navy); border-color: var(--gold2); font-weight: 700; }
+  .year-label { font-size: .68rem; color: inherit; display: block; margin-top: 3px; opacity: .75; }
+
+  /* ── CONSENT ── */
+  .consent-box {
+    background: rgba(255,255,255,.04); border: 1px solid rgba(201,168,76,.15);
+    border-radius: 10px; padding: 14px 16px; margin-bottom: 20px;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .consent-box input[type="checkbox"] { width: 18px; height: 18px; flex-shrink: 0; margin-top: 2px; accent-color: var(--gold); cursor: pointer; }
+  .consent-text { font-size: .78rem; color: var(--gray); line-height: 1.6; }
+  .consent-text strong { color: var(--gold2); }
+
+  /* ── BUTTONS ── */
+  .btn-primary {
+    width: 100%; padding: 16px;
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold2) 100%);
+    color: var(--navy); border: none; border-radius: 12px;
+    font-size: 1rem; font-weight: 700; cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: opacity .2s, transform .1s;
+    letter-spacing: .3px;
+  }
+  .btn-primary:hover { opacity: .9; transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+  .btn-secondary {
+    background: transparent; border: 1px solid rgba(201,168,76,.4);
+    color: var(--gold); padding: 10px 22px; border-radius: 10px;
+    cursor: pointer; font-size: .88rem; font-family: 'Noto Sans KR', sans-serif;
+    transition: all .2s;
+  }
+  .btn-secondary:hover { background: rgba(201,168,76,.1); }
+
+  /* ── ERROR ── */
+  .error-msg { color: var(--red); font-size: .8rem; margin-top: 6px; display: none; }
+  .error-msg.show { display: block; }
+
+  /* ── QUIZ ── */
+  .quiz-header { margin-bottom: 24px; }
+  .quiz-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .quiz-label { font-size: .8rem; color: var(--gold); font-weight: 600; letter-spacing: .5px; }
+  .timer {
+    background: rgba(201,168,76,.15); border: 1px solid rgba(201,168,76,.3);
+    padding: 5px 14px; border-radius: 20px; font-size: .88rem; font-weight: 700; color: var(--gold2);
+  }
+  .timer.warning { color: var(--red); border-color: var(--red); background: rgba(224,82,82,.15); }
+  .progress-bar {
+    height: 5px; background: rgba(255,255,255,.1); border-radius: 3px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold2));
+    border-radius: 3px; transition: width .4s ease;
+  }
+  .q-number { font-size: .78rem; color: var(--gray); margin-bottom: 8px; }
+  .q-text { font-size: 1.05rem; line-height: 1.65; margin-bottom: 22px; color: var(--white); }
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .option {
+    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+    border-radius: 10px; padding: 13px 16px; cursor: pointer;
+    transition: all .2s; font-size: .92rem; display: flex; align-items: center; gap: 12px;
+  }
+  .option:hover { border-color: var(--gold); background: rgba(201,168,76,.1); }
+  .option.selected { border-color: var(--gold); background: rgba(201,168,76,.15); color: var(--gold2); }
+  .option.correct { border-color: var(--green); background: rgba(76,175,125,.15); color: #7ee8a8; }
+  .option.wrong { border-color: var(--red); background: rgba(224,82,82,.15); color: #f08080; }
+  .option-letter {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: rgba(255,255,255,.1); display: flex; align-items: center; justify-content: center;
+    font-size: .78rem; font-weight: 700; flex-shrink: 0;
+  }
+  .quiz-nav { display: flex; justify-content: flex-end; margin-top: 24px; }
+
+  /* ── RESULTS ── */
+  .score-ring {
+    width: 130px; height: 130px; margin: 0 auto 24px;
+    position: relative; display: flex; align-items: center; justify-content: center;
+  }
+  .score-ring svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); }
+  .score-ring .score-num {
+    font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 900; color: var(--gold);
+    text-align: center; line-height: 1;
+  }
+  .score-ring .score-label { font-size: .7rem; color: var(--gray); }
+  .result-grade { text-align: center; margin-bottom: 24px; }
+  .result-grade .grade-badge {
+    display: inline-block; padding: 6px 20px;
+    border-radius: 20px; font-size: .88rem; font-weight: 700; margin-bottom: 10px;
+  }
+  .grade-A { background: linear-gradient(90deg, #4caf7d, #7ee8a8); color: var(--navy); }
+  .grade-B { background: linear-gradient(90deg, var(--gold), var(--gold2)); color: var(--navy); }
+  .grade-C { background: linear-gradient(90deg, #5b8dee, #90b4f8); color: var(--navy); }
+  .grade-D { background: rgba(224,82,82,.25); color: var(--red); border: 1px solid var(--red); }
+  .result-title { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--white); margin-bottom: 6px; }
+  .result-sub { color: var(--gray); font-size: .88rem; }
+  .recommend-box {
+    background: linear-gradient(135deg, rgba(201,168,76,.12), rgba(201,168,76,.05));
+    border: 1px solid rgba(201,168,76,.35); border-radius: 14px; padding: 20px;
+    margin-bottom: 20px;
+  }
+  .recommend-box h3 { color: var(--gold2); font-size: .95rem; margin-bottom: 12px; }
+  .recommend-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; font-size: .88rem; }
+  .recommend-item .dot { width: 7px; height: 7px; background: var(--gold); border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+  .breakdown { margin-bottom: 24px; }
+  .breakdown h3 { font-size: .88rem; color: var(--gold2); margin-bottom: 12px; }
+  .breakdown-item { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .breakdown-topic { font-size: .82rem; color: var(--white); width: 130px; flex-shrink: 0; }
+  .breakdown-bar { flex: 1; height: 8px; background: rgba(255,255,255,.08); border-radius: 4px; overflow: hidden; }
+  .breakdown-fill { height: 100%; border-radius: 4px; transition: width .8s ease; }
+  .breakdown-pct { font-size: .78rem; color: var(--gray); width: 36px; text-align: right; }
+  .cta-box {
+    background: linear-gradient(135deg, var(--navy2), #0d1f3c);
+    border: 2px solid var(--gold); border-radius: 16px; padding: 24px;
+    text-align: center;
+  }
+  .cta-box h3 { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: var(--gold2); margin-bottom: 8px; }
+  .cta-box p { color: var(--gray); font-size: .85rem; margin-bottom: 18px; }
+  .contact-methods { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .contact-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 20px; border-radius: 10px;
+    font-size: .88rem; font-weight: 600; text-decoration: none; cursor: pointer; border: none;
+    font-family: 'Noto Sans KR', sans-serif; transition: opacity .2s;
+  }
+  .contact-btn:hover { opacity: .85; }
+  .contact-kakao { background: #FEE500; color: #3C1E1E; }
+  .contact-phone { background: var(--green); color: white; }
+  .disclaimer {
+    font-size: .72rem; color: var(--gray); text-align: center;
+    margin-top: 20px; line-height: 1.6; padding: 0 10px;
+  }
+
+  /* ── BLOCKED ── */
+  .blocked-card { text-align: center; padding: 48px 24px; }
+  .blocked-icon { font-size: 3rem; margin-bottom: 16px; }
+  .blocked-card h2 { color: var(--gold); font-family: 'Playfair Display', serif; margin-bottom: 10px; }
+  .blocked-card p { color: var(--gray); font-size: .88rem; line-height: 1.6; }
+
+  @media (max-width: 480px) {
+    .year-grid { grid-template-columns: repeat(3, 1fr); }
+    h1.hero-title { font-size: 1.65rem; }
+    .card { padding: 22px 18px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <img src="../solomon_academy_logo_transparent.png" style="width:54px;height:54px;object-fit:contain;flex-shrink:0;" alt="Solomon Academy">
+  <div>
+    <div class="title">Solomon Academy</div>
+    <div class="sub">West Ryde · NSW Selective / OC / NAPLAN</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ══════════ SCREEN 1: INTRO ══════════ -->
+  <div class="screen active" id="screen-intro">
+    <div class="card">
+      <div class="hero-badge">🎓 Free Level Test</div>
+      <h1 class="hero-title">Does your child need<br><span>to improve in Maths?</span></h1>
+      <p class="hero-desc">Find out your child's current level and weak areas with our Year 1–12 diagnostic test. We'll recommend the perfect class based on your results.</p>
+      <div class="features">
+        <div class="feature"><div class="icon">✓</div> NSW curriculum-aligned questions by year group</div>
+        <div class="feature"><div class="icon">✓</div> Instant marking + automatic weak area analysis</div>
+        <div class="feature"><div class="icon">✓</div> Personalised class recommendation + free consultation</div>
+        <div class="feature"><div class="icon">✓</div> Completely free · 15 minutes</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="form-group">
+        <label>Student Name *</label>
+        <input type="text" id="inp-name" placeholder="e.g. James Smith" />
+        <div class="error-msg" id="err-name">Please enter the student's name.</div>
+      </div>
+      <div class="form-group">
+        <label>Parent Contact (Australian mobile) *</label>
+        <input type="tel" id="inp-phone" placeholder="e.g. 0424 743 564" />
+        <div class="error-msg" id="err-phone">Please enter a contact number.</div>
+      </div>
+      <div class="form-group">
+        <label>Email (optional)</label>
+        <input type="email" id="inp-email" placeholder="e.g. parent@email.com" />
+      </div>
+      <div class="form-group">
+        <label>Select Year Group *</label>
+        <div class="year-grid" id="year-grid"></div>
+        <div class="error-msg" id="err-year">Please select a year group.</div>
+      </div>
+      <div class="consent-box">
+        <input type="checkbox" id="inp-consent" />
+        <div class="consent-text">
+          <strong>Privacy Consent *</strong><br>
+          Your information will only be used for test results and class consultation. It will not be shared with third parties.
+        </div>
+      </div>
+      <div class="error-msg" id="err-consent">Please agree to the privacy consent.</div>
+      <button class="btn-primary" id="btn-start" onclick="startTest()">Start Test →</button>
+    </div>
+  </div>
+
+  <!-- ══════════ SCREEN 2: QUIZ ══════════ -->
+  <div class="screen" id="screen-quiz">
+    <div class="card">
+      <div class="quiz-header">
+        <div class="quiz-meta">
+          <span class="quiz-label" id="quiz-label">Question 1 / 15</span>
+          <span class="timer" id="timer-display">15:00</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="q-number" id="q-number"></div>
+      <div class="q-text" id="q-text"></div>
+      <div class="options" id="options"></div>
+      <div class="quiz-nav">
+        <button class="btn-primary" id="btn-next" style="width:auto;padding:12px 28px;" onclick="nextQuestion()" disabled>Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ SCREEN 3: RESULTS ══════════ -->
+  <div class="screen" id="screen-result">
+    <div class="card">
+      <div class="score-ring">
+        <svg width="130" height="130" viewBox="0 0 130 130">
+          <circle cx="65" cy="65" r="56" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="10"/>
+          <circle cx="65" cy="65" r="56" fill="none" stroke="url(#scoreGrad)" stroke-width="10"
+            stroke-linecap="round" stroke-dasharray="352" id="score-arc" stroke-dashoffset="352"/>
+          <defs>
+            <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#c9a84c"/>
+              <stop offset="100%" stop-color="#f0d080"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div>
+          <div class="score-num" id="score-num">0%</div>
+          <div class="score-label" id="score-label">0 / 15</div>
+        </div>
+      </div>
+      <div class="result-grade">
+        <div class="grade-badge" id="grade-badge"></div>
+        <div class="result-title" id="result-title"></div>
+        <div class="result-sub" id="result-sub"></div>
+      </div>
+    </div>
+
+    <div class="recommend-box" id="recommend-box">
+      <h3>📚 Recommended Class & Learning Path</h3>
+      <div id="recommend-content"></div>
+    </div>
+
+    <div class="card breakdown">
+      <h3>Topic Breakdown</h3>
+      <div id="breakdown-content" style="margin-top:16px;"></div>
+    </div>
+
+    <div class="cta-box">
+      <h3>Book a Free Consultation</h3>
+      <p>We'll recommend the perfect class based on your results.<br>Contact us now!</p>
+      <div class="contact-methods">
+        <a href="https://open.kakao.com/o/sVMZVsmi" class="contact-btn contact-kakao" target="_blank">
+          💬 KakaoTalk Chat
+        </a>
+        <a href="tel:0424743564" class="contact-btn contact-phone">
+          📞 Call Us
+        </a>
+      </div>
+    </div>
+
+    <div class="disclaimer">
+      This test is a diagnostic assessment based on the NSW curriculum.<br>
+      Results are indicative only. Final class placement is determined through a separate consultation.
+    </div>
+
+    <div style="text-align:center;margin-top:24px;">
+      <button class="btn-secondary" onclick="resetTest()">↺ Start Again</button>
+    </div>
+  </div>
+
+  <!-- ══════════ SCREEN 4: BLOCKED ══════════ -->
+  <div class="screen" id="screen-blocked">
+    <div class="card blocked-card">
+      <div class="blocked-icon">⏳</div>
+      <h2>Please try again in 24 hours</h2>
+      <p>Only one test per contact number within a 24-hour period is allowed.<br>If you need assistance, please contact us below.</p>
+      <div style="margin-top:24px;">
+        <div class="contact-methods">
+          <a href="https://open.kakao.com/o/sVMZVsmi" class="contact-btn contact-kakao" target="_blank">💬 KakaoTalk Chat</a>
+          <a href="tel:0424743564" class="contact-btn contact-phone">📞 Call Us</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+/* ══════════════════════════════════════════
+   문제 데이터베이스 (Year별)
+══════════════════════════════════════════ */
+const QUESTION_BANK = {
+  1: [
+    { topic:'Number', q:'Which odd number is less than 10?', opts:['2','4','7','8'], ans:2 },
+    { topic:'Number', q:'3 + 5 = ?', opts:['6','7','8','9'], ans:2 },
+    { topic:'Number', q:'10 - 4 = ?', opts:['4','5','6','7'], ans:2 },
+    { topic:'Measurement', q:'How many days are in a week?', opts:['5','6','7','8'], ans:2 },
+    { topic:'Number', q:'Which is the largest number?', opts:['3','7','5','9'], ans:3 },
+    { topic:'Number', q:'2 + 2 + 2 = ?', opts:['4','5','6','8'], ans:2 },
+    { topic:'Measurement', q:'How many hours are in a day?', opts:['12','20','24','48'], ans:2 },
+    { topic:'Number', q:'What is the largest even number less than 20?', opts:['16','17','18','19'], ans:2 },
+    { topic:'Number', q:'5 + ? = 9', opts:['3','4','5','6'], ans:1 },
+    { topic:'Geometry', q:'How many vertices does a triangle have?', opts:['2','3','4','5'], ans:1 },
+    { topic:'Number', q:'1, 2, 3, 4, __. What is the next number?', opts:['4','5','6','7'], ans:1 },
+    { topic:'Number', q:'10 + 3 = ?', opts:['12','13','14','15'], ans:1 },
+    { topic:'Measurement', q:'How many months are in a year?', opts:['10','11','12','13'], ans:2 },
+    { topic:'Number', q:'9 - 3 = ?', opts:['4','5','6','7'], ans:2 },
+    { topic:'Geometry', q:'How many sides does a square have?', opts:['3','4','5','6'], ans:1 },
+  ],
+  2: [
+    { topic:'Number', q:'15 + 8 = ?', opts:['21','22','23','24'], ans:2 },
+    { topic:'Number', q:'30 - 14 = ?', opts:['14','15','16','17'], ans:2 },
+    { topic:'Number', q:'2 × 6 = ?', opts:['10','11','12','13'], ans:2 },
+    { topic:'Measurement', q:'1 m = ? cm', opts:['10','100','1,000','10,000'], ans:1 },
+    { topic:'Number', q:'What is half of 50?', opts:['20','25','30','35'], ans:1 },
+    { topic:'Number', q:'Which number is NOT odd?', opts:['13','17','22','31'], ans:2 },
+    { topic:'Number', q:'3 × 4 = ?', opts:['10','11','12','13'], ans:2 },
+    { topic:'Geometry', q:'How many sides does a rectangle have?', opts:['3','4','5','6'], ans:1 },
+    { topic:'Number', q:'45 + 35 = ?', opts:['70','75','80','85'], ans:2 },
+    { topic:'Number', q:'100 - 43 = ?', opts:['55','56','57','58'], ans:2 },
+    { topic:'Measurement', q:'1 kg = ? g', opts:['10','100','1,000','10,000'], ans:2 },
+    { topic:'Number', q:'5 × 5 = ?', opts:['20','25','30','35'], ans:1 },
+    { topic:'Number', q:'2, 4, 6, 8, __. What comes next?', opts:['9','10','11','12'], ans:1 },
+    { topic:'Fractions', q:'Which represents one half?', opts:['1/4','1/2','1/3','2/3'], ans:1 },
+    { topic:'Number', q:'10 × 3 = ?', opts:['13','20','30','33'], ans:2 },
+  ],
+  3: [
+    { topic:'Number', q:'256 + 178 = ?', opts:['424','434','444','454'], ans:1 },
+    { topic:'Number', q:'500 - 237 = ?', opts:['253','263','273','283'], ans:2 },
+    { topic:'Multiplication', q:'7 × 8 = ?', opts:['54','56','58','60'], ans:1 },
+    { topic:'Fractions', q:'1/2 + 1/4 = ?', opts:['1/4','1/2','3/4','1'], ans:2 },
+    { topic:'Measurement', q:'2 hours 30 minutes = ? minutes', opts:['120','130','140','150'], ans:3 },
+    { topic:'Multiplication', q:'9 × 6 = ?', opts:['52','54','56','58'], ans:1 },
+    { topic:'Number', q:'What is the largest even number less than 1000?', opts:['996','997','998','999'], ans:2 },
+    { topic:'Division', q:'48 ÷ 6 = ?', opts:['6','7','8','9'], ans:2 },
+    { topic:'Fractions', q:'3/4 equals what percentage?', opts:['50%','60%','70%','75%'], ans:3 },
+    { topic:'Measurement', q:'A square has perimeter 20 cm. What is the side length?', opts:['4 cm','5 cm','6 cm','7 cm'], ans:1 },
+    { topic:'Number', q:'356 × 3 = ?', opts:['1,058','1,068','1,078','1,088'], ans:1 },
+    { topic:'Geometry', q:'If the radius of a circle is 5 cm, what is the diameter?', opts:['5 cm','8 cm','10 cm','12 cm'], ans:2 },
+    { topic:'Division', q:'63 ÷ 9 = ?', opts:['5','6','7','8'], ans:2 },
+    { topic:'Number', q:'What is the smallest 4-digit number?', opts:['999','1,000','1,001','1,010'], ans:1 },
+    { topic:'Fractions', q:'Express 2/5 as a decimal.', opts:['0.2','0.4','0.5','0.6'], ans:1 },
+  ],
+  4: [
+    { topic:'Number', q:'3,456 + 2,789 = ?', opts:['6,145','6,245','6,345','6,445'], ans:1 },
+    { topic:'Multiplication', q:'23 × 14 = ?', opts:['312','322','332','342'], ans:1 },
+    { topic:'Division', q:'156 ÷ 12 = ?', opts:['12','13','14','15'], ans:1 },
+    { topic:'Fractions', q:'2/3 + 1/6 = ?', opts:['3/9','5/6','1','7/6'], ans:1 },
+    { topic:'Decimals', q:'3.4 + 2.8 = ?', opts:['5.8','6.0','6.2','6.4'], ans:2 },
+    { topic:'Measurement', q:'What is the area of a rectangle with length 8 cm and width 5 cm?', opts:['26 cm²','36 cm²','40 cm²','48 cm²'], ans:2 },
+    { topic:'Multiplication', q:'45 × 11 = ?', opts:['485','495','505','515'], ans:1 },
+    { topic:'Fractions', q:'7/8 - 3/8 = ?', opts:['1/2','3/8','4/8','5/8'], ans:0 },
+    { topic:'Decimals', q:'5.2 × 3 = ?', opts:['14.6','15.6','16.6','17.6'], ans:1 },
+    { topic:'Number', q:'What is the GCD of 12 and 18?', opts:['2','3','6','9'], ans:2 },
+    { topic:'Geometry', q:'What is the sum of interior angles of a triangle?', opts:['90°','180°','270°','360°'], ans:1 },
+    { topic:'Fractions', q:'1¼ + 2½ = ?', opts:['3¼','3½','3¾','4'], ans:2 },
+    { topic:'Measurement', q:'1 L = ? mL', opts:['10','100','1,000','10,000'], ans:2 },
+    { topic:'Decimals', q:'10.5 - 4.8 = ?', opts:['5.3','5.5','5.7','5.9'], ans:2 },
+    { topic:'Number', q:'How many factors does 72 have?', opts:['10','11','12','13'], ans:2 },
+  ],
+  5: [
+    { topic:'Fractions', q:'3/4 × 2/3 = ?', opts:['1/2','5/12','6/12','7/12'], ans:0 },
+    { topic:'Decimals', q:'0.6 × 0.4 = ?', opts:['0.024','0.24','2.4','24'], ans:1 },
+    { topic:'Percentage', q:'What is 25% of 80?', opts:['16','18','20','22'], ans:2 },
+    { topic:'Algebra', q:'If 2x + 5 = 13, then x = ?', opts:['3','4','5','6'], ans:1 },
+    { topic:'Measurement', q:'A triangle has base 10 cm and height 6 cm. What is its area?', opts:['20 cm²','30 cm²','40 cm²','60 cm²'], ans:1 },
+    { topic:'Fractions', q:'5/6 ÷ 1/3 = ?', opts:['5/18','5/6','5/2','10/3'], ans:2 },
+    { topic:'Percentage', q:'What percentage is 60 out of 100?', opts:['6%','16%','60%','160%'], ans:2 },
+    { topic:'Number', q:'Which number is NOT a prime?', opts:['11','13','15','17'], ans:2 },
+    { topic:'Algebra', q:'If 3y = 21, then y = ?', opts:['5','6','7','8'], ans:2 },
+    { topic:'Decimals', q:'4.5 ÷ 0.9 = ?', opts:['4','5','6','50'], ans:1 },
+    { topic:'Measurement', q:'If the diameter of a circle is 14 cm, what is the radius?', opts:['5 cm','6 cm','7 cm','8 cm'], ans:2 },
+    { topic:'Fractions', q:'1⅔ × 1½ = ?', opts:['2','2½','3','3½'], ans:1 },
+    { topic:'Percentage', q:'What is 30% of 40?', opts:['10','12','14','16'], ans:1 },
+    { topic:'Algebra', q:'If n ÷ 4 = 7, then n = ?', opts:['24','28','32','36'], ans:1 },
+    { topic:'Number', q:'LCM of 4 and 6 = ?', opts:['8','10','12','24'], ans:2 },
+  ],
+  6: [
+    { topic:'Algebra', q:'If 2(x + 3) = 14, then x = ?', opts:['3','4','5','6'], ans:1 },
+    { topic:'Ratio', q:'In the ratio 3:4, what fraction represents 3?', opts:['3/7','4/7','3/4','4/3'], ans:0 },
+    { topic:'Percentage', q:'A $80 item is discounted by 25%. What is the sale price?', opts:['$55','$60','$65','$70'], ans:1 },
+    { topic:'Measurement', q:'What is the formula for the area of a circle (r = radius)?', opts:['2πr','πr²','πd','2πd'], ans:1 },
+    { topic:'Fractions', q:'(-2/3) + (5/6) = ?', opts:['-1/6','1/6','1/2','2/3'], ans:1 },
+    { topic:'Algebra', q:'If 4x - 7 = 13, then x = ?', opts:['4','5','6','7'], ans:1 },
+    { topic:'Statistics', q:'What is the median of: 2, 4, 4, 6, 9?', opts:['2','4','5','6'], ans:1 },
+    { topic:'Ratio', q:'If 2:5 = 6:x, then x = ?', opts:['12','13','14','15'], ans:3 },
+    { topic:'Measurement', q:'What is the volume of a rectangular prism with length 4, width 3, height 5?', opts:['48','56','60','72'], ans:2 },
+    { topic:'Percentage', q:'A price drops from $150 to $120. What is the percentage decrease?', opts:['15%','20%','25%','30%'], ans:1 },
+    { topic:'Algebra', q:'If 3x + 2y = 12 and y = 3, then x = ?', opts:['1','2','3','4'], ans:1 },
+    { topic:'Geometry', q:'What is the sum of interior angles of a quadrilateral?', opts:['180°','270°','360°','540°'], ans:2 },
+    { topic:'Statistics', q:'What is the mode of: 3, 5, 7, 7, 8?', opts:['3','5','7','8'], ans:2 },
+    { topic:'Ratio', q:'Divide 12 in the ratio 3:1. What is the larger part?', opts:['6','8','9','10'], ans:2 },
+    { topic:'Fractions', q:'(-3/4) × (-2/3) = ?', opts:['-1/2','1/2','3/4','1'], ans:1 },
+  ],
+  7: [
+    { topic:'Algebra', q:'If x² - 9 = 0, then x = ?', opts:['±2','±3','±4','±5'], ans:1 },
+    { topic:'Indices', q:'2³ × 2⁴ = ?', opts:['2⁶','2⁷','2⁸','2¹²'], ans:1 },
+    { topic:'Geometry', q:'In a right triangle, hypotenuse = 13 and one side = 5. What is the other side?', opts:['10','11','12','13'], ans:2 },
+    { topic:'Algebra', q:'If 3(2x - 1) = 15, then x = ?', opts:['2','3','4','5'], ans:1 },
+    { topic:'Percentage', q:'Simple interest on $500 at 10% p.a. for 2 years is?', opts:['$50','$75','$100','$110'], ans:2 },
+    { topic:'Statistics', q:'What is the mean of: 6, 8, 5, 9, 7?', opts:['6','7','8','9'], ans:1 },
+    { topic:'Indices', q:'5⁰ = ?', opts:['0','1','5','25'], ans:1 },
+    { topic:'Algebra', q:'If y = 2x + 3 and x = 4, then y = ?', opts:['9','10','11','12'], ans:2 },
+    { topic:'Geometry', q:'What is each interior angle of an equilateral triangle?', opts:['45°','60°','70°','90°'], ans:1 },
+    { topic:'Number', q:'√144 = ?', opts:['11','12','13','14'], ans:1 },
+    { topic:'Probability', q:'What is the probability of getting heads when tossing a coin?', opts:['1/4','1/3','1/2','2/3'], ans:2 },
+    { topic:'Algebra', q:'If 2x + y = 7 and x = 2, then y = ?', opts:['1','2','3','4'], ans:2 },
+    { topic:'Indices', q:'3⁻² = ?', opts:['1/9','1/6','1/3','9'], ans:0 },
+    { topic:'Geometry', q:'The value of π (pi) is approximately?', opts:['2.14','3.14','4.14','5.14'], ans:1 },
+    { topic:'Statistics', q:'What is the variance of: 1, 3, 5, 7, 9?', opts:['4','6','8','10'], ans:2 },
+  ],
+  8: [
+    { topic:'Algebra', q:'What are the roots of x² + 5x + 6 = 0?', opts:['x=−2, x=−3','x=2, x=3','x=−1, x=−6','x=1, x=6'], ans:0 },
+    { topic:'Indices', q:'(2³)² = ?', opts:['2⁵','2⁶','2⁸','2⁹'], ans:1 },
+    { topic:'Geometry', q:'A line has gradient 2 and y-intercept −3. Its equation is?', opts:['y=2x+3','y=2x−3','y=−2x+3','y=3x−2'], ans:1 },
+    { topic:'Probability', q:'What is the probability of drawing an Ace from a 52-card deck?', opts:['1/13','1/12','1/11','1/10'], ans:0 },
+    { topic:'Algebra', q:'If 2x² - 8 = 0, then x = ?', opts:['±1','±2','±3','±4'], ans:1 },
+    { topic:'Statistics', q:'In a normal distribution with mean 50 and SD 10, approx. what % falls between 40 and 60?', opts:['50%','60%','68%','75%'], ans:2 },
+    { topic:'Geometry', q:'If the area of a circle is 36π cm², what is the radius?', opts:['4 cm','5 cm','6 cm','7 cm'], ans:2 },
+    { topic:'Indices', q:'√(4x²) = ?', opts:['2x','4x','x²','2x²'], ans:0 },
+    { topic:'Algebra', q:'Solve: x + y = 5, x − y = 1. Find x.', opts:['2','3','4','5'], ans:1 },
+    { topic:'Probability', q:'What is the probability of rolling a sum of 7 with two dice?', opts:['1/9','1/8','1/7','1/6'], ans:3 },
+    { topic:'Geometry', q:'A triangle has sides 3 and 4 with included angle 90°. What is its area?', opts:['4 cm²','5 cm²','6 cm²','7 cm²'], ans:2 },
+    { topic:'Algebra', q:'(x + 3)(x − 3) = ?', opts:['x²−6','x²−9','x²+9','x²+6x−9'], ans:1 },
+    { topic:'Statistics', q:'What is the mode of: 5, 8, 8, 6, 9, 8, 7?', opts:['6','7','8','9'], ans:2 },
+    { topic:'Indices', q:'log₂(8) = ?', opts:['2','3','4','8'], ans:1 },
+    { topic:'Geometry', q:'Area of a parallelogram = base × ?', opts:['base','height','diagonal','hypotenuse'], ans:1 },
+  ],
+  9: [
+    { topic:'Functions', q:'If f(x) = 3x − 2, find f(4).', opts:['8','9','10','11'], ans:2 },
+    { topic:'Trigonometry', q:'sin(30°) = ?', opts:['1/4','1/3','1/2','√3/2'], ans:2 },
+    { topic:'Algebra', q:'What is the sum of the roots of x² − 7x + 12 = 0?', opts:['5','6','7','8'], ans:2 },
+    { topic:'Statistics', q:'For 30 data values, the median is the average of which positions?', opts:['14th & 15th','15th & 16th','14th & 16th','13th & 14th'], ans:1 },
+    { topic:'Indices', q:'2^(3/2) = ?', opts:['√6','2√2','3√2','4'], ans:1 },
+    { topic:'Functions', q:'What is the axis of symmetry of y = x²?', opts:['x=1','x=0','y=0','y=1'], ans:1 },
+    { topic:'Trigonometry', q:'cos(60°) = ?', opts:['1/4','1/3','1/2','√3/2'], ans:2 },
+    { topic:'Algebra', q:'(x + 2)² = x² + 4x + ?', opts:['2','4','6','8'], ans:1 },
+    { topic:'Probability', q:'P(A)=0.3, P(B)=0.5, P(A∩B)=0.1. Find P(A∪B).', opts:['0.6','0.7','0.8','0.9'], ans:1 },
+    { topic:'Functions', q:'What is the gradient of the line y = −2x + 5?', opts:['−5','−2','2','5'], ans:1 },
+    { topic:'Trigonometry', q:'tan(45°) = ?', opts:['0','1/2','1','√3'], ans:2 },
+    { topic:'Indices', q:'log(100) = ?', opts:['1','2','10','100'], ans:1 },
+    { topic:'Algebra', q:'What is the discriminant of ax² + bx + c = 0?', opts:['b²−4ac','b²+4ac','4ac−b²','a²−4bc'], ans:0 },
+    { topic:'Statistics', q:'What does a correlation coefficient of r = −0.9 indicate?', opts:['Strong positive','Weak positive','Weak negative','Strong negative'], ans:3 },
+    { topic:'Functions', q:'What are the x-intercepts of f(x) = x² − 4?', opts:['x=±1','x=±2','x=±3','x=±4'], ans:1 },
+  ],
+  10: [
+    { topic:'Calculus', q:'If f(x) = 3x², then f\'(x) = ?', opts:['3x','6x','3x²','6x²'], ans:1 },
+    { topic:'Trigonometry', q:'sin²θ + cos²θ = ?', opts:['0','1/2','1','2'], ans:2 },
+    { topic:'Algebra', q:'What are the roots of 2x² + 5x − 3 = 0?', opts:['x=1/2, x=−3','x=−1/2, x=3','x=1/2, x=3','x=−1/2, x=−3'], ans:0 },
+    { topic:'Functions', q:'What is the y-intercept of y = 2^x?', opts:['0','1','2','4'], ans:1 },
+    { topic:'Statistics', q:'As sample size increases, the standard error...?', opts:['increases','decreases','stays the same','becomes infinite'], ans:1 },
+    { topic:'Calculus', q:'∫2x dx = ?', opts:['x','x²','x² + C','2x + C'], ans:2 },
+    { topic:'Trigonometry', q:'cos(2θ) = ?', opts:['2cosθ','cos²θ − sin²θ','2sinθcosθ','sin²θ − cos²θ'], ans:1 },
+    { topic:'Algebra', q:'What is the inverse function of y = log₂x?', opts:['y = log_x(2)','y = 2x','y = 2^x','y = x²'], ans:2 },
+    { topic:'Functions', q:'What is the minimum value of f(x) = x² − 6x + 9?', opts:['0','3','6','9'], ans:0 },
+    { topic:'Statistics', q:'P(Z < 1.96) ≈ ? (Standard Normal Distribution)', opts:['0.025','0.05','0.95','0.975'], ans:3 },
+    { topic:'Calculus', q:'What is the derivative of f(x) = sin(x)?', opts:['−sin(x)','−cos(x)','cos(x)','tan(x)'], ans:2 },
+    { topic:'Trigonometry', q:'In a 30-60-90 triangle, what is the ratio of hypotenuse to shortest side?', opts:['1:1','1:2','2:1','√3:1'], ans:2 },
+    { topic:'Algebra', q:'log₃(27) = ?', opts:['2','3','9','27'], ans:1 },
+    { topic:'Calculus', q:'What is the derivative of y = 5?', opts:['0','1','5','x'], ans:0 },
+    { topic:'Functions', q:'What is the vertex of y = |x − 3|?', opts:['(0,3)','(3,0)','(−3,0)','(0,−3)'], ans:1 },
+  ],
+  11: [
+    { topic:'Calculus', q:'For f(x) = x³ − 3x² + 2, the stationary points occur at x = ?', opts:['x=0, x=1','x=0, x=2','x=1, x=2','x=2, x=3'], ans:1 },
+    { topic:'Probability', q:'What is the mean of Binomial Distribution B(10, 0.5)?', opts:['4','5','6','7'], ans:1 },
+    { topic:'Trigonometry', q:'sin(A + B) = ?', opts:['sinA + sinB','sinA·cosB + cosA·sinB','sinA·cosB − cosA·sinB','cosA·cosB − sinA·sinB'], ans:1 },
+    { topic:'Calculus', q:'∫₀² x² dx = ?', opts:['4/3','8/3','4','8'], ans:1 },
+    { topic:'Algebra', q:'What is the real part of (2 + 3i)(1 − i)?', opts:['2','3','5','6'], ans:2 },
+    { topic:'Statistics', q:'For a 95% confidence interval, what is the critical z-value?', opts:['1.645','1.96','2.326','2.576'], ans:1 },
+    { topic:'Calculus', q:'What is the derivative of y = e^x?', opts:['e^(x−1)','xe^(x−1)','e^x','xe^x'], ans:2 },
+    { topic:'Trigonometry', q:'cos(A − B) = ?', opts:['cosA − cosB','cosA·cosB − sinA·sinB','cosA·cosB + sinA·sinB','sinA·sinB'], ans:2 },
+    { topic:'Algebra', q:'What is the solution to |2x − 3| < 5?', opts:['−1 < x < 4','x < −1 or x > 4','−2 < x < 4','x < −2 or x > 4'], ans:0 },
+    { topic:'Probability', q:'For N(μ,σ²), what is P(μ−2σ < X < μ+2σ)?', opts:['68%','90%','95%','99%'], ans:2 },
+    { topic:'Calculus', q:'What is the derivative of y = ln(x)?', opts:['ln(x)','1/x','x·ln(x)','e^x'], ans:1 },
+    { topic:'Algebra', q:'An arithmetic sequence has first term 3 and common difference 4. What is the 10th term?', opts:['35','39','43','47'], ans:2 },
+    { topic:'Statistics', q:'A correlation coefficient close to 0 indicates?', opts:['Strong positive','Strong negative','No correlation','Perfect correlation'], ans:2 },
+    { topic:'Calculus', q:'If f\'(x) = 3x² − 6x, when does f\'(x) = 0?', opts:['x=0 only','x=2 only','x=0, x=2','x=0, x=−2'], ans:2 },
+    { topic:'Trigonometry', q:'cosec(θ) = ?', opts:['1/sinθ','1/cosθ','sinθ/cosθ','cosθ/sinθ'], ans:0 },
+  ],
+  12: [
+    { topic:'Calculus', q:'lim(x→0) sin(x)/x = ?', opts:['0','1','∞','undefined'], ans:1 },
+    { topic:'Statistics', q:'Rejecting a true null hypothesis is a?', opts:['Type I error','Type II error','Sampling error','Measurement error'], ans:0 },
+    { topic:'Algebra', q:'A geometric sequence has first term 2 and common ratio 3. Find S₄.', opts:['78','80','82','84'], ans:1 },
+    { topic:'Calculus', q:'∬ xy dA, 0≤x≤1, 0≤y≤1 = ?', opts:['1/8','1/4','1/2','1'], ans:1 },
+    { topic:'Probability', q:'The Poisson distribution formula P(X=k) = ?', opts:['e^(−λ)λ^k/k!','λ^k/k!','e^λλ^k/k!','e^(−λ)/k!'], ans:0 },
+    { topic:'Calculus', q:'What is the derivative of y = x·ln(x)?', opts:['ln(x)','1 + ln(x)','1/x + ln(x)','x/ln(x)'], ans:1 },
+    { topic:'Algebra', q:'What is the determinant of the matrix [[1,2],[3,4]]?', opts:['−4','−2','2','4'], ans:1 },
+    { topic:'Statistics', q:'In the regression line y = a + bx, what does b represent?', opts:['y-intercept','gradient','correlation coefficient','standard error'], ans:1 },
+    { topic:'Calculus', q:'What is the derivative of f(x) = e^(2x)?', opts:['e^(2x)','2e^(2x)','2xe^(2x)','e^x'], ans:1 },
+    { topic:'Algebra', q:'e^(iπ) + 1 = ?', opts:['0','1','i','2'], ans:0 },
+    { topic:'Probability', q:'If events A and B are independent, then P(A∩B) = ?', opts:['P(A)+P(B)','P(A)×P(B)','P(A)/P(B)','P(A)−P(B)'], ans:1 },
+    { topic:'Calculus', q:'∫ 1/x dx = ?', opts:['x','1/x²','ln|x| + C','e^x + C'], ans:2 },
+    { topic:'Statistics', q:'According to the Central Limit Theorem, as n increases, the sample mean approaches?', opts:['Binomial distribution','Poisson distribution','Normal distribution','Uniform distribution'], ans:2 },
+    { topic:'Algebra', q:'What is the magnitude of vector (3, 4)?', opts:['5','6','7','8'], ans:0 },
+    { topic:'Calculus', q:'What is the derivative of y = sin²(x)?', opts:['2sin(x)','cos²(x)','sin(2x)','2cos(x)'], ans:2 },
+  ],
+};
+
+/* ══════════════════════════════════════════
+   상태
+══════════════════════════════════════════ */
+let state = {
+  name: '', phone: '', email: '', year: null,
+  questions: [], current: 0, answers: [],
+  score: 0, timer: null, timeLeft: 900
+};
+
+/* ══ Year 버튼 생성 ══ */
+(function buildYearGrid() {
+  const grid = document.getElementById('year-grid');
+  const grades = ['K','1','2','3','4','5','6','7','8','9','10','11','12'];
+  grades.forEach((g, i) => {
+    const btn = document.createElement('div');
+    btn.className = 'year-btn';
+    btn.innerHTML = `Year ${g}`;
+    btn.onclick = () => {
+      document.querySelectorAll('.year-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      state.year = (g === 'K') ? 1 : parseInt(g);
+    };
+    grid.appendChild(btn);
+  });
+})();
+
+/* ══ 블록 체크 ══ */
+function checkBlocked(phone) {
+  try {
+    const key = 'sa_test_' + phone;
+    const t = localStorage.getItem(key);
+    if (!t) return false;
+    return (Date.now() - parseInt(t)) < 24 * 60 * 60 * 1000;
+  } catch(e) { return false; }
+}
+function setBlocked(phone) {
+  try { localStorage.setItem('sa_test_' + phone, Date.now()); } catch(e) {}
+}
+
+/* ══ 테스트 시작 ══ */
+function startTest() {
+  const name  = document.getElementById('inp-name').value.trim();
+  const phone = document.getElementById('inp-phone').value.trim();
+  let ok = true;
+
+  document.getElementById('err-name').classList.toggle('show', !name);
+  if (!name) ok = false;
+
+  const phoneClean = phone.replace(/\s/g, '');
+  const phoneOk = phoneClean.length >= 8;
+  document.getElementById('err-phone').classList.toggle('show', !phoneOk);
+  if (!phoneOk) ok = false;
+
+  document.getElementById('err-year').classList.toggle('show', !state.year);
+  if (!state.year) ok = false;
+
+  const consent = document.getElementById('inp-consent').checked;
+  document.getElementById('err-consent').classList.toggle('show', !consent);
+  if (!consent) ok = false;
+
+  if (!ok) return;
+
+  if (checkBlocked(phoneClean)) {
+    showScreen('screen-blocked');
+    return;
+  }
+
+  state.name  = name;
+  state.phone = phoneClean;
+  state.email = document.getElementById('inp-email').value.trim();
+
+  // 문제 선택 (15문항, 랜덤)
+  const bank = QUESTION_BANK[state.year] || QUESTION_BANK[1];
+  state.questions = shuffle([...bank]).slice(0, 15);
+  state.current   = 0;
+  state.answers   = new Array(state.questions.length).fill(-1);
+  state.score     = 0;
+  state.timeLeft  = 900;
+
+  showScreen('screen-quiz');
+  renderQuestion();
+  startTimer();
+}
+
+/* ══ 문제 렌더 ══ */
+function renderQuestion() {
+  const q   = state.questions[state.current];
+  const tot = state.questions.length;
+  const idx = state.current;
+
+  document.getElementById('quiz-label').textContent = `Question ${idx + 1} / ${tot}`;
+  document.getElementById('q-number').textContent   = `Q${idx + 1}. [${q.topic}]`;
+  document.getElementById('q-text').textContent     = q.q;
+  document.getElementById('progress-fill').style.width = ((idx / tot) * 100) + '%';
+
+  const letters = ['A','B','C','D'];
+  document.getElementById('options').innerHTML = q.opts.map((o, i) => `
+    <div class="option ${state.answers[idx] === i ? 'selected' : ''}"
+         onclick="selectOption(${i})" id="opt-${i}">
+      <div class="option-letter">${letters[i]}</div>
+      ${o}
+    </div>
+  `).join('');
+
+  document.getElementById('btn-next').disabled = (state.answers[idx] === -1);
+  document.getElementById('btn-next').textContent =
+    (idx === tot - 1) ? 'See Results →' : 'Next →';
+}
+
+/* ══ 선택지 선택 ══ */
+function selectOption(i) {
+  state.answers[state.current] = i;
+  document.querySelectorAll('.option').forEach((el, idx) => {
+    el.classList.toggle('selected', idx === i);
+  });
+  document.getElementById('btn-next').disabled = false;
+}
+
+/* ══ 다음 문제 ══ */
+function nextQuestion() {
+  const idx = state.current;
+  const q   = state.questions[idx];
+  const ans = state.answers[idx];
+
+  // 정오 표시
+  document.querySelectorAll('.option').forEach((el, i) => {
+    if (i === q.ans) el.classList.add('correct');
+    else if (i === ans && i !== q.ans) el.classList.add('wrong');
+    el.onclick = null;
+  });
+  document.getElementById('btn-next').disabled = true;
+
+  setTimeout(() => {
+    state.current++;
+    if (state.current >= state.questions.length) {
+      finishTest();
+    } else {
+      renderQuestion();
+    }
+  }, 600);
+}
+
+/* ══ 타이머 ══ */
+function startTimer() {
+  clearInterval(state.timer);
+  updateTimerDisplay();
+  state.timer = setInterval(() => {
+    state.timeLeft--;
+    updateTimerDisplay();
+    if (state.timeLeft <= 0) {
+      clearInterval(state.timer);
+      finishTest();
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(state.timeLeft / 60).toString().padStart(2, '0');
+  const s = (state.timeLeft % 60).toString().padStart(2, '0');
+  const el = document.getElementById('timer-display');
+  el.textContent = `${m}:${s}`;
+  el.classList.toggle('warning', state.timeLeft < 60);
+}
+
+/* ══ 테스트 완료 ══ */
+function finishTest() {
+  clearInterval(state.timer);
+  setBlocked(state.phone);
+
+  const total   = state.questions.length;
+  const correct = state.answers.filter((a, i) => a === state.questions[i].ans).length;
+  const pct     = Math.round((correct / total) * 100);
+
+  // 점수 링
+  document.getElementById('score-num').textContent  = pct + '%';
+  document.getElementById('score-label').textContent = `${correct} / ${total}`;
+  const arc = document.getElementById('score-arc');
+  setTimeout(() => {
+    arc.style.strokeDashoffset = 352 - (352 * pct / 100);
+  }, 300);
+
+  // 등급
+  let grade, title, sub;
+  if (pct >= 85) {
+    grade = 'A'; title = 'Excellent'; sub = 'Your ability is well above your current year level!';
+  } else if (pct >= 70) {
+    grade = 'B'; title = 'Good'; sub = 'You are performing at or above your year level.';
+  } else if (pct >= 50) {
+    grade = 'C'; title = 'Developing'; sub = 'There are some weak areas that need focused attention.';
+  } else {
+    grade = 'D'; title = 'Foundation Needed'; sub = 'Core concepts need to be rebuilt from the ground up.';
+  }
+
+  document.getElementById('grade-badge').className = `grade-badge grade-${grade}`;
+  document.getElementById('grade-badge').textContent = `Grade ${grade}`;
+  document.getElementById('result-title').textContent = title;
+  document.getElementById('result-sub').textContent   = sub;
+
+  // 추천
+  const recs = getRecommendations(grade, state.year, pct);
+  document.getElementById('recommend-content').innerHTML =
+    recs.map(r => `<div class="recommend-item"><div class="dot"></div><div>${r}</div></div>`).join('');
+
+  // 영역별 분석
+  const topics = {};
+  state.questions.forEach((q, i) => {
+    if (!topics[q.topic]) topics[q.topic] = { total: 0, correct: 0 };
+    topics[q.topic].total++;
+    if (state.answers[i] === q.ans) topics[q.topic].correct++;
+  });
+
+  const colors = { 100: '#4caf7d', 75: '#c9a84c', 50: '#5b8dee', 0: '#e05252' };
+  function getColor(p) {
+    if (p >= 100) return colors[100];
+    if (p >= 75)  return colors[75];
+    if (p >= 50)  return colors[50];
+    return colors[0];
+  }
+
+  document.getElementById('breakdown-content').innerHTML =
+    Object.entries(topics).map(([topic, data]) => {
+      const p = Math.round((data.correct / data.total) * 100);
+      return `
+        <div class="breakdown-item">
+          <div class="breakdown-topic">${topic}</div>
+          <div class="breakdown-bar">
+            <div class="breakdown-fill" style="width:0%;background:${getColor(p)}" data-pct="${p}"></div>
+          </div>
+          <div class="breakdown-pct">${p}%</div>
+        </div>`;
+    }).join('');
+
+  setTimeout(() => {
+    document.querySelectorAll('.breakdown-fill').forEach(el => {
+      el.style.width = el.dataset.pct + '%';
+    });
+  }, 400);
+
+  showScreen('screen-result');
+}
+
+/* ══ 추천 메시지 ══ */
+function getRecommendations(grade, year, pct) {
+  const base = [
+    `We recommend our Year ${year} ${grade === 'A' ? 'Advanced' : grade === 'B' ? 'Standard' : 'Foundation'} class.`,
+  ];
+  if (grade === 'A') {
+    base.push('Consider our Selective School / OC preparation advanced program.');
+    base.push('Our NAPLAN high-score strategy classes can take you to the next level.');
+  } else if (grade === 'B') {
+    base.push('Targeted work on weak topics can help you achieve an A grade.');
+    base.push('Regular practice exams will sharpen your exam technique.');
+  } else if (grade === 'C') {
+    base.push('You need to consolidate core concepts through focused revision.');
+    base.push('A small-group intensive class can produce rapid improvement.');
+  } else {
+    base.push('We recommend rebuilding foundational maths concepts step by step.');
+    base.push('A 1-on-1 tutoring program will help establish a solid foundation.');
+  }
+  return base;
+}
+
+/* ══ 화면 전환 ══ */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+/* ══ 리셋 ══ */
+function resetTest() {
+  clearInterval(state.timer);
+  state = {
+    name: '', phone: '', email: '', year: null,
+    questions: [], current: 0, answers: [],
+    score: 0, timer: null, timeLeft: 900
+  };
+  document.getElementById('inp-name').value  = '';
+  document.getElementById('inp-phone').value = '';
+  document.getElementById('inp-email').value = '';
+  document.getElementById('inp-consent').checked = false;
+  document.querySelectorAll('.year-btn').forEach(b => b.classList.remove('selected'));
+  showScreen('screen-intro');
+}
+
+/* ══ 유틸 ══ */
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+</script>
+</body>
+</html>
