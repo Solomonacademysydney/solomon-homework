@@ -64,6 +64,23 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .btn-login{width:100%;padding:14px;background:var(--navy);color:#fff;border:none;border-radius:12px;font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;cursor:pointer;transition:all .2s;margin-top:8px;}
 .btn-login:hover{background:linear-gradient(90deg,#0d1526,var(--navy));transform:translateY(-1px);}
 .login-error{color:var(--red);font-size:13px;margin-top:10px;display:none;font-weight:700;}
+.login-divider-thin{width:100%;height:1px;background:var(--border);margin:20px 0;}
+@keyframes goldPulse{0%,100%{box-shadow:0 0 0 0 rgba(212,175,55,.5),0 4px 20px rgba(212,175,55,.25)}50%{box-shadow:0 0 0 8px rgba(212,175,55,0),0 4px 28px rgba(212,175,55,.4)}}
+@keyframes shimmer{0%{background-position:200% center}100%{background-position:-200% center}}
+.btn-level-test{
+  display:block;width:100%;padding:20px 16px;
+  background:linear-gradient(270deg,#d4af37,#b8960c,#f0d060,#d4af37);
+  background-size:300% auto;
+  color:var(--navy);
+  border:none;border-radius:14px;
+  font-family:'Nunito',sans-serif;font-size:18px;font-weight:900;
+  cursor:pointer;text-align:center;text-decoration:none;letter-spacing:.5px;
+  animation:goldPulse 2s ease-in-out infinite, shimmer 4s linear infinite;
+  position:relative;overflow:hidden;
+}
+.btn-level-test:hover{transform:translateY(-2px);filter:brightness(1.08);animation:shimmer 1.5s linear infinite;}
+.btn-level-test-wrap{margin-top:4px;}
+.btn-level-test-label{font-size:11px;text-align:center;color:var(--muted);margin-top:8px;font-weight:700;letter-spacing:.5px;}
 
 /* ── APP SHELL ── */
 #app{display:none;min-height:100vh;}
@@ -128,7 +145,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .preview-q{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:#f8f6ef;border-radius:12px;margin-bottom:8px;}
 .preview-num{width:32px;height:32px;background:var(--navy);color:var(--gold);border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;flex-shrink:0;}
 .preview-info{flex:1;}
-.preview-text{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;white-space:pre-wrap;word-break:break-word;}
+.preview-text{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;}
 .preview-meta{display:flex;gap:8px;align-items:center;}
 .type-badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:800;text-transform:uppercase;}
 .badge-mc{background:#fef8e1;color:#7a6200;}
@@ -161,7 +178,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .question-card{background:#fff;border-radius:var(--radius);padding:32px 36px;box-shadow:0 4px 20px rgba(0,0,0,.08);margin-bottom:16px;border:2px solid transparent;}
 .qc-num-row{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
 .qc-num{width:40px;height:40px;background:var(--navy);color:var(--gold);border-radius:11px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;}
-.qc-text{font-size:17px;font-weight:700;color:var(--navy);line-height:1.55;margin-bottom:24px;white-space:pre-wrap;word-break:break-word;}
+.qc-text{font-size:17px;font-weight:700;color:var(--navy);line-height:1.55;margin-bottom:24px;}
 
 .options{display:flex;flex-direction:column;gap:10px;}
 .opt-btn{display:flex;align-items:center;gap:14px;padding:14px 18px;border:2px solid var(--border);border-radius:13px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;font-size:15px;background:#fff;text-align:left;transition:all .15s;}
@@ -316,6 +333,11 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
       </div>
       <button class="btn-login" onclick="doLogin()">Sign In →</button>
       <div class="login-error" id="loginError">❌ Incorrect ID or password.</div>
+      <div class="login-divider-thin"></div>
+      <div class="btn-level-test-wrap">
+        <a href="lt/level-test.html" class="btn-level-test">✨ 무료 레벨 테스트 받기 →</a>
+        <div class="btn-level-test-label">🎯 내 수학 실력을 확인해보세요 · 무료 · 15분 소요</div>
+      </div>
     </div>
   </div>
 </div>
@@ -377,7 +399,35 @@ function initStore() {
 }
 
 // period = { year, month, week }
-function hwKey(yearLevel, p) { return `y${yearLevel}_${p.year}_m${String(p.month).padStart(2,'0')}_w${p.week}`; }
+function hwKey(yearLevel, country, p) { return `${country}_y${yearLevel}_${p.year}_m${String(p.month).padStart(2,'0')}_w${p.week}`; }
+function prevPeriod(p) {
+  if (p.week > 1) return { year: p.year, month: p.month, week: p.week - 1 };
+  if (p.month > 1) return { year: p.year, month: p.month - 1, week: 5 };
+  return { year: p.year - 1, month: 12, week: 5 };
+}
+function nextPeriod(p) {
+  if (p.week < 5) return { year: p.year, month: p.month, week: p.week + 1 };
+  if (p.month < 12) return { year: p.year, month: p.month + 1, week: 1 };
+  return { year: p.year + 1, month: 1, week: 1 };
+}
+function periodGte(a, b) { // a >= b?
+  if (a.year !== b.year) return a.year > b.year;
+  if (a.month !== b.month) return a.month > b.month;
+  return a.week >= b.week;
+}
+function navigateStudentPeriod(dir) {
+  const store = getStore();
+  const cur = studentPeriod || store.currentPeriod;
+  if (dir === -1) {
+    studentPeriod = prevPeriod(cur);
+  } else {
+    const nxt = nextPeriod(cur);
+    studentPeriod = periodGte(nxt, store.currentPeriod) ? store.currentPeriod : nxt;
+  }
+  currentSetIdx = null;
+  qIdx = 0;
+  renderStudent();
+}
 function subKey(sid, p, setIdx=0) { return `${sid}_${p.year}_m${String(p.month).padStart(2,'0')}_w${p.week}_s${setIdx}`; }
 function periodLabel(p)      { return `${p.year} – Month ${p.month} Week ${p.week}`; }
 
@@ -422,6 +472,18 @@ function getStore() {
     }
     const autoName = parentDisplayName(p.childIds || []);
     if (p.name !== autoName) { p.name = autoName; migrated = true; }
+  });
+  // migrate hwKey format (y5_...) → country-prefixed (AU_y5_...)
+  Object.keys(d.homeworkSets||{}).forEach(key => {
+    if (/^y\d+_/.test(key)) {
+      d.homeworkSets['AU_' + key] = d.homeworkSets[key];
+      delete d.homeworkSets[key];
+      migrated = true;
+    }
+  });
+  // migrate students without country field → default 'AU'
+  (d.users||[]).forEach(u => {
+    if (u.role==='student' && !u.country) { u.country='AU'; migrated=true; }
   });
   // migrate Korean set titles (세트 N) → English (Set N)
   Object.keys(d.homeworkSets||{}).forEach(key => {
@@ -520,23 +582,32 @@ function doLogout() {
 // ═══════════════════════════════════════
 //  TEACHER
 // ═══════════════════════════════════════
-let selectedYear = null;       // currently selected year level
+let selectedYear    = null;    // currently selected year level
+let selectedCountry = 'AU';   // 'AU' | 'KR'
 let parsedQuestions = [];
 let editingSetIdx = null;      // -1=new set, 0+=editing existing set
 let editingCalcRanges = [];   // [{from, to, allowed}]
 
 function renderTeacher() {
-  const store    = getStore();
-  const p        = store.currentPeriod;
-  const students = store.users.filter(u => u.role==='student');
-  const years    = [...new Set(students.map(s=>s.year))].sort((a,b)=>a-b);
+  const store      = getStore();
+  const p          = store.currentPeriod;
+  const allStudents = store.users.filter(u => u.role==='student');
+  const students   = allStudents.filter(s => (s.country||'AU') === selectedCountry);
+  const years      = [...new Set(students.map(s=>s.year))].sort((a,b)=>a-b);
 
   const yearOpts  = [2024,2025,2026,2027,2028].map(y=>`<option value="${y}"${y===p.year?'selected':''}>${y}</option>`).join('');
   const monthOpts = Array.from({length:12},(_,i)=>i+1).map(m=>`<option value="${m}"${m===p.month?'selected':''}>${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1]}</option>`).join('');
   const weekOpts  = [1,2,3,4,5].map(w=>`<option value="${w}"${w===p.week?'selected':''}>${w===1?'Week 1':w===2?'Week 2':w===3?'Week 3':w===4?'Week 4':'Week 5'}</option>`).join('');
 
+  const auCount = allStudents.filter(s=>(s.country||'AU')==='AU').length;
+  const krCount = allStudents.filter(s=>s.country==='KR').length;
+
   let html = `
     <div class="page-title">📋 Weekly Homework Management</div>
+    <div style="display:flex;gap:10px;margin-bottom:20px;">
+      <button class="btn-sm ${selectedCountry==='AU'?'btn-navy':'btn-blue'}" onclick="selectCountryTab('AU')">🇦🇺 Australian (${auCount})</button>
+      <button class="btn-sm ${selectedCountry==='KR'?'btn-navy':'btn-blue'}" onclick="selectCountryTab('KR')">🇰🇷 Korean (${krCount})</button>
+    </div>
     <div class="page-sub">Select a year group to assign the same homework to all students in that year.</div>
     <div class="week-bar">
       <label>Select period:</label>
@@ -550,7 +621,7 @@ function renderTeacher() {
 
   years.forEach(yr => {
     const yrStudents = students.filter(s=>s.year===yr);
-    const hw  = store.homeworkSets[hwKey(yr, p)];
+    const hw  = store.homeworkSets[hwKey(yr, selectedCountry, p)];
     const sets = hw?.sets || [];
     const totalSets = sets.length;
     const totalQ = sets.reduce((n,s)=>n+s.questions.length, 0);
@@ -593,7 +664,7 @@ function renderTeacher() {
 
   // ── homework editor ──────────────────────────────
   if (selectedYear !== null) {
-    const hw = store.homeworkSets[hwKey(selectedYear, p)];
+    const hw = store.homeworkSets[hwKey(selectedYear, selectedCountry, p)];
     const sets = hw?.sets || [];
     const yrStudents = students.filter(s=>s.year===selectedYear);
     html += `
@@ -690,7 +761,7 @@ function renderTeacher() {
     <h2>👨‍🎓 Student Status by Year — ${periodLabel(p)}</h2>`;
   years.forEach(yr => {
     const yrStudents = students.filter(s=>s.year===yr);
-    const hw = store.homeworkSets[hwKey(yr, p)];
+    const hw = store.homeworkSets[hwKey(yr, selectedCountry, p)];
     const sets = hw?.sets || [];
     html += `<div style="margin-bottom:16px;">
       <div style="font-weight:800;color:var(--navy);font-size:14px;margin-bottom:6px;">Year ${yr}</div>
@@ -704,14 +775,7 @@ function renderTeacher() {
           const sub = store.submissions[subKey(s.id, p, idx)];
           if (!sub?.submitted) return `<span style="color:var(--muted);font-size:12px;">Set${idx+1}:⏳</span>`;
           const autoQs = set.questions.filter(q=>q.type!=='written');
-          const correct = autoQs.filter(q => {
-            if (q.subParts && q.subParts.length >= 2 && q.subAnswers) {
-              return Object.entries(q.subAnswers).every(([p,v]) =>
-                (sub.answers[q.id+'_'+p]||'').toUpperCase() === (v||'').toUpperCase()
-              );
-            }
-            return (sub.answers[q.id]||'').toUpperCase() === (q.answer||'').toUpperCase();
-          }).length;
+          const correct = autoQs.filter(q=>sub.answers[q.id]===q.answer).length;
           const pct = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
           const cls = pct>=80?'pill-a':pct>=60?'pill-b':'pill-c';
           return `<span style="font-size:12px;">Set${idx+1}:</span><span class="score-pill ${cls}" style="font-size:11px;">${pct}%</span>`;
@@ -764,6 +828,15 @@ function selectYear(yr) {
   renderTeacher();
 }
 
+function selectCountryTab(c) {
+  selectedCountry = c;
+  selectedYear = null;
+  parsedQuestions = [];
+  editingSetIdx = null;
+  editingCalcRanges = [];
+  renderTeacher();
+}
+
 function cancelEditor() {
   if (editingSetIdx !== null) {
     editingSetIdx = null;
@@ -782,7 +855,7 @@ function editSet(idx) {
   editingSetIdx = idx;
   parsedQuestions = [];
   const store = getStore();
-  const hw = store.homeworkSets[hwKey(selectedYear, store.currentPeriod)];
+  const hw = store.homeworkSets[hwKey(selectedYear, selectedCountry, store.currentPeriod)];
   editingCalcRanges = idx >= 0 ? [...(hw?.sets?.[idx]?.calculatorRanges || [])] : [];
   renderTeacher();
 }
@@ -790,12 +863,12 @@ function editSet(idx) {
 function deleteSet(idx) {
   const store = getStore();
   const p = store.currentPeriod;
-  const key = hwKey(selectedYear, p);
+  const key = hwKey(selectedYear, selectedCountry, p);
   const hw = store.homeworkSets[key];
   if (!hw?.sets) return;
   const setTitle = hw.sets[idx]?.title || `Set ${idx+1}`;
   if (!confirm(`Delete '${setTitle}'?\n(All student submissions for this set will also be deleted)`)) return;
-  const yrStudents = store.users.filter(u=>u.role==='student'&&u.year===selectedYear);
+  const yrStudents = store.users.filter(u=>u.role==='student'&&u.year===selectedYear&&(u.country||'AU')===selectedCountry);
   // delete submissions from this set onwards
   yrStudents.forEach(s => {
     for (let i = idx; i <= hw.sets.length; i++) {
@@ -835,12 +908,7 @@ function questionsToText(qs) {
   }).join('\n\n');
 }
 function answersToText(qs) {
-  return qs.map((q,i) => {
-    if (q.subAnswers && Object.keys(q.subAnswers).length > 0) {
-      return Object.entries(q.subAnswers).map(([p,v]) => `${i+1}. (${p}) ${v||''}`).join('\n');
-    }
-    return `${i+1}. ${q.answer||''}`;
-  }).join('\n');
+  return qs.map((q,i) => `${i+1}. ${q.answer||''}`).join('\n');
 }
 
 // ─── PARSE ─────────────────────────────
@@ -852,30 +920,17 @@ function doParse() {
   const questions = parseQuestions(qRaw);
   const answers   = parseAnswers(aRaw);
 
-  // Merge answers — sub-part questions get subAnswers object, others get plain answer
+  // Merge answers
   questions.forEach(q => {
-    if (q.subParts && q.subParts.length >= 2) {
-      // Collect (a), (b), ... answers by composite key e.g. '7a', '7b'
-      const sub = {};
-      q.subParts.forEach(p => {
-        const val = answers['' + q.num + p];
-        if (val) sub[p] = val;
-      });
-      if (Object.keys(sub).length > 0) {
-        q.subAnswers = sub;
-        // Store a combined answer string for basic compatibility
-        q.answer = Object.entries(sub).map(([p,v])=>`(${p}) ${v}`).join(' / ');
-      }
+    const ans = answers[q.num];
+    if (ans === undefined) return;
+    if (q.type === 'mc' && q.options) {
+      // If answer is letter (A-E), map to option text or keep as letter
+      const letters = ['A','B','C','D','E'];
+      const idx = letters.indexOf(ans.toUpperCase());
+      q.answer = idx >= 0 ? letters[idx] : ans; // store as letter
     } else {
-      const ans = answers[q.num];
-      if (ans === undefined) return;
-      if (q.type === 'mc' && q.options) {
-        const letters = ['A','B','C','D','E'];
-        const idx = letters.indexOf(ans.toUpperCase());
-        q.answer = idx >= 0 ? letters[idx] : ans;
-      } else {
-        q.answer = ans;
-      }
+      q.answer = ans;
     }
   });
 
@@ -928,11 +983,7 @@ function doParse() {
           ${optStr}
           <div class="preview-meta">
             <span class="type-badge ${badgeCls}">${typeLabel}</span>
-            ${q.subAnswers && Object.keys(q.subAnswers).length > 0
-              ? Object.entries(q.subAnswers).map(([p,v])=>`<span class="ans-tag" style="margin-right:8px;">→ (${p}) ${v}</span>`).join('')
-              : q.answer
-                ? `<span class="ans-tag">→ Answer: ${q.answer}</span>`
-                : '<span style="color:var(--red);font-size:12px;font-weight:700;">No answer</span>'}
+            ${q.answer ? `<span class="ans-tag">→ Answer: ${q.answer}</span>` : '<span style="color:var(--red);font-size:12px;font-weight:700;">No answer</span>'}
           </div>
         </div>
       </div>`;
@@ -947,12 +998,12 @@ function doSave() {
   if (!parsedQuestions.length) { alert('Please parse the questions first.'); return; }
   const store = getStore();
   const p     = store.currentPeriod;
-  const key   = hwKey(selectedYear, p);
-  const yrStudents = store.users.filter(u=>u.role==='student' && u.year===selectedYear);
+  const key   = hwKey(selectedYear, selectedCountry, p);
+  const yrStudents = store.users.filter(u=>u.role==='student' && u.year===selectedYear && (u.country||'AU')===selectedCountry);
   const qs = parsedQuestions.map((q,i) => ({ ...q, id:`q${i}` }));
 
   if (!store.homeworkSets[key]) {
-    store.homeworkSets[key] = { year: selectedYear, period: p, sets: [] };
+    store.homeworkSets[key] = { year: selectedYear, country: selectedCountry, period: p, sets: [] };
   }
   const hw = store.homeworkSets[key];
   const isNew = editingSetIdx === -1 || editingSetIdx === null;
@@ -983,7 +1034,7 @@ function doSave() {
 function previewHomework(yr) {
   const store = getStore();
   const p     = store.currentPeriod;
-  const hw    = store.homeworkSets[hwKey(yr, p)];
+  const hw    = store.homeworkSets[hwKey(yr, selectedCountry, p)];
   if (!hw?.sets?.length) return;
 
   let html = `<h2 style="font-family:'Baloo 2',cursive;color:var(--navy);margin-bottom:16px;">👁 Year ${yr} – ${periodLabel(p)} Preview</h2>`;
@@ -1012,9 +1063,9 @@ function previewHomework(yr) {
 function viewResults(yr) {
   const store    = getStore();
   const p        = store.currentPeriod;
-  const hw       = store.homeworkSets[hwKey(yr, p)];
+  const hw       = store.homeworkSets[hwKey(yr, selectedCountry, p)];
   if (!hw?.sets?.length) return;
-  const yrStudents = store.users.filter(u=>u.role==='student' && u.year===yr);
+  const yrStudents = store.users.filter(u=>u.role==='student' && u.year===yr && (u.country||'AU')===selectedCountry);
 
   let html = `<h2 style="font-family:'Baloo 2',cursive;color:var(--navy);margin-bottom:16px;">📊 Year ${yr} – ${periodLabel(p)} Results</h2>`;
 
@@ -1029,14 +1080,7 @@ function viewResults(yr) {
         return;
       }
       const autoQs = set.questions.filter(q=>q.type!=='written');
-      const correct = autoQs.filter(q => {
-        if (q.subParts && q.subParts.length >= 2 && q.subAnswers) {
-          return Object.entries(q.subAnswers).every(([p,v]) =>
-            (sub.answers[q.id+'_'+p]||'').toUpperCase() === (v||'').toUpperCase()
-          );
-        }
-        return (sub.answers[q.id]||'').toUpperCase() === (q.answer||'').toUpperCase();
-      }).length;
+      const correct = autoQs.filter(q=>sub.answers[q.id]===q.answer).length;
       const pct = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
       const cls = pct>=80?'pill-a':pct>=60?'pill-b':'pill-c';
       html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
@@ -1044,35 +1088,17 @@ function viewResults(yr) {
         <span style="font-size:13px;color:var(--muted);">${correct}/${autoQs.length} correct</span>
       </div>`;
       set.questions.forEach((q,i) => {
-        if (q.subParts && q.subParts.length >= 2 && q.subAnswers) {
-          const partResults = q.subParts.map(p => {
-            const a = sub.answers[q.id+'_'+p];
-            const e = q.subAnswers[p];
-            if (!a) return `<span style="color:var(--muted);">(${p}) No answer</span>`;
-            const ok = (a||'').toUpperCase() === (e||'').toUpperCase();
-            return ok
-              ? `<span style="color:#166534;">✅ (${p}) ${a}</span>`
-              : `<span style="color:#991b1b;">❌ (${p}) ${a} / ✓${e}</span>`;
-          });
-          html += `<div class="res-q res-none" style="font-size:13px;">
-            <b>Q${i+1}.</b>
-            <span style="flex:1;">${q.text.substring(0,50)}${q.text.length>50?'...':''}
-              <span style="margin-left:8px;">${partResults.join(' &nbsp; ')}</span>
-            </span>
-          </div>`;
-        } else {
-          const ans = sub.answers[q.id];
-          let cls2='res-none', status='No answer';
-          if (ans!==undefined) {
-            const ok = (ans||'').toUpperCase() === (q.answer||'').toUpperCase();
-            cls2 = ok?'res-ok':'res-wrong';
-            status = ok ? `✅ Correct` : `❌ Wrong (answered: ${ans} / correct: ${q.answer})`;
-          }
-          html += `<div class="res-q ${cls2}" style="font-size:13px;">
-            <b>Q${i+1}.</b>
-            <span style="flex:1;">${q.text.substring(0,60)}${q.text.length>60?'...':''} — ${status}</span>
-          </div>`;
+        const ans = sub.answers[q.id];
+        let cls2='res-none', status='No answer';
+        if (ans!==undefined) {
+          const ok = ans===q.answer;
+          cls2 = ok?'res-ok':'res-wrong';
+          status = ok ? `✅ Correct` : `❌ Wrong (answered: ${ans} / correct: ${q.answer})`;
         }
+        html += `<div class="res-q ${cls2}" style="font-size:13px;">
+          <b>Q${i+1}.</b>
+          <span style="flex:1;">${q.text.substring(0,60)}${q.text.length>60?'...':''} — ${status}</span>
+        </div>`;
       });
     });
     html += `</div>`;
@@ -1093,6 +1119,10 @@ function renderTeacherSettings(store) {
       <td><input id="se_name_${s.id}" value="${s.name}" style="width:100px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:13px;"></td>
       <td><select id="se_year_${s.id}" style="border:1px solid var(--border);border-radius:6px;padding:3px 4px;font-size:13px;">
         ${[3,4,5,6,7,8,9].map(y=>`<option value="${y}"${y===s.year?'selected':''}>${y}</option>`).join('')}
+      </select></td>
+      <td><select id="se_country_${s.id}" style="border:1px solid var(--border);border-radius:6px;padding:3px 4px;font-size:13px;">
+        <option value="AU"${(s.country||'AU')==='AU'?'selected':''}>🇦🇺 AU</option>
+        <option value="KR"${s.country==='KR'?'selected':''}>🇰🇷 KR</option>
       </select></td>
       <td><input id="se_pw_${s.id}" value="${s.pw}" style="width:90px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:13px;"></td>
       <td style="white-space:nowrap;">
@@ -1120,7 +1150,7 @@ function renderTeacherSettings(store) {
     <div class="settings-card" style="margin-top:8px;">
       <h2>👨‍🎓 Student Management</h2>
       <table class="results-table" style="margin-bottom:20px;">
-        <thead><tr><th>ID</th><th>Name</th><th>Year</th><th>Password</th><th>Edit</th></tr></thead>
+        <thead><tr><th>ID</th><th>Name</th><th>Year</th><th>Country</th><th>Password</th><th>Edit</th></tr></thead>
         <tbody>${studentRows}</tbody>
       </table>
       <h3 style="font-family:'Baloo 2',cursive;color:var(--navy);margin-bottom:14px;">Add Student</h3>
@@ -1130,6 +1160,10 @@ function renderTeacherSettings(store) {
       </div>
       <div class="field-row">
         <div class="field"><label>Year</label><select id="ns_year">${yearSel}</select></div>
+        <div class="field"><label>Country</label><select id="ns_country" style="width:100%;padding:10px 13px;border:2px solid var(--border);border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;">
+          <option value="AU">🇦🇺 Australian</option>
+          <option value="KR">🇰🇷 Korean</option>
+        </select></div>
         <div class="field"><label>Password</label><input id="ns_pw" value="math2024"></div>
       </div>
       <button class="btn-sm btn-navy" onclick="addStudent()">Add Student ✓</button>
@@ -1181,9 +1215,10 @@ function saveStudentEdit(oldId) {
     });
     u.id = newId;
   }
-  u.name = document.getElementById(`se_name_${oldId}`).value.trim() || u.name;
-  u.year = parseInt(document.getElementById(`se_year_${oldId}`).value);
-  u.pw   = document.getElementById(`se_pw_${oldId}`).value.trim() || u.pw;
+  u.name    = document.getElementById(`se_name_${oldId}`).value.trim() || u.name;
+  u.year    = parseInt(document.getElementById(`se_year_${oldId}`).value);
+  u.country = document.getElementById(`se_country_${oldId}`)?.value || u.country || 'AU';
+  u.pw      = document.getElementById(`se_pw_${oldId}`).value.trim() || u.pw;
   saveStore(store);
   alert(`✅ ${u.name}'s info updated.`);
   renderTeacher();
@@ -1331,11 +1366,12 @@ function addStudent() {
   const id=document.getElementById('ns_id').value.trim();
   const name=document.getElementById('ns_name').value.trim();
   const year=parseInt(document.getElementById('ns_year').value);
+  const country=document.getElementById('ns_country').value||'AU';
   const pw=document.getElementById('ns_pw').value.trim();
   if(!id||!name||!pw){alert('Please fill in all fields.');return;}
   const store=getStore();
   if(store.users.find(u=>u.id===id)){alert('This ID already exists.');return;}
-  store.users.push({id,pw,role:'student',name,year});
+  store.users.push({id,pw,role:'student',name,year,country});
   saveStore(store);
   document.getElementById('ns_ok').style.display='block';
   setTimeout(()=>renderTeacher(),800);
@@ -1370,15 +1406,17 @@ let currentSetIdx = null;      // null=set list screen, 0+=active set index
 function renderStudent() {
   const store = getStore();
   const p     = studentPeriod || store.currentPeriod;
-  const hw    = store.homeworkSets[hwKey(currentUser.year, p)];
+  const hw    = store.homeworkSets[hwKey(currentUser.year, currentUser.country||'AU', p)];
 
   if (!hw || !hw.sets || hw.sets.length === 0) {
+    const isCurrentP = periodGte(p, store.currentPeriod) && periodGte(store.currentPeriod, p);
     document.getElementById('mainContent').innerHTML = `
       <div class="exam-wrap">
+        ${renderPeriodNav(p, store.currentPeriod)}
         <div class="empty" style="background:#fff;border-radius:var(--radius);padding:60px;box-shadow:0 2px 10px rgba(0,0,0,.06);">
           <div style="font-size:48px;margin-bottom:16px;">📭</div>
-          <div style="font-size:18px;font-weight:800;color:var(--navy);">No homework assigned yet for ${periodLabel(p)}</div>
-          <div style="margin-top:8px;color:var(--muted);">Your teacher will post homework here when it's ready!</div>
+          <div style="font-size:18px;font-weight:800;color:var(--navy);">No homework assigned for ${periodLabel(p)}</div>
+          <div style="margin-top:8px;color:var(--muted);">${isCurrentP ? "Your teacher will post homework here when it's ready!" : 'Try another week.'}</div>
         </div>
       </div>`;
     document.getElementById('mainContent').innerHTML += renderMyAccountCard();
@@ -1405,19 +1443,13 @@ function renderStudent() {
   const total    = qs.length;
   const pct      = Math.round((qIdx+1)/total*100);
 
-  // submitted → show results screen
+  // submitted → show results + review screen
   if (sub.submitted) {
     const autoQs  = qs.filter(q=>q.type!=='written');
-    const correct = autoQs.filter(q => {
-      if (q.subParts && q.subParts.length >= 2 && q.subAnswers) {
-        return Object.entries(q.subAnswers).every(([p,v]) =>
-          (sub.answers[q.id+'_'+p]||'').toUpperCase() === (v||'').toUpperCase()
-        );
-      }
-      return (sub.answers[q.id]||'').toUpperCase() === (q.answer||'').toUpperCase();
-    }).length;
+    const correct = autoQs.filter(q=>sub.answers[q.id]===q.answer).length;
     const score   = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
     const scoreMsg = score>=90?'🎉 Outstanding!':score>=70?'👍 Well done!':score>=50?'💪 Keep going!':'📚 Study more!';
+    const letters = ['A','B','C','D','E'];
 
     let html = `
       <div class="exam-wrap">
@@ -1428,42 +1460,101 @@ function renderStudent() {
         <div style="text-align:center;margin-bottom:20px;">
           <button class="btn-nav" onclick="currentSetIdx=null;renderStudent()">← Back to Set List</button>
         </div>
-        <div class="results-wrap">
-          <h3>📝 ${set.title} Results</h3>`;
+        <div class="results-wrap" style="margin-bottom:20px;">
+          <h3>📊 ${set.title} Summary</h3>`;
 
     qs.forEach((q,i) => {
-      if (q.subParts && q.subParts.length >= 2 && q.subAnswers) {
-        // Multi-part question: show one card with each sub-part result
-        const partResults = q.subParts.map(p => {
-          const partAns = sub.answers[q.id + '_' + p];
-          const expected = q.subAnswers[p];
-          if (partAns === undefined) return { p, cls:'res-none', status:'No answer' };
-          const ok = expected && partAns.toUpperCase() === expected.toUpperCase();
-          return { p, cls: ok?'res-ok':'res-wrong',
-            status: ok ? `✅ (${p}) Correct` : `❌ (${p}) Your: ${partAns} / Correct: ${expected||'?'}` };
-        });
-        const allOk = partResults.every(r=>r.cls==='res-ok');
-        const overallCls = allOk ? 'res-ok' : partResults.some(r=>r.cls==='res-wrong') ? 'res-wrong' : 'res-none';
-        html += `<div class="res-q ${overallCls}">
-          <b>Q${i+1}.</b>
-          <span style="flex:1;">${q.text.substring(0,60)}${q.text.length>60?'...':''}
-            <div style="margin-top:4px;">${partResults.map(r=>`<span style="margin-right:12px;">${r.status}</span>`).join('')}</div>
-          </span>
+      const ans = sub.answers[q.id];
+      let cls='res-none', status='—';
+      if (ans!==undefined) {
+        const ok = q.answer && ans===q.answer;
+        cls = ok?'res-ok':'res-wrong';
+        status = ok ? '✅ Correct' : '❌ Wrong';
+      }
+      html += `<div class="res-q ${cls}">
+        <b style="min-width:36px;">Q${i+1}.</b>
+        <span style="flex:1;">${q.text}</span>
+        <span style="flex-shrink:0;font-weight:700;">${status}</span>
+      </div>`;
+    });
+    html += `</div>
+
+      <div class="results-wrap">
+        <h3>📚 Review Your Answers</h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Check each question to see where you went right or wrong.</p>`;
+
+    qs.forEach((q,i) => {
+      const userAns   = sub.answers[q.id];
+      const correctAns = q.answer;
+      const isCorrect  = userAns !== undefined && userAns === correctAns;
+      const borderCol  = userAns===undefined ? 'var(--border)' : isCorrect ? 'var(--green)' : 'var(--red)';
+      const numBg      = userAns===undefined ? '#94a3b8' : isCorrect ? '#16a34a' : '#ef4444';
+
+      html += `<div style="background:#f8f6ef;border-radius:14px;padding:20px;margin-bottom:16px;border:2px solid ${borderCol};">
+        <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;">
+          <div style="width:36px;height:36px;background:${numBg};color:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;flex-shrink:0;">${i+1}</div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy);line-height:1.5;flex:1;">${q.text}</div>
         </div>`;
+
+      if (q.type==='mc' && q.options) {
+        html += `<div style="display:flex;flex-direction:column;gap:8px;">`;
+        q.options.forEach((opt,oi) => {
+          const ltr = letters[oi];
+          const isAns  = ltr===correctAns;
+          const isUser = ltr===userAns;
+          let s = 'border:2px solid var(--border);background:#fff;';
+          let badge = '';
+          if (isAns && isUser) {
+            s='border:2px solid var(--green);background:#dcfce7;';
+            badge=`<span style="margin-left:auto;font-size:12px;font-weight:800;color:#166534;">✅ Correct</span>`;
+          } else if (isAns) {
+            s='border:2px solid var(--green);background:#dcfce7;';
+            badge=`<span style="margin-left:auto;font-size:12px;font-weight:800;color:#166534;">✅ Answer</span>`;
+          } else if (isUser) {
+            s='border:2px solid var(--red);background:#fee2e2;';
+            badge=`<span style="margin-left:auto;font-size:12px;font-weight:800;color:#991b1b;">❌ Your answer</span>`;
+          }
+          const circleBg = isAns?'#16a34a':isUser?'#ef4444':'#cbd5e1';
+          const circleCol = (isAns||isUser)?'#fff':'var(--navy)';
+          html += `<div style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-radius:12px;${s}">
+            <div style="width:28px;height:28px;border-radius:50%;background:${circleBg};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:${circleCol};flex-shrink:0;">${ltr}</div>
+            <span style="font-size:14px;font-weight:600;flex:1;">${opt}</span>
+            ${badge}
+          </div>`;
+        });
+        html += `</div>`;
+
+      } else if (q.type==='ox') {
+        html += `<div style="display:flex;gap:12px;">`;
+        ['O','X'].forEach(btn => {
+          const isAns  = btn===correctAns;
+          const isUser = btn===userAns;
+          let s = 'border:2px solid var(--border);background:#fff;';
+          if (isAns&&isUser) s='border:2px solid var(--green);background:#dcfce7;';
+          else if (isAns)    s='border:2px solid var(--green);background:#dcfce7;';
+          else if (isUser)   s='border:2px solid var(--red);background:#fee2e2;';
+          html += `<div style="flex:1;padding:16px;border-radius:13px;${s}text-align:center;">
+            <div style="font-size:26px;font-weight:900;">${btn}</div>
+            ${isAns&&isUser?'<div style="font-size:11px;font-weight:800;color:#166534;">✅ Correct</div>':''}
+            ${isAns&&!isUser?'<div style="font-size:11px;font-weight:800;color:#166534;">✅ Answer</div>':''}
+            ${isUser&&!isAns?'<div style="font-size:11px;font-weight:800;color:#991b1b;">❌ Your answer</div>':''}
+          </div>`;
+        });
+        html += `</div>`;
+
       } else {
-        const ans = sub.answers[q.id];
-        let cls='res-none', status='No answer';
-        if (ans!==undefined) {
-          const ok = q.answer && ans.toUpperCase() === q.answer.toUpperCase();
-          cls = ok?'res-ok':'res-wrong';
-          status = ok ? `✅ Correct (${ans})` : `❌ Wrong — Your answer: ${ans}, Correct: ${q.answer||'?'}`;
-        }
-        html += `<div class="res-q ${cls}">
-          <b>Q${i+1}.</b>
-          <span style="flex:1;">${q.text.substring(0,80)}${q.text.length>80?'...':''} — ${status}</span>
+        const inputBg = isCorrect?'#dcfce7':userAns===undefined?'#fff':'#fee2e2';
+        const inputBorder = isCorrect?'var(--green)':userAns===undefined?'var(--border)':'var(--red)';
+        html += `<div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:700;">Your answer:</div>
+          <div style="padding:10px 14px;border-radius:10px;border:2px solid ${inputBorder};background:${inputBg};font-size:14px;font-weight:700;">${userAns||'(no answer)'}</div>
+          ${correctAns&&!isCorrect?`<div style="margin-top:8px;font-size:13px;color:#166534;font-weight:700;">✅ Correct answer: ${correctAns}</div>`:''}
         </div>`;
       }
+
+      html += `</div>`;
     });
+
     html += `</div></div>`;
     document.getElementById('mainContent').innerHTML = html;
     return;
@@ -1498,9 +1589,7 @@ function renderStudent() {
     <div class="q-nav">`;
 
   qs.forEach((qq,i) => {
-    const done = qq.subParts && qq.subParts.length >= 2
-      ? qq.subParts.some(p => sub.answers[qq.id+'_'+p] !== undefined)
-      : sub.answers[qq.id] !== undefined;
+    const done = sub.answers[qq.id]!==undefined;
     const cur  = i===qIdx;
     let cls='qn-btn';
     if(cur) cls+=' cur';
@@ -1543,16 +1632,6 @@ function renderStudent() {
       <button class="ox-btn ${oSel}" onclick="answerOX('${q.id}','O')">⭕ True</button>
       <button class="ox-btn ${xSel}" onclick="answerOX('${q.id}','X')">❌ False</button>
     </div>`;
-  } else if (q.subParts && q.subParts.length >= 2) {
-    q.subParts.forEach(p => {
-      const subVal = sub.answers[q.id + '_' + p] || '';
-      html += `<div style="margin-bottom:14px;">
-        <div style="font-weight:800;color:var(--navy);font-size:15px;margin-bottom:6px;">(${p})</div>
-        <input class="sa-input" id="sa_${q.id}_${p}" type="text"
-          placeholder="Enter answer for (${p})..." value="${subVal}"
-          oninput="answerSA('${q.id}','${p}',this.value)">
-      </div>`;
-    });
   } else {
     html += `<input class="sa-input" id="sa_${q.id}" type="text"
       placeholder="Enter your answer..." value="${userAns||''}"
@@ -1565,11 +1644,7 @@ function renderStudent() {
       <button class="btn-nav" onclick="goQ(${qIdx-1})" ${qIdx===0?'disabled':''}>← Previous</button>`;
 
   if (qIdx===total-1) {
-    const allDone = qs.every(qq => {
-      if (qq.subParts && qq.subParts.length >= 2)
-        return qq.subParts.every(p => sub.answers[qq.id+'_'+p] !== undefined);
-      return sub.answers[qq.id] !== undefined;
-    });
+    const allDone = qs.every(qq=>sub.answers[qq.id]!==undefined);
     html += `<button class="btn-submit-all" onclick="doSubmit()" ${allDone?'':'disabled'}>
       Submit ✓
     </button>`;
@@ -1624,9 +1699,20 @@ function getCalcAllowed(ranges, qNum) {
   return null;
 }
 
+function renderPeriodNav(p, currentP) {
+  const isLatest = periodGte(p, currentP) && periodGte(currentP, p);
+  return `
+    <div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:12px;padding:12px 16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.05);">
+      <button class="btn-sm btn-navy" onclick="navigateStudentPeriod(-1)">← Prev Week</button>
+      <span style="font-weight:800;font-size:14px;color:var(--navy);">${periodLabel(p)}</span>
+      <button class="btn-sm btn-navy" onclick="navigateStudentPeriod(1)" ${isLatest?'disabled style="opacity:.35;cursor:default;"':''}>Next Week →</button>
+    </div>`;
+}
+
 function renderSetList(hw, store, p) {
   const sets = hw.sets;
   let html = `<div class="exam-wrap">
+    ${renderPeriodNav(p, store.currentPeriod)}
     <div class="exam-header-card" style="margin-bottom:20px;">
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <div>
@@ -1700,7 +1786,7 @@ function startSet(idx) {
 
 function goQ(i) {
   const store=getStore();
-  const hw=store.homeworkSets[hwKey(currentUser.year,studentPeriod||store.currentPeriod)];
+  const hw=store.homeworkSets[hwKey(currentUser.year,currentUser.country||'AU',studentPeriod||store.currentPeriod)];
   const qs=hw?.sets?.[currentSetIdx]?.questions||[];
   if(i<0||i>=qs.length) return;
   qIdx=i;
@@ -1725,14 +1811,8 @@ function answerOX(qid, val) {
   saveAnswer(qid, val);
   setTimeout(()=>{ qIdx++; renderStudent(); }, 300);
 }
-function answerSA(qid, partOrVal, val) {
-  if (val !== undefined) {
-    // sub-part: answerSA(qid, 'a', val)
-    saveAnswer(qid + '_' + partOrVal, val.trim());
-  } else {
-    // regular: answerSA(qid, val)
-    saveAnswer(qid, partOrVal.trim());
-  }
+function answerSA(qid, val) {
+  saveAnswer(qid, val.trim());
 }
 
 function doSubmit() {
@@ -1773,7 +1853,7 @@ function renderParent() {
   }
   const child = children.find(c=>c.id===currentParentChildId);
   const p = store.currentPeriod;
-  const hw = store.homeworkSets[hwKey(child.year, p)];
+  const hw = store.homeworkSets[hwKey(child.year, child.country||'AU', p)];
 
   // ── 헤더 + 자녀 탭 ──
   let html = `
@@ -1910,9 +1990,8 @@ function parseQuestions(raw) {
     const optTexts    = expanded.filter(l=>l.startsWith('__OPT__')).map(l=>l.slice(7));
     const nonOptLines = expanded.filter(l=>!l.startsWith('__OPT__'));
 
-    // Combine all non-option lines into full question text
-    const allTextLines = cur.text ? [cur.text, ...nonOptLines] : nonOptLines;
-    let qText = allTextLines.join('\n').trim();
+    // If question text was empty (number only on its line), grab first non-option line
+    let qText = cur.text || nonOptLines[0] || '';
 
     let type = 'sa', options = null;
 
@@ -1926,12 +2005,7 @@ function parseQuestions(raw) {
       }
     }
 
-    // ── Detect (a)(b)... sub-parts — keep as ONE question, tag subParts ──
-    const SUB_RE = /\(\s*([a-z])\s*\)\s*.+/gm;
-    const subMatches = [...qText.matchAll(SUB_RE)];
-    const subParts = subMatches.length >= 2 ? subMatches.map(m => m[1]) : null;
-
-    if (qText) result.push({num:cur.num, text:qText.trim(), type, options, answer:null, subParts, subAnswers:null});
+    if (qText) result.push({num:cur.num, text:qText.trim(), type, options, answer:null});
     cur = null; body = [];
   };
 
@@ -1965,108 +2039,81 @@ function parseAnswers(raw) {
     return a.toUpperCase();
   };
 
-  const extractValue = str => {
-    str = str.trim();
-    const colonMatch = str.match(/[：:]\s*(.+)$/);
-    if (colonMatch) str = colonMatch[1].trim().split(/\s{2,}|\s*[—–]\s*/)[0].trim();
-    const eqMatch = str.match(/=\s*([^=]+)$/);
-    if (eqMatch) {
-      return eqMatch[1].trim()
-        .replace(/\s+(tiles?|sticks?|squares?|matches?|marbles?|cm|km|m)\s*$/i, '').trim();
-    }
-    return str.replace(/\s+(tiles?|sticks?|squares?|matches?|marbles?|cm|km|m)\s*$/i, '').trim();
-  };
-
   const text = raw.replace(/\r\n/g,'\n').replace(/\r/g,'\n')
                    .replace(/[\u200B\u200C\u200D\uFEFF]/g,'')
                    .replace(/\u00A0/g,' ');
-
-  let lastNum = null;
 
   for (const line of text.split('\n')) {
     const t = line.trim();
     if (!t) continue;
 
-    // ── tab-separated: "1\tB\t2\tC" ──
+    // ── table (tab-separated) format: "1\tB" or "1\tB\t2\tC\t3\tD ..." ──
     if (t.includes('\t')) {
       const cells = t.split('\t').map(c=>c.trim()).filter(Boolean);
+      // read in pairs: [num, ans, num, ans, ...]
       for (let i = 0; i < cells.length - 1; i += 2) {
         const num = parseInt(cells[i]);
         const val = normalize(cells[i+1]);
-        if (!isNaN(num) && val) { ans[num] = val; lastNum = num; }
+        if (!isNaN(num) && val) ans[num] = val;
       }
+      // if odd count, first cell may be a header; try offset by 1
       if (cells.length % 2 !== 0) {
         for (let i = 1; i < cells.length - 1; i += 2) {
           const num = parseInt(cells[i]);
           const val = normalize(cells[i+1]);
-          if (!isNaN(num) && val && !ans[num]) { ans[num] = val; lastNum = num; }
+          if (!isNaN(num) && val && !ans[num]) ans[num] = val;
         }
       }
       continue;
     }
 
-    // ── "1.  ANSWER:  31, 36" ──
-    const mANS = t.match(/^[Qq]?\s*(\d+)\s*[.):\-]?\s*[Aa][Nn][Ss][Ww][Ee][Rr]\s*[：:]\s*(.+)$/);
-    if (mANS) {
-      const num = parseInt(mANS[1]);
-      const raw2 = mANS[2].trim().split(/\s{2,}|\s*[—–]\s*/)[0].trim();
-      const val = normalize(raw2);
-      if (!isNaN(num) && val) { ans[num] = val; lastNum = num; }
-      continue;
-    }
-
-    // ── "7.  (a)  Formula: 4n+1"  — question num + sub-part ──
-    const mPart = t.match(/^[Qq]?\s*(\d+)\s*[.):\-]?\s*\(\s*([a-z])\s*\)\s*(.+)$/i);
-    if (mPart) {
-      const num = parseInt(mPart[1]);
-      const partLabel = mPart[2].toLowerCase();
-      const val = normalize(extractValue(mPart[3]));
-      if (!isNaN(num) && val) { ans['' + num + partLabel] = val; lastNum = num; }
-      continue;
-    }
-
-    // ── "(b)  Stage 18 = 73 tiles"  — continuation sub-part ──
-    const mCont = t.match(/^\(\s*([a-z])\s*\)\s*(.+)$/i);
-    if (mCont && lastNum !== null) {
-      const partLabel = mCont[1].toLowerCase();
-      const val = normalize(extractValue(mCont[2]));
-      if (val) ans['' + lastNum + partLabel] = val;
-      continue;
-    }
-
-    // ── "Q1. Answer: (D)" ──
-    const mQA = t.match(/^[Qq]?\s*(\d+)\s*[.):\-]?\s*(?:[Aa]nswer\s*[：:]\s*)?\(\s*([A-EOoXx])\s*\)/);
+    // ── Q prefix + Answer: + (bracket) format: "Q1. Answer: (D) explanation..." ──
+    // Only recognise uppercase A-E + O/X (avoid misreading lowercase math expressions)
+    const mQA = t.match(/^[Qq]?\s*(\d+)\s*[.):\-]?\s*(?:[Aa][Nn][Ss][Ww][Ee][Rr]\s*[：:]\s*)?\(\s*([A-EOoXx])\s*\)/);
     if (mQA) {
       const num = parseInt(mQA[1]);
       const val = normalize(mQA[2]);
-      if (!isNaN(num) && val) { ans[num] = val; lastNum = num; }
+      if (!isNaN(num) && val) ans[num] = val;
       continue;
     }
 
-    // ── "Q1. Answer: D" ──
-    const mAW = t.match(/^[Qq]?\s*(\d+)\s*[.):\-]?\s*[Aa]nswer\s*[：:]\s*([A-Ea-eOoXx①②③④⑤\w])/);
+    // ── ANSWER: keyword format (case-insensitive, full answer captured) ──
+    // Handles: "1. ANSWER: 29, 34" / "Q1. Answer: B" / "1 answer: 42"
+    const mAW = t.match(/^[Qq]?\s*(\d+)\s*[.):\-]?\s*answer\s*[：:]\s*(.+)/i);
     if (mAW) {
       const num = parseInt(mAW[1]);
-      const val = normalize(mAW[2]);
-      if (!isNaN(num) && val) { ans[num] = val; lastNum = num; }
+      // Strip any trailing "Solution:" / explanation after " — " or " - "
+      const raw2 = mAW[2].replace(/\s*[—–\-]{1,2}\s*[Ss]olution.*$/,'').trim();
+      const val = normalize(raw2);
+      if (!isNaN(num) && val) ans[num] = val;
       continue;
     }
 
-    // ── "Q1. B" / "Q32. D" ──
+    // ── Q prefix general format: "Q1. B" / "Q32. D" / "Q1 -43" ──
     const mQ = t.match(/^[Qq]\s*(\d+)\s*[.):]\s*(.+)$/) || t.match(/^[Qq]\s*(\d+)\s+(.+)$/);
     if (mQ) {
       const num = parseInt(mQ[1]);
       const val = normalize(mQ[2]);
-      if (!isNaN(num) && val) { ans[num] = val; lastNum = num; }
+      if (!isNaN(num) && val) ans[num] = val;
       continue;
     }
 
-    // ── "1 B" / "1 -43" / "1 7/12" ──
+    // ── dot/paren format: "1. B" / "1. 29, 34" / "1) 42" ──
+    // Must come before the plain-space format to catch "1. answer" correctly
+    const mDot = t.match(/^(\d+)\s*[.)]\s+(.+)$/);
+    if (mDot) {
+      const num = parseInt(mDot[1]);
+      const val = normalize(mDot[2].trim());
+      if (!isNaN(num) && val) ans[num] = val;
+      continue;
+    }
+
+    // ── general format: "1 B" / "1 -43" / "1 7/12" / "1 $45 and $75" ──
     const m = t.match(/^(\d+)\s+(.+)$/);
     if (m) {
       const num = parseInt(m[1]);
       const val = normalize(m[2].trim());
-      if (!isNaN(num) && val) { ans[num] = val; lastNum = num; }
+      if (!isNaN(num) && val) ans[num] = val;
     }
   }
   return ans;
