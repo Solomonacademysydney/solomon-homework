@@ -82,6 +82,22 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .btn-level-test-wrap{margin-top:4px;}
 .btn-level-test-label{font-size:11px;text-align:center;color:var(--muted);margin-top:8px;font-weight:700;letter-spacing:.5px;}
 
+/* ── LEFT SIDE LEVEL TEST (BIG) ── */
+.login-left-test-wrap{margin-top:32px;width:100%;max-width:400px;animation:fadeUp 1s .4s ease both;text-align:center;}
+.btn-level-test-big{
+  display:block;padding:28px 24px;
+  background:linear-gradient(270deg,#d4af37,#b8960c,#f0d060,#d4af37);
+  background-size:300% auto;
+  color:var(--navy);border:none;border-radius:18px;
+  font-family:'Nunito',sans-serif;font-size:28px;font-weight:900;
+  cursor:pointer;text-align:center;text-decoration:none;letter-spacing:1px;
+  animation:goldPulse 2s ease-in-out infinite, shimmer 4s linear infinite;
+  position:relative;overflow:hidden;line-height:1.4;
+}
+.btn-level-test-big:hover{transform:translateY(-3px);filter:brightness(1.1);animation:shimmer 1.5s linear infinite;}
+.btn-level-test-big-kr{font-size:0.55em;opacity:0.75;font-weight:700;letter-spacing:0;}
+.btn-level-test-big-label{font-size:13px;color:rgba(255,255,255,.55);margin-top:12px;font-weight:700;letter-spacing:.5px;line-height:1.6;}
+
 /* ── APP SHELL ── */
 #app{display:none;min-height:100vh;}
 .topbar{background:linear-gradient(90deg,#0d1526,var(--navy));color:#fff;padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(26,39,68,.3);}
@@ -313,6 +329,10 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
     <div class="login-sub-title">Academy</div>
     <div class="login-divider"></div>
     <div class="login-tagline">God is Love &nbsp;✦&nbsp; Excellence in Learning</div>
+    <div class="login-left-test-wrap">
+      <a href="lt/level-test.html" class="btn-level-test-big">✨ Free Level Test →</a>
+      <div class="btn-level-test-big-label">🎯 Check Your Math Level · Free · 15 min</div>
+    </div>
   </div>
   <div class="login-right">
     <div class="login-form-wrap">
@@ -333,11 +353,6 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
       </div>
       <button class="btn-login" onclick="doLogin()">Sign In →</button>
       <div class="login-error" id="loginError">❌ Incorrect ID or password.</div>
-      <div class="login-divider-thin"></div>
-      <div class="btn-level-test-wrap">
-        <a href="lt/level-test.html" class="btn-level-test">✨ Free Level Test <span style="font-size:0.7em; opacity:0.85;">(무료 레벨 테스트)</span> →</a>
-        <div class="btn-level-test-label">🎯 Check Your Math Level · Free · 15 min <span style="font-size:0.85em; opacity:0.8;">(내 수학 실력 확인 · 무료 · 15분)</span></div>
-      </div>
     </div>
   </div>
 </div>
