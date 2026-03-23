@@ -300,6 +300,39 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .modal-box{background:#fff;border-radius:20px;max-width:92vw;max-height:92vh;overflow:auto;padding:28px;position:relative;}
 .modal-close{position:absolute;top:12px;right:16px;background:none;border:none;font-size:24px;cursor:pointer;color:var(--muted);}
 
+/* ── REMEDIATION & PRACTICE ── */
+.remediation-section{background:#fff;border-radius:var(--radius);padding:28px;box-shadow:0 4px 20px rgba(0,0,0,.08);margin-bottom:16px;border:2px solid var(--gold);}
+.remediation-title{font-family:'Baloo 2',cursive;font-size:20px;color:var(--navy);margin-bottom:6px;}
+.remediation-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+.explanation-card{background:#f8f6ef;border-radius:14px;padding:20px;margin-bottom:14px;border-left:4px solid var(--gold);}
+.explanation-q-title{font-weight:800;color:var(--navy);font-size:15px;margin-bottom:4px;}
+.explanation-q-meta{font-size:12px;color:var(--muted);margin-bottom:10px;}
+.explanation-body{font-size:14px;color:var(--text);line-height:1.8;white-space:pre-wrap;}
+.btn-confirm-read{display:block;width:100%;padding:16px;background:var(--navy);color:#fff;border:none;border-radius:14px;font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;cursor:pointer;margin-top:20px;transition:all .2s;}
+.btn-confirm-read:hover{background:#0d1526;transform:translateY(-1px);}
+.practice-header{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border-radius:var(--radius);padding:20px 24px;margin-bottom:16px;text-align:center;}
+.practice-header h3{font-family:'Baloo 2',cursive;font-size:20px;margin-bottom:4px;}
+.practice-header p{font-size:13px;opacity:.85;}
+.ai-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px;color:var(--navy);font-weight:700;font-size:15px;}
+.ai-loading .ai-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+.ai-loading .ai-sub{font-size:12px;color:var(--muted);font-weight:600;}
+.verification-card{background:#fff;border-radius:14px;padding:16px 20px;margin-bottom:10px;border:2px solid var(--border);}
+.verification-card.changed{border-color:var(--gold);background:#fefce8;}
+.verification-original{color:var(--red);text-decoration:line-through;font-size:13px;margin-top:4px;}
+.verification-corrected{color:var(--green);font-weight:700;font-size:14px;margin-top:2px;}
+.account-mini{background:rgba(255,255,255,.6);border-radius:10px;padding:12px 16px;margin-top:20px;border:1px solid var(--border);}
+.account-mini summary{font-size:11px;color:var(--muted);cursor:pointer;font-weight:700;list-style:none;display:flex;align-items:center;gap:6px;user-select:none;}
+.account-mini summary::-webkit-details-marker{display:none;}
+.account-mini summary::before{content:'⚙';font-size:13px;}
+.account-mini[open] summary{margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.account-mini .mini-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.account-mini .mini-fields input{width:100%;padding:6px 10px;font-size:12px;border:1.5px solid var(--border);border-radius:8px;font-family:'Nunito',sans-serif;outline:none;}
+.account-mini .mini-fields input:focus{border-color:var(--gold2);}
+.account-mini .mini-fields label{display:block;font-size:10px;font-weight:700;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px;}
+.final-report{background:#fff;border-radius:var(--radius);padding:24px;border:2px solid var(--red);margin-top:16px;}
+.final-report-title{color:#991b1b;font-family:'Baloo 2',cursive;font-size:18px;margin-bottom:12px;}
+.round-badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:800;background:#fef3c7;color:#92400e;margin-left:8px;}
+
 @media(max-width:768px){
   #loginScreen{flex-direction:column;}
   .login-left{padding:40px 24px 32px;flex:none;}
@@ -617,7 +650,21 @@ function renderTeacher() {
   const auCount = allStudents.filter(s=>(s.country||'AU')==='AU').length;
   const krCount = allStudents.filter(s=>s.country==='KR').length;
 
+  const _hasKey = !!getAIKey();
   let html = `
+    ${!_hasKey ? `
+    <div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border:2px solid #f59e0b;border-radius:14px;padding:18px 22px;margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;">
+        <div style="font-weight:900;color:#92400e;font-size:15px;margin-bottom:4px;">🤖 AI Setup Required</div>
+        <div style="font-size:13px;color:#78350f;">To enable automatic answer verification and student practice questions, please enter your Claude API key.</div>
+        <div style="font-size:11px;color:#92400e;margin-top:4px;">Free key from <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:#92400e;font-weight:800;">Anthropic Console</a></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input id="topAIKey" type="password" placeholder="Paste API key here"
+          style="padding:10px 14px;border:2px solid #d97706;border-radius:10px;font-family:'Nunito',sans-serif;font-size:13px;width:220px;outline:none;">
+        <button class="btn-sm" style="background:#92400e;color:#fff;padding:10px 18px;" onclick="setAIKey(document.getElementById('topAIKey').value);if(getAIKey()){alert('✅ API Key saved!');renderTeacher();}else{alert('Please enter a key.');}">Save</button>
+      </div>
+    </div>` : ''}
     <div class="page-title">📋 Weekly Homework Management</div>
     <div style="display:flex;gap:10px;margin-bottom:20px;">
       <button class="btn-sm ${selectedCountry==='AU'?'btn-navy':'btn-blue'}" onclick="selectCountryTab('AU')">🇦🇺 Australian (${auCount})</button>
@@ -1005,8 +1052,48 @@ function doParse() {
   });
 
   html += `</div>`;
+
+  // AI verification area
+  const hasApiKey = !!getAIKey();
+  const ansCount = questions.filter(q=>q.answer).length;
+  if (hasApiKey && ansCount > 0) {
+    html += `<div style="margin-top:16px;padding:16px;background:#eef2ff;border-radius:12px;border:2px solid #c7d2fe;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="font-weight:800;color:var(--navy);flex:1;">🤖 AI Answer Verification</div>
+        <button class="btn-sm btn-navy" id="verifyBtn" onclick="doVerifyAnswers()" style="display:none;">🔍 Re-verify</button>
+      </div>
+      <div id="verificationResults" style="margin-top:8px;">
+        <div class="ai-loading" style="padding:16px;"><div class="ai-spinner"></div><div>AI is checking all answers...</div></div>
+      </div>
+    </div>`;
+  } else if (!hasApiKey) {
+    html += `<div style="margin-top:12px;font-size:12px;color:var(--muted);">💡 Set up a Claude API Key in Teacher Settings to enable AI answer verification.</div>`;
+  }
+
   document.getElementById('parsePreview').innerHTML = html;
   document.getElementById('saveBtn').style.display = 'inline-block';
+
+  // Auto-verify if API key exists
+  if (hasApiKey && ansCount > 0) {
+    doVerifyAnswers();
+  }
+}
+
+async function doVerifyAnswers() {
+  const btn = document.getElementById('verifyBtn');
+  const container = document.getElementById('verificationResults');
+  if (!container) return;
+  if (btn) { btn.disabled = true; btn.style.display = 'none'; }
+  container.innerHTML = `<div class="ai-loading" style="padding:16px;"><div class="ai-spinner"></div><div>AI is checking all answers...</div></div>`;
+
+  try {
+    const verifications = await verifyAnswersWithAI(parsedQuestions.filter(q=>q.answer));
+    showVerificationResults(parsedQuestions, verifications);
+    if (btn) { btn.style.display = 'inline-block'; btn.disabled = false; }
+  } catch(e) {
+    container.innerHTML = `<div style="color:#991b1b;font-weight:700;padding:8px;">⚠️ ${e.message}</div>`;
+    if (btn) { btn.style.display = 'inline-block'; btn.textContent = '🔍 Retry Verification'; btn.disabled = false; }
+  }
 }
 
 function doSave() {
@@ -1039,10 +1126,16 @@ function doSave() {
   });
 
   saveStore(store);
-  alert(`✅ ${setTitle} saved! (${qs.length} questions)\nAssigned to ${yrStudents.length} student${yrStudents.length!==1?'s':''}.`);
   parsedQuestions = [];
   editingSetIdx = null;
   renderTeacher();
+
+  // Show save confirmation at top of page
+  const msg = document.createElement('div');
+  msg.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#166534;color:#fff;padding:14px 28px;border-radius:12px;font-family:"Nunito",sans-serif;font-weight:800;font-size:15px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);';
+  msg.textContent = `✅ ${setTitle} saved! (${qs.length} questions) — ${yrStudents.length} student${yrStudents.length!==1?'s':''}`;
+  document.body.appendChild(msg);
+  setTimeout(() => msg.remove(), 3000);
 }
 
 // ─── TEACHER PREVIEW ───────────────────
@@ -1156,6 +1249,19 @@ function renderTeacherSettings(store) {
         <div class="field"><label>New Password</label><input id="ta_pw" type="password" placeholder="Leave blank to keep current"></div>
       </div>
       <button class="btn-sm btn-navy" onclick="saveTeacherAccount()">Save Account ✓</button>
+      <div style="margin-top:16px;padding-top:16px;border-top:2px solid var(--border);">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">🤖 Claude AI Settings (Answer Verification & Student Practice)</div>
+        <div class="field" style="margin-bottom:10px;">
+          <label>Claude API Key</label>
+          <input id="claudeKeyInput" type="password" value="${getAIKey()}" placeholder="API key from Anthropic Console"
+            style="width:100%;padding:10px 13px;border:2px solid var(--border);border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;">
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">
+            Get your key from <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--gold2);">Anthropic Console</a> → Paste here → Save
+          </div>
+        </div>
+        <button class="btn-sm btn-navy" onclick="setAIKey(document.getElementById('claudeKeyInput').value);alert('✅ API Key saved!');">Save API Key</button>
+        ${getAIKey() ? '<span style="margin-left:8px;font-size:12px;color:var(--green);font-weight:700;">✅ Key configured</span>' : ''}
+      </div>
       <div style="margin-top:16px;padding-top:16px;border-top:2px solid var(--border);">
         <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">📡 Firebase 동기화</div>
         <button class="btn-sm btn-gold" onclick="forceUploadToFirebase()">⬆️ 이 컴 데이터 → Firebase 업로드</button>
@@ -1570,7 +1676,76 @@ function renderStudent() {
       html += `</div>`;
     });
 
-    html += `</div></div>`;
+    html += `</div>`;
+
+    // ── REMEDIATION FLOW ──────────────────────
+    const wrongQs = qs.filter(q => {
+      const ans = sub.answers[q.id];
+      return ans === undefined || ans !== q.answer;
+    });
+    const hasApiKey = !!getAIKey();
+    const rem = sub.remediation;
+
+    if (wrongQs.length > 0 && hasApiKey) {
+      // Check if remediation is already in progress
+      if (rem && rem.currentRound >= 0 && rem.rounds[rem.currentRound]) {
+        const curRound = rem.rounds[rem.currentRound];
+        if (rem.finalDone) {
+          // Final report exists
+          html += `<div style="text-align:center;padding:16px;">
+            <button class="btn-confirm-read" style="max-width:400px;margin:0 auto;background:#991b1b;" onclick="renderFinalReport(${currentSetIdx})">
+              📋 View Final Study Report
+            </button>
+          </div>`;
+        } else if (curRound.practiceSubmitted) {
+          // Practice submitted, check for more wrong
+          const _pqs = curRound.practiceQuestions || [];
+          const _pas = curRound.practiceAnswers || {};
+          const practiceWrong = _pqs.filter(q => q && _pas[q.id] !== q.answer);
+          if (practiceWrong.length > 0) {
+            html += `<div style="text-align:center;padding:16px;">
+              <button class="btn-confirm-read" style="max-width:400px;margin:0 auto;background:var(--gold);color:var(--navy);" onclick="renderPracticeResults(${currentSetIdx},${rem.currentRound})">
+                📊 View Practice Results & Next Step
+              </button>
+            </div>`;
+          } else {
+            html += `<div style="text-align:center;padding:20px;background:#dcfce7;border-radius:var(--radius);margin-top:16px;">
+              <div style="font-size:20px;font-weight:900;color:#166534;">🎉 Well done! You've mastered all the questions!</div>
+            </div>`;
+          }
+        } else if (curRound.explanationRead && (curRound.practiceQuestions || []).length > 0) {
+          // Practice ready to do
+          html += `<div style="text-align:center;padding:16px;">
+            <button class="btn-confirm-read" style="max-width:400px;margin:0 auto;background:#f97316;" onclick="practiceQIdx=0;renderPracticeSet(${currentSetIdx},${rem.currentRound})">
+              💪 Start Practice (Round ${rem.currentRound+1})
+            </button>
+          </div>`;
+        } else if (!curRound.explanationRead) {
+          // Explanation ready to read
+          html += `<div style="text-align:center;padding:16px;">
+            <button class="btn-confirm-read" style="max-width:400px;margin:0 auto;" onclick="renderRemediationExplanation(${currentSetIdx},${rem.currentRound})">
+              📖 Read Explanations (Round ${rem.currentRound+1})
+            </button>
+          </div>`;
+        }
+      } else {
+        // No remediation started yet
+        html += `<div style="text-align:center;padding:20px;background:#fef3c7;border-radius:var(--radius);margin-top:16px;">
+          <div style="font-size:16px;font-weight:800;color:#92400e;margin-bottom:12px;">
+            You got ${wrongQs.length} question${wrongQs.length>1?'s':''} wrong. Let's review and practice!
+          </div>
+          <button class="btn-confirm-read" style="max-width:400px;margin:0 auto;background:var(--gold);color:var(--navy);" onclick="startRemediation(${currentSetIdx})">
+            📖 View Explanations & Start Practice
+          </button>
+        </div>`;
+      }
+    } else if (wrongQs.length > 0 && !hasApiKey) {
+      html += `<div style="font-size:12px;color:var(--muted);text-align:center;margin-top:12px;">
+        💡 Set up a Claude API Key to enable explanations and practice questions for wrong answers.
+      </div>`;
+    }
+
+    html += `</div>`;
     document.getElementById('mainContent').innerHTML = html;
     return;
   }
@@ -1616,9 +1791,7 @@ function renderStudent() {
     <div class="question-card">
       <div class="qc-num-row">
         <div class="qc-num">${qIdx+1}</div>
-        <span class="type-badge ${q.type==='mc'?'badge-mc':q.type==='ox'?'badge-ox':'badge-sa'}">
-          ${q.type==='mc'?'Multiple Choice':q.type==='ox'?'O/X':'Short Answer'}
-        </span>
+        ${q.type==='mc'?'<span class="type-badge badge-mc">Multiple Choice</span>':''}
         ${(() => {
           if (currentUser.year < 7) return '';
           const ca = getCalcAllowed(set.calculatorRanges, qIdx+1);
@@ -1793,8 +1966,8 @@ function startSet(idx) {
   } catch(e) {
     document.getElementById('mainContent').innerHTML =
       `<div style="padding:40px;color:red;font-weight:800;">
-        ⚠️ 문제 화면 로딩 오류: ${e.message}
-        <br><button onclick="currentSetIdx=null;renderStudent()" style="margin-top:16px;padding:10px 20px;background:#162040;color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:800;">← Set 목록으로 돌아가기</button>
+        ⚠️ Loading error: ${e.message}
+        <br><button onclick="currentSetIdx=null;renderStudent()" style="margin-top:16px;padding:10px 20px;background:#162040;color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:800;">← Back to Set List</button>
       </div>`;
   }
 }
@@ -1831,7 +2004,6 @@ function answerSA(qid, val) {
 }
 
 function doSubmit() {
-  if(!confirm('Submit your homework? You cannot make changes after submitting.')) return;
   const store=getStore();
   const key=subKey(currentUser.id,studentPeriod||store.currentPeriod,currentSetIdx??0);
   store.submissions[key].submitted=true;
@@ -1924,13 +2096,71 @@ function renderParent() {
       const pct = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
       const cls = pct>=80?'pill-a':pct>=60?'pill-b':'pill-c';
       const scoreMsg = pct>=80?'🎉 Excellent!':pct>=60?'👍 Good job!':'💪 Keep it up!';
-      html += `<div style="background:#f0fdf4;border-radius:10px;padding:14px 18px;margin-bottom:10px;border-left:4px solid var(--green);">
-        <div style="display:flex;align-items:center;gap:12px;">
-          <div style="font-weight:800;color:var(--navy);">${set.title}</div>
-          <span class="score-pill ${cls}">${pct}%</span>
-          <span style="font-size:13px;color:var(--muted);">${correct}/${autoQs.length} correct · ${scoreMsg}</span>
-        </div>
-      </div>`;
+      const wrongCount = autoQs.length - correct;
+      html += `<div style="background:#fff;border-radius:12px;padding:16px 18px;margin-bottom:14px;border:2px solid ${pct>=80?'var(--green)':pct>=60?'var(--gold)':'var(--red)'};box-shadow:0 2px 8px rgba(0,0,0,.05);">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:${wrongCount>0?'12px':'0'};">
+          <div style="font-weight:800;color:var(--navy);font-size:15px;">${set.title}</div>
+          <span class="score-pill ${cls}" style="font-size:13px;">${pct}%</span>
+          <span style="font-size:13px;color:var(--muted);">${correct}/${autoQs.length} correct</span>
+          <span style="font-size:13px;color:var(--muted);">·</span>
+          <span style="font-size:13px;color:${wrongCount>0?'var(--red)':'var(--green)'};font-weight:700;">${wrongCount>0?`${wrongCount} wrong`:'All correct! 🎉'}</span>
+        </div>`;
+
+      // Show remediation rounds inline
+      const rem = sub.remediation;
+      if (rem && rem.rounds && rem.rounds.length > 0) {
+        rem.rounds.forEach((round, ri) => {
+          if (!round) return;
+          const _rpq = round.practiceQuestions || [];
+          const _rpa = round.practiceAnswers || {};
+          if (round.practiceSubmitted && _rpq.length > 0) {
+            const pc = _rpq.filter(q=>q && _rpa[q.id]===q.answer).length;
+            const pt = _rpq.length;
+            const pp = Math.round(pc/pt*100);
+            const pw = pt - pc;
+            const rCls = pp>=80?'pill-a':pp>=60?'pill-b':'pill-c';
+            html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:#f8f6ef;border-radius:8px;margin-bottom:6px;">
+              <span style="font-size:12px;font-weight:800;color:var(--navy);min-width:90px;">↳ Practice ${ri+1}</span>
+              <span class="score-pill ${rCls}" style="font-size:11px;">${pp}%</span>
+              <span style="font-size:12px;color:var(--muted);">${pc}/${pt} correct</span>
+              <span style="font-size:12px;color:${pw>0?'var(--red)':'var(--green)'};font-weight:700;">${pw>0?`${pw} wrong`:'All correct! ✅'}</span>
+            </div>`;
+          } else if (!round.practiceSubmitted && _rpq.length > 0) {
+            html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:#fef3c7;border-radius:8px;margin-bottom:6px;">
+              <span style="font-size:12px;font-weight:800;color:var(--navy);min-width:90px;">↳ Practice ${ri+1}</span>
+              <span style="font-size:12px;color:#92400e;font-weight:700;">🔄 In progress (${pt} questions)</span>
+            </div>`;
+          } else if (round.explanationRead && _rpq.length === 0) {
+            html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:#fef3c7;border-radius:8px;margin-bottom:6px;">
+              <span style="font-size:12px;font-weight:800;color:var(--navy);min-width:90px;">↳ Practice ${ri+1}</span>
+              <span style="font-size:12px;color:#92400e;font-weight:700;">⏳ Generating questions...</span>
+            </div>`;
+          } else if (!round.explanationRead) {
+            html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:#eef2ff;border-radius:8px;margin-bottom:6px;">
+              <span style="font-size:12px;font-weight:800;color:var(--navy);min-width:90px;">↳ Round ${ri+1}</span>
+              <span style="font-size:12px;color:#1d4ed8;font-weight:700;">📖 Reading explanations...</span>
+            </div>`;
+          }
+        });
+
+        // Final report for parent
+        if (rem.finalDone && rem.finalWrongQuestions && rem.finalWrongQuestions.length > 0) {
+          html += `<div style="margin-top:8px;background:#fef2f2;border-radius:10px;padding:12px 16px;border:1px solid #fca5a5;">
+            <div style="font-size:13px;font-weight:800;color:#991b1b;margin-bottom:8px;">⚠️ Unresolved Questions (${rem.finalWrongQuestions.length})</div>`;
+          rem.finalWrongQuestions.forEach(q => {
+            const expl = (rem.finalExplanations||{})[q.id] || '';
+            html += `<div style="background:#fff;border-radius:8px;padding:10px 14px;margin-bottom:6px;border:1px solid #fecaca;">
+              <div style="font-size:13px;font-weight:700;color:var(--navy);">Q. ${q.text}</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+                Answer: <span style="color:var(--red);">${q.studentAnswer}</span> → Correct: <span style="color:var(--green);">${q.answer}</span>
+              </div>
+              ${expl ? `<div style="font-size:12px;color:var(--text);margin-top:6px;line-height:1.6;white-space:pre-wrap;">${expl}</div>` : ''}
+            </div>`;
+          });
+          html += `</div>`;
+        }
+      }
+      html += `</div>`;  // close set card
     }
   });
   html += `</div>`;
@@ -2139,19 +2369,20 @@ function parseAnswers(raw) {
 // ═══════════════════════════════════════
 function renderMyAccountCard() {
   return `
-    <div class="settings-card" style="margin-top:16px;">
-      <h2>🔑 My Account Settings</h2>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">Current ID: <b>${currentUser.id}</b></div>
-      <div class="field-row">
-        <div class="field"><label>New ID</label><input id="myNewId" placeholder="Leave blank to keep current"></div>
-        <div class="field"><label>New Password</label><input id="myNewPw" type="password" placeholder="Leave blank to keep current"></div>
+    <details class="account-mini">
+      <summary>Account Settings (${currentUser.id})</summary>
+      <div class="mini-fields">
+        <div><label>New ID</label><input id="myNewId" placeholder="Current: ${currentUser.id}"></div>
+        <div><label>New Password</label><input id="myNewPw" type="password" placeholder="New password"></div>
       </div>
-      <div class="field-row">
-        <div class="field"><label>Confirm New Password</label><input id="myConfirmPw" type="password" placeholder="Confirm new password"></div>
+      <div class="mini-fields">
+        <div><label>Confirm Password</label><input id="myConfirmPw" type="password" placeholder="Confirm"></div>
+        <div style="display:flex;align-items:flex-end;">
+          <button class="btn-sm btn-navy" style="padding:6px 14px;font-size:11px;width:100%;" onclick="saveMyAccount()">Save ✓</button>
+        </div>
       </div>
-      <button class="btn-sm btn-navy" onclick="saveMyAccount()">Save Changes ✓</button>
-      <div class="success-msg" id="myPwOk">✅ Account updated!</div>
-    </div>`;
+      <div class="success-msg" id="myPwOk" style="font-size:12px;margin-top:6px;">✅ Updated!</div>
+    </details>`;
 }
 
 function saveMyAccount() {
@@ -2245,6 +2476,633 @@ function saveTeacherAccount() {
   document.getElementById('topbarUser').textContent = 'Teacher';
   alert('✅ Teacher account updated.');
   renderTeacher();
+}
+
+// ═══════════════════════════════════════
+//  GEMINI AI INTEGRATION
+// ═══════════════════════════════════════
+function getAIKey() {
+  const store = getStore();
+  return store.claudeApiKey || localStorage.getItem('claude_api_key') || '';
+}
+function setAIKey(k) {
+  const key = k.trim();
+  localStorage.setItem('claude_api_key', key);
+  const store = getStore();
+  store.claudeApiKey = key;
+  saveStore(store);
+}
+
+async function callAI(prompt) {
+  const apiKey = getAIKey();
+  if (!apiKey) throw new Error('Claude API key is not set.\nPlease set it in Teacher Settings.');
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 8000,
+      temperature: 0.15,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+  if (!res.ok) { const e = await res.text(); throw new Error(`Claude API Error: ${res.status}\n${e}`); }
+  const data = await res.json();
+  return data.content?.[0]?.text || '';
+}
+
+function extractJSON(text) {
+  // extract JSON from markdown code blocks or raw text
+  const m = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/(\[[\s\S]*\])/);
+  if (m) try { return JSON.parse(m[1].trim()); } catch(e) {}
+  try { return JSON.parse(text.trim()); } catch(e) {}
+  return null;
+}
+
+// ── ANSWER VERIFICATION ─────────────────
+async function verifyAnswersWithAI(questions) {
+  const letters = ['A','B','C','D','E'];
+  let prompt = `You are a math teacher. Review these math questions and their provided answers. For each question, determine if the provided answer is CORRECT. If incorrect, provide the correct answer.
+
+IMPORTANT: Return ONLY a JSON array, no other text. Format:
+[{"num":1,"isCorrect":true,"correctAnswer":"B","explanation":"brief reason"},...]
+
+Questions:\n`;
+  questions.forEach(q => {
+    let qStr = `${q.num}. ${q.text}`;
+    if (q.type==='mc' && q.options) {
+      qStr += ' (' + q.options.map((o,i)=>`${letters[i]}) ${o}`).join(', ') + ')';
+    }
+    qStr += ` → Answer: ${q.answer || '(none)'}`;
+    if (q.type==='ox') qStr += ' [O=True, X=False]';
+    prompt += qStr + '\n';
+  });
+
+  const raw = await callAI(prompt);
+  const result = extractJSON(raw);
+  if (!result || !Array.isArray(result)) throw new Error('Could not parse AI response.');
+  return result;
+}
+
+function showVerificationResults(questions, verifications) {
+  const container = document.getElementById('verificationResults');
+  if (!container) return;
+  const changes = [];
+
+  questions.forEach(q => {
+    const v = verifications.find(v => v.num === q.num);
+    if (!v) return;
+    const isChanged = !v.isCorrect && v.correctAnswer && v.correctAnswer !== q.answer;
+    if (isChanged) changes.push({ num: q.num, old: q.answer, new: v.correctAnswer, explanation: v.explanation });
+  });
+
+  // Show changes for review, wait for confirmation
+  let html = '';
+  if (changes.length > 0) {
+    html += `<div style="background:#fef3c7;border:2px solid #f59e0b;border-radius:10px;padding:12px 16px;margin-bottom:12px;">
+      <div style="font-weight:800;color:#92400e;font-size:14px;">⚠️ Found ${changes.length} answer(s) to correct — please review:</div>
+    </div>`;
+    changes.forEach(c => {
+      const qObj = questions.find(q => q.num === c.num);
+      html += `<div class="verification-card changed">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:28px;height:28px;background:var(--red);color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;">${c.num}</div>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:4px;">${qObj ? qObj.text.substring(0,100) : ''}${qObj && qObj.text.length>100?'...':''}</div>
+            <div class="verification-original">Before: ${c.old || '(none)'}</div>
+            <div class="verification-corrected">After: ${c.new}</div>
+          </div>
+        </div>
+        ${c.explanation ? `<div style="font-size:12px;color:var(--muted);margin-top:4px;">${c.explanation}</div>` : ''}
+      </div>`;
+    });
+    html += `<div style="margin-top:16px;display:flex;gap:10px;">
+      <button class="btn-sm btn-green" style="padding:12px 24px;font-size:14px;" onclick="confirmAndSaveCorrections()">✅ Apply & Save</button>
+      <button class="btn-sm btn-red" style="padding:12px 24px;font-size:14px;" onclick="skipCorrectionsAndSave()">✕ Save without changes</button>
+    </div>`;
+    window._pendingCorrections = changes;
+  } else {
+    html += `<div style="background:#dcfce7;border-radius:10px;padding:12px 16px;font-weight:700;color:#166534;font-size:14px;margin-bottom:16px;">🎉 All answers are correct!</div>
+    <button class="btn-sm btn-green" style="padding:12px 24px;font-size:14px;" onclick="doSave()">✅ Save</button>`;
+  }
+
+  container.innerHTML = html;
+}
+
+function confirmAndSaveCorrections() {
+  const changes = window._pendingCorrections || [];
+  // Apply corrections
+  changes.forEach(c => {
+    const q = parsedQuestions.find(q => q.num === c.num);
+    if (q) q.answer = c.new;
+  });
+  // Update answer textarea
+  const aTextEl = document.getElementById('aText');
+  if (aTextEl) {
+    aTextEl.value = parsedQuestions.map(q => `${q.num}. ${q.answer || ''}`).join('\n');
+  }
+  window._pendingCorrections = [];
+  doSave();
+}
+
+function skipCorrectionsAndSave() {
+  window._pendingCorrections = [];
+  doSave();
+}
+
+function applyVerificationChanges() { /* auto-applied now */ }
+function dismissVerification() { /* auto-applied now */ }
+
+// ── REMEDIATION: EXPLANATIONS ───────────
+async function generateExplanationsForWrong(wrongQs, year) {
+  const prompt = `You are a math teacher. A Year ${year} student got the following questions wrong.
+For each question, give a SHORT explanation (1-2 sentences max) in English. Just explain the key idea or the correct method briefly.
+
+IMPORTANT: Return ONLY a JSON array. Format:
+[{"qId":"q0","explanation":"Brief 1-2 sentence explanation"}]
+
+Wrong questions:
+${wrongQs.map(q => `- ID:${q.id} | Question: ${q.text} | Student answer: ${q.studentAnswer} | Correct answer: ${q.answer}${q.type==='mc'&&q.options?' | Options: '+q.options.join(', '):''}`)
+.join('\n')}`;
+
+  const raw = await callAI(prompt);
+  const result = extractJSON(raw);
+  if (!result) throw new Error('Failed to generate explanations');
+  const map = {};
+  result.forEach(r => { map[r.qId] = r.explanation; });
+  return map;
+}
+
+// ── REMEDIATION: PRACTICE QUESTIONS ─────
+async function generatePracticeQuestions(wrongQs, year, roundIdx) {
+  const perQ = roundIdx === 0 ? 3 : 2;  // 1차: 3문제, 2차: 2문제
+  const letters = ['A','B','C','D','E'];
+  const prompt = `You are a math teacher creating practice problems. For each of the following wrong questions, create exactly ${perQ} similar practice questions.
+- IMPORTANT: Keep the SAME question type as the original. If original is Short Answer (sa), make Short Answer questions with NO options. If original is Multiple Choice (mc), include 4 options. If original is True/False (ox), make True/False questions.
+- Same difficulty, different numbers
+- Appropriate for Year ${year} level
+- Write question text in English
+
+IMPORTANT: Return ONLY a JSON array. Format:
+[{"sourceQId":"q0","questions":[
+  {"text":"question text","type":"mc|sa|ox","options":["A","B","C","D"] or null for sa/ox,"answer":"correct answer"},
+  ...exactly ${perQ} questions per source
+]}]
+
+Original questions:
+${wrongQs.map(q => {
+  let s = `- ID:${q.id} | Type:${q.type} | Question: ${q.text} | Answer: ${q.answer}`;
+  if (q.type==='mc' && q.options) s += ` | Options: ${q.options.map((o,i)=>`${letters[i]})${o}`).join(', ')}`;
+  return s;
+}).join('\n')}`;
+
+  const raw = await callAI(prompt);
+  const result = extractJSON(raw);
+  if (!result) throw new Error('Failed to generate practice questions');
+
+  // flatten: add sourceQNum for display (original homework Q number)
+  const practiceQs = [];
+  let idx = 0;
+  result.forEach(group => {
+    const srcQ = wrongQs.find(q => q.id === group.sourceQId);
+    // sourceQNum = original homework question number (carry through rounds)
+    const srcNum = srcQ?.sourceQNum || srcQ?.num || 0;
+    let pIdx = 1;
+    (group.questions || []).forEach(pq => {
+      // auto-detect type from content, not AI's type field
+      const opts = Array.isArray(pq.options) && pq.options.length >= 2 ? pq.options : null;
+      const ans = (pq.answer || '').toString().trim().toUpperCase();
+      let detectedType = 'sa';
+      if (opts) {
+        detectedType = 'mc';
+      } else if (/^[OX]$/.test(ans) || /true.*false|t\s*\/\s*f/i.test(pq.text||'')) {
+        detectedType = 'ox';
+      }
+      // also match source question type
+      if (!opts && srcQ?.type === 'ox') detectedType = 'ox';
+
+      practiceQs.push({
+        id: `pq${idx}`,
+        sourceQId: group.sourceQId,
+        sourceQNum: srcNum,
+        practiceIdx: pIdx,
+        text: pq.text,
+        type: detectedType,
+        options: opts,
+        answer: ans
+      });
+      idx++;
+      pIdx++;
+    });
+  });
+  return practiceQs;
+}
+
+// ── REMEDIATION STATE MANAGEMENT ────────
+function getRemediation(sub) {
+  if (!sub.remediation) {
+    sub.remediation = { currentRound: -1, rounds: [], finalDone: false };
+  }
+  return sub.remediation;
+}
+
+function getWrongQuestions(questions, answers) {
+  if (!questions || !Array.isArray(questions)) return [];
+  const ans = answers || {};
+  return questions.filter(q => q && q.id && (ans[q.id] === undefined || ans[q.id] !== q.answer))
+    .map(q => ({
+      ...q,
+      studentAnswer: ans[q.id] || '(no answer)'
+    }));
+}
+
+// Start remediation flow for a submitted set
+async function startRemediation(setIdx) {
+  const store = getStore();
+  const p = studentPeriod || store.currentPeriod;
+  const hw = store.homeworkSets[hwKey(currentUser.year, currentUser.country||'AU', p)];
+  const set = hw?.sets?.[setIdx];
+  if (!set) return;
+
+  const key = subKey(currentUser.id, p, setIdx);
+  const sub = store.submissions[key];
+  if (!sub?.submitted) return;
+
+  const rem = getRemediation(sub);
+  const roundIdx = rem.currentRound + 1;
+
+  // Determine which questions to remediate
+  let wrongQs;
+  if (roundIdx === 0) {
+    // First round: wrong from original homework
+    wrongQs = getWrongQuestions(set.questions, sub.answers);
+  } else {
+    // Subsequent: wrong from previous practice
+    const prevRound = rem.rounds[roundIdx - 1];
+    if (!prevRound?.practiceSubmitted) return;
+    wrongQs = getWrongQuestions(prevRound.practiceQuestions, prevRound.practiceAnswers);
+  }
+
+  if (wrongQs.length === 0) return;
+
+  // Show loading
+  const mainEl = document.getElementById('mainContent');
+  mainEl.innerHTML = `<div class="exam-wrap"><div class="ai-loading">
+    <div class="ai-spinner"></div>
+    <div>Getting your explanations ready! 😊</div>
+    <div class="ai-sub">Just a moment... 🌟</div>
+  </div></div>`;
+
+  try {
+    const explanations = await generateExplanationsForWrong(wrongQs, currentUser.year);
+
+    rem.currentRound = roundIdx;
+    rem.rounds[roundIdx] = {
+      wrongQIds: wrongQs.map(q => q.id),
+      wrongQuestions: wrongQs,
+      explanations: explanations,
+      explanationRead: false,
+      practiceQuestions: [],
+      practiceAnswers: {},
+      practiceSubmitted: false
+    };
+    saveStore(store);
+    renderRemediationExplanation(setIdx, roundIdx);
+  } catch(e) {
+    mainEl.innerHTML = `<div class="exam-wrap">
+      <div style="padding:40px;text-align:center;">
+        <div style="font-size:36px;margin-bottom:12px;">⚠️</div>
+        <div style="font-weight:800;color:#991b1b;font-size:16px;margin-bottom:8px;">AI Error</div>
+        <div style="color:var(--muted);font-size:14px;margin-bottom:16px;">${e.message}</div>
+        <button class="btn-sm btn-navy" onclick="currentSetIdx=${setIdx};renderStudent()">← Go Back</button>
+      </div>
+    </div>`;
+  }
+}
+
+function renderRemediationExplanation(setIdx, roundIdx) {
+  const store = getStore();
+  const p = studentPeriod || store.currentPeriod;
+  const key = subKey(currentUser.id, p, setIdx);
+  const sub = store.submissions[key];
+  const rem = getRemediation(sub);
+  const round = rem.rounds[roundIdx];
+  if (!round) return;
+
+  const roundLabel = roundIdx === 0 ? 'Homework' : `Practice Round ${roundIdx}`;
+  let html = `<div class="exam-wrap">
+    <div class="remediation-section">
+      <div class="remediation-title">📖 Explanations for Wrong Answers <span class="round-badge">${roundLabel}</span></div>
+      <div class="remediation-sub">Read the explanations carefully. You got ${round.wrongQuestions.length} question${round.wrongQuestions.length>1?'s':''} wrong.</div>`;
+
+  round.wrongQuestions.forEach(q => {
+    const expl = round.explanations[q.id] || 'Explanation not available.';
+    html += `<div class="explanation-card">
+      <div class="explanation-q-title">Q. ${q.text}</div>
+      <div class="explanation-q-meta">Your answer: <span style="color:var(--red);font-weight:800;">${q.studentAnswer}</span> → Correct answer: <span style="color:var(--green);font-weight:800;">${q.answer}</span></div>
+      <div class="explanation-body">${expl}</div>
+    </div>`;
+  });
+
+  html += `<button class="btn-confirm-read" onclick="onExplanationRead(${setIdx},${roundIdx})">
+    ✅ I've Read Everything — Start Practice
+  </button>
+  </div></div>`;
+
+  document.getElementById('mainContent').innerHTML = html;
+}
+
+async function onExplanationRead(setIdx, roundIdx) {
+  const store = getStore();
+  const p = studentPeriod || store.currentPeriod;
+  const key = subKey(currentUser.id, p, setIdx);
+  const sub = store.submissions[key];
+  const rem = getRemediation(sub);
+  const round = rem.rounds[roundIdx];
+  round.explanationRead = true;
+  saveStore(store);
+
+  // Check if this is the 4th round (index 3) — final report instead of more practice
+  if (roundIdx >= 2) {
+    rem.finalDone = true;
+    rem.finalWrongQuestions = round.wrongQuestions;
+    rem.finalExplanations = round.explanations;
+    saveStore(store);
+    renderFinalReport(setIdx);
+    return;
+  }
+
+  // Generate practice questions
+  const mainEl = document.getElementById('mainContent');
+  mainEl.innerHTML = `<div class="exam-wrap"><div class="ai-loading">
+    <div class="ai-spinner"></div>
+    <div>Making practice questions just for you! 😊</div>
+    <div class="ai-sub">${round.wrongQuestions.length} wrong question${round.wrongQuestions.length>1?'s':''} × ${roundIdx===0?3:2} practice each</div>
+  </div></div>`;
+
+  try {
+    const practiceQs = await generatePracticeQuestions(round.wrongQuestions, currentUser.year, roundIdx);
+    round.practiceQuestions = practiceQs;
+    saveStore(store);
+    renderPracticeSet(setIdx, roundIdx);
+  } catch(e) {
+    mainEl.innerHTML = `<div class="exam-wrap">
+      <div style="padding:40px;text-align:center;">
+        <div style="font-size:36px;margin-bottom:12px;">⚠️</div>
+        <div style="font-weight:800;color:#991b1b;">Practice question generation error: ${e.message}</div>
+        <button class="btn-sm btn-navy" style="margin-top:16px;" onclick="currentSetIdx=${setIdx};renderStudent()">← Go Back</button>
+      </div>
+    </div>`;
+  }
+}
+
+// ── PRACTICE SET RENDERING ──────────────
+let practiceQIdx = 0;
+
+function renderPracticeSet(setIdx, roundIdx) {
+  const store = getStore();
+  const p = studentPeriod || store.currentPeriod;
+  const key = subKey(currentUser.id, p, setIdx);
+  const sub = store.submissions[key];
+  const rem = getRemediation(sub);
+  const round = rem.rounds?.[roundIdx];
+  if (!round) { currentSetIdx = setIdx; renderStudent(); return; }
+  const qs = round.practiceQuestions || [];
+  if (qs.length === 0) { currentSetIdx = setIdx; renderStudent(); return; }
+  if (!round.practiceAnswers) round.practiceAnswers = {};
+
+  if (round.practiceSubmitted) {
+    renderPracticeResults(setIdx, roundIdx);
+    return;
+  }
+
+  if (practiceQIdx >= qs.length) practiceQIdx = qs.length - 1;
+  if (practiceQIdx < 0) practiceQIdx = 0;
+
+  const q = qs[practiceQIdx];
+  if (!q) { practiceQIdx = 0; currentSetIdx = setIdx; renderStudent(); return; }
+  const userAns = round.practiceAnswers[q.id];
+  const answered = Object.keys(round.practiceAnswers).length;
+  const total = qs.length;
+  const pct = Math.round((practiceQIdx+1)/total*100);
+  const letters = ['A','B','C','D','E'];
+
+  let html = `<div class="exam-wrap">
+    <div class="practice-header">
+      <h3>💪 Practice Questions (Round ${roundIdx+1})</h3>
+      <p>Let's practice the questions you got wrong! ${total} questions total</p>
+    </div>
+    <div class="exam-header-card">
+      <div class="exam-header-top">
+        <div>
+          <div class="exam-title">📝 Practice Round ${roundIdx+1}</div>
+          <div class="exam-sub">${total} questions</div>
+        </div>
+        <div class="exam-counter"><div class="big">${answered}/${total}</div><div class="lbl">answered</div></div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+        <div class="progress-lbl"><span>Q${practiceQIdx+1} / ${total}</span><span>${pct}%</span></div>
+      </div>
+    </div>
+    <div class="q-nav">`;
+
+  qs.forEach((qq,i) => {
+    if (!qq) return;
+    const done = (round.practiceAnswers||{})[qq.id] !== undefined;
+    const cur = i === practiceQIdx;
+    let cls = 'qn-btn';
+    if (cur) cls += ' cur'; else if (done) cls += ' done';
+    const btnLabel = qq.sourceQNum ? `${qq.sourceQNum}-${qq.practiceIdx||1}` : `${i+1}`;
+    html += `<button class="${cls}" style="width:auto;padding:0 6px;font-size:10px;" onclick="practiceQIdx=${i};renderPracticeSet(${setIdx},${roundIdx})">${btnLabel}</button>`;
+  });
+
+  const srcLabel = q.sourceQNum ? `Q${q.sourceQNum}-${q.practiceIdx||1}` : `${practiceQIdx+1}`;
+  const srcHint = q.sourceQNum ? `Similar to Homework Q${q.sourceQNum}` : '';
+
+  html += `</div><div class="question-card">
+    <div class="qc-num-row">
+      <div class="qc-num">${srcLabel}</div>
+      ${q.type==='mc'?'<span class="type-badge badge-mc">Multiple Choice</span>':''}
+      ${srcHint ? `<span style="font-size:11px;color:var(--muted);font-weight:700;">📌 ${srcHint}</span>` : ''}
+    </div>
+    <div class="qc-text">${q.text}</div>`;
+
+  if (q.type==='mc' && q.options) {
+    html += `<div class="options">`;
+    q.options.forEach((opt,i) => {
+      const letter = letters[i];
+      const sel = userAns===letter?'sel':'';
+      html += `<button class="opt-btn ${sel}" onclick="savePracticeAnswer(${setIdx},${roundIdx},'${q.id}','${letter}')">`
+        + `<span class="opt-circle">${letter}</span>${opt}</button>`;
+    });
+    html += `</div>`;
+  } else if (q.type==='ox') {
+    const oSel=userAns==='O'?'sel-o':'', xSel=userAns==='X'?'sel-x':'';
+    html += `<div class="ox-row">
+      <button class="ox-btn ${oSel}" onclick="savePracticeAnswer(${setIdx},${roundIdx},'${q.id}','O')">⭕ True</button>
+      <button class="ox-btn ${xSel}" onclick="savePracticeAnswer(${setIdx},${roundIdx},'${q.id}','X')">❌ False</button>
+    </div>`;
+  } else {
+    html += `<input class="sa-input" id="psa_${q.id}" type="text" placeholder="Enter your answer..."
+      value="${userAns||''}" oninput="savePracticeAnswerSA(${setIdx},${roundIdx},'${q.id}',this.value)">`;
+  }
+
+  html += `</div><div class="nav-row">
+    <button class="btn-nav" onclick="practiceQIdx=${practiceQIdx-1};renderPracticeSet(${setIdx},${roundIdx})" ${practiceQIdx===0?'disabled':''}>← Previous</button>`;
+
+  if (practiceQIdx===total-1) {
+    const allDone = qs.every(qq=>round.practiceAnswers[qq.id]!==undefined);
+    html += `<button class="btn-submit-all" onclick="submitPracticeSet(${setIdx},${roundIdx})" ${allDone?'':'disabled'}>Submit ✓</button>`;
+  } else {
+    html += `<button class="btn-nav" onclick="practiceQIdx=${practiceQIdx+1};renderPracticeSet(${setIdx},${roundIdx})">Next →</button>`;
+  }
+
+  html += `</div></div>`;
+  document.getElementById('mainContent').innerHTML = html;
+}
+
+function savePracticeAnswer(setIdx, roundIdx, qid, val) {
+  const store = getStore();
+  const p = studentPeriod || store.currentPeriod;
+  const key = subKey(currentUser.id, p, setIdx);
+  const sub = store.submissions[key];
+  const round = sub?.remediation?.rounds?.[roundIdx];
+  if (!round) return;
+  if (!round.practiceAnswers) round.practiceAnswers = {};
+  round.practiceAnswers[qid] = val;
+  saveStore(store);
+  setTimeout(() => { practiceQIdx++; renderPracticeSet(setIdx, roundIdx); }, 300);
+}
+
+function savePracticeAnswerSA(setIdx, roundIdx, qid, val) {
+  const store = getStore();
+  const p = studentPeriod || store.currentPeriod;
+  const key = subKey(currentUser.id, p, setIdx);
+  const sub = store.submissions[key];
+  const round = sub?.remediation?.rounds?.[roundIdx];
+  if (!round) return;
+  if (!round.practiceAnswers) round.practiceAnswers = {};
+  round.practiceAnswers[qid] = val.trim().toUpperCase();
+  saveStore(store);
+}
+
+function submitPracticeSet(setIdx, roundIdx) {
+  const store = getStore();
+  const p = studentPeriod || store.currentPeriod;
+  const key = subKey(currentUser.id, p, setIdx);
+  const sub = store.submissions[key];
+  const round = sub?.remediation?.rounds?.[roundIdx];
+  if (!round) return;
+  round.practiceSubmitted = true;
+  saveStore(store);
+  practiceQIdx = 0;
+  renderPracticeResults(setIdx, roundIdx);
+}
+
+function renderPracticeResults(setIdx, roundIdx) {
+  const store = getStore();
+  const p = studentPeriod || store.currentPeriod;
+  const key = subKey(currentUser.id, p, setIdx);
+  const sub = store.submissions[key];
+  const rem = getRemediation(sub);
+  const round = rem.rounds?.[roundIdx];
+  if (!round) { currentSetIdx = setIdx; renderStudent(); return; }
+  const qs = round.practiceQuestions || [];
+  if (qs.length === 0) { currentSetIdx = setIdx; renderStudent(); return; }
+  const pa = round.practiceAnswers || {};
+  const letters = ['A','B','C','D','E'];
+
+  const correct = qs.filter(q => q && pa[q.id] === q.answer).length;
+  const wrong = qs.filter(q => q && pa[q.id] !== q.answer);
+  const score = qs.length > 0 ? Math.round(correct/qs.length*100) : 0;
+  const scoreMsg = score>=90?'🎉 Outstanding!':score>=70?'👍 Well done!':score>=50?'💪 Keep going!':'📚 Let\'s study more!';
+
+  let html = `<div class="exam-wrap">
+    <div class="score-banner">
+      <div class="score-big">${score}%</div>
+      <div class="score-msg">${scoreMsg} &nbsp;${correct}/${qs.length} correct</div>
+    </div>
+    <div class="results-wrap" style="margin-bottom:20px;">
+      <h3>📊 Practice Round ${roundIdx+1} Results</h3>`;
+
+  qs.forEach((q,i) => {
+    if (!q) return;
+    const ans = pa[q.id];
+    const ok = ans === q.answer;
+    const qLabel = q.sourceQNum ? `Q${q.sourceQNum}-${q.practiceIdx||1}` : `Q${i+1}`;
+    html += `<div class="res-q ${ok?'res-ok':'res-wrong'}">
+      <b style="min-width:50px;">${qLabel}.</b>
+      <span style="flex:1;">${q.text}</span>
+      <span style="flex-shrink:0;font-weight:700;">${ok?'✅':'❌'}</span>
+    </div>`;
+  });
+  html += `</div>`;
+
+  if (wrong.length === 0) {
+    html += `<div style="text-align:center;padding:30px;background:#dcfce7;border-radius:var(--radius);margin-bottom:16px;">
+      <div style="font-size:48px;margin-bottom:12px;">🎉</div>
+      <div style="font-size:20px;font-weight:900;color:#166534;">Perfect! You got every question right!</div>
+      <div style="margin-top:8px;color:#15803d;">You can move on to the next set now.</div>
+    </div>
+    <div style="text-align:center;">
+      <button class="btn-nav" onclick="currentSetIdx=null;renderStudent()">← Back to Set List</button>
+    </div>`;
+  } else {
+    html += `<div style="text-align:center;padding:20px;background:#fef3c7;border-radius:var(--radius);margin-bottom:16px;">
+      <div style="font-size:16px;font-weight:800;color:#92400e;">You still got ${wrong.length} question${wrong.length>1?'s':''} wrong. Let's review and try again!</div>
+    </div>
+    <div style="text-align:center;">
+      <button class="btn-confirm-read" style="max-width:400px;margin:0 auto;" onclick="startRemediation(${setIdx})">
+        📖 View Explanations
+      </button>
+    </div>`;
+  }
+
+  html += `</div>`;
+  document.getElementById('mainContent').innerHTML = html;
+}
+
+// ── FINAL REPORT ────────────────────────
+function renderFinalReport(setIdx) {
+  const store = getStore();
+  const p = studentPeriod || store.currentPeriod;
+  const key = subKey(currentUser.id, p, setIdx);
+  const sub = store.submissions[key];
+  const rem = sub.remediation;
+
+  let html = `<div class="exam-wrap">
+    <div class="final-report">
+      <div class="final-report-title">📋 Final Study Report</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">
+        After 2 rounds of practice, these questions are still incorrect. Please study the solutions carefully.
+        <br>This report is also visible to your parents.
+      </div>`;
+
+  (rem.finalWrongQuestions || []).forEach(q => {
+    const expl = (rem.finalExplanations || {})[q.id] || 'No explanation available';
+    html += `<div class="explanation-card" style="border-left-color:var(--red);">
+      <div class="explanation-q-title">Q. ${q.text}</div>
+      <div class="explanation-q-meta">
+        Your answer: <span style="color:var(--red);font-weight:800;">${q.studentAnswer}</span>
+        → Correct: <span style="color:var(--green);font-weight:800;">${q.answer}</span>
+      </div>
+      <div class="explanation-body">${expl}</div>
+    </div>`;
+  });
+
+  html += `</div>
+    <div style="text-align:center;margin-top:16px;">
+      <button class="btn-nav" onclick="currentSetIdx=null;renderStudent()">← Back to Set List</button>
+    </div>
+  </div>`;
+
+  document.getElementById('mainContent').innerHTML = html;
 }
 
 // ═══════════════════════════════════════
