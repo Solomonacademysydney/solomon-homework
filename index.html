@@ -2640,9 +2640,29 @@ ${wrongQs.map(q => `- ID:${q.id} | Question: ${q.text} | Student answer: ${q.stu
 
 // ── REMEDIATION: PRACTICE QUESTIONS ─────
 async function generatePracticeQuestions(wrongQs, year, roundIdx) {
-  const perQ = roundIdx === 0 ? 3 : 2;  // 1차: 3문제, 2차: 2문제
+  const originalPerQ = roundIdx === 0 ? 3 : 2;  // 1차: 3문제, 2차: 2문제
+  const MAX_TOTAL = 20;
+  const N = wrongQs.length;
+
+  // 문제당 유사문제 수 계산 (20문제 초과 시 균일하게 줄이고 마지막 문제로 맞춤)
+  let perQList;
+  let effectiveWrongQs = wrongQs;
+  if (N * originalPerQ <= MAX_TOTAL) {
+    perQList = wrongQs.map(() => originalPerQ);
+  } else if (N >= MAX_TOTAL) {
+    // 틀린 문제 자체가 20개 이상: 20개만 선택해 각 1문제씩
+    const step = N / MAX_TOTAL;
+    effectiveWrongQs = Array.from({length: MAX_TOTAL}, (_, i) => wrongQs[Math.floor(i * step)]);
+    perQList = effectiveWrongQs.map(() => 1);
+  } else {
+    // 틀린 문제는 전부 유지, 문제당 수를 줄이고 마지막 문제로 20문제에 맞춤
+    const base = Math.floor(MAX_TOTAL / N);
+    const lastCount = MAX_TOTAL - base * (N - 1);
+    perQList = wrongQs.map((_, i) => i < N - 1 ? base : lastCount);
+  }
+
   const letters = ['A','B','C','D','E'];
-  const prompt = `You are a math teacher creating practice problems. For each of the following wrong questions, create exactly ${perQ} similar practice questions.
+  const prompt = `You are a math teacher creating practice problems. For each of the following wrong questions, create the specified number (Count) of similar practice questions.
 - IMPORTANT: Keep the SAME question type as the original. If original is Short Answer (sa), make Short Answer questions with NO options. If original is Multiple Choice (mc), include 4 options. If original is True/False (ox), make True/False questions.
 - Same difficulty, different numbers
 - Appropriate for Year ${year} level
@@ -2651,12 +2671,12 @@ async function generatePracticeQuestions(wrongQs, year, roundIdx) {
 IMPORTANT: Return ONLY a JSON array. Format:
 [{"sourceQId":"q0","questions":[
   {"text":"question text","type":"mc|sa|ox","options":["A","B","C","D"] or null for sa/ox,"answer":"correct answer"},
-  ...exactly ${perQ} questions per source
+  ...exactly Count questions per source
 ]}]
 
 Original questions:
-${wrongQs.map(q => {
-  let s = `- ID:${q.id} | Type:${q.type} | Question: ${q.text} | Answer: ${q.answer}`;
+${effectiveWrongQs.map((q, i) => {
+  let s = `- ID:${q.id} | Count:${perQList[i]} | Type:${q.type} | Question: ${q.text} | Answer: ${q.answer}`;
   if (q.type==='mc' && q.options) s += ` | Options: ${q.options.map((o,i)=>`${letters[i]})${o}`).join(', ')}`;
   return s;
 }).join('\n')}`;
@@ -2669,7 +2689,7 @@ ${wrongQs.map(q => {
   const practiceQs = [];
   let idx = 0;
   result.forEach(group => {
-    const srcQ = wrongQs.find(q => q.id === group.sourceQId);
+    const srcQ = effectiveWrongQs.find(q => q.id === group.sourceQId);
     // sourceQNum = original homework question number (carry through rounds)
     const srcNum = srcQ?.sourceQNum || srcQ?.num || 0;
     let pIdx = 1;
