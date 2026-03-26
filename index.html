@@ -95,8 +95,68 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
   position:relative;overflow:hidden;line-height:1.4;
 }
 .btn-level-test-big:hover{transform:translateY(-3px);filter:brightness(1.1);animation:shimmer 1.5s linear infinite;}
-.btn-level-test-big-kr{font-size:0.55em;opacity:0.75;font-weight:700;letter-spacing:0;}
+.btn-level-test-big-kr{font-size:0.63em;opacity:0.85;font-weight:700;letter-spacing:0;}
 .btn-level-test-big-label{font-size:13px;color:rgba(255,255,255,.55);margin-top:12px;font-weight:700;letter-spacing:.5px;line-height:1.6;}
+
+/* ── CONTACT INFO CARD ── */
+.login-contact-wrap{
+  margin-top:28px;width:100%;max-width:400px;
+  animation:fadeUp 1s .55s ease both;
+}
+.login-contact-divider{
+  display:flex;align-items:center;gap:12px;margin-bottom:18px;
+}
+.login-contact-divider::before,.login-contact-divider::after{
+  content:'';flex:1;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(212,175,55,.35),transparent);
+}
+.login-contact-divider span{
+  font-size:10px;letter-spacing:3px;text-transform:uppercase;
+  color:rgba(212,175,55,.5);font-family:'Cinzel',serif;white-space:nowrap;
+}
+.login-contact-card{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(212,175,55,.18);
+  border-radius:16px;padding:18px 22px;
+  backdrop-filter:blur(8px);
+  display:flex;flex-direction:column;gap:13px;
+}
+.contact-row{
+  display:flex;align-items:center;gap:14px;
+}
+.contact-icon{
+  width:34px;height:34px;border-radius:10px;
+  background:rgba(212,175,55,.12);border:1px solid rgba(212,175,55,.25);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.contact-icon svg{width:16px;height:16px;}
+.contact-text{line-height:1.35;}
+.contact-label{
+  font-size:9px;letter-spacing:2px;text-transform:uppercase;
+  color:rgba(212,175,55,.55);font-family:'Cinzel',serif;
+}
+.contact-value{
+  font-size:13px;font-weight:700;color:rgba(255,255,255,.85);
+  letter-spacing:.3px;
+}
+.contact-value a{
+  color:rgba(255,255,255,.85);text-decoration:none;
+  transition:color .2s;
+}
+.contact-value a:hover{color:var(--gold);}
+.contact-divider-line{
+  height:1px;background:rgba(255,255,255,.07);margin:2px 0;
+}
+.btn-kakao-contact{
+  display:inline-block;margin-top:5px;
+  padding:7px 14px;
+  background:#FEE500;color:#3A1D1D;
+  border-radius:10px;font-family:'Nunito',sans-serif;
+  font-size:12px;font-weight:800;text-decoration:none;
+  letter-spacing:.3px;transition:all .2s;
+}
+.btn-kakao-contact:hover{background:#f5db00;transform:translateY(-1px);box-shadow:0 4px 12px rgba(254,229,0,.35);}
 
 /* ── APP SHELL ── */
 #app{display:none;min-height:100vh;}
@@ -333,14 +393,64 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .final-report-title{color:#991b1b;font-family:'Baloo 2',cursive;font-size:18px;margin-bottom:12px;}
 .round-badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:800;background:#fef3c7;color:#92400e;margin-left:8px;}
 
+/* ── PARENT REPORT ── */
+.report-panel{background:#fff;border-radius:var(--radius);padding:28px;box-shadow:0 4px 20px rgba(0,0,0,.08);margin-bottom:20px;border:2px solid var(--gold);}
+.report-panel-title{font-family:'Baloo 2',cursive;font-size:20px;color:var(--navy);margin-bottom:4px;display:flex;align-items:center;gap:10px;}
+.report-panel-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+.report-student-header{display:flex;align-items:center;gap:14px;padding:16px 20px;background:linear-gradient(135deg,var(--navy),#1e2e55);border-radius:14px;margin-bottom:16px;color:#fff;}
+.report-student-avatar{width:48px;height:48px;border-radius:14px;background:rgba(212,175,55,.2);color:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;}
+.report-student-name{font-family:'Baloo 2',cursive;font-size:18px;font-weight:800;}
+.report-student-meta{font-size:12px;opacity:.7;margin-top:2px;}
+.report-score-row{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.report-score-card{flex:1;min-width:120px;background:#f8f6ef;border-radius:12px;padding:16px;text-align:center;}
+.report-score-card .big{font-size:32px;font-weight:900;font-family:'Baloo 2',cursive;line-height:1;}
+.report-score-card .lbl{font-size:11px;color:var(--muted);font-weight:700;margin-top:4px;}
+.report-msg-box{background:#f8f6ef;border-radius:14px;padding:20px;margin-bottom:16px;font-size:14px;line-height:1.8;color:var(--text);white-space:pre-wrap;border:2px solid var(--border);}
+.btn-copy-kakao{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:18px 24px;background:linear-gradient(135deg,#fee500,#f5da00);color:#3c1e1e;border:none;border-radius:14px;font-family:'Nunito',sans-serif;font-size:18px;font-weight:900;cursor:pointer;transition:all .2s;box-shadow:0 4px 16px rgba(254,229,0,.4);}
+.btn-copy-kakao:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(254,229,0,.5);}
+.btn-copy-kakao:active{transform:translateY(0);}
+.btn-copy-kakao.copied{background:linear-gradient(135deg,var(--green),#16a34a);color:#fff;}
+.report-history{margin-top:20px;}
+.report-history-title{font-weight:800;font-size:15px;color:var(--navy);margin-bottom:12px;}
+.report-history-item{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#f8f6ef;border-radius:10px;margin-bottom:8px;cursor:pointer;transition:all .15s;}
+.report-history-item:hover{background:#edeae0;transform:translateX(4px);}
+.report-history-date{font-weight:800;font-size:13px;color:var(--navy);min-width:100px;}
+.report-history-score{font-weight:800;font-size:13px;}
+.report-history-detail{font-size:12px;color:var(--muted);flex:1;}
+.report-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px;text-align:center;}
+.report-loading .ai-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+.report-loading .msg{font-weight:700;color:var(--navy);font-size:15px;}
+.report-loading .sub{font-size:12px;color:var(--muted);}
+.btn-report{padding:6px 14px;background:linear-gradient(135deg,#fee500,#f5da00);color:#3c1e1e;border:none;border-radius:8px;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;cursor:pointer;transition:all .2s;}
+.btn-report:hover{transform:translateY(-1px);filter:brightness(1.05);}
+.report-rem-round{background:#fff;border-radius:12px;padding:14px 18px;margin-bottom:10px;border:2px solid var(--border);}
+.report-rem-round-title{font-weight:800;font-size:13px;color:var(--navy);margin-bottom:6px;}
+.report-rem-q{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;margin-bottom:4px;font-size:13px;font-weight:600;}
+.report-rem-q.ok{background:#f0fdf4;color:#166534;}
+.report-rem-q.wrong{background:#fff5f5;color:#991b1b;}
+
 @media(max-width:768px){
   #loginScreen{flex-direction:column;}
   .login-left{padding:40px 24px 32px;flex:none;}
   .login-right{flex:none;padding:32px 24px 40px;}
+  .login-contact-wrap{max-width:100%;}
+  .contact-value{font-size:12px;}
   .paste-area{grid-template-columns:1fr;}
   .student-grid{grid-template-columns:1fr;}
   .field-row{grid-template-columns:1fr;}
   .main{padding:16px;}
+  .report-panel{padding:16px;}
+  .report-score-row{gap:8px;}
+  .report-score-card{min-width:80px;padding:12px 8px;}
+  .report-score-card .big{font-size:24px;}
+  .report-student-header{padding:12px 16px;gap:10px;}
+  .report-student-name{font-size:16px;}
+  .btn-copy-kakao{padding:14px 16px;font-size:16px;}
+  .report-msg-box{padding:14px;font-size:13px;}
+  .report-history-item{flex-wrap:wrap;gap:8px;}
+  .report-history-date{min-width:auto;}
+  .results-table{font-size:12px;}
+  .results-table td,.results-table th{padding:8px 10px;}
 }
 </style>
 </head>
@@ -363,8 +473,66 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
     <div class="login-divider"></div>
     <div class="login-tagline">God is Love &nbsp;✦&nbsp; Excellence in Learning</div>
     <div class="login-left-test-wrap">
-      <a href="lt/level-test.html" class="btn-level-test-big">✨ Free Level Test →</a>
-      <div class="btn-level-test-big-label">🎯 Check Your Math Level · Free · 15 min</div>
+      <a href="lt/level-test.html" class="btn-level-test-big">✨ Free Level Test →<br><span class="btn-level-test-big-kr">무료 레벨 테스트 →</span></a>
+      <div class="btn-level-test-big-label">🎯 Check Your Math Level · Free · 15 min<br>📐 우리 아이 수학 실력 확인 · 무료 · 15분</div>
+    </div>
+
+    <div class="login-contact-wrap">
+      <div class="login-contact-divider"><span>Contact &amp; Location</span></div>
+      <div class="login-contact-card">
+
+        <!-- Phone -->
+        <div class="contact-row">
+          <div class="contact-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.68A2 2 0 012 1h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+            </svg>
+          </div>
+          <div class="contact-text">
+            <div class="contact-label">Enquiries · 문의 전화</div>
+            <div class="contact-value"><a href="tel:0424743564">0424 743 564</a></div>
+          </div>
+        </div>
+
+        <div class="contact-divider-line"></div>
+
+        <!-- Address -->
+        <div class="contact-row">
+          <div class="contact-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#d4af37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1118 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+          </div>
+          <div class="contact-text">
+            <div class="contact-label">Location · 위치</div>
+            <div class="contact-value">
+              <a href="https://maps.google.com/?q=2+Station+St+West+Ryde+NSW" target="_blank">
+                2 Station St, West Ryde NSW<br>
+                <span style="font-size:11px;opacity:.8;">웨스트 라이드 역 앞</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="contact-divider-line"></div>
+
+        <!-- KakaoTalk -->
+        <div class="contact-row">
+          <div class="contact-icon" style="background:rgba(254,229,0,.15);border-color:rgba(254,229,0,.35);">
+            <svg viewBox="0 0 24 24" fill="#FEE500" xmlns="http://www.w3.org/2000/svg" width="18" height="18">
+              <path d="M12 3C6.477 3 2 6.477 2 10.8c0 2.7 1.56 5.09 3.938 6.563-.173.63-.63 2.273-.722 2.625-.112.437.162.43.34.313.14-.093 2.228-1.508 3.13-2.12.42.06.852.093 1.314.093 5.523 0 10-3.477 10-7.8C22 6.477 17.523 3 12 3z"/>
+            </svg>
+          </div>
+          <div class="contact-text" style="flex:1;">
+            <div class="contact-label">KakaoTalk · 카카오톡 상담</div>
+            <a href="https://open.kakao.com/o/sVMZVsmi" target="_blank" class="btn-kakao-contact">
+              💬 KakaoTalk Open Chat<br><span style="font-size:0.9em;opacity:0.85;display:block;text-align:left;padding-left:1.6em;">카카오톡 오픈채팅 상담</span>
+            </a>
+          </div>
+        </div>
+
+      </div>
     </div>
   </div>
   <div class="login-right">
@@ -828,10 +996,11 @@ function renderTeacher() {
     html += `<div style="margin-bottom:16px;">
       <div style="font-weight:800;color:var(--navy);font-size:14px;margin-bottom:6px;">Year ${yr}</div>
       <table class="results-table">
-        <thead><tr><th>Name</th><th>ID</th><th>Status</th><th>Score per Set</th><th>Reset</th></tr></thead><tbody>`;
+        <thead><tr><th>Name</th><th>ID</th><th>Status</th><th>Score per Set</th><th>Report</th><th>Reset</th></tr></thead><tbody>`;
     yrStudents.forEach(s => {
       let status = sets.length > 0 ? 'Not submitted' : 'No homework';
       let scoreHtml = '-';
+      const anySubmitted = sets.some((_,idx) => store.submissions[subKey(s.id,p,idx)]?.submitted);
       if (sets.length > 0) {
         const setResults = sets.map((set, idx) => {
           const sub = store.submissions[subKey(s.id, p, idx)];
@@ -851,12 +1020,13 @@ function renderTeacher() {
         }
         scoreHtml = `<div style="display:flex;gap:6px;flex-wrap:wrap;">${setResults.join('')}</div>`;
       }
+      const reportBtn = anySubmitted ? `<button class="btn-report" onclick="showTeacherReport('${s.id}')">📝 리포트</button>` : '-';
       const resetBtns = sets.map((_,idx) => {
         const sk = subKey(s.id, p, idx);
         const hasSub = store.submissions[sk] && (store.submissions[sk].submitted || Object.keys(store.submissions[sk].answers||{}).length > 0);
         return hasSub ? `<button class="btn-sm btn-red" style="padding:2px 7px;font-size:11px;" onclick="resetSubmission('${s.id}',${idx})">↺ Set ${idx+1}</button>` : '';
       }).join('');
-      html += `<tr><td><b>${s.name}</b></td><td>${s.id}</td><td>${status}</td><td>${scoreHtml}</td><td style="white-space:nowrap;">${resetBtns||'-'}</td></tr>`;
+      html += `<tr><td><b>${s.name}</b></td><td>${s.id}</td><td>${status}</td><td>${scoreHtml}</td><td>${reportBtn}</td><td style="white-space:nowrap;">${resetBtns||'-'}</td></tr>`;
     });
     html += `</tbody></table></div>`;
   });
@@ -1178,8 +1348,12 @@ function viewResults(yr) {
   let html = `<h2 style="font-family:'Baloo 2',cursive;color:var(--navy);margin-bottom:16px;">📊 Year ${yr} – ${periodLabel(p)} Results</h2>`;
 
   yrStudents.forEach(s => {
+    const anySubmitted = hw.sets.some((_,idx) => store.submissions[subKey(s.id,p,idx)]?.submitted);
     html += `<div style="background:#f8f6ef;border-radius:12px;padding:16px 20px;margin-bottom:14px;">
-      <div style="font-size:20px;font-weight:900;color:var(--navy);margin-bottom:10px;">${s.name}</div>`;
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+        <div style="font-size:20px;font-weight:900;color:var(--navy);flex:1;">${s.name}</div>
+        ${anySubmitted ? `<button class="btn-report" onclick="closeModal();setTimeout(()=>showTeacherReport('${s.id}'),200)">📝 학부모 리포트</button>` : ''}
+      </div>`;
     hw.sets.forEach((set, setIdx) => {
       const sub = store.submissions[subKey(s.id, p, setIdx)];
       html += `<div style="font-weight:800;color:var(--navy);margin:10px 0 6px;">${set.title}</div>`;
@@ -2005,12 +2179,75 @@ function answerSA(qid, val) {
 
 function doSubmit() {
   const store=getStore();
-  const key=subKey(currentUser.id,studentPeriod||store.currentPeriod,currentSetIdx??0);
-  store.submissions[key].submitted=true;
-  store.submissions[key].submitTime=new Date().toISOString();
+  const p = studentPeriod||store.currentPeriod;
+  const key=subKey(currentUser.id,p,currentSetIdx??0);
+  const sub = store.submissions[key];
+  const hw = store.homeworkSets[hwKey(currentUser.year, currentUser.country||'AU', p)];
+  const set = hw?.sets?.[currentSetIdx??0];
+  sub.submitted=true;
+  sub.submitTime=new Date().toISOString();
+
+  // ── 리포트 데이터 수집 ──
+  if (set) {
+    const qs = set.questions;
+    const autoQs = qs.filter(q=>q.type!=='written');
+    const correct = autoQs.filter(q=>sub.answers[q.id]===q.answer).length;
+    const score = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
+    const wrongQs = autoQs.filter(q=>sub.answers[q.id]!==q.answer);
+    const weakAreas = detectWeakAreas(wrongQs);
+    sub.reportData = {
+      studentId: currentUser.id,
+      studentName: currentUser.name,
+      year: currentUser.year,
+      setTitle: set.title,
+      period: p,
+      totalQuestions: autoQs.length,
+      correctCount: correct,
+      score: score,
+      wrongQuestions: wrongQs.map((q,i) => ({
+        num: i+1,
+        text: q.text.substring(0,80),
+        studentAnswer: sub.answers[q.id] || '(no answer)',
+        correctAnswer: q.answer,
+        type: q.type
+      })),
+      weakAreas: weakAreas,
+      submittedAt: sub.submitTime
+    };
+  }
   saveStore(store);
   qIdx=0;
-  renderStudent(); // show results screen (includes back-to-set-list button)
+  renderStudent();
+}
+
+function detectWeakAreas(wrongQs) {
+  const areas = {};
+  wrongQs.forEach(q => {
+    const text = (q.text||'').toLowerCase();
+    const keywords = [
+      {area:'Fractions', patterns:['fraction','분수','/','numerator','denominator']},
+      {area:'Decimals', patterns:['decimal','소수','0.']},
+      {area:'Percentages', patterns:['percent','%','백분율']},
+      {area:'Algebra', patterns:['algebra','equation','변수','x =','solve','simplif']},
+      {area:'Geometry', patterns:['area','perimeter','angle','triangle','circle','rectangle','도형','넓이','둘레']},
+      {area:'Multiplication', patterns:['multiply','times','×','곱']},
+      {area:'Division', patterns:['divide','÷','나누']},
+      {area:'Addition/Subtraction', patterns:['add','subtract','sum','difference','더하','빼']},
+      {area:'Word Problems', patterns:['how many','how much','altogether','remaining','몇 개','얼마']},
+      {area:'Measurement', patterns:['cm','mm','kg','litre','meter','측정']},
+      {area:'Statistics', patterns:['mean','median','mode','average','평균','통계']},
+      {area:'Ratio/Proportion', patterns:['ratio','proportion','비율']},
+    ];
+    let matched = false;
+    keywords.forEach(kw => {
+      if (kw.patterns.some(p => text.includes(p))) {
+        areas[kw.area] = (areas[kw.area]||0) + 1;
+        matched = true;
+      }
+    });
+    if (!matched) areas['General Math'] = (areas['General Math']||0) + 1;
+  });
+  return Object.entries(areas).sort((a,b)=>b[1]-a[1]).map(([area,count])=>({area,count}));
 }
 
 // ═══════════════════════════════════════
@@ -2165,8 +2402,132 @@ function renderParent() {
   });
   html += `</div>`;
 
+  // ── 학부모 AI 리포트 섹션 ──
+  html += renderParentReportSection(child, store, p);
+
+  // ── 최근 7일 히스토리 ──
+  html += renderParentHistory(child, store, p);
+
   document.getElementById('mainContent').innerHTML=html;
   document.getElementById('mainContent').innerHTML += renderMyAccountCard();
+}
+
+function renderParentReportSection(child, store, period) {
+  const data = buildReportDataForStudent(child.id, period, store);
+  if (!data || data.results.length === 0) return '';
+
+  let html = `<div class="report-panel" style="margin-top:20px;">
+    <div class="report-panel-title">📋 학습 리포트</div>
+    <div class="report-panel-sub">${child.name} · Year ${child.year} · ${periodLabel(period)}</div>`;
+
+  data.results.forEach((r, ri) => {
+    const cls = r.score>=80?'pill-a':r.score>=60?'pill-b':'pill-c';
+    html += `<div style="margin-bottom:16px;">
+      <div style="font-weight:800;color:var(--navy);font-size:14px;margin-bottom:8px;">📝 ${r.setTitle}</div>
+      <div class="report-score-row">
+        <div class="report-score-card">
+          <div class="big" style="color:${r.score>=80?'var(--green)':r.score>=60?'var(--gold2)':'var(--red)'};">${r.score}%</div>
+          <div class="lbl">점수</div>
+        </div>
+        <div class="report-score-card">
+          <div class="big" style="color:var(--navy);">${r.correct}/${r.total}</div>
+          <div class="lbl">정답</div>
+        </div>
+        <div class="report-score-card">
+          <div class="big" style="color:var(--red);">${r.wrongCount}</div>
+          <div class="lbl">오답</div>
+        </div>
+      </div>`;
+
+    if (r.weakAreas?.length > 0) {
+      html += `<div style="margin-bottom:10px;">
+        <div style="font-weight:800;font-size:12px;color:var(--navy);margin-bottom:4px;">📊 부족한 영역</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${r.weakAreas.map(w=>`<span class="score-pill pill-c" style="font-size:11px;">${w.area} (${w.count})</span>`).join('')}
+        </div>
+      </div>`;
+    }
+
+    if (r.remediation.length > 0) {
+      html += `<div style="margin-bottom:10px;">
+        <div style="font-weight:800;font-size:12px;color:var(--navy);margin-bottom:6px;">💪 보충학습 결과</div>`;
+      r.remediation.forEach(rem => {
+        const rCls = rem.score>=80?'pill-a':rem.score>=60?'pill-b':'pill-c';
+        html += `<div class="report-rem-round">
+          <div class="report-rem-round-title">연습 ${rem.round}회차 — <span class="score-pill ${rCls}" style="font-size:11px;">${rem.score}%</span> (${rem.correct}/${rem.total})</div>
+          ${rem.questions.map(q=>`<div class="report-rem-q ${q.ok?'ok':'wrong'}">${q.ok?'✅':'❌'} ${q.text}</div>`).join('')}
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // 카톡 메시지 표시 (이미 생성된 경우)
+    if (r.kakaoMsg) {
+      html += `<div style="margin-top:8px;">
+        <div style="font-weight:800;font-size:12px;color:var(--navy);margin-bottom:4px;">💬 선생님 메시지</div>
+        <div class="report-msg-box" style="font-size:13px;">${r.kakaoMsg}</div>
+      </div>`;
+    }
+
+    html += `</div>`;
+    if (ri < data.results.length - 1) html += `<hr style="border:none;border-top:1px solid var(--border);margin:12px 0;">`;
+  });
+
+  html += `</div>`;
+  return html;
+}
+
+function renderParentHistory(child, store, currentPeriod) {
+  // 최근 7주 히스토리 조회
+  const history = [];
+  let p = {...currentPeriod};
+  for (let i = 0; i < 7; i++) {
+    const hw = store.homeworkSets[hwKey(child.year, child.country||'AU', p)];
+    if (hw?.sets?.length > 0) {
+      let totalCorrect = 0, totalQs = 0, totalSets = 0;
+      hw.sets.forEach((set, idx) => {
+        const sub = store.submissions[subKey(child.id, p, idx)];
+        if (sub?.submitted) {
+          const autoQs = set.questions.filter(q=>q.type!=='written');
+          totalCorrect += autoQs.filter(q=>sub.answers[q.id]===q.answer).length;
+          totalQs += autoQs.length;
+          totalSets++;
+        }
+      });
+      if (totalSets > 0) {
+        const score = totalQs > 0 ? Math.round(totalCorrect/totalQs*100) : 0;
+        const isCurrent = p.year===currentPeriod.year && p.month===currentPeriod.month && p.week===currentPeriod.week;
+        history.push({
+          period: {...p},
+          score,
+          correct: totalCorrect,
+          total: totalQs,
+          sets: totalSets,
+          isCurrent
+        });
+      }
+    }
+    p = prevPeriod(p);
+  }
+
+  if (history.length <= 1) return ''; // 현재만 있으면 히스토리 안 보여줌
+
+  let html = `<div class="info-card" style="margin-top:16px;">
+    <h3>📈 최근 학습 히스토리</h3>
+    <div class="report-history">`;
+
+  history.forEach(h => {
+    const cls = h.score>=80?'pill-a':h.score>=60?'pill-b':'pill-c';
+    html += `<div class="report-history-item" style="${h.isCurrent?'border:2px solid var(--gold);':''}">
+      <div class="report-history-date">${periodLabel(h.period)}</div>
+      <span class="score-pill ${cls} report-history-score">${h.score}%</span>
+      <div class="report-history-detail">${h.correct}/${h.total} correct · ${h.sets} set${h.sets>1?'s':''}</div>
+      ${h.isCurrent ? '<span style="font-size:11px;font-weight:800;color:var(--gold2);">이번 주</span>' : ''}
+    </div>`;
+  });
+
+  html += `</div></div>`;
+  return html;
 }
 
 // ═══════════════════════════════════════
@@ -2476,6 +2837,284 @@ function saveTeacherAccount() {
   document.getElementById('topbarUser').textContent = 'Teacher';
   alert('✅ Teacher account updated.');
   renderTeacher();
+}
+
+// ═══════════════════════════════════════
+//  PARENT REPORT SYSTEM
+// ═══════════════════════════════════════
+
+async function generateParentReport(studentId, period, setIdx) {
+  const store = getStore();
+  const student = store.users.find(u=>u.id===studentId && u.role==='student');
+  if (!student) throw new Error('Student not found');
+  const hw = store.homeworkSets[hwKey(student.year, student.country||'AU', period)];
+  if (!hw?.sets?.[setIdx]) throw new Error('No homework found');
+  const set = hw.sets[setIdx];
+  const key = subKey(studentId, period, setIdx);
+  const sub = store.submissions[key];
+  if (!sub?.submitted) throw new Error('Not submitted yet');
+
+  const rd = sub.reportData || {};
+  const rem = sub.remediation;
+
+  // Build remediation summary
+  let remSummary = '';
+  if (rem?.rounds?.length > 0) {
+    remSummary = '\n\nRemediation (practice) results:\n';
+    rem.rounds.forEach((round, ri) => {
+      if (!round?.practiceSubmitted) return;
+      const pqs = round.practiceQuestions || [];
+      const pas = round.practiceAnswers || {};
+      const pc = pqs.filter(q=>q && pas[q.id]===q.answer).length;
+      remSummary += `- Practice Round ${ri+1}: ${pc}/${pqs.length} correct (${pqs.length>0?Math.round(pc/pqs.length*100):0}%)\n`;
+      const stillWrong = pqs.filter(q=>q && pas[q.id]!==q.answer);
+      if (stillWrong.length > 0) {
+        remSummary += `  Still struggling with: ${stillWrong.map(q=>(q.text||'').substring(0,40)).join(', ')}\n`;
+      }
+    });
+    if (rem.finalDone) remSummary += '- Final report issued (some questions still need work)\n';
+  }
+
+  const prompt = `You are a warm, professional math tutor writing a KakaoTalk message to a Korean parent about their child's homework results.
+
+Student info:
+- Name: ${student.name}
+- Year: ${student.year}
+- Homework: ${set.title} (${periodLabel(period)})
+- Score: ${rd.score ?? 0}% (${rd.correctCount ?? 0}/${rd.totalQuestions ?? 0} correct)
+- Weak areas: ${(rd.weakAreas||[]).map(w=>w.area+' ('+w.count+'문제)').join(', ') || 'None'}
+- Wrong questions: ${(rd.wrongQuestions||[]).map(q=>'Q'+q.num+': '+q.text).join('; ') || 'None'}
+${remSummary}
+
+IMPORTANT RULES:
+1. Write ENTIRELY in Korean
+2. Use friendly but professional tone (like a caring tutor)
+3. Start with a greeting mentioning the student's name
+4. Include: score summary, what they did well, weak areas to improve
+5. If remediation data exists, mention their effort in practice rounds
+6. End with encouragement
+7. Keep it under 300 characters for KakaoTalk readability
+8. Do NOT use markdown formatting - plain text only
+9. Use appropriate emojis sparingly (2-3 max)
+
+Return ONLY the message text, nothing else.`;
+
+  return await callAI(prompt);
+}
+
+function buildReportDataForStudent(studentId, period, store) {
+  const student = store.users.find(u=>u.id===studentId && u.role==='student');
+  if (!student) return null;
+  const hw = store.homeworkSets[hwKey(student.year, student.country||'AU', period)];
+  if (!hw?.sets?.length) return null;
+
+  const results = [];
+  hw.sets.forEach((set, idx) => {
+    const key = subKey(studentId, period, idx);
+    const sub = store.submissions[key];
+    if (!sub?.submitted) return;
+    const autoQs = set.questions.filter(q=>q.type!=='written');
+    const correct = autoQs.filter(q=>sub.answers[q.id]===q.answer).length;
+    const score = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
+    const wrongQs = autoQs.filter(q=>sub.answers[q.id]!==q.answer);
+
+    const remRounds = [];
+    if (sub.remediation?.rounds) {
+      sub.remediation.rounds.forEach((round, ri) => {
+        if (!round?.practiceSubmitted) return;
+        const pqs = round.practiceQuestions || [];
+        const pas = round.practiceAnswers || {};
+        const pc = pqs.filter(q=>q && pas[q.id]===q.answer).length;
+        remRounds.push({
+          round: ri+1,
+          total: pqs.length,
+          correct: pc,
+          score: pqs.length>0 ? Math.round(pc/pqs.length*100) : 0,
+          questions: pqs.map(q=>({
+            text: (q.text||'').substring(0,50),
+            ok: q && pas[q.id]===q.answer
+          }))
+        });
+      });
+    }
+
+    results.push({
+      setIdx: idx,
+      setTitle: set.title,
+      score,
+      correct,
+      total: autoQs.length,
+      wrongCount: wrongQs.length,
+      wrongQs: wrongQs.map((q,i)=>({num:i+1, text:q.text.substring(0,60)})),
+      weakAreas: sub.reportData?.weakAreas || detectWeakAreas(wrongQs),
+      remediation: remRounds,
+      submittedAt: sub.submitTime,
+      kakaoMsg: sub.reportData?.kakaoMsg || null
+    });
+  });
+  return { student, results };
+}
+
+function showTeacherReport(studentId) {
+  const store = getStore();
+  const p = store.currentPeriod;
+  const data = buildReportDataForStudent(studentId, p, store);
+  if (!data || data.results.length === 0) {
+    alert('No submitted homework found for this student.');
+    return;
+  }
+  const s = data.student;
+
+  let html = `
+    <div class="report-panel-title">📋 학부모 리포트 — ${s.name}</div>
+    <div class="report-panel-sub">${periodLabel(p)} · Year ${s.year}</div>
+    <div class="report-student-header">
+      <div class="report-student-avatar">${s.name.charAt(0)}</div>
+      <div>
+        <div class="report-student-name">${s.name}</div>
+        <div class="report-student-meta">Year ${s.year} · ${periodLabel(p)}</div>
+      </div>
+    </div>`;
+
+  data.results.forEach((r, ri) => {
+    const cls = r.score>=80?'pill-a':r.score>=60?'pill-b':'pill-c';
+    html += `
+      <div style="margin-bottom:20px;">
+        <div style="font-weight:800;color:var(--navy);font-size:15px;margin-bottom:10px;">📝 ${r.setTitle}</div>
+        <div class="report-score-row">
+          <div class="report-score-card">
+            <div class="big" style="color:${r.score>=80?'var(--green)':r.score>=60?'var(--gold2)':'var(--red)'};">${r.score}%</div>
+            <div class="lbl">Score</div>
+          </div>
+          <div class="report-score-card">
+            <div class="big" style="color:var(--navy);">${r.correct}/${r.total}</div>
+            <div class="lbl">Correct</div>
+          </div>
+          <div class="report-score-card">
+            <div class="big" style="color:var(--red);">${r.wrongCount}</div>
+            <div class="lbl">Wrong</div>
+          </div>
+        </div>`;
+
+    if (r.weakAreas?.length > 0) {
+      html += `<div style="margin-bottom:12px;">
+        <div style="font-weight:800;font-size:13px;color:var(--navy);margin-bottom:6px;">📊 부족한 영역</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${r.weakAreas.map(w=>`<span class="score-pill pill-c" style="font-size:12px;">${w.area} (${w.count})</span>`).join('')}
+        </div>
+      </div>`;
+    }
+
+    if (r.wrongQs?.length > 0) {
+      html += `<div style="margin-bottom:12px;">
+        <div style="font-weight:800;font-size:13px;color:var(--navy);margin-bottom:6px;">❌ 틀린 문제</div>
+        ${r.wrongQs.map(q=>`<div class="report-rem-q wrong">Q${q.num}. ${q.text}</div>`).join('')}
+      </div>`;
+    }
+
+    if (r.remediation.length > 0) {
+      html += `<div style="margin-bottom:12px;">
+        <div style="font-weight:800;font-size:13px;color:var(--navy);margin-bottom:8px;">💪 보충학습 결과</div>`;
+      r.remediation.forEach(rem => {
+        const rCls = rem.score>=80?'pill-a':rem.score>=60?'pill-b':'pill-c';
+        html += `<div class="report-rem-round">
+          <div class="report-rem-round-title">Practice Round ${rem.round} — <span class="score-pill ${rCls}" style="font-size:11px;">${rem.score}%</span> (${rem.correct}/${rem.total})</div>
+          ${rem.questions.map(q=>`<div class="report-rem-q ${q.ok?'ok':'wrong'}">${q.ok?'✅':'❌'} ${q.text}</div>`).join('')}
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // ── 카톡 메시지 생성 버튼 ──
+    html += `
+      <div id="kakaoArea_${ri}" style="margin-top:12px;">
+        <button class="btn-copy-kakao" onclick="generateAndShowKakao('${studentId}',${ri},${r.setIdx})" id="kakaoBtn_${ri}">
+          💬 카톡 메시지 생성 (AI)
+        </button>
+      </div>`;
+
+    html += `</div><hr style="border:none;border-top:2px solid var(--border);margin:20px 0;">`;
+  });
+
+  document.getElementById('modalContent').innerHTML = html;
+  document.getElementById('modal').classList.add('open');
+}
+
+async function generateAndShowKakao(studentId, resultIdx, setIdx) {
+  const btn = document.getElementById(`kakaoBtn_${resultIdx}`);
+  const area = document.getElementById(`kakaoArea_${resultIdx}`);
+  if (!btn || !area) return;
+
+  if (!getAIKey()) {
+    alert('Claude API Key가 설정되지 않았습니다.\nTeacher Settings에서 설정해주세요.');
+    return;
+  }
+
+  btn.innerHTML = '<div class="ai-spinner" style="width:20px;height:20px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px;"></div> 메시지 생성 중...';
+  btn.disabled = true;
+
+  try {
+    const store = getStore();
+    const p = store.currentPeriod;
+    const msg = await generateParentReport(studentId, p, setIdx);
+
+    // 저장
+    const key = subKey(studentId, p, setIdx);
+    if (store.submissions[key]?.reportData) {
+      store.submissions[key].reportData.kakaoMsg = msg;
+      store.submissions[key].reportData.kakaoGeneratedAt = new Date().toISOString();
+      saveStore(store);
+    }
+
+    area.innerHTML = `
+      <div style="font-weight:800;font-size:13px;color:var(--navy);margin-bottom:8px;">💬 카톡 메시지</div>
+      <div class="report-msg-box" id="kakaoMsg_${resultIdx}">${msg}</div>
+      <button class="btn-copy-kakao" onclick="copyKakaoMsg(${resultIdx})" id="copyBtn_${resultIdx}">
+        📋 메시지 복사하기
+      </button>
+      <button class="btn-copy-kakao" style="margin-top:8px;background:linear-gradient(135deg,#dbeafe,#bfdbfe);color:#1d4ed8;box-shadow:0 4px 16px rgba(59,130,246,.2);" onclick="generateAndShowKakao('${studentId}',${resultIdx},${setIdx})">
+        🔄 다시 생성
+      </button>`;
+  } catch(e) {
+    area.innerHTML = `
+      <div style="color:var(--red);font-weight:700;font-size:13px;margin-bottom:8px;">⚠️ ${e.message}</div>
+      <button class="btn-copy-kakao" onclick="generateAndShowKakao('${studentId}',${resultIdx},${setIdx})">
+        🔄 다시 시도
+      </button>`;
+  }
+}
+
+function copyKakaoMsg(resultIdx) {
+  const el = document.getElementById(`kakaoMsg_${resultIdx}`);
+  const btn = document.getElementById(`copyBtn_${resultIdx}`);
+  if (!el) return;
+  const text = el.innerText || el.textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    if (btn) {
+      btn.classList.add('copied');
+      btn.innerHTML = '✅ 복사 완료!';
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.innerHTML = '📋 메시지 복사하기';
+      }, 2000);
+    }
+  }).catch(() => {
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    if (btn) {
+      btn.classList.add('copied');
+      btn.innerHTML = '✅ 복사 완료!';
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.innerHTML = '📋 메시지 복사하기';
+      }, 2000);
+    }
+  });
 }
 
 // ═══════════════════════════════════════
@@ -3020,6 +3659,27 @@ function submitPracticeSet(setIdx, roundIdx) {
   const round = sub?.remediation?.rounds?.[roundIdx];
   if (!round) return;
   round.practiceSubmitted = true;
+
+  // ── 보충학습 결과를 리포트 데이터에 추가 ──
+  const pqs = round.practiceQuestions || [];
+  const pas = round.practiceAnswers || {};
+  const pCorrect = pqs.filter(q => q && pas[q.id] === q.answer).length;
+  const pScore = pqs.length > 0 ? Math.round(pCorrect/pqs.length*100) : 0;
+  if (!sub.reportData) sub.reportData = {};
+  if (!sub.reportData.remediation) sub.reportData.remediation = [];
+  sub.reportData.remediation.push({
+    round: roundIdx + 1,
+    totalQuestions: pqs.length,
+    correctCount: pCorrect,
+    score: pScore,
+    questions: pqs.map(q => ({
+      text: (q.text||'').substring(0,60),
+      correct: q && pas[q.id] === q.answer,
+      studentAnswer: pas[q.id] || '(no answer)',
+      correctAnswer: q.answer
+    }))
+  });
+
   saveStore(store);
   practiceQIdx = 0;
   renderPracticeResults(setIdx, roundIdx);
