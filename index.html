@@ -3001,7 +3001,7 @@ function renderMyAccountCard() {
     </details>`;
 }
 
-function saveMyAccount() {
+async function saveMyAccount() {
   const newId  = document.getElementById('myNewId').value.trim();
   const newPw  = document.getElementById('myNewPw').value.trim();
   const confPw = document.getElementById('myConfirmPw').value.trim();
@@ -3034,7 +3034,7 @@ function saveMyAccount() {
     currentUser.id = newId;
   }
 
-  if (newPw) { u.pw = newPw; currentUser.pw = newPw; }
+  if (newPw) { u.pw = await hashPw(newPw); currentUser.pw = u.pw; }
   saveStore(store);
 
   // 상단 바 이름 즉시 업데이트
