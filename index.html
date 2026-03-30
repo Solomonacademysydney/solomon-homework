@@ -660,11 +660,16 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 //  DATA STORE
 // ═══════════════════════════════════════
 const STORE_KEY = 'solomon_hw_v3';
+let _pendingFbWrite = null;  // Firebase 연결 전 저장 대기열
 
 function saveStore(d) {
   localStorage.setItem(STORE_KEY, JSON.stringify(d));
   if (window.fbReady && window.FB_REF) {
     window.FB_REF.set(JSON.parse(JSON.stringify(d)));
+    _pendingFbWrite = null;
+  } else {
+    // Firebase 아직 준비 안 됨 → 나중에 연결되면 올림
+    _pendingFbWrite = JSON.parse(JSON.stringify(d));
   }
 }
 
@@ -5285,20 +5290,16 @@ const firebaseConfig = {
       const localRaw = localStorage.getItem(STORE_KEY);
       const localData = localRaw ? JSON.parse(localRaw) : null;
 
-      if (fbData && localData) {
-        // 둘 다 있으면 유저 수가 많은 쪽이 최신 데이터
-        const fbUsers = (fbData.users || []).length;
-        const localUsers = (localData.users || []).length;
-        if (localUsers > fbUsers) {
-          // 로컬이 더 많으면 Firebase로 업로드
-          window.FB_REF.set(localData);
-        } else {
-          // Firebase가 더 많으면 로컬에 반영
-          localStorage.setItem(STORE_KEY, JSON.stringify(fbData));
-        }
+      if (_pendingFbWrite) {
+        // 연결 전에 로컬에서 변경된 데이터가 있으면 Firebase에 올리고 로컬도 맞춤
+        window.FB_REF.set(_pendingFbWrite);
+        localStorage.setItem(STORE_KEY, JSON.stringify(_pendingFbWrite));
+        _pendingFbWrite = null;
       } else if (fbData) {
+        // Firebase를 항상 최신 기준으로 사용
         localStorage.setItem(STORE_KEY, JSON.stringify(fbData));
       } else if (localData) {
+        // Firebase에 데이터 없으면 로컬을 올림
         window.FB_REF.set(localData);
       }
 
