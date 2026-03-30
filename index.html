@@ -7,6 +7,8 @@
 <meta http-equiv="Content-Language" content="en">
 <title>Solomon Math Academy</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
@@ -473,6 +475,57 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .all-done-btn{display:block;width:100%;padding:16px;background:linear-gradient(90deg,#16a34a,#15803d);color:#fff;border:none;border-radius:14px;font-family:'Noto Sans KR',sans-serif;font-size:16px;font-weight:800;cursor:pointer;margin-top:20px;transition:all .2s;}
 .all-done-btn:hover{transform:translateY(-1px);filter:brightness(1.08);}
 .all-done-btn:disabled{background:#9ca3af;cursor:not-allowed;transform:none;}
+
+/* ── TS 탭 ─────────────────────────────────── */
+.ts-tab-btn{background:#2d4a8a;color:white;}
+.ts-tab-btn:hover{background:#1a3060;}
+/* ── 주간 헤더 ─────────────────────────────── */
+.ts-week-header{text-align:center;padding:8px 0 16px;}
+/* ── Day 카드 그리드 ────────────────────────── */
+.ts-days-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0;}
+@media(max-width:480px){.ts-days-grid{grid-template-columns:repeat(2,1fr);}}
+.ts-day-card{padding:16px 8px;border:2px solid #c7d7ff;border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;}
+.ts-day-card:hover:not(.locked):not(.done){border-color:#2d4a8a;transform:translateY(-2px);box-shadow:0 4px 12px rgba(45,74,138,.15);}
+.ts-day-card.done{background:#e8f5e9;border-color:#4caf50;}
+.ts-day-card.locked{opacity:.45;cursor:not-allowed;background:#f5f5f5;}
+.ts-day-label{font-weight:700;color:#2d4a8a;font-size:15px;}
+.ts-day-icon{font-size:22px;margin:6px 0;}
+.ts-day-score{font-size:13px;color:#555;}
+/* ── 유사문제 카드 ──────────────────────────── */
+.ts-remediation-card{margin-top:16px;padding:20px;border:2px dashed #ff9800;border-radius:12px;background:#fff8e1;text-align:center;}
+.ts-remediation-card.done{border-color:#4caf50;background:#e8f5e9;}
+.rem-header{font-size:16px;font-weight:700;margin-bottom:8px;}
+.btn-start-rem{margin-top:12px;padding:10px 28px;background:#ff9800;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:'Noto Sans KR',sans-serif;}
+.btn-start-rem:disabled{background:#4caf50;cursor:default;}
+/* ── 퀴즈 세션 ──────────────────────────────── */
+.ts-quiz-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.btn-back{padding:6px 14px;background:#f5f5f5;border:1px solid #ddd;border-radius:6px;cursor:pointer;font-size:13px;font-family:'Noto Sans KR',sans-serif;}
+.ts-question-card{background:white;border-radius:12px;padding:24px;box-shadow:0 2px 12px rgba(0,0,0,.08);margin-bottom:16px;}
+.ts-q-text{font-size:17px;font-weight:600;line-height:1.65;margin-bottom:20px;color:#1a1a2e;}
+.ts-options{display:flex;flex-direction:column;gap:10px;}
+.ts-option-btn{display:flex;align-items:center;gap:12px;padding:12px 16px;border:2px solid #e0e0e0;border-radius:8px;background:white;cursor:pointer;font-size:15px;text-align:left;transition:all .15s;width:100%;font-family:'Noto Sans KR',sans-serif;font-weight:600;}
+.ts-option-btn:hover:not(.disabled-opt){border-color:#2d4a8a;background:#f0f4ff;}
+.ts-option-btn.disabled-opt{opacity:.5;cursor:not-allowed;pointer-events:none;}
+.ts-option-btn.correct-opt{border-color:#4caf50!important;background:#e8f5e9!important;opacity:1!important;}
+.ts-option-btn.wrong-opt{border-color:#f44336!important;background:#ffebee!important;}
+.opt-label{width:28px;height:28px;background:#2d4a8a;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;}
+.ts-option-btn.correct-opt .opt-label{background:#4caf50;}
+.ts-option-btn.wrong-opt .opt-label{background:#f44336;}
+/* ── 힌트 박스 ──────────────────────────────── */
+.ts-hint-box{margin-top:16px;padding:14px 16px;border-radius:8px;background:#fff8e1;border-left:4px solid #ffa000;}
+.ts-hint-badge{font-weight:700;margin-bottom:8px;color:#e65100;}
+.ts-hint-badge.correct{color:#2e7d32;}
+.ts-hint-badge.reveal{color:#1565c0;}
+.ts-hint-text{color:#333;line-height:1.65;margin:0;}
+.ts-hint-prompt{margin:8px 0 0;color:#2d4a8a;font-weight:600;}
+/* ── 프로그레스 바 ───────────────────────────── */
+.ts-progress-bar{height:6px;background:#e0e0e0;border-radius:3px;}
+.ts-progress-bar>div{height:100%;background:linear-gradient(90deg,#2d4a8a,#5c7cfa);border-radius:3px;transition:width .4s ease;}
+/* ── 선생님 배정 섹션 ────────────────────────── */
+.ts-assignment-section{margin-top:16px;padding:12px 14px;background:#f0f4ff;border-radius:8px;border:1px solid #c7d7ff;font-size:14px;}
+/* ── TS 세트 카드 (학생 홈) ──────────────────── */
+.ts-set-card{background:#fff;border-radius:var(--radius);padding:22px 26px;box-shadow:0 2px 10px rgba(0,0,0,.06);display:flex;align-items:center;gap:18px;border:2px solid #2d4a8a;transition:all .2s;cursor:pointer;margin-bottom:14px;}
+.ts-set-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(45,74,138,.15);}
 </style>
 </head>
 <body>
@@ -615,21 +668,57 @@ function saveStore(d) {
   }
 }
 
-function initStore() {
+function renderMath(text) {
+  if (!text || typeof text !== 'string') return text || '';
+  if (typeof katex === 'undefined') return text;
+  // block math: $$...$$ or \[...\]
+  text = text.replace(/\$\$([\s\S]+?)\$\$/g, function(m, expr) {
+    try { return katex.renderToString(expr, { displayMode: true, throwOnError: false }); }
+    catch(e) { return m; }
+  });
+  text = text.replace(/\\\[([\s\S]+?)\\\]/g, function(m, expr) {
+    try { return katex.renderToString(expr, { displayMode: true, throwOnError: false }); }
+    catch(e) { return m; }
+  });
+  // inline math: $...$ or \(...\)
+  text = text.replace(/\$([^\$]+?)\$/g, function(m, expr) {
+    try { return katex.renderToString(expr, { displayMode: false, throwOnError: false }); }
+    catch(e) { return m; }
+  });
+  text = text.replace(/\\\(([\s\S]+?)\\\)/g, function(m, expr) {
+    try { return katex.renderToString(expr, { displayMode: false, throwOnError: false }); }
+    catch(e) { return m; }
+  });
+  return text;
+}
+
+async function hashPw(pw) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function isHashed(pw) { return typeof pw === 'string' && /^[0-9a-f]{64}$/.test(pw); }
+
+async function initStore() {
+  const pws = {
+    solomon2024: await hashPw('solomon2024'),
+    math2024:    await hashPw('math2024'),
+    parent2024:  await hashPw('parent2024'),
+  };
   const d = {
     users: [
-      { id:'teacher',   pw:'solomon2024', role:'teacher', name:'Teacher' },
-      { id:'student01', pw:'math2024',    role:'student', name:'Alex',   year:5 },
-      { id:'student02', pw:'math2024',    role:'student', name:'Sophie', year:7 },
-      { id:'student03', pw:'math2024',    role:'student', name:'Liam',   year:3 },
-      { id:'student04', pw:'math2024',    role:'student', name:'Mia',    year:9 },
-      { id:'student05', pw:'math2024',    role:'student', name:'Ethan',  year:6 },
-      { id:'parent01',  pw:'parent2024',  role:'parent',  name:"Alex's Parent",   childIds:['student01'] },
-      { id:'parent02',  pw:'parent2024',  role:'parent',  name:"Sophie's Parent", childIds:['student02'] },
+      { id:'teacher',   pw:pws.solomon2024, role:'teacher', name:'Teacher' },
+      { id:'student01', pw:pws.math2024,    role:'student', name:'Alex',   year:5 },
+      { id:'student02', pw:pws.math2024,    role:'student', name:'Sophie', year:7 },
+      { id:'student03', pw:pws.math2024,    role:'student', name:'Liam',   year:3 },
+      { id:'student04', pw:pws.math2024,    role:'student', name:'Mia',    year:9 },
+      { id:'student05', pw:pws.math2024,    role:'student', name:'Ethan',  year:6 },
+      { id:'parent01',  pw:pws.parent2024,  role:'parent',  name:"Alex's Parent",   childIds:['student01'] },
+      { id:'parent02',  pw:pws.parent2024,  role:'parent',  name:"Sophie's Parent", childIds:['student02'] },
     ],
     currentPeriod: { year: new Date().getFullYear(), month: new Date().getMonth()+1, week: 1 },
     homeworkSets: {},
-    submissions: {}
+    submissions: {},
+    ts_progress: {}
   };
   saveStore(d);
   return d;
@@ -663,6 +752,7 @@ function navigateStudentPeriod(dir) {
   }
   currentSetIdx = null;
   qIdx = 0;
+  tsViewState = null;
   renderStudent();
 }
 function subKey(sid, p, setIdx=0) { return `${sid}_${p.year}_m${String(p.month).padStart(2,'0')}_w${p.week}_s${setIdx}`; }
@@ -697,12 +787,13 @@ function periodLabel(p) {
 
 function getStore() {
   const raw = localStorage.getItem(STORE_KEY);
-  if (!raw) return initStore();
+  if (!raw) return { users:[], homeworkSets:{}, submissions:{}, ts_progress:{}, currentPeriod:{ year:new Date().getFullYear(), month:new Date().getMonth()+1, week:1 } };
   const d = JSON.parse(raw);
   // 필수 필드 누락 시 기본값 보완
   if (!d.users)        d.users = [];
   if (!d.homeworkSets) d.homeworkSets = {};
   if (!d.submissions)  d.submissions = {};
+  if (!d.ts_progress) d.ts_progress = {};
   if (!d.currentPeriod) d.currentPeriod = { year: new Date().getFullYear(), month: new Date().getMonth()+1, week: 1 };
   // migrate old currentWeek → currentPeriod
   if (d.currentWeek !== undefined && !d.currentPeriod) {
@@ -762,6 +853,26 @@ function getStore() {
   return d;
 }
 
+async function ensureStore() {
+  const raw = localStorage.getItem(STORE_KEY);
+  let store;
+  if (!raw) {
+    store = await initStore();
+  } else {
+    store = getStore();
+    // migrate plaintext passwords → SHA-256 hashed
+    let pwMigrated = false;
+    for (const u of store.users) {
+      if (u.pw && !isHashed(u.pw)) {
+        u.pw = await hashPw(u.pw);
+        pwMigrated = true;
+      }
+    }
+    if (pwMigrated) saveStore(store);
+  }
+  return store;
+}
+
 // ═══════════════════════════════════════
 //  HELPERS
 // ═══════════════════════════════════════
@@ -792,20 +903,15 @@ function setRole(r) {
     r==='teacher' ? 'e.g. teacher' : r==='parent' ? 'e.g. parent01' : 'e.g. student01';
 }
 
-function doLogin() {
+async function doLogin() {
   const id = document.getElementById('loginId').value.trim();
   const pw = document.getElementById('loginPw').value;
   const store = getStore();
-  const user = store.users.find(u => u.id === id && u.pw === pw && u.role === loginRole);
+  const hashed = await hashPw(pw);
+  const user = store.users.find(u => u.id === id && u.pw === hashed && u.role === loginRole);
   if (!user) {
-    const byId = store.users.find(u => u.id === id);
-    if (byId) {
-      document.getElementById('loginError').textContent =
-        `ID는 맞지만 비밀번호(${byId.pw}) 또는 역할(현재:${loginRole}, 실제:${byId.role})이 틀렸습니다.`;
-    } else {
-      document.getElementById('loginError').textContent =
-        `ID "${id}"를 찾을 수 없습니다. 전체 계정 수: ${store.users.length}`;
-    }
+    document.getElementById('loginError').textContent =
+      'ID 또는 비밀번호가 올바르지 않습니다.';
     document.getElementById('loginError').style.display='block';
     return;
   }
@@ -820,7 +926,7 @@ function doLogin() {
   try {
     if (user.role==='teacher') renderTeacher();
     else if (user.role==='parent') renderParent();
-    else { qIdx=0; currentSetIdx=null; studentPeriod=getStore().currentPeriod; renderStudent(); }
+    else { qIdx=0; currentSetIdx=null; studentPeriod=store.currentPeriod; renderStudent(); }
   } catch(e) {
     document.getElementById('mainContent').innerHTML =
       `<div style="padding:40px;color:red;font-weight:800;">
@@ -837,6 +943,7 @@ function doLogout() {
   editingSetIdx = null;
   currentParentChildId = null;
   studentPeriod = null;
+  tsViewState = null;
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
   document.getElementById('loginId').value = '';
@@ -1010,7 +1117,8 @@ function renderTeacher() {
           </div>` : ''}
           <div class="format-hint">
             <b>Question format:</b> Number. Question → Options A) B) C) D) → Multiple Choice &nbsp;|&nbsp; True or False → O/X &nbsp;|&nbsp; No options → Short Answer<br>
-            <b>Answer format:</b> 1. B &nbsp; 2. O &nbsp; 3. 6
+            <b>Answer format:</b> 1. B &nbsp; 2. O &nbsp; 3. 6<br>
+            <b>Math formulas:</b> Wrap in <code>$...$</code> for inline math. &nbsp; Examples: <code>$\frac{3}{4}$</code>, <code>$\sqrt{144}$</code>, <code>$x^2-5x+6=0$</code>
           </div>
           <div class="paste-area">
             <div class="paste-col">
@@ -1035,6 +1143,37 @@ function renderTeacher() {
         <button class="btn-sm btn-red" onclick="cancelEditor()">✕ Close</button>
       </div>`;
     }
+    // ── TS Assignment Section ──
+    const tsKey = `ts_${hwKey(selectedYear, selectedCountry, p)}`;
+    const tsConfig = hw?.ts_config || store.homeworkSets[hwKey(selectedYear, selectedCountry, p)]?.ts_config || null;
+    const tsEnabled = !!tsConfig?.enabled;
+    const tsWeekVal = tsConfig?.ts_week || 1;
+    const tsYearLabel = tsConfig?.ts_year_label || getTSYearLabel(selectedYear);
+    const tsWeekOpts = Array.from({length:40},(_,i)=>i+1).map(w => `<option value="${w}"${w===tsWeekVal?'selected':''}>Week ${w}</option>`).join('');
+    const tsYearLabelOpts = ['Y3_OC','Y4_OC','Y5_SEL','Y6_SEL'].map(yl => `<option value="${yl}"${yl===tsYearLabel?'selected':''}>${yl}</option>`).join('');
+
+    html += `
+      <div class="ts-assignment-section" style="margin-top:16px;">
+        <label style="font-weight:600;color:#2d4a8a;display:flex;align-items:center;gap:6px;">
+          <input type="checkbox" id="ts-enable-check" ${tsEnabled?'checked':''} onchange="toggleTSAssignment(${selectedYear})">
+          🧠 Thinking Skills Daily (6 days x 10 questions)
+        </label>
+        <div id="ts-week-selector" style="margin-top:8px;${tsEnabled?'':'display:none;'}">
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+            <label style="font-size:13px;font-weight:700;">TS Year Label:
+              <select id="ts-year-label-select" style="padding:4px 8px;border:1px solid #c7d7ff;border-radius:6px;font-family:'Noto Sans KR',sans-serif;">${tsYearLabelOpts}</select>
+            </label>
+            <label style="font-size:13px;font-weight:700;">TS Week:
+              <select id="ts-week-select" style="padding:4px 8px;border:1px solid #c7d7ff;border-radius:6px;font-family:'Noto Sans KR',sans-serif;">${tsWeekOpts}</select>
+            </label>
+            <button class="btn-sm btn-navy" onclick="saveTSAssignment(${selectedYear})" style="padding:6px 14px;">Save TS</button>
+          </div>
+          <span style="font-size:12px;color:#666;margin-top:4px;display:block;">
+            Students in Year ${selectedYear} will see the TS tab with auto-assigned questions.
+          </span>
+        </div>
+      </div>`;
+
     html += `</div>`; // hw-editor
   }
 
@@ -1258,13 +1397,13 @@ function doParse() {
     const badgeCls  = {mc:'badge-mc',sa:'badge-sa',ox:'badge-ox'}[q.type];
     let optStr = '';
     if (q.type==='mc'&&q.options) {
-      optStr = `<div style="font-size:12px;color:var(--muted);margin-top:4px;">${q.options.map((o,i)=>`${letters[i]}) ${o}`).join(' &nbsp;|&nbsp; ')}</div>`;
+      optStr = `<div style="font-size:12px;color:var(--muted);margin-top:4px;">${q.options.map((o,i)=>`${letters[i]}) ${renderMath(o)}`).join(' &nbsp;|&nbsp; ')}</div>`;
     }
     html += `
       <div class="preview-q">
         <div class="preview-num">${q.num}</div>
         <div class="preview-info">
-          <div class="preview-text">${q.text}</div>
+          <div class="preview-text">${renderMath(q.text)}</div>
           ${optStr}
           <div class="preview-meta">
             <span class="type-badge ${badgeCls}">${typeLabel}</span>
@@ -1381,8 +1520,8 @@ function previewHomework(yr) {
           <span class="type-badge ${badgeCls}">${typeLabel}</span>
           ${q.answer?`<span class="ans-tag">Answer: ${q.answer}</span>`:''}
         </div>
-        <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:8px;">${q.text}</div>
-        ${q.type==='mc'&&q.options ? `<div style="font-size:13px;color:var(--muted);">${q.options.map((o,j)=>`<b>${letters[j]})</b> ${o}`).join(' &nbsp; ')}</div>` : ''}
+        <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:8px;">${renderMath(q.text)}</div>
+        ${q.type==='mc'&&q.options ? `<div style="font-size:13px;color:var(--muted);">${q.options.map((o,j)=>`<b>${letters[j]})</b> ${renderMath(o)}`).join(' &nbsp; ')}</div>` : ''}
       </div>`;
     });
   });
@@ -1432,7 +1571,7 @@ function viewResults(yr) {
         }
         html += `<div class="res-q ${cls2}" style="font-size:13px;">
           <b>Q${i+1}.</b>
-          <span style="flex:1;">${q.text.substring(0,60)}${q.text.length>60?'...':''} — ${status}</span>
+          <span style="flex:1;">${renderMath(q.text.substring(0,60))}${q.text.length>60?'...':''} — ${status}</span>
         </div>`;
       });
     });
@@ -1537,7 +1676,7 @@ function renderTeacherSettings(store) {
     </div>`;
 }
 
-function saveStudentEdit(oldId) {
+async function saveStudentEdit(oldId) {
   const store  = getStore();
   const u      = store.users.find(u=>u.id===oldId);
   if (!u) return;
@@ -1566,7 +1705,8 @@ function saveStudentEdit(oldId) {
   u.name    = document.getElementById(`se_name_${oldId}`).value.trim() || u.name;
   u.year    = parseInt(document.getElementById(`se_year_${oldId}`).value);
   u.country = document.getElementById(`se_country_${oldId}`)?.value || u.country || 'AU';
-  u.pw      = document.getElementById(`se_pw_${oldId}`).value.trim() || u.pw;
+  const newSpw = document.getElementById(`se_pw_${oldId}`).value.trim();
+  if (newSpw) u.pw = await hashPw(newSpw);
   saveStore(store);
   alert(`✅ ${u.name}'s info updated.`);
   renderTeacher();
@@ -1683,7 +1823,7 @@ function removeChildFromParent(pid, cid) {
   rebuildParentCards();
 }
 
-function saveParentEdit(oldId) {
+async function saveParentEdit(oldId) {
   const store = getStore();
   const u = store.users.find(u=>u.id===oldId);
   if (!u) return;
@@ -1696,7 +1836,7 @@ function saveParentEdit(oldId) {
   }
   if (newId !== oldId) u.id = newId;
   if (newName) u.name = newName;
-  if (newPw)   u.pw   = newPw;
+  if (newPw)   u.pw   = await hashPw(newPw);
   saveStore(store);
   renderTeacher();
   setTimeout(()=>{ document.getElementById('parentMgmt')?.scrollIntoView({behavior:'smooth',block:'start'}); }, 50);
@@ -1710,7 +1850,7 @@ function deleteParent(id) {
   renderTeacher();
 }
 
-function addStudent() {
+async function addStudent() {
   const id=document.getElementById('ns_id').value.trim();
   const name=document.getElementById('ns_name').value.trim();
   const year=parseInt(document.getElementById('ns_year').value);
@@ -1719,13 +1859,14 @@ function addStudent() {
   if(!id||!name||!pw){alert('Please fill in all fields.');return;}
   const store=getStore();
   if(store.users.find(u=>u.id===id)){alert('This ID already exists.');return;}
-  store.users.push({id,pw,role:'student',name,year,country});
+  const hpw=await hashPw(pw);
+  store.users.push({id,pw:hpw,role:'student',name,year,country});
   saveStore(store);
   document.getElementById('ns_ok').style.display='block';
   setTimeout(()=>renderTeacher(),800);
 }
 
-function addParent() {
+async function addParent() {
   const id=document.getElementById('np_id').value.trim();
   const pw=document.getElementById('np_pw').value.trim();
   const firstChildId=document.getElementById('np_child_id').value.trim();
@@ -1739,7 +1880,8 @@ function addParent() {
     childIds.push(firstChildId);
   }
   const name=parentDisplayName(childIds);
-  store.users.push({id,pw,role:'parent',name,childIds});
+  const hpw=await hashPw(pw);
+  store.users.push({id,pw:hpw,role:'parent',name,childIds});
   saveStore(store);
   renderTeacher();
   setTimeout(()=>{ document.getElementById('parentMgmt')?.scrollIntoView({behavior:'smooth',block:'start'}); }, 50);
@@ -1752,11 +1894,20 @@ let qIdx = 0;
 let currentSetIdx = null;      // null=set list screen, 0+=active set index
 
 function renderStudent() {
+  // If TS view is active, render TS instead
+  if (tsViewState) {
+    if (tsViewState.mode === 'week') { renderTSWeekView(); return; }
+    if (tsViewState.mode === 'quiz') { reloadTSSession(tsViewState.day, tsViewState.isRemediation); return; }
+  }
+
   const store = getStore();
   const p     = studentPeriod || store.currentPeriod;
   const hw    = store.homeworkSets[hwKey(currentUser.year, currentUser.country||'AU', p)];
 
-  if (!hw || !hw.sets || hw.sets.length === 0) {
+  const hasSets = hw && hw.sets && hw.sets.length > 0;
+  const hasTS = hw?.ts_config?.enabled;
+
+  if (!hasSets && !hasTS) {
     const isCurrentP = periodGte(p, store.currentPeriod) && periodGte(store.currentPeriod, p);
     document.getElementById('mainContent').innerHTML = `
       <div class="exam-wrap">
@@ -1772,9 +1923,9 @@ function renderStudent() {
   }
 
   // no set selected → show set list
-  if (currentSetIdx === null) { renderSetList(hw, store, p); return; }
+  if (currentSetIdx === null) { renderSetList(hw || { sets: [] }, store, p); return; }
 
-  const set = hw.sets[currentSetIdx];
+  const set = (hw?.sets || [])[currentSetIdx];
   if (!set) { currentSetIdx = null; renderStudent(); return; }
 
   const qs  = set.questions;
@@ -1821,7 +1972,7 @@ function renderStudent() {
       }
       html += `<div class="res-q ${cls}">
         <b style="min-width:36px;">Q${i+1}.</b>
-        <span style="flex:1;">${q.text}</span>
+        <span style="flex:1;">${renderMath(q.text)}</span>
         <span style="flex-shrink:0;font-weight:700;">${status}</span>
       </div>`;
     });
@@ -1841,7 +1992,7 @@ function renderStudent() {
       html += `<div style="background:#f8f6ef;border-radius:14px;padding:20px;margin-bottom:16px;border:2px solid ${borderCol};">
         <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;">
           <div style="width:36px;height:36px;background:${numBg};color:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;flex-shrink:0;">${i+1}</div>
-          <div style="font-size:15px;font-weight:700;color:var(--navy);line-height:1.5;flex:1;">${q.text}</div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy);line-height:1.5;flex:1;">${renderMath(q.text)}</div>
         </div>`;
 
       if (q.type==='mc' && q.options) {
@@ -1866,7 +2017,7 @@ function renderStudent() {
           const circleCol = (isAns||isUser)?'#fff':'var(--navy)';
           html += `<div style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-radius:12px;${s}">
             <div style="width:28px;height:28px;border-radius:50%;background:${circleBg};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:${circleCol};flex-shrink:0;">${ltr}</div>
-            <span style="font-size:14px;font-weight:600;flex:1;">${opt}</span>
+            <span style="font-size:14px;font-weight:600;flex:1;">${renderMath(opt)}</span>
             ${badge}
           </div>`;
         });
@@ -2028,7 +2179,7 @@ function renderStudent() {
             : '<span style="background:#fee2e2;color:#991b1b;font-size:12px;font-weight:800;padding:3px 10px;border-radius:20px;">🚫 No Calculator</span>';
         })()}
       </div>
-      <div class="qc-text">${q.text}</div>`;
+      <div class="qc-text">${renderMath(q.text)}</div>`;
 
   if (q.type==='mc' && q.options) {
     html += `<div class="options">`;
@@ -2036,7 +2187,7 @@ function renderStudent() {
       const letter = letters[i];
       const sel = userAns===letter ? 'sel' : '';
       html += `<button class="opt-btn ${sel}" onclick="answerMC('${q.id}','${letter}')">
-        <span class="opt-circle">${letter}</span>${opt}
+        <span class="opt-circle">${letter}</span>${renderMath(opt)}
       </button>`;
     });
     html += `</div>`;
@@ -2125,14 +2276,15 @@ function renderPeriodNav(p, currentP) {
 }
 
 function renderSetList(hw, store, p) {
-  const sets = hw.sets;
+  const sets = hw.sets || [];
+  const hasTS = hw?.ts_config?.enabled;
   let html = `<div class="exam-wrap">
     ${renderPeriodNav(p, store.currentPeriod)}
     <div class="exam-header-card" style="margin-bottom:20px;">
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <div>
           <div class="exam-title">📚 ${periodLabel(p)} Homework</div>
-          <div class="exam-sub">${sets.length} set${sets.length>1?'s':''} assigned</div>
+          <div class="exam-sub">${sets.length} set${sets.length>1?'s':''}${hasTS ? ' + Thinking Skills' : ''} assigned</div>
         </div>
         <div style="text-align:right;">
           <div style="font-size:20px;font-weight:900;color:var(--gold);" translate="no">${englishName(currentUser.id)}</div>
@@ -2179,6 +2331,9 @@ function renderSetList(hw, store, p) {
         ${isSubmitted ? `<button class="btn-sm" style="background:#dcfce7;color:#166534;" onclick="event.stopPropagation();startSet(${idx})">View Results</button>` : ''}
       </div>`;
   });
+
+  // TS card after the regular sets
+  html += renderStudentWithTS();
 
   html += `</div></div>`;
   document.getElementById('mainContent').innerHTML = html;
@@ -2440,7 +2595,7 @@ function renderParent() {
           rem.finalWrongQuestions.forEach(q => {
             const expl = (rem.finalExplanations||{})[q.id] || '';
             html += `<div style="background:#fff;border-radius:8px;padding:10px 14px;margin-bottom:6px;border:1px solid #fecaca;">
-              <div style="font-size:13px;font-weight:700;color:var(--navy);">Q. ${q.text}</div>
+              <div style="font-size:13px;font-weight:700;color:var(--navy);">Q. ${renderMath(q.text)}</div>
               <div style="font-size:12px;color:var(--muted);margin-top:2px;">
                 Answer: <span style="color:var(--red);">${q.studentAnswer}</span> → Correct: <span style="color:var(--green);">${q.answer}</span>
               </div>
@@ -2517,7 +2672,7 @@ function renderParentReportSection(child, store, period) {
         html += `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 12px;
           background:${bg};border-left:3px solid ${border};border-radius:8px;margin-bottom:6px;font-size:13px;">
           <span style="flex-shrink:0;">${icon}</span>
-          <div><b>Q${q.num}.</b> ${q.text}${ans}</div>
+          <div><b>Q${q.num}.</b> ${renderMath(q.text)}${ans}</div>
         </div>`;
       });
       html += `</div>`;
@@ -2918,7 +3073,7 @@ function forceDownloadFromFirebase() {
   });
 }
 
-function saveTeacherAccount() {
+async function saveTeacherAccount() {
   const newId = document.getElementById('ta_id').value.trim();
   const newPw = document.getElementById('ta_pw').value.trim();
   if (!newId) { alert('Please enter an ID.'); return; }
@@ -2930,9 +3085,9 @@ function saveTeacherAccount() {
     alert('This ID already exists.'); return;
   }
   u.id = newId;
-  if (newPw) u.pw = newPw;
+  if (newPw) u.pw = await hashPw(newPw);
   currentUser.id = newId;
-  if (newPw) currentUser.pw = newPw;
+  if (newPw) currentUser.pw = u.pw;
   saveStore(store);
   document.getElementById('topbarUser').textContent = 'Teacher';
   alert('✅ Teacher account updated.');
@@ -3151,7 +3306,7 @@ function showTeacherReport(studentId) {
         html += `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 12px;
           background:${bg};border-left:3px solid ${border};border-radius:8px;margin-bottom:6px;font-size:13px;">
           <span style="flex-shrink:0;">${icon}</span>
-          <div><b>Q${q.num}.</b> ${q.text}${ans}</div>
+          <div><b>Q${q.num}.</b> ${renderMath(q.text)}${ans}</div>
         </div>`;
       });
       html += `</div>`;
@@ -3206,6 +3361,43 @@ function showTeacherReport(studentId) {
 
     html += `</div><hr style="border:none;border-top:2px solid var(--border);margin:20px 0;">`;
   });
+
+  // ── TS Report Section ──
+  const hw = store.homeworkSets[hwKey(s.year, s.country||'AU', p)];
+  if (hw?.ts_config?.enabled) {
+    const tsR = getTSReportData(studentId, hw.ts_config.ts_year_label, hw.ts_config.ts_week, store);
+    if (tsR.total > 0) {
+      const tsCls = tsR.accuracy>=80?'pill-a':tsR.accuracy>=60?'pill-b':'pill-c';
+      html += `
+        <div style="margin-bottom:20px;">
+          <div style="font-weight:800;color:#2d4a8a;font-size:15px;margin-bottom:10px;">🧠 Thinking Skills — Week ${hw.ts_config.ts_week}</div>
+          <div class="report-score-row">
+            <div class="report-score-card">
+              <div class="big" style="color:${tsR.accuracy>=80?'var(--green)':tsR.accuracy>=60?'var(--gold2)':'var(--red)'};">${tsR.accuracy}%</div>
+              <div class="lbl">Accuracy</div>
+            </div>
+            <div class="report-score-card">
+              <div class="big" style="color:var(--navy);">${tsR.correct}/${tsR.total}</div>
+              <div class="lbl">Correct</div>
+            </div>
+            <div class="report-score-card">
+              <div class="big" style="color:#2d4a8a;">${tsR.daysCompleted}/6</div>
+              <div class="lbl">Days Done</div>
+            </div>
+            <div class="report-score-card">
+              <div class="big" style="color:#f59e0b;">${tsR.hintUsed}</div>
+              <div class="lbl">Hints Used</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:13px;font-weight:600;">
+            <span>Answers revealed: <b style="color:var(--red);">${tsR.revealed}</b></span>
+            <span>·</span>
+            <span>Remediation: <b>${tsR.remediationDone ? '✅ Done' : '⏳ Pending'}</b></span>
+          </div>
+        </div>
+        <hr style="border:none;border-top:2px solid var(--border);margin:20px 0;">`;
+    }
+  }
 
   document.getElementById('modalContent').innerHTML = html;
   document.getElementById('modal').classList.add('open');
@@ -3677,7 +3869,7 @@ function renderRemediationExplanation(setIdx, roundIdx) {
   if (isSolved) {
     cardHtml = `<div class="hint-card stage-solved">
       <div class="hint-stage-badge s-ok">✅ Solved!</div>
-      <div class="explanation-q-title">Q. ${q.text}</div>
+      <div class="explanation-q-title">Q. ${renderMath(q.text)}</div>
       <div style="margin-top:8px;font-size:13px;color:#166534;font-weight:700;">
         Great job! Correct answer: <span style="background:#dcfce7;padding:2px 8px;border-radius:6px;">${q.answer}</span>
       </div>
@@ -3686,7 +3878,7 @@ function renderRemediationExplanation(setIdx, roundIdx) {
   } else if (attempts === 0) {
     cardHtml = `<div class="hint-card">
       <div class="hint-stage-badge s1">Step 1 of 3</div>
-      <div class="explanation-q-title">Q. ${q.text}</div>
+      <div class="explanation-q-title">Q. ${renderMath(q.text)}</div>
       <div style="font-size:13px;color:var(--muted);margin-top:4px;margin-bottom:12px;">Your answer: <span style="color:var(--red);font-weight:800;">${q.studentAnswer}</span></div>
       <button class="hint-get-btn" onclick="showHintStage(${setIdx},${roundIdx},'${q.id}',1)">💡 Get a Hint</button>
     </div>`;
@@ -3695,7 +3887,7 @@ function renderRemediationExplanation(setIdx, roundIdx) {
     if (q.type === 'mc' && q.options) {
       retryHtml = `<div class="options">${q.options.map((opt, i) => {
         const letter = letters[i];
-        return `<button class="opt-btn" onclick="answerHintRetry(${setIdx},${roundIdx},'${q.id}','${letter}')">${letter}. ${opt}</button>`;
+        return `<button class="opt-btn" onclick="answerHintRetry(${setIdx},${roundIdx},'${q.id}','${letter}')">${letter}. ${renderMath(opt)}</button>`;
       }).join('')}</div>`;
     } else if (q.type === 'ox') {
       retryHtml = `<div class="ox-row">
@@ -3710,7 +3902,7 @@ function renderRemediationExplanation(setIdx, roundIdx) {
     }
     cardHtml = `<div class="hint-card stage-hint">
       <div class="hint-stage-badge s1">💡 Hint — try again</div>
-      <div class="explanation-q-title">Q. ${q.text}</div>
+      <div class="explanation-q-title">Q. ${renderMath(q.text)}</div>
       <div style="font-size:13px;color:var(--muted);margin-top:4px;margin-bottom:10px;">Your answer: <span style="color:var(--red);font-weight:800;">${q.studentAnswer}</span></div>
       <div class="hint-box">💡 ${hint}</div>
       <div class="hint-retry-section">
@@ -3723,7 +3915,7 @@ function renderRemediationExplanation(setIdx, roundIdx) {
     if (q.type === 'mc' && q.options) {
       retryHtml2 = `<div class="options">${q.options.map((opt, i) => {
         const letter = letters[i];
-        return `<button class="opt-btn" onclick="answerHintRetry(${setIdx},${roundIdx},'${q.id}','${letter}')">${letter}. ${opt}</button>`;
+        return `<button class="opt-btn" onclick="answerHintRetry(${setIdx},${roundIdx},'${q.id}','${letter}')">${letter}. ${renderMath(opt)}</button>`;
       }).join('')}</div>`;
     } else if (q.type === 'ox') {
       retryHtml2 = `<div class="ox-row">
@@ -3738,7 +3930,7 @@ function renderRemediationExplanation(setIdx, roundIdx) {
     }
     cardHtml = `<div class="hint-card stage-explain">
       <div class="hint-stage-badge s2">📖 Explanation — last try</div>
-      <div class="explanation-q-title">Q. ${q.text}</div>
+      <div class="explanation-q-title">Q. ${renderMath(q.text)}</div>
       <div style="font-size:13px;color:var(--muted);margin-top:4px;margin-bottom:10px;">Your answer: <span style="color:var(--red);font-weight:800;">${q.studentAnswer}</span></div>
       <div class="concept-box">📚 ${expl}</div>
       <div class="hint-retry-section">
@@ -3952,7 +4144,7 @@ function renderPracticeSet(setIdx, roundIdx) {
       ${q.type==='mc'?'<span class="type-badge badge-mc">Multiple Choice</span>':''}
       ${srcHint ? `<span style="font-size:11px;color:var(--muted);font-weight:700;">📌 ${srcHint}</span>` : ''}
     </div>
-    <div class="qc-text">${q.text}</div>`;
+    <div class="qc-text">${renderMath(q.text)}</div>`;
 
   // 이 문제에 대한 힌트 상태
   const pHints = round.practiceHints || {};
@@ -3973,7 +4165,7 @@ function renderPracticeSet(setIdx, roundIdx) {
       q.options.forEach((opt,i) => {
         const letter = letters[i];
         html += `<button class="opt-btn" onclick="practiceAnswerWithHint('${q.id}','${letter}',${setIdx},${roundIdx})">
-          <span class="opt-circle">${letter}</span>${opt}
+          <span class="opt-circle">${letter}</span>${renderMath(opt)}
         </button>`;
       });
       html += `</div>`;
@@ -3995,7 +4187,7 @@ function renderPracticeSet(setIdx, roundIdx) {
     if (q.type==='mc' && q.options) {
       retryHtml = `<div class="options">${q.options.map((opt,i) => {
         const letter = letters[i];
-        return `<button class="opt-btn" onclick="practiceAnswerWithHint('${q.id}','${letter}',${setIdx},${roundIdx})"><span class="opt-circle">${letter}</span>${opt}</button>`;
+        return `<button class="opt-btn" onclick="practiceAnswerWithHint('${q.id}','${letter}',${setIdx},${roundIdx})"><span class="opt-circle">${letter}</span>${renderMath(opt)}</button>`;
       }).join('')}</div>`;
     } else if (q.type==='ox') {
       retryHtml = `<div class="ox-row">
@@ -4208,7 +4400,7 @@ function renderPracticeResults(setIdx, roundIdx) {
     const qLabel = q.sourceQNum ? `Q${q.sourceQNum}-${q.practiceIdx||1}` : `Q${i+1}`;
     html += `<div class="res-q ${ok?'res-ok':'res-wrong'}">
       <b style="min-width:50px;">${qLabel}.</b>
-      <span style="flex:1;">${q.text}</span>
+      <span style="flex:1;">${renderMath(q.text)}</span>
       <span style="flex-shrink:0;font-weight:700;">${ok?'✅':'❌'}</span>
     </div>`;
   });
@@ -4257,7 +4449,7 @@ function renderFinalReport(setIdx) {
   (rem.finalWrongQuestions || []).forEach(q => {
     const expl = (rem.finalExplanations || {})[q.id] || 'No explanation available';
     html += `<div class="explanation-card" style="border-left-color:var(--red);">
-      <div class="explanation-q-title">Q. ${q.text}</div>
+      <div class="explanation-q-title">Q. ${renderMath(q.text)}</div>
       <div class="explanation-q-meta">
         Your answer: <span style="color:var(--red);font-weight:800;">${q.studentAnswer}</span>
         → Correct: <span style="color:var(--green);font-weight:800;">${q.answer}</span>
@@ -4280,6 +4472,777 @@ function renderFinalReport(setIdx) {
 // ═══════════════════════════════════════
 function closeModal() {
   document.getElementById('modal').classList.remove('open');
+}
+
+// ═══════════════════════════════════════
+//  THINKING SKILLS (TS) SYSTEM
+// ═══════════════════════════════════════
+
+// ── TS 상수 ──────────────────────────────────────
+const TS_MODEL = "claude-sonnet-4-6";
+const TS_API_URL = "https://api.anthropic.com/v1/messages";
+
+const TS_LEVEL_DESC = {
+  "Y3_OC":  "Year 3 students (age 8-9). Questions must be very simple, concrete, and visual where possible. Single-step reasoning only.",
+  "Y4_OC":  "Year 4 students (age 9-10). Moderate difficulty. 1-2 step reasoning. NSW OC exam style.",
+  "Y5_SEL": "Year 5 students (age 10-11). Intermediate difficulty. Multi-step reasoning. NSW Selective exam preparation.",
+  "Y6_SEL": "Year 6 students (age 11-12). Advanced difficulty. Complex multi-step reasoning. NSW Selective High School exam level.",
+};
+
+const TS_DAY_TYPES = {
+  1: ["sequences", "analogies"],
+  2: ["odd_one_out", "spatial"],
+  3: ["logic", "matrix"],
+  4: ["sequences", "logic", "analogies"],
+  5: ["spatial", "odd_one_out", "matrix"],
+  6: ["sequences", "analogies", "odd_one_out", "spatial", "logic", "matrix"],
+};
+
+const TS_TYPE_DESC = {
+  sequences:   "number sequences, letter sequences, or symbol sequences with a hidden rule",
+  analogies:   "word analogies (A is to B as C is to ?) or shape/number analogies",
+  odd_one_out: "find the one item that does not belong to the group",
+  spatial:     "mirror images, rotations, paper folding, or 3D visualisation",
+  logic:       "logical deduction using if-then reasoning, true/false statements, or elimination",
+  matrix:      "2x2 or 3x3 matrix — find the missing piece using the transformation rule",
+};
+
+// ── TS 커리큘럼 데이터 ───────────────────────────
+const TS_CURRICULUM = {
+  "Y6_SEL": {
+    1:  { topics: ["Word analogies", "Odd one out", "Category classification"] },
+    2:  { topics: ["Arithmetic sequences", "Geometric sequences", "Mixed rules"] },
+    3:  { topics: ["Alphabet patterns", "Symbol sequences", "Alternating rules"] },
+    4:  { topics: ["If-then reasoning", "True/false statements", "Simple syllogisms"] },
+    5:  { topics: ["Shape patterns", "Rotating patterns", "Grid patterns"] },
+    6:  { topics: ["Multi-condition logic", "Process of elimination", "Contradiction"] },
+    7:  { topics: ["2D folding", "Mirror images", "Rotations"] },
+    8:  { topics: ["3D rotation", "Hidden cubes", "Block structures"] },
+    9:  { topics: ["Letter codes", "Number codes", "Substitution ciphers"] },
+    10: { topics: ["Multiple categories", "Properties & attributes", "Elimination"] },
+    11: { topics: ["2x2 matrices", "3x3 matrices", "Shape transformations in grids"] },
+    12: { topics: ["Colour & size rules", "Combined transformations", "Missing piece"] },
+    13: { topics: ["Cube nets", "Prism nets", "Folding predictions"] },
+    14: { topics: ["Reading between the lines", "Word relationships", "Hidden meanings"] },
+    15: { topics: ["Grid logic", "Ordering clues", "Positioning problems"] },
+    16: { topics: ["Multi-step deduction", "Relationship tables", "Complex elimination"] },
+  },
+  "Y5_SEL": {
+    1:  { topics: ["Sorting by one property", "Basic categories", "Grouping"] },
+    2:  { topics: ["Count on/back", "Add/subtract rules", "Fill the gap"] },
+    3:  { topics: ["Repeating patterns", "Growing patterns", "What comes next?"] },
+    4:  { topics: ["Simple word pairs", "Category analogies", "Part-whole"] },
+    5:  { topics: ["One clear difference", "Single property", "Simple elimination"] },
+    6:  { topics: ["Alphabet order", "Skip counting letters", "Simple letter rules"] },
+    7:  { topics: ["Horizontal flip", "Vertical flip", "Identifying reflections"] },
+    8:  { topics: ["Quarter turns", "Half turns", "Identifying rotated shapes"] },
+    9:  { topics: ["All/some/none", "If A then B", "Simple deduction"] },
+    10: { topics: ["True/false from clues", "Negation", "Simple syllogisms"] },
+    11: { topics: ["Multiply/divide rules", "Two-step rules", "Geometric sequences"] },
+    12: { topics: ["Simple letter-number codes", "Shift codes", "Matching codes"] },
+    13: { topics: ["Function analogies", "Degree analogies", "Synonym/antonym pairs"] },
+    14: { topics: ["Multiple properties", "Hidden categories", "Tricky grouping"] },
+    15: { topics: ["Shape changes", "Size changes", "Simple grid rules"] },
+    16: { topics: ["Simple paper folds", "Basic net recognition", "Folding predictions"] },
+    17: { topics: ["Alternating sequences", "Two-pattern sequences", "Mixed rules"] },
+    18: { topics: ["Two properties", "Overlapping groups", "Venn-style thinking"] },
+    19: { topics: ["Word codes", "Symbol codes", "Finding the rule"] },
+    20: { topics: ["Ordering from clues", "Position from clues", "Simple grids"] },
+    21: { topics: ["Grid patterns", "Colour patterns", "Growing & shrinking"] },
+    22: { topics: ["Counting cubes", "Front/side/top views", "Simple block buildings"] },
+    23: { topics: ["Word associations", "Categories within categories", "Definitions"] },
+    24: { topics: ["Mixed sequences", "Letter + number sequences", "Symbol sequences"] },
+    25: { topics: ["3x3 matrices", "Rotation rules", "Reflection rules in grids"] },
+    26: { topics: ["Two-condition problems", "Process of elimination", "Grid logic"] },
+    27: { topics: ["Cube nets", "Which net makes a cube?", "Predicting folded result"] },
+    28: { topics: ["Complex relationships", "Action analogies", "Tricky pairs"] },
+    29: { topics: ["Rotating patterns", "Alternating patterns", "Rule identification"] },
+    30: { topics: ["Hidden cubes", "Painted faces", "Cube assembly"] },
+    31: { topics: ["Combined rules", "Colour + size + shape", "Missing piece"] },
+    32: { topics: ["Multi-step codes", "Reverse engineering", "Complex ciphers"] },
+    33: { topics: ["Multi-clue logic grids", "Elimination tables", "Ordering"] },
+    34: { topics: ["Inference", "Hidden assumptions", "Logical conclusions"] },
+    35: { topics: ["Abstract properties", "Unexpected categories", "Multiple solutions"] },
+    36: { topics: ["Fibonacci-type", "Alternating operations", "Complex rules"] },
+    37: { topics: ["Paper cutting & folding", "Punched holes", "Unfolding predictions"] },
+    38: { topics: ["Short logic grids", "Clue-based positioning", "Simple constraints"] },
+    39: { topics: ["Multi-row logic grids", "Complex constraints", "Full elimination"] },
+    40: { topics: ["All topic types", "Timed mixed practice", "Exam strategies"] },
+  },
+  "Y4_OC": {
+    1:  { topics: ["Number sequences & patterns", "Shape & colour patterns", "Growing & shrinking patterns"] },
+    2:  { topics: ["If-then statements", "True/false logic problems", "Deductive reasoning basics"] },
+    3:  { topics: ["Venn diagrams & set relationships", "Category & classification problems", "All/some/none"] },
+    4:  { topics: ["Word analogies (A:B :: C:D)", "Category relationship types", "Part-whole analogies"] },
+    5:  { topics: ["Number & shape analogies", "Visual analogies", "Function & degree analogies"] },
+    6:  { topics: ["Arithmetic sequences (add/subtract)", "Geometric sequences (multiply/divide)", "Alternating patterns"] },
+    7:  { topics: ["Fibonacci-type patterns", "Two-rule sequences", "Letter & symbol sequences"] },
+    8:  { topics: ["Mental rotation of 2D shapes", "Mirror images & reflections", "Folding & unfolding patterns"] },
+    9:  { topics: ["Top, front & side views", "Cube & net problems", "Counting hidden cubes"] },
+    10: { topics: ["Letter-number substitution codes", "Caesar cipher & shifts", "Pattern-based codes"] },
+    11: { topics: ["Fact vs opinion", "Identifying assumptions", "Evaluating arguments"] },
+    12: { topics: ["Lateral thinking puzzles", "Logic grid puzzles", "Elimination strategies"] },
+    13: { topics: ["Identifying cause-effect relationships", "Chain reactions", "Reverse reasoning"] },
+    14: { topics: ["2x2 and 3x3 matrices", "Shape transformation rules", "Finding the missing piece"] },
+    15: { topics: ["Multi-step logic problems", "Combining different reasoning types"] },
+    16: { topics: ["Process of elimination", "Identifying question types quickly", "Time allocation"] },
+  },
+  "Y3_OC": {
+    1:  { topics: ["Sorting by colour, shape & size", "Making groups with a rule", "Finding the sorting rule"] },
+    2:  { topics: ["AB patterns", "ABC patterns", "AABB patterns", "Extending & predicting patterns"] },
+    3:  { topics: ["Patterns that get bigger by 1", "Growing by adding 2 or 3", "What comes next?"] },
+    4:  { topics: ["Count on by 2, 3, 5", "Fill in the missing number", "Patterns on a hundred chart"] },
+    5:  { topics: ["Count back by 2, 3, 5", "Patterns going down", "Two-way patterns"] },
+    6:  { topics: ["Which one is the same?", "What is different?", "More than / less than / equal to"] },
+    7:  { topics: ["One odd one out (colour)", "One odd one out (shape)", "Explaining the reason"] },
+    8:  { topics: ["Odd one out (number type)", "Odd one out (category)", "Multiple possible answers"] },
+    9:  { topics: ["Left-right reflections", "Which image is the mirror?", "Spotting differences"] },
+    10: { topics: ["Up-down reflections", "Combined reflections", "Is it symmetrical?"] },
+    11: { topics: ["Quarter turns (90°)", "Half turns (180°)", "Clockwise & anticlockwise"] },
+    12: { topics: ["Rotating shape patterns", "Alternating shape patterns", "What shape comes next?"] },
+    13: { topics: ["Big:Small :: ?:? analogies", "Whole:Part analogies", "Before:After analogies"] },
+    14: { topics: ["Shape change analogies", "Colour change analogies", "Rotation analogies"] },
+    15: { topics: ["Is this statement true or false?", "All dogs have four legs", "Which statement must be true?"] },
+    16: { topics: ["If A then B", "Simple conditions", "What must happen if…?"] },
+    17: { topics: ["Alphabet order (A, B, C…)", "Skip one letter (A, C, E…)", "Fill in the missing letter"] },
+    18: { topics: ["Skip two letters", "Alternating patterns", "Letter + number patterns"] },
+    19: { topics: ["A=1, B=2, C=3… codes", "Decode a word", "Simple substitution"] },
+    20: { topics: ["Shift codes (A=2, B=3…)", "Find the shift amount", "Symbol substitution codes"] },
+    21: { topics: ["Who is tallest/shortest?", "Putting things in order using clues", "Simple constraint problems"] },
+    22: { topics: ["Use clues to find the answer", "2-clue deduction problems", "Logic grid (2×2)"] },
+    23: { topics: ["Two sorting rules at once", "Overlapping groups", "Introduction to Venn diagrams"] },
+    24: { topics: ["What caused this?", "What will happen next?", "Predicting outcomes"] },
+    25: { topics: ["Front view of a building", "Side view", "Top (bird's eye) view"] },
+    26: { topics: ["Folding paper in half", "What does it look like folded?", "Punch-hole problems (simple)"] },
+    27: { topics: ["Multiply pattern (×2, ×3)", "Two-step patterns", "Continue the sequence"] },
+    28: { topics: ["Hot : Cold :: Day : ?", "Cat : Kitten :: Dog : ?", "Part : Whole analogies"] },
+    29: { topics: ["Sort by shape AND colour", "Sort by size AND number", "Finding things that fit both rules"] },
+    30: { topics: ["What is missing in this pattern?", "Shapes in a grid", "Two-rule completion"] },
+    31: { topics: ["Two possible answers – which is best?", "Abstract properties", "Explaining your reasoning"] },
+    32: { topics: ["2×2 grids: what goes in the empty box?", "Shape changes across rows", "Simple transformation rules"] },
+    33: { topics: ["Who has what? (2 people, 2 items)", "Using clues to fill a grid", "3-clue problems"] },
+    34: { topics: ["Read carefully for clues", "Highlighting key information", "Common trick questions"] },
+    35: { topics: ["Left, right, up, down", "North, South, East, West", "Following a path"] },
+    36: { topics: ["Fibonacci-style patterns", "Alternating add/subtract rules", "Mixed number & shape sequences"] },
+    37: { topics: ["Number analogies", "Word analogies", "Shape analogies"] },
+    38: { topics: ["Is this always true?", "Find an example that breaks the rule", "Making a reasonable guess"] },
+    39: { topics: ["Sequences + analogies", "Logic + spatial", "Codes + patterns"] },
+    40: { topics: ["How to read a question carefully", "Skip & come back strategy", "Process of elimination"] },
+  },
+};
+
+function getWeekTopics(yearLabel, tsWeek) {
+  const wd = (TS_CURRICULUM[yearLabel] || {})[tsWeek];
+  if (wd && wd.topics) return wd.topics;
+  return ["thinking skills", "logical reasoning", "pattern recognition"];
+}
+
+function getTSYearLabel(year) {
+  if (year <= 3) return 'Y3_OC';
+  if (year <= 4) return 'Y4_OC';
+  if (year <= 5) return 'Y5_SEL';
+  return 'Y6_SEL';
+}
+
+// ── Claude API call for TS ──
+async function callClaudeTS(prompt) {
+  const apiKey = getAIKey();
+  if (!apiKey) throw new Error('Claude API key is not set. Please set it in Teacher Settings.');
+  const res = await fetch(TS_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: TS_MODEL,
+      max_tokens: 4000,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+  if (!res.ok) { const e = await res.text(); throw new Error(`Claude API Error: ${res.status}\n${e}`); }
+  const data = await res.json();
+  return (data.content?.[0]?.text || '').trim();
+}
+
+// ── TS 문제 생성 (Day 1~6) ──
+async function generateTSQuestions(yearLabel, tsWeek, day) {
+  const types = TS_DAY_TYPES[day];
+  const perType = Math.floor(10 / types.length);
+  const remainder = 10 % types.length;
+  const typeCounts = types.map((t, i) => ({ type: t, count: perType + (i < remainder ? 1 : 0) }));
+  const typeInstructions = typeCounts.map(tc =>
+    `- ${tc.type} (${TS_TYPE_DESC[tc.type]}): generate exactly ${tc.count} questions`
+  ).join("\n");
+  const weekTopics = getWeekTopics(yearLabel, tsWeek);
+
+  const prompt = `You are an expert NSW Thinking Skills question writer for primary school students.
+
+Target students: ${TS_LEVEL_DESC[yearLabel]}
+This week's curriculum topics: ${weekTopics.join(", ")}
+
+Generate exactly 10 multiple-choice Thinking Skills questions as follows:
+${typeInstructions}
+
+STRICT RULES:
+1. Each question must have EXACTLY 5 options: A, B, C, D, E
+2. Only ONE option is correct — no ambiguous questions
+3. All questions must be solvable with TEXT ONLY — no diagrams or images required
+4. hint1: Give a strategic approach WITHOUT stating the answer (e.g. "Look at how each term changes")
+5. hint2: Give a MORE SPECIFIC hint from a DIFFERENT ANGLE — still no answer reveal
+6. explanation: State the answer and explain step-by-step why it is correct
+7. Include a "type" field matching one of: sequences, analogies, odd_one_out, spatial, logic, matrix
+8. Questions within the same type must be clearly different from each other
+
+Return ONLY a valid JSON array of exactly 10 objects. No markdown. No extra text.
+
+Each object schema:
+{
+  "type": "sequences",
+  "text": "Full question text here",
+  "options": {"A": "...", "B": "...", "C": "...", "D": "...", "E": "..."},
+  "answer": "C",
+  "hint1": "Strategic approach hint (no answer)",
+  "hint2": "More specific hint from different angle (no answer)",
+  "explanation": "Step-by-step explanation of why the answer is correct"
+}`;
+
+  let raw = await callClaudeTS(prompt);
+  const cleaned = raw.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+  const questions = JSON.parse(cleaned);
+  return questions.map((q, i) => ({ id: `day${day}_q${i + 1}`, ...q }));
+}
+
+// ── 유사문제 생성 (틀린 문제 기반) ──
+async function generateRemediationQuestions(yearLabel, wrongTypes, tsWeek) {
+  const typeCounts = {};
+  wrongTypes.forEach(t => { typeCounts[t] = (typeCounts[t] || 0) + 1; });
+  const typeInstructions = Object.entries(typeCounts).map(([t, count]) =>
+    `- ${t} (${TS_TYPE_DESC[t]}): generate exactly ${count} questions`
+  ).join("\n");
+  const total = wrongTypes.length;
+  const weekTopics = getWeekTopics(yearLabel, tsWeek);
+
+  const prompt = `You are an expert NSW Thinking Skills question writer.
+
+A student struggled with certain question types. Generate SIMILAR but DIFFERENT practice questions to help them improve.
+
+Target students: ${TS_LEVEL_DESC[yearLabel]}
+Curriculum context: ${weekTopics.join(", ")}
+
+Generate exactly ${total} questions as follows:
+${typeInstructions}
+
+IMPORTANT: These are remediation questions — they should:
+- Cover the SAME TYPES as above but use DIFFERENT content/numbers/words
+- Be at SIMILAR difficulty level (not easier, not harder)
+- Help the student understand the underlying pattern or reasoning method
+
+Same rules as before:
+1. Exactly 5 options A-E, only one correct
+2. Text-only questions (no diagrams needed)
+3. hint1: strategic approach (no answer)
+4. hint2: more specific hint, different angle (no answer)
+5. explanation: step-by-step with answer revealed
+6. Include "type" field
+
+Return ONLY a valid JSON array of exactly ${total} objects. No markdown. No extra text.
+
+Same schema as before.`;
+
+  let raw = await callClaudeTS(prompt);
+  const cleaned = raw.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+  const questions = JSON.parse(cleaned);
+  return questions.map((q, i) => ({ id: `rem_q${i + 1}`, ...q }));
+}
+
+// ── Teacher: toggle TS checkbox ──
+function toggleTSAssignment(yr) {
+  const el = document.getElementById('ts-week-selector');
+  if (el) el.style.display = document.getElementById('ts-enable-check').checked ? '' : 'none';
+}
+
+// ── Teacher: save TS assignment ──
+function saveTSAssignment(yr) {
+  const store = getStore();
+  const p = store.currentPeriod;
+  const key = hwKey(yr, selectedCountry, p);
+  const enabled = document.getElementById('ts-enable-check').checked;
+
+  if (!store.homeworkSets[key]) {
+    store.homeworkSets[key] = { year: yr, country: selectedCountry, period: p, sets: [] };
+  }
+
+  if (enabled) {
+    store.homeworkSets[key].ts_config = {
+      enabled: true,
+      ts_year_label: document.getElementById('ts-year-label-select').value,
+      ts_week: parseInt(document.getElementById('ts-week-select').value)
+    };
+  } else {
+    delete store.homeworkSets[key].ts_config;
+  }
+
+  saveStore(store);
+  renderTeacher();
+
+  const msg = document.createElement('div');
+  msg.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#2d4a8a;color:#fff;padding:14px 28px;border-radius:12px;font-family:"Noto Sans KR",sans-serif;font-weight:800;font-size:15px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);';
+  msg.textContent = enabled ? `🧠 Thinking Skills enabled for Year ${yr}` : `Thinking Skills disabled for Year ${yr}`;
+  document.body.appendChild(msg);
+  setTimeout(() => msg.remove(), 2500);
+}
+
+// ── Student: Show TS Panel in Set List ──
+let tsViewState = null; // { mode: 'week'|'quiz', day, isRemediation }
+
+function renderStudentWithTS() {
+  // Called from renderSetList — adds TS card if ts_config is enabled
+  const store = getStore();
+  const p = studentPeriod || store.currentPeriod;
+  const hw = store.homeworkSets[hwKey(currentUser.year, currentUser.country||'AU', p)];
+  if (!hw?.ts_config?.enabled) return '';
+
+  const tsConfig = hw.ts_config;
+  const progress = (store.ts_progress || {})[`${currentUser.id}_${tsConfig.ts_year_label}_${tsConfig.ts_week}`] || {};
+  const completedDays = [1,2,3,4,5,6].filter(d => (progress[`day${d}`] || {}).completed).length;
+  const allDone = completedDays === 6;
+  const remDone = (progress.remediation || {}).completed;
+  const weekDone = allDone && (remDone || !progress.remediation);
+
+  let statusText, iconEmoji, cardBg;
+  if (weekDone) {
+    statusText = '✅ All completed!'; iconEmoji = '🏆'; cardBg = '#e8f5e9';
+  } else if (allDone && progress.remediation && !remDone) {
+    statusText = 'Days done · Remediation in progress'; iconEmoji = '🔄'; cardBg = '#fff8e1';
+  } else {
+    statusText = `${completedDays}/6 days completed`; iconEmoji = completedDays > 0 ? '📝' : '▶'; cardBg = '#fff';
+  }
+
+  return `
+    <div class="ts-set-card" style="background:${cardBg};" onclick="openTSPanel()">
+      <div class="set-icon set-icon-open" style="background:#2d4a8a;color:#fff;font-size:24px;">🧠</div>
+      <div class="set-info">
+        <div class="set-name" style="color:#2d4a8a;">Thinking Skills — Week ${tsConfig.ts_week}</div>
+        <div class="set-meta">${statusText} · 6 days × 10 questions</div>
+      </div>
+      <span style="font-size:24px;">${iconEmoji}</span>
+    </div>`;
+}
+
+function _getTSConfig() {
+  const store = getStore();
+  const p = studentPeriod || store.currentPeriod;
+  const hw = store.homeworkSets[hwKey(currentUser.year, currentUser.country||'AU', p)];
+  return hw?.ts_config?.enabled ? hw.ts_config : null;
+}
+function _tsPKey() {
+  const c = _getTSConfig();
+  return c ? `${currentUser.id}_${c.ts_year_label}_${c.ts_week}` : null;
+}
+
+function openTSPanel() {
+  tsViewState = { mode: 'week' };
+  renderTSWeekView();
+}
+
+// ── 주간 뷰 (Day 카드 화면) ──
+function renderTSWeekView() {
+  const tsConfig = _getTSConfig();
+  if (!tsConfig) { tsViewState = null; renderStudent(); return; }
+  const pKey = _tsPKey();
+  const store = getStore();
+  const progress = (store.ts_progress || {})[pKey] || {};
+
+  let daysHtml = '';
+  for (let day = 1; day <= 6; day++) {
+    const dayData = progress[`day${day}`] || {};
+    const completed = dayData.completed || false;
+    const prevDone = day === 1 || (progress[`day${day-1}`] || {}).completed;
+    const locked = !prevDone;
+    const answersArr = Object.values(dayData.answers || {});
+    const correctCount = answersArr.filter(a => a.correct).length;
+
+    daysHtml += `
+      <div class="ts-day-card ${completed ? 'done' : ''} ${locked ? 'locked' : ''}"
+           ${locked ? '' : `onclick="startTSDay(${day})"`}>
+        <div class="ts-day-label">Day ${day}</div>
+        <div class="ts-day-icon">${completed ? '✅' : locked ? '🔒' : '▶'}</div>
+        <div class="ts-day-score">${completed ? correctCount+'/10' : locked ? '' : '10 questions'}</div>
+      </div>`;
+  }
+
+  // Remediation card
+  const allDaysDone = [1,2,3,4,5,6].every(d => (progress[`day${d}`] || {}).completed);
+  let remHtml = '';
+  if (allDaysDone) {
+    const rem = progress.remediation;
+    if (!rem) {
+      // collect wrong types
+      let wrongCount = 0;
+      for (let d = 1; d <= 6; d++) {
+        const ans = (progress[`day${d}`] || {}).answers || {};
+        wrongCount += Object.values(ans).filter(a => !a.correct).length;
+      }
+      if (wrongCount === 0) {
+        remHtml = `<div style="text-align:center;padding:20px;background:#e8f5e9;border-radius:12px;margin-top:16px;">
+          <div style="font-size:20px;font-weight:900;color:#166534;">🎉 Perfect! No wrong answers!</div>
+        </div>`;
+      } else {
+        remHtml = `<div class="ts-remediation-card">
+          <div class="rem-header">🔄 Generating remediation questions...</div>
+          <p style="color:#666;font-size:13px;">Preparing ${wrongCount} similar questions...</p>
+        </div>`;
+        setTimeout(() => buildRemediationSet(), 200);
+      }
+    } else {
+      const remDone = rem.completed || false;
+      const remCorrect = Object.values(rem.answers || {}).filter(a => a.correct).length;
+      const remTotal = (rem.questions || []).length;
+      remHtml = `
+        <div class="ts-remediation-card ${remDone ? 'done' : ''}">
+          <div class="rem-header">🔄 Remediation Practice Set</div>
+          <p>${remTotal} similar questions for wrong answers</p>
+          <button class="btn-start-rem" onclick="startTSRemediation()" ${remDone ? 'disabled' : ''}>
+            ${remDone ? `✅ Done (${remCorrect}/${remTotal})` : '▶ Start Practice'}
+          </button>
+        </div>`;
+    }
+  }
+
+  const html = `<div class="exam-wrap">
+    <div style="margin-bottom:12px;">
+      <button class="btn-back" onclick="tsViewState=null;currentSetIdx=null;renderStudent()">← Back to Homework</button>
+    </div>
+    <div class="ts-week-header">
+      <h3 style="font-family:'Noto Serif KR',serif;color:var(--navy);">🧠 Thinking Skills — Week ${tsConfig.ts_week}</h3>
+      <p style="color:#666;font-size:14px;">10 questions per day · ~10-15 min daily</p>
+    </div>
+    <div class="ts-days-grid">${daysHtml}</div>
+    ${remHtml}
+  </div>`;
+  document.getElementById('mainContent').innerHTML = html;
+  document.getElementById('mainContent').innerHTML += renderMyAccountCard();
+}
+
+// ── Day 시작: Claude API로 문제 생성 ──
+async function startTSDay(day) {
+  const tsConfig = _getTSConfig();
+  if (!tsConfig) return;
+  const pKey = _tsPKey();
+  const store = getStore();
+  if (!store.ts_progress) store.ts_progress = {};
+  if (!store.ts_progress[pKey]) store.ts_progress[pKey] = {};
+
+  const dayKey = `day${day}`;
+  let dayData = store.ts_progress[pKey][dayKey];
+
+  // If questions already generated, go straight to quiz
+  if (dayData && dayData.questions && dayData.questions.length > 0) {
+    tsViewState = { mode: 'quiz', day, isRemediation: false };
+    renderTSSession(dayData.questions, dayData.answers || {}, day, false);
+    return;
+  }
+
+  // Show loading
+  document.getElementById('mainContent').innerHTML = `
+    <div class="exam-wrap" style="text-align:center;padding:60px 20px;">
+      <div style="font-size:40px;">🧠</div>
+      <p style="font-size:16px;margin-top:12px;color:#2d4a8a;font-weight:600;">Generating questions...</p>
+      <p style="color:#888;font-size:13px;">Please wait a moment</p>
+    </div>`;
+
+  try {
+    const questions = await generateTSQuestions(tsConfig.ts_year_label, tsConfig.ts_week, day);
+    dayData = { questions, answers: {}, completed: false };
+    store.ts_progress[pKey][dayKey] = dayData;
+    saveStore(store);
+    tsViewState = { mode: 'quiz', day, isRemediation: false };
+    renderTSSession(questions, {}, day, false);
+  } catch (err) {
+    console.error('TS question generation error:', err);
+    document.getElementById('mainContent').innerHTML = `
+      <div class="exam-wrap" style="text-align:center;padding:40px;">
+        <p style="color:#c62828;font-weight:700;">Failed to generate questions.</p>
+        <p style="color:#888;font-size:13px;margin:8px 0;">${err.message||''}</p>
+        <button onclick="startTSDay(${day})" style="margin-top:12px;padding:10px 20px;background:#2d4a8a;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">Retry</button>
+        <button onclick="renderTSWeekView()" style="margin-top:12px;margin-left:8px;padding:10px 20px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;cursor:pointer;font-weight:700;">← Back</button>
+      </div>`;
+  }
+}
+
+// ── Remediation 시작 ──
+async function startTSRemediation() {
+  const tsConfig = _getTSConfig();
+  if (!tsConfig) return;
+  const pKey = _tsPKey();
+  const store = getStore();
+  const rem = (store.ts_progress[pKey] || {}).remediation;
+  if (!rem || !rem.questions) return;
+  tsViewState = { mode: 'quiz', day: 0, isRemediation: true };
+  renderTSSession(rem.questions, rem.answers || {}, null, true);
+}
+
+// ── 문제 풀기 세션 렌더링 ──
+function renderTSSession(questions, answers, day, isRemediation) {
+  // Find next unanswered
+  const currentIdx = questions.findIndex(q => {
+    const a = answers[q.id];
+    return !a || (!a.correct && !a.answer_revealed);
+  });
+
+  if (currentIdx === -1) {
+    onSessionComplete(day, isRemediation);
+    return;
+  }
+
+  const q = questions[currentIdx];
+  const label = isRemediation ? '🔄 Remediation' : `Day ${day}`;
+
+  const html = `<div class="exam-wrap">
+    <div class="ts-quiz-header">
+      <button class="btn-back" onclick="renderTSWeekView()">← Back</button>
+      <span style="font-weight:600;">${label} · ${currentIdx + 1} / ${questions.length}</span>
+      <span style="color:#888;font-size:13px;">${q.type||''}</span>
+    </div>
+    <div class="ts-question-card">
+      <div class="ts-q-text">${renderMath(q.text)}</div>
+      <div class="ts-options" id="ts-options">
+        ${['A','B','C','D','E'].map(opt => `
+          <button class="ts-option-btn" data-opt="${opt}"
+            onclick="handleTSAnswer('${q.id}','${opt}',${day===null?'null':day},${isRemediation})">
+            <span class="opt-label">${opt}</span>
+            <span class="opt-text">${renderMath((q.options||{})[opt]||'')}</span>
+          </button>`).join('')}
+      </div>
+      <div id="ts-hint-box" style="display:none;" class="ts-hint-box"></div>
+    </div>
+    <div class="ts-progress-bar">
+      <div style="width:${(currentIdx/questions.length)*100}%"></div>
+    </div>
+  </div>`;
+  document.getElementById('mainContent').innerHTML = html;
+}
+
+// ── 답안 처리 + 힌트 시스템 ──
+function handleTSAnswer(qId, selected, day, isRemediation) {
+  const tsConfig = _getTSConfig();
+  if (!tsConfig) return;
+  const pKey = _tsPKey();
+  const store = getStore();
+  if (!store.ts_progress[pKey]) store.ts_progress[pKey] = {};
+
+  const dataKey = isRemediation ? 'remediation' : `day${day}`;
+  const dayData = store.ts_progress[pKey][dataKey];
+  if (!dayData) return;
+  if (!dayData.answers) dayData.answers = {};
+
+  // Find the question object in the stored questions array
+  const q = (dayData.questions || []).find(x => x.id === qId);
+  if (!q) return;
+  const correct = q.answer;
+
+  const cur = dayData.answers[qId] || { attempts: 0, hint1_shown: false, hint2_shown: false };
+  const newAttempts = cur.attempts + 1;
+
+  // Disable buttons immediately
+  document.querySelectorAll('.ts-option-btn').forEach(b => b.onclick = null);
+
+  if (selected === correct) {
+    // ✅ Correct
+    dayData.answers[qId] = { ...cur, attempts: newAttempts, correct: true, answer_revealed: false };
+    saveStore(store);
+    showTSFeedback('correct', q, selected);
+    setTimeout(() => reloadTSSession(day, isRemediation), 1800);
+
+  } else if (newAttempts === 1) {
+    // ❌ 1st wrong → hint1
+    dayData.answers[qId] = { ...cur, attempts: 1, correct: false, hint1_shown: true };
+    saveStore(store);
+    showTSFeedback('hint1', q, selected);
+    rebindTSOptions(q, day, isRemediation, selected);
+
+  } else if (newAttempts === 2) {
+    // ❌ 2nd wrong → hint2
+    dayData.answers[qId] = { ...cur, attempts: 2, correct: false, hint2_shown: true };
+    saveStore(store);
+    showTSFeedback('hint2', q, selected);
+    rebindTSOptions(q, day, isRemediation, selected);
+
+  } else {
+    // ❌ 3rd wrong → reveal
+    dayData.answers[qId] = { ...cur, attempts: 3, correct: false, answer_revealed: true, hint1_shown: true, hint2_shown: true };
+    saveStore(store);
+    showTSFeedback('reveal', q, selected);
+    setTimeout(() => reloadTSSession(day, isRemediation), 2500);
+  }
+}
+
+function showTSFeedback(type, q, selected) {
+  document.querySelectorAll('.ts-option-btn').forEach(btn => {
+    btn.classList.add('disabled-opt');
+    if (btn.dataset.opt === q.answer) btn.classList.add('correct-opt');
+    if (btn.dataset.opt === selected && selected !== q.answer) btn.classList.add('wrong-opt');
+  });
+
+  const box = document.getElementById('ts-hint-box');
+  if (!box) return;
+  box.style.display = 'block';
+
+  const configs = {
+    correct: { badge: '✅ Correct!', cls: 'correct', text: q.explanation || 'Well done!', prompt: '' },
+    hint1:   { badge: '💡 Hint 1', cls: '', text: q.hint1 || 'Think about the pattern carefully.', prompt: 'Try again and choose the correct answer.' },
+    hint2:   { badge: '💡 Hint 2 (last chance)', cls: '', text: q.hint2 || 'Try a different approach.', prompt: 'Last chance! Choose the correct answer.' },
+    reveal:  { badge: `📖 Answer: ${q.answer}`, cls: 'reveal', text: q.explanation || '', prompt: 'You can practice similar questions later.' },
+  };
+  const c = configs[type];
+  box.innerHTML = `
+    <div class="ts-hint-badge ${c.cls}">${c.badge}</div>
+    <p class="ts-hint-text">${c.text}</p>
+    ${c.prompt ? `<p class="ts-hint-prompt">${c.prompt}</p>` : ''}
+  `;
+
+  // For hints: disable the wrong button, re-enable others
+  if (type === 'hint1' || type === 'hint2') {
+    document.querySelectorAll('.ts-option-btn').forEach(btn => {
+      if (btn.dataset.opt === selected) {
+        btn.classList.add('disabled-opt');
+        btn.onclick = null;
+      } else {
+        btn.classList.remove('disabled-opt', 'wrong-opt');
+      }
+    });
+  }
+}
+
+function rebindTSOptions(q, day, isRemediation, prevSelected) {
+  document.querySelectorAll('.ts-option-btn:not(.disabled-opt)').forEach(btn => {
+    btn.onclick = () => handleTSAnswer(q.id, btn.dataset.opt, day, isRemediation);
+  });
+}
+
+function reloadTSSession(day, isRemediation) {
+  const tsConfig = _getTSConfig();
+  if (!tsConfig) return;
+  const pKey = _tsPKey();
+  const store = getStore();
+  const dataKey = isRemediation ? 'remediation' : `day${day}`;
+  const data = (store.ts_progress[pKey] || {})[dataKey];
+  if (!data) { renderTSWeekView(); return; }
+  renderTSSession(data.questions, data.answers || {}, day, isRemediation);
+}
+
+// ── 세션 완료 처리 ──
+async function onSessionComplete(day, isRemediation) {
+  const tsConfig = _getTSConfig();
+  if (!tsConfig) return;
+  const pKey = _tsPKey();
+  const store = getStore();
+  if (!store.ts_progress[pKey]) store.ts_progress[pKey] = {};
+
+  const dataKey = isRemediation ? 'remediation' : `day${day}`;
+  if (store.ts_progress[pKey][dataKey]) {
+    store.ts_progress[pKey][dataKey].completed = true;
+    store.ts_progress[pKey][dataKey].completed_at = Date.now();
+  }
+
+  if (!isRemediation) {
+    const allDone = [1,2,3,4,5,6].every(d => (store.ts_progress[pKey][`day${d}`] || {}).completed);
+    if (allDone) {
+      // Check if there are wrong answers
+      let hasWrong = false;
+      for (let d = 1; d <= 6; d++) {
+        const ans = (store.ts_progress[pKey][`day${d}`] || {}).answers || {};
+        if (Object.values(ans).some(a => !a.correct)) { hasWrong = true; break; }
+      }
+      if (!hasWrong) store.ts_progress[pKey].week_completed = true;
+    }
+  } else {
+    store.ts_progress[pKey].week_completed = true;
+  }
+
+  saveStore(store);
+  tsViewState = { mode: 'week' };
+  renderTSWeekView();
+}
+
+// ── 유사문제 세트 생성 (Claude API) ──
+async function buildRemediationSet() {
+  const tsConfig = _getTSConfig();
+  if (!tsConfig) return;
+  const pKey = _tsPKey();
+  const store = getStore();
+  const progress = store.ts_progress[pKey] || {};
+
+  // Collect wrong types
+  const wrongTypes = [];
+  for (let day = 1; day <= 6; day++) {
+    const dayData = progress[`day${day}`] || {};
+    const qMap = {};
+    (dayData.questions || []).forEach(q => { qMap[q.id] = q; });
+    Object.entries(dayData.answers || {}).forEach(([qId, ans]) => {
+      if (!ans.correct) {
+        const q = qMap[qId];
+        if (q && q.type) wrongTypes.push(q.type);
+      }
+    });
+  }
+
+  if (wrongTypes.length === 0) {
+    store.ts_progress[pKey].week_completed = true;
+    saveStore(store);
+    renderTSWeekView();
+    return;
+  }
+
+  try {
+    const remQuestions = await generateRemediationQuestions(tsConfig.ts_year_label, wrongTypes, tsConfig.ts_week);
+    store.ts_progress[pKey].remediation = {
+      questions: remQuestions,
+      source_wrong_types: wrongTypes,
+      answers: {},
+      completed: false,
+      created_at: Date.now(),
+    };
+    saveStore(store);
+    renderTSWeekView();
+  } catch (err) {
+    console.error('Remediation generation error:', err);
+    document.getElementById('mainContent').innerHTML += `
+      <div style="text-align:center;padding:12px;color:#c62828;font-size:13px;">
+        Failed to generate remediation: ${err.message||''}
+        <button onclick="buildRemediationSet()" style="margin-left:8px;padding:4px 12px;border:1px solid #ddd;border-radius:6px;cursor:pointer;">Retry</button>
+      </div>`;
+  }
+}
+
+// ── Teacher TS Report ──
+function getTSReportData(studentId, yearLabel, tsWeek, store) {
+  const pKey = `${studentId}_${yearLabel}_${tsWeek}`;
+  const progress = (store.ts_progress || {})[pKey] || {};
+
+  let totalQ = 0, correct = 0, hintUsed = 0, revealed = 0;
+  for (let day = 1; day <= 6; day++) {
+    const answers = (progress[`day${day}`] || {}).answers || {};
+    for (const ans of Object.values(answers)) {
+      totalQ++;
+      if (ans.correct) correct++;
+      if (ans.hint1_shown || ans.hint2_shown) hintUsed++;
+      if (ans.answer_revealed) revealed++;
+    }
+  }
+
+  return {
+    total: totalQ,
+    correct,
+    accuracy: totalQ ? Math.round((correct / totalQ) * 100) : 0,
+    hintUsed,
+    revealed,
+    daysCompleted: [1,2,3,4,5,6].filter(d => (progress[`day${d}`] || {}).completed).length,
+    remediationDone: (progress.remediation || {}).completed || false
+  };
 }
 
 // ═══════════════════════════════════════
@@ -4310,7 +5273,9 @@ const firebaseConfig = {
 
     // 5초 안에 Firebase 응답 없으면 강제로 로딩 해제
     const loadingTimeout = setTimeout(() => {
-      document.getElementById('loadingOverlay').style.display = 'none';
+      ensureStore().then(() => {
+        document.getElementById('loadingOverlay').style.display = 'none';
+      });
     }, 5000);
 
     // 시작 시 Firebase에서 데이터 불러오기
@@ -4338,14 +5303,20 @@ const firebaseConfig = {
       }
 
       window.fbReady = true;
-      document.getElementById('loadingOverlay').style.display = 'none';
+      ensureStore().then(() => {
+        document.getElementById('loadingOverlay').style.display = 'none';
+      });
     }, () => {
       clearTimeout(loadingTimeout);
       window.fbReady = false;
-      document.getElementById('loadingOverlay').style.display = 'none';
+      ensureStore().then(() => {
+        document.getElementById('loadingOverlay').style.display = 'none';
+      });
     });
   } catch(e) {
-    document.getElementById('loadingOverlay').style.display = 'none';
+    ensureStore().then(() => {
+      document.getElementById('loadingOverlay').style.display = 'none';
+    });
   }
 })();
 </script>
