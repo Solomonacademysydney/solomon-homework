@@ -6,7 +6,7 @@
 <meta name="google" content="notranslate">
 <meta http-equiv="Content-Language" content="en">
 <title>Solomon Math Academy</title>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Baloo+2:wght@600;700;800&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
@@ -17,13 +17,13 @@
   --radius:16px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
 
 /* ── LOADING OVERLAY ── */
 #loadingOverlay{position:fixed;inset:0;background:#0b1220;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:20px;}
 .loading-spinner{width:52px;height:52px;border:4px solid rgba(212,175,55,.2);border-top-color:#d4af37;border-radius:50%;animation:spin 1s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
-.loading-text{color:#d4af37;font-family:'Cinzel',serif;font-size:14px;letter-spacing:4px;text-transform:uppercase;}
+.loading-text{color:#d4af37;font-family:'Noto Serif KR',serif;font-size:14px;letter-spacing:4px;text-transform:uppercase;}
 
 /* ── LOGIN ── */
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
@@ -41,9 +41,9 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 }
 .login-crest-wrap{animation:fadeUp .8s ease both,float 5s ease-in-out infinite;margin-bottom:28px;}
 .login-crest{width:160px;height:160px;filter:drop-shadow(0 0 20px rgba(212,175,55,.3));}
-.login-title{font-family:'Cinzel',serif;font-size:34px;font-weight:700;color:#fff;text-align:center;text-shadow:0 2px 20px rgba(212,175,55,.3);animation:fadeUp .9s .15s ease both;}
+.login-title{font-family:'Noto Serif KR',serif;font-size:34px;font-weight:700;color:#fff;text-align:center;text-shadow:0 2px 20px rgba(212,175,55,.3);animation:fadeUp .9s .15s ease both;}
 .login-title span{color:var(--gold);}
-.login-sub-title{font-family:'Cinzel',serif;font-size:14px;color:rgba(255,255,255,.45);letter-spacing:6px;text-transform:uppercase;margin-top:6px;text-align:center;}
+.login-sub-title{font-family:'Noto Serif KR',serif;font-size:14px;color:rgba(255,255,255,.45);letter-spacing:6px;text-transform:uppercase;margin-top:6px;text-align:center;}
 .login-divider{width:120px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:22px auto;animation:fadeUp .9s .25s ease both;}
 .login-tagline{font-size:12px;color:rgba(255,255,255,.35);letter-spacing:2px;text-transform:uppercase;text-align:center;}
 .login-right{
@@ -52,16 +52,16 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 }
 .login-right::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:linear-gradient(180deg,transparent,var(--gold) 30%,var(--gold) 70%,transparent);}
 .login-form-wrap{width:100%;max-width:360px;animation:fadeUp .8s .2s ease both;}
-.login-form-title{font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:var(--navy);margin-bottom:4px;}
+.login-form-title{font-family:'Noto Serif KR',serif;font-size:22px;font-weight:700;color:var(--navy);margin-bottom:4px;}
 .login-form-sub{font-size:13px;color:#94a3b8;margin-bottom:28px;}
 .role-tabs{display:flex;background:#edeae0;border-radius:12px;padding:4px;margin-bottom:24px;}
-.role-tab{flex:1;padding:9px;border:none;background:none;border-radius:10px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;font-size:13px;color:var(--muted);transition:all .2s;}
+.role-tab{flex:1;padding:9px;border:none;background:none;border-radius:10px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;font-weight:700;font-size:13px;color:var(--muted);transition:all .2s;}
 .role-tab.active{background:#fff;color:var(--navy);box-shadow:0 2px 8px rgba(0,0,0,.1);}
 .form-group{margin-bottom:16px;}
 .form-group label{display:block;font-weight:700;font-size:13px;color:var(--navy);margin-bottom:6px;}
-.form-group input{width:100%;padding:12px 16px;border:2px solid var(--border);border-radius:12px;font-family:'Nunito',sans-serif;font-size:15px;outline:none;transition:border-color .2s;}
+.form-group input{width:100%;padding:12px 16px;border:2px solid var(--border);border-radius:12px;font-family:'Noto Sans KR',sans-serif;font-size:15px;outline:none;transition:border-color .2s;}
 .form-group input:focus{border-color:var(--gold2);}
-.btn-login{width:100%;padding:14px;background:var(--navy);color:#fff;border:none;border-radius:12px;font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;cursor:pointer;transition:all .2s;margin-top:8px;}
+.btn-login{width:100%;padding:14px;background:var(--navy);color:#fff;border:none;border-radius:12px;font-family:'Noto Sans KR',sans-serif;font-size:16px;font-weight:800;cursor:pointer;transition:all .2s;margin-top:8px;}
 .btn-login:hover{background:linear-gradient(90deg,#0d1526,var(--navy));transform:translateY(-1px);}
 .login-error{color:var(--red);font-size:13px;margin-top:10px;display:none;font-weight:700;}
 .login-divider-thin{width:100%;height:1px;background:var(--border);margin:20px 0;}
@@ -73,7 +73,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
   background-size:300% auto;
   color:var(--navy);
   border:none;border-radius:14px;
-  font-family:'Nunito',sans-serif;font-size:18px;font-weight:900;
+  font-family:'Noto Sans KR',sans-serif;font-size:18px;font-weight:900;
   cursor:pointer;text-align:center;text-decoration:none;letter-spacing:.5px;
   animation:goldPulse 2s ease-in-out infinite, shimmer 4s linear infinite;
   position:relative;overflow:hidden;
@@ -89,7 +89,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
   background:linear-gradient(270deg,#d4af37,#b8960c,#f0d060,#d4af37);
   background-size:300% auto;
   color:var(--navy);border:none;border-radius:18px;
-  font-family:'Nunito',sans-serif;font-size:28px;font-weight:900;
+  font-family:'Noto Sans KR',sans-serif;font-size:28px;font-weight:900;
   cursor:pointer;text-align:center;text-decoration:none;letter-spacing:1px;
   animation:goldPulse 2s ease-in-out infinite, shimmer 4s linear infinite;
   position:relative;overflow:hidden;line-height:1.4;
@@ -112,7 +112,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 }
 .login-contact-divider span{
   font-size:10px;letter-spacing:3px;text-transform:uppercase;
-  color:rgba(212,175,55,.5);font-family:'Cinzel',serif;white-space:nowrap;
+  color:rgba(212,175,55,.5);font-family:'Noto Serif KR',serif;white-space:nowrap;
 }
 .login-contact-card{
   background:rgba(255,255,255,.04);
@@ -134,7 +134,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .contact-text{line-height:1.35;}
 .contact-label{
   font-size:9px;letter-spacing:2px;text-transform:uppercase;
-  color:rgba(212,175,55,.55);font-family:'Cinzel',serif;
+  color:rgba(212,175,55,.55);font-family:'Noto Serif KR',serif;
 }
 .contact-value{
   font-size:13px;font-weight:700;color:rgba(255,255,255,.85);
@@ -152,7 +152,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
   display:inline-block;margin-top:5px;
   padding:7px 14px;
   background:#FEE500;color:#3A1D1D;
-  border-radius:10px;font-family:'Nunito',sans-serif;
+  border-radius:10px;font-family:'Noto Sans KR',sans-serif;
   font-size:12px;font-weight:800;text-decoration:none;
   letter-spacing:.3px;transition:all .2s;
 }
@@ -161,22 +161,22 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 /* ── APP SHELL ── */
 #app{display:none;min-height:100vh;}
 .topbar{background:linear-gradient(90deg,#0d1526,var(--navy));color:#fff;padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(26,39,68,.3);}
-.topbar-logo{font-family:'Baloo 2',cursive;font-size:19px;font-weight:800;}
+.topbar-logo{font-family:'Noto Serif KR',serif;font-size:19px;font-weight:800;}
 .topbar-logo span{color:var(--gold);}
 .topbar-right{display:flex;align-items:center;gap:14px;}
 .topbar-user{font-size:13px;font-weight:700;opacity:.85;}
-.btn-logout{padding:6px 14px;background:rgba(255,255,255,.15);border:none;border-radius:8px;color:#fff;font-family:'Nunito',sans-serif;font-weight:700;font-size:13px;cursor:pointer;}
+.btn-logout{padding:6px 14px;background:rgba(255,255,255,.15);border:none;border-radius:8px;color:#fff;font-family:'Noto Sans KR',sans-serif;font-weight:700;font-size:13px;cursor:pointer;}
 .btn-logout:hover{background:rgba(255,255,255,.25);}
 .main{padding:28px;max-width:1000px;margin:0 auto;}
 
 /* ── TEACHER ── */
-.page-title{font-family:'Baloo 2',cursive;font-size:24px;font-weight:800;color:var(--navy);margin-bottom:6px;}
+.page-title{font-family:'Noto Serif KR',serif;font-size:24px;font-weight:800;color:var(--navy);margin-bottom:6px;}
 .page-sub{font-size:14px;color:var(--muted);margin-bottom:24px;}
 .week-bar{display:flex;align-items:center;gap:12px;background:#fff;border-radius:var(--radius);padding:16px 20px;margin-bottom:24px;box-shadow:0 2px 10px rgba(0,0,0,.05);}
 .week-bar label{font-weight:800;font-size:14px;color:var(--navy);}
-.week-bar input{width:70px;padding:8px 12px;border:2px solid var(--border);border-radius:10px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;text-align:center;outline:none;}
+.week-bar input{width:70px;padding:8px 12px;border:2px solid var(--border);border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-size:15px;font-weight:800;text-align:center;outline:none;}
 .week-bar input:focus{border-color:var(--gold2);}
-.btn-sm{padding:8px 18px;border:none;border-radius:10px;font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;cursor:pointer;transition:all .2s;}
+.btn-sm{padding:8px 18px;border:none;border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-weight:800;font-size:13px;cursor:pointer;transition:all .2s;}
 .btn-navy{background:var(--navy);color:#fff;}
 .btn-navy:hover{background:#0d1526;}
 .btn-gold{background:var(--gold);color:var(--navy);}
@@ -206,11 +206,11 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 
 /* ── HOMEWORK EDITOR ── */
 .hw-editor{background:#fff;border-radius:var(--radius);padding:28px;box-shadow:0 2px 12px rgba(0,0,0,.08);margin-bottom:24px;border:2px solid var(--navy);}
-.hw-editor-title{font-family:'Baloo 2',cursive;font-size:20px;color:var(--navy);margin-bottom:6px;}
+.hw-editor-title{font-family:'Noto Serif KR',serif;font-size:20px;color:var(--navy);margin-bottom:6px;}
 .hw-editor-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
 .paste-area{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
 .paste-col label{display:block;font-weight:800;font-size:13px;color:var(--navy);margin-bottom:6px;}
-.paste-col textarea{width:100%;height:260px;padding:14px;border:2px solid var(--border);border-radius:12px;font-family:'Nunito',sans-serif;font-size:13px;resize:vertical;outline:none;transition:border-color .2s;line-height:1.6;}
+.paste-col textarea{width:100%;height:260px;padding:14px;border:2px solid var(--border);border-radius:12px;font-family:'Noto Sans KR',sans-serif;font-size:13px;resize:vertical;outline:none;transition:border-color .2s;line-height:1.6;}
 .paste-col textarea:focus{border-color:var(--gold2);}
 .format-hint{background:#f8f6ef;border-radius:10px;padding:12px 16px;font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.8;}
 .format-hint b{color:var(--navy);}
@@ -233,7 +233,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .exam-wrap{max-width:680px;margin:0 auto;}
 .exam-header-card{background:linear-gradient(135deg,var(--navy),#1e2e55);color:#fff;border-radius:var(--radius);padding:24px 28px;margin-bottom:16px;}
 .exam-header-top{display:flex;justify-content:space-between;align-items:flex-start;}
-.exam-title{font-family:'Baloo 2',cursive;font-size:22px;font-weight:800;}
+.exam-title{font-family:'Noto Serif KR',serif;font-size:22px;font-weight:800;}
 .exam-sub{font-size:13px;opacity:.7;margin-top:4px;}
 .exam-counter{text-align:right;}
 .exam-counter .big{font-size:32px;font-weight:900;color:var(--gold);line-height:1;}
@@ -244,7 +244,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .progress-lbl{display:flex;justify-content:space-between;font-size:11px;opacity:.7;margin-top:5px;}
 
 .q-nav{display:flex;flex-wrap:wrap;gap:6px;padding:16px;background:#fff;border-radius:var(--radius);margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.05);}
-.qn-btn{width:34px;height:34px;border-radius:8px;border:2px solid var(--border);background:#fff;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;cursor:pointer;color:var(--muted);transition:all .15s;}
+.qn-btn{width:34px;height:34px;border-radius:8px;border:2px solid var(--border);background:#fff;font-family:'Noto Sans KR',sans-serif;font-weight:800;font-size:12px;cursor:pointer;color:var(--muted);transition:all .15s;}
 .qn-btn:hover{border-color:var(--gold2);}
 .qn-btn.cur{background:var(--navy);color:var(--gold);border-color:var(--navy);}
 .qn-btn.done{background:#dbeafe;color:#1d4ed8;border-color:#93c5fd;}
@@ -257,7 +257,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .qc-text{font-size:17px;font-weight:700;color:var(--navy);line-height:1.55;margin-bottom:24px;}
 
 .options{display:flex;flex-direction:column;gap:10px;}
-.opt-btn{display:flex;align-items:center;gap:14px;padding:14px 18px;border:2px solid var(--border);border-radius:13px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;font-size:15px;background:#fff;text-align:left;transition:all .15s;}
+.opt-btn{display:flex;align-items:center;gap:14px;padding:14px 18px;border:2px solid var(--border);border-radius:13px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;font-weight:700;font-size:15px;background:#fff;text-align:left;transition:all .15s;}
 .opt-btn:hover:not([disabled]){border-color:var(--gold2);background:#fef8e1;}
 .opt-btn.sel{border-color:var(--navy);background:#eef2ff;}
 .opt-btn.correct{border-color:var(--green);background:#dcfce7;color:#166534;}
@@ -269,14 +269,14 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .opt-btn.wrong .opt-circle{background:var(--red);color:#fff;}
 
 .ox-row{display:flex;gap:14px;}
-.ox-btn{flex:1;padding:18px;border:2px solid var(--border);border-radius:14px;font-size:24px;cursor:pointer;background:#fff;font-weight:900;transition:all .15s;font-family:'Nunito',sans-serif;}
+.ox-btn{flex:1;padding:18px;border:2px solid var(--border);border-radius:14px;font-size:24px;cursor:pointer;background:#fff;font-weight:900;transition:all .15s;font-family:'Noto Sans KR',sans-serif;}
 .ox-btn:hover:not([disabled]){transform:scale(1.04);}
 .ox-btn.sel-o{border-color:var(--gold2);background:#fef8e1;}
 .ox-btn.sel-x{border-color:var(--orange);background:#fff7ed;}
 .ox-btn.correct{border-color:var(--green);background:#dcfce7;}
 .ox-btn.wrong{border-color:var(--red);background:#fee2e2;}
 
-.sa-input{width:100%;max-width:320px;padding:13px 16px;border:2px solid var(--border);border-radius:12px;font-family:'Nunito',sans-serif;font-size:16px;font-weight:700;outline:none;transition:border-color .2s;}
+.sa-input{width:100%;max-width:320px;padding:13px 16px;border:2px solid var(--border);border-radius:12px;font-family:'Noto Sans KR',sans-serif;font-size:16px;font-weight:700;outline:none;transition:border-color .2s;}
 .sa-input:focus{border-color:var(--gold2);}
 .sa-input.correct-i{border-color:var(--green);background:#f0fdf4;}
 .sa-input.wrong-i{border-color:var(--red);background:#fff5f5;}
@@ -286,21 +286,21 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .fb-wrong{background:#fee2e2;color:#991b1b;}
 
 .nav-row{display:flex;justify-content:space-between;align-items:center;gap:12px;}
-.btn-nav{padding:12px 26px;border:2px solid var(--border);border-radius:12px;background:#fff;font-family:'Nunito',sans-serif;font-weight:800;font-size:15px;cursor:pointer;color:var(--navy);transition:all .2s;}
+.btn-nav{padding:12px 26px;border:2px solid var(--border);border-radius:12px;background:#fff;font-family:'Noto Sans KR',sans-serif;font-weight:800;font-size:15px;cursor:pointer;color:var(--navy);transition:all .2s;}
 .btn-nav:hover:not([disabled]){border-color:var(--navy);background:var(--navy);color:#fff;}
 .btn-nav[disabled]{opacity:.35;cursor:default;}
-.btn-submit-all{padding:13px 32px;background:var(--green);color:#fff;border:none;border-radius:12px;font-family:'Nunito',sans-serif;font-weight:800;font-size:16px;cursor:pointer;transition:all .2s;}
+.btn-submit-all{padding:13px 32px;background:var(--green);color:#fff;border:none;border-radius:12px;font-family:'Noto Sans KR',sans-serif;font-weight:800;font-size:16px;cursor:pointer;transition:all .2s;}
 .btn-submit-all:hover:not([disabled]){background:#16a34a;transform:translateY(-1px);}
 .btn-submit-all[disabled]{background:var(--border);color:var(--muted);cursor:default;transform:none;}
 
 /* ── SCORE BANNER ── */
 .score-banner{background:linear-gradient(135deg,#166534,var(--green));color:#fff;border-radius:var(--radius);padding:32px;text-align:center;margin-bottom:24px;}
-.score-big{font-size:72px;font-weight:900;font-family:'Baloo 2',cursive;line-height:1;}
+.score-big{font-size:72px;font-weight:900;font-family:'Noto Serif KR',serif;line-height:1;}
 .score-msg{font-size:18px;font-weight:700;opacity:.9;margin-top:10px;}
 
 /* ── RESULTS TABLE ── */
 .results-wrap{background:#fff;border-radius:var(--radius);padding:24px;box-shadow:0 2px 10px rgba(0,0,0,.06);}
-.results-wrap h3{font-family:'Baloo 2',cursive;font-size:20px;color:var(--navy);margin-bottom:16px;}
+.results-wrap h3{font-family:'Noto Serif KR',serif;font-size:20px;color:var(--navy);margin-bottom:16px;}
 .res-q{padding:11px 14px;border-radius:10px;font-size:14px;font-weight:600;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;}
 .res-ok{background:#f0fdf4;border-left:4px solid var(--green);}
 .res-wrong{background:#fff5f5;border-left:4px solid var(--red);}
@@ -332,24 +332,24 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .set-icon-open{background:var(--navy);}
 .set-icon-done{background:var(--green);}
 .set-info{flex:1;}
-.set-name{font-family:'Baloo 2',cursive;font-size:18px;font-weight:800;color:var(--navy);}
+.set-name{font-family:'Noto Serif KR',serif;font-size:18px;font-weight:800;color:var(--navy);}
 .set-meta{font-size:13px;color:var(--muted);margin-top:3px;}
 
 /* ── PARENT ── */
 .parent-header{background:linear-gradient(135deg,var(--navy),#1e2e55);color:#fff;border-radius:var(--radius);padding:26px 30px;margin-bottom:20px;display:flex;align-items:center;gap:18px;}
 .parent-avatar{font-size:48px;}
-.parent-child-name{font-family:'Baloo 2',cursive;font-size:26px;font-weight:800;color:var(--gold);}
+.parent-child-name{font-family:'Noto Serif KR',serif;font-size:26px;font-weight:800;color:var(--gold);}
 .parent-child-sub{font-size:14px;opacity:.7;margin-top:3px;}
 .info-card{background:#fff;border-radius:var(--radius);padding:22px 26px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,.06);}
-.info-card h3{font-family:'Baloo 2',cursive;font-size:18px;color:var(--navy);margin-bottom:14px;}
+.info-card h3{font-family:'Noto Serif KR',serif;font-size:18px;color:var(--navy);margin-bottom:14px;}
 
 /* ── SETTINGS ── */
 .settings-card{background:#fff;border-radius:var(--radius);padding:26px;box-shadow:0 2px 10px rgba(0,0,0,.06);margin-bottom:20px;}
-.settings-card h2{font-family:'Baloo 2',cursive;font-size:20px;color:var(--navy);margin-bottom:16px;}
+.settings-card h2{font-family:'Noto Serif KR',serif;font-size:20px;color:var(--navy);margin-bottom:16px;}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
 .field{margin-bottom:14px;}
 .field label{display:block;font-weight:800;font-size:13px;color:var(--navy);margin-bottom:6px;}
-.field input,.field select{width:100%;padding:10px 13px;border:2px solid var(--border);border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;transition:border-color .2s;}
+.field input,.field select{width:100%;padding:10px 13px;border:2px solid var(--border);border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-size:14px;outline:none;transition:border-color .2s;}
 .field input:focus,.field select:focus{border-color:var(--gold2);}
 .success-msg{color:var(--green);font-weight:800;font-size:14px;margin-top:10px;display:none;}
 .empty{text-align:center;padding:40px;color:var(--muted);font-weight:700;}
@@ -362,16 +362,16 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 
 /* ── REMEDIATION & PRACTICE ── */
 .remediation-section{background:#fff;border-radius:var(--radius);padding:28px;box-shadow:0 4px 20px rgba(0,0,0,.08);margin-bottom:16px;border:2px solid var(--gold);}
-.remediation-title{font-family:'Baloo 2',cursive;font-size:20px;color:var(--navy);margin-bottom:6px;}
+.remediation-title{font-family:'Noto Serif KR',serif;font-size:20px;color:var(--navy);margin-bottom:6px;}
 .remediation-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
 .explanation-card{background:#f8f6ef;border-radius:14px;padding:20px;margin-bottom:14px;border-left:4px solid var(--gold);}
 .explanation-q-title{font-weight:800;color:var(--navy);font-size:15px;margin-bottom:4px;}
 .explanation-q-meta{font-size:12px;color:var(--muted);margin-bottom:10px;}
 .explanation-body{font-size:14px;color:var(--text);line-height:1.8;white-space:pre-wrap;}
-.btn-confirm-read{display:block;width:100%;padding:16px;background:var(--navy);color:#fff;border:none;border-radius:14px;font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;cursor:pointer;margin-top:20px;transition:all .2s;}
+.btn-confirm-read{display:block;width:100%;padding:16px;background:var(--navy);color:#fff;border:none;border-radius:14px;font-family:'Noto Sans KR',sans-serif;font-size:16px;font-weight:800;cursor:pointer;margin-top:20px;transition:all .2s;}
 .btn-confirm-read:hover{background:#0d1526;transform:translateY(-1px);}
 .practice-header{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border-radius:var(--radius);padding:20px 24px;margin-bottom:16px;text-align:center;}
-.practice-header h3{font-family:'Baloo 2',cursive;font-size:20px;margin-bottom:4px;}
+.practice-header h3{font-family:'Noto Serif KR',serif;font-size:20px;margin-bottom:4px;}
 .practice-header p{font-size:13px;opacity:.85;}
 .ai-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px;color:var(--navy);font-weight:700;font-size:15px;}
 .ai-loading .ai-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
@@ -386,27 +386,27 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .account-mini summary::before{content:'⚙';font-size:13px;}
 .account-mini[open] summary{margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);}
 .account-mini .mini-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
-.account-mini .mini-fields input{width:100%;padding:6px 10px;font-size:12px;border:1.5px solid var(--border);border-radius:8px;font-family:'Nunito',sans-serif;outline:none;}
+.account-mini .mini-fields input{width:100%;padding:6px 10px;font-size:12px;border:1.5px solid var(--border);border-radius:8px;font-family:'Noto Sans KR',sans-serif;outline:none;}
 .account-mini .mini-fields input:focus{border-color:var(--gold2);}
 .account-mini .mini-fields label{display:block;font-size:10px;font-weight:700;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px;}
 .final-report{background:#fff;border-radius:var(--radius);padding:24px;border:2px solid var(--red);margin-top:16px;}
-.final-report-title{color:#991b1b;font-family:'Baloo 2',cursive;font-size:18px;margin-bottom:12px;}
+.final-report-title{color:#991b1b;font-family:'Noto Serif KR',serif;font-size:18px;margin-bottom:12px;}
 .round-badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:800;background:#fef3c7;color:#92400e;margin-left:8px;}
 
 /* ── PARENT REPORT ── */
 .report-panel{background:#fff;border-radius:var(--radius);padding:28px;box-shadow:0 4px 20px rgba(0,0,0,.08);margin-bottom:20px;border:2px solid var(--gold);}
-.report-panel-title{font-family:'Baloo 2',cursive;font-size:20px;color:var(--navy);margin-bottom:4px;display:flex;align-items:center;gap:10px;}
+.report-panel-title{font-family:'Noto Serif KR',serif;font-size:20px;color:var(--navy);margin-bottom:4px;display:flex;align-items:center;gap:10px;}
 .report-panel-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
 .report-student-header{display:flex;align-items:center;gap:14px;padding:16px 20px;background:linear-gradient(135deg,var(--navy),#1e2e55);border-radius:14px;margin-bottom:16px;color:#fff;}
 .report-student-avatar{width:48px;height:48px;border-radius:14px;background:rgba(212,175,55,.2);color:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;}
-.report-student-name{font-family:'Baloo 2',cursive;font-size:18px;font-weight:800;}
+.report-student-name{font-family:'Noto Serif KR',serif;font-size:18px;font-weight:800;}
 .report-student-meta{font-size:12px;opacity:.7;margin-top:2px;}
 .report-score-row{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
 .report-score-card{flex:1;min-width:120px;background:#f8f6ef;border-radius:12px;padding:16px;text-align:center;}
-.report-score-card .big{font-size:32px;font-weight:900;font-family:'Baloo 2',cursive;line-height:1;}
+.report-score-card .big{font-size:32px;font-weight:900;font-family:'Noto Serif KR',serif;line-height:1;}
 .report-score-card .lbl{font-size:11px;color:var(--muted);font-weight:700;margin-top:4px;}
 .report-msg-box{background:#f8f6ef;border-radius:14px;padding:20px;margin-bottom:16px;font-size:14px;line-height:1.8;color:var(--text);white-space:pre-wrap;border:2px solid var(--border);}
-.btn-copy-kakao{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:18px 24px;background:linear-gradient(135deg,#fee500,#f5da00);color:#3c1e1e;border:none;border-radius:14px;font-family:'Nunito',sans-serif;font-size:18px;font-weight:900;cursor:pointer;transition:all .2s;box-shadow:0 4px 16px rgba(254,229,0,.4);}
+.btn-copy-kakao{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:18px 24px;background:linear-gradient(135deg,#fee500,#f5da00);color:#3c1e1e;border:none;border-radius:14px;font-family:'Noto Sans KR',sans-serif;font-size:18px;font-weight:900;cursor:pointer;transition:all .2s;box-shadow:0 4px 16px rgba(254,229,0,.4);}
 .btn-copy-kakao:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(254,229,0,.5);}
 .btn-copy-kakao:active{transform:translateY(0);}
 .btn-copy-kakao.copied{background:linear-gradient(135deg,var(--green),#16a34a);color:#fff;}
@@ -421,7 +421,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .report-loading .ai-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
 .report-loading .msg{font-weight:700;color:var(--navy);font-size:15px;}
 .report-loading .sub{font-size:12px;color:var(--muted);}
-.btn-report{padding:6px 14px;background:linear-gradient(135deg,#fee500,#f5da00);color:#3c1e1e;border:none;border-radius:8px;font-family:'Nunito',sans-serif;font-weight:800;font-size:12px;cursor:pointer;transition:all .2s;}
+.btn-report{padding:6px 14px;background:linear-gradient(135deg,#fee500,#f5da00);color:#3c1e1e;border:none;border-radius:8px;font-family:'Noto Sans KR',sans-serif;font-weight:800;font-size:12px;cursor:pointer;transition:all .2s;}
 .btn-report:hover{transform:translateY(-1px);filter:brightness(1.05);}
 .report-rem-round{background:#fff;border-radius:12px;padding:14px 18px;margin-bottom:10px;border:2px solid var(--border);}
 .report-rem-round-title{font-weight:800;font-size:13px;color:var(--navy);margin-bottom:6px;}
@@ -452,6 +452,27 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
   .results-table{font-size:12px;}
   .results-table td,.results-table th{padding:8px 10px;}
 }
+.hint-card{background:#f8f6ef;border-radius:14px;padding:20px;margin-bottom:14px;border-left:4px solid var(--gold);position:relative;}
+.hint-card.stage-hint{border-left-color:#f59e0b;background:#fffbeb;}
+.hint-card.stage-explain{border-left-color:#3b82f6;background:#eff6ff;}
+.hint-card.stage-solved{border-left-color:var(--green);background:#f0fdf4;}
+.hint-stage-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:800;margin-bottom:10px;}
+.hint-stage-badge.s1{background:#fef3c7;color:#92400e;}
+.hint-stage-badge.s2{background:#dbeafe;color:#1e40af;}
+.hint-stage-badge.s-ok{background:#dcfce7;color:#166534;}
+.hint-box{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:12px 14px;font-size:14px;color:#78350f;line-height:1.7;margin-bottom:12px;}
+.concept-box{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);border-radius:10px;padding:12px 14px;font-size:14px;color:#1e40af;line-height:1.7;margin-bottom:12px;}
+.hint-retry-section{margin-top:14px;padding-top:14px;border-top:1px dashed var(--border);}
+.hint-retry-label{font-size:11px;font-weight:800;color:var(--muted);margin-bottom:10px;letter-spacing:.5px;text-transform:uppercase;}
+.hint-get-btn{padding:9px 20px;background:#f59e0b;color:#fff;border:none;border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-weight:800;font-size:13px;cursor:pointer;transition:all .2s;margin-top:4px;}
+.hint-get-btn:hover{background:#d97706;transform:translateY(-1px);}
+.hint-progress-bar{display:flex;gap:6px;margin-bottom:16px;}
+.hint-progress-step{flex:1;height:4px;border-radius:4px;background:var(--border);}
+.hint-progress-step.done{background:var(--green);}
+.hint-progress-step.active{background:var(--gold);}
+.all-done-btn{display:block;width:100%;padding:16px;background:linear-gradient(90deg,#16a34a,#15803d);color:#fff;border:none;border-radius:14px;font-family:'Noto Sans KR',sans-serif;font-size:16px;font-weight:800;cursor:pointer;margin-top:20px;transition:all .2s;}
+.all-done-btn:hover{transform:translateY(-1px);filter:brightness(1.08);}
+.all-done-btn:disabled{background:#9ca3af;cursor:not-allowed;transform:none;}
 </style>
 </head>
 <body>
@@ -618,11 +639,11 @@ function initStore() {
 function hwKey(yearLevel, country, p) { return `${country}_y${yearLevel}_${p.year}_m${String(p.month).padStart(2,'0')}_w${p.week}`; }
 function prevPeriod(p) {
   if (p.week > 1) return { year: p.year, month: p.month, week: p.week - 1 };
-  if (p.month > 1) return { year: p.year, month: p.month - 1, week: 5 };
-  return { year: p.year - 1, month: 12, week: 5 };
+  const pm = p.month > 1 ? { year: p.year, month: p.month - 1 } : { year: p.year - 1, month: 12 };
+  return { year: pm.year, month: pm.month, week: weeksInMonth(pm.year, pm.month) };
 }
 function nextPeriod(p) {
-  if (p.week < 5) return { year: p.year, month: p.month, week: p.week + 1 };
+  if (p.week < weeksInMonth(p.year, p.month)) return { year: p.year, month: p.month, week: p.week + 1 };
   if (p.month < 12) return { year: p.year, month: p.month + 1, week: 1 };
   return { year: p.year + 1, month: 1, week: 1 };
 }
@@ -645,7 +666,34 @@ function navigateStudentPeriod(dir) {
   renderStudent();
 }
 function subKey(sid, p, setIdx=0) { return `${sid}_${p.year}_m${String(p.month).padStart(2,'0')}_w${p.week}_s${setIdx}`; }
-function periodLabel(p)      { return `${p.year} – Month ${p.month} Week ${p.week}`; }
+function weeksInMonth(year, month) {
+  let count = 0;
+  const days = new Date(year, month, 0).getDate();
+  for (let d = 1; d <= days; d++) {
+    if (new Date(year, month - 1, d).getDay() === 1) count++;
+  }
+  return count || 1;
+}
+
+function weekDateRange(year, month, weekNum) {
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let mondays = [];
+  const days = new Date(year, month, 0).getDate();
+  for (let d = 1; d <= days; d++) {
+    if (new Date(year, month - 1, d).getDay() === 1) mondays.push(d);
+  }
+  if (mondays.length === 0) return '';
+  const mon = mondays[weekNum - 1];
+  if (!mon) return '';
+  const fri = Math.min(mon + 4, days);
+  return `${monthNames[month-1]} ${mon}–${fri}`;
+}
+
+function periodLabel(p) {
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const range = weekDateRange(p.year, p.month, p.week);
+  return `${p.year} ${monthNames[p.month-1]} Week ${p.week}${range ? ' (' + range + ')' : ''}`;
+}
 
 function getStore() {
   const raw = localStorage.getItem(STORE_KEY);
@@ -813,7 +861,11 @@ function renderTeacher() {
 
   const yearOpts  = [2024,2025,2026,2027,2028].map(y=>`<option value="${y}"${y===p.year?'selected':''}>${y}</option>`).join('');
   const monthOpts = Array.from({length:12},(_,i)=>i+1).map(m=>`<option value="${m}"${m===p.month?'selected':''}>${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1]}</option>`).join('');
-  const weekOpts  = [1,2,3,4,5].map(w=>`<option value="${w}"${w===p.week?'selected':''}>${w===1?'Week 1':w===2?'Week 2':w===3?'Week 3':w===4?'Week 4':'Week 5'}</option>`).join('');
+  const maxWeeks = weeksInMonth(p.year, p.month);
+  const weekOpts = Array.from({length: maxWeeks}, (_,i) => i+1).map(w => {
+    const range = weekDateRange(p.year, p.month, w);
+    return `<option value="${w}"${w===p.week?'selected':''}>Week ${w}${range ? ' (' + range + ')' : ''}</option>`;
+  }).join('');
 
   const auCount = allStudents.filter(s=>(s.country||'AU')==='AU').length;
   const krCount = allStudents.filter(s=>s.country==='KR').length;
@@ -829,7 +881,7 @@ function renderTeacher() {
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
         <input id="topAIKey" type="password" placeholder="Paste API key here"
-          style="padding:10px 14px;border:2px solid #d97706;border-radius:10px;font-family:'Nunito',sans-serif;font-size:13px;width:220px;outline:none;">
+          style="padding:10px 14px;border:2px solid #d97706;border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-size:13px;width:220px;outline:none;">
         <button class="btn-sm" style="background:#92400e;color:#fff;padding:10px 18px;" onclick="setAIKey(document.getElementById('topAIKey').value);if(getAIKey()){alert('✅ API Key saved!');renderTeacher();}else{alert('Please enter a key.');}">Save</button>
       </div>
     </div>` : ''}
@@ -946,10 +998,10 @@ function renderTeacher() {
                 </div>`).join('')
             }</div>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px;">
-              <input type="number" id="cr_from" min="1" placeholder="From Q#" style="width:74px;padding:6px 8px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;">
+              <input type="number" id="cr_from" min="1" placeholder="From Q#" style="width:74px;padding:6px 8px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:'Noto Sans KR',sans-serif;">
               <span style="font-weight:700;color:var(--navy);">~</span>
-              <input type="number" id="cr_to" min="1" placeholder="To Q#" style="width:74px;padding:6px 8px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;">
-              <select id="cr_allowed" style="padding:6px 8px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:'Nunito',sans-serif;">
+              <input type="number" id="cr_to" min="1" placeholder="To Q#" style="width:74px;padding:6px 8px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:'Noto Sans KR',sans-serif;">
+              <select id="cr_allowed" style="padding:6px 8px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:'Noto Sans KR',sans-serif;">
                 <option value="0">🚫 Not Allowed</option>
                 <option value="1">🔢 Allowed</option>
               </select>
@@ -1159,7 +1211,8 @@ function doParse() {
     if (q.type === 'mc' && q.options) {
       // If answer is letter (A-E), map to option text or keep as letter
       const letters = ['A','B','C','D','E'];
-      const idx = letters.indexOf(ans.toUpperCase());
+      const firstLetter = (ans || '').trim().charAt(0).toUpperCase();
+      const idx = letters.indexOf(firstLetter);
       q.answer = idx >= 0 ? letters[idx] : ans; // store as letter
     } else {
       q.answer = ans;
@@ -1302,7 +1355,7 @@ function doSave() {
 
   // Show save confirmation at top of page
   const msg = document.createElement('div');
-  msg.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#166534;color:#fff;padding:14px 28px;border-radius:12px;font-family:"Nunito",sans-serif;font-weight:800;font-size:15px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);';
+  msg.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#166534;color:#fff;padding:14px 28px;border-radius:12px;font-family:"Noto Sans KR",sans-serif;font-weight:800;font-size:15px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);';
   msg.textContent = `✅ ${setTitle} saved! (${qs.length} questions) — ${yrStudents.length} student${yrStudents.length!==1?'s':''}`;
   document.body.appendChild(msg);
   setTimeout(() => msg.remove(), 3000);
@@ -1315,10 +1368,10 @@ function previewHomework(yr) {
   const hw    = store.homeworkSets[hwKey(yr, selectedCountry, p)];
   if (!hw?.sets?.length) return;
 
-  let html = `<h2 style="font-family:'Baloo 2',cursive;color:var(--navy);margin-bottom:16px;">👁 Year ${yr} – ${periodLabel(p)} Preview</h2>`;
+  let html = `<h2 style="font-family:'Noto Serif KR',serif;color:var(--navy);margin-bottom:16px;">👁 Year ${yr} – ${periodLabel(p)} Preview</h2>`;
   const letters=['A','B','C','D','E'];
   hw.sets.forEach((set, si) => {
-    html += `<div style="font-family:'Baloo 2',cursive;font-size:16px;color:var(--navy);margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--gold);">🔢 ${set.title} (${set.questions.length} questions)</div>`;
+    html += `<div style="font-family:'Noto Serif KR',serif;font-size:16px;color:var(--navy);margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--gold);">🔢 ${set.title} (${set.questions.length} questions)</div>`;
     set.questions.forEach((q,i) => {
       const typeLabel={mc:'MC',sa:'Short Answer',ox:'O/X'}[q.type];
       const badgeCls={mc:'badge-mc',sa:'badge-sa',ox:'badge-ox'}[q.type];
@@ -1345,7 +1398,7 @@ function viewResults(yr) {
   if (!hw?.sets?.length) return;
   const yrStudents = store.users.filter(u=>u.role==='student' && u.year===yr && (u.country||'AU')===selectedCountry);
 
-  let html = `<h2 style="font-family:'Baloo 2',cursive;color:var(--navy);margin-bottom:16px;">📊 Year ${yr} – ${periodLabel(p)} Results</h2>`;
+  let html = `<h2 style="font-family:'Noto Serif KR',serif;color:var(--navy);margin-bottom:16px;">📊 Year ${yr} – ${periodLabel(p)} Results</h2>`;
 
   yrStudents.forEach(s => {
     const anySubmitted = hw.sets.some((_,idx) => store.submissions[subKey(s.id,p,idx)]?.submitted);
@@ -1428,7 +1481,7 @@ function renderTeacherSettings(store) {
         <div class="field" style="margin-bottom:10px;">
           <label>Claude API Key</label>
           <input id="claudeKeyInput" type="password" value="${getAIKey()}" placeholder="API key from Anthropic Console"
-            style="width:100%;padding:10px 13px;border:2px solid var(--border);border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;">
+            style="width:100%;padding:10px 13px;border:2px solid var(--border);border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-size:14px;outline:none;">
           <div style="font-size:11px;color:var(--muted);margin-top:4px;">
             Get your key from <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--gold2);">Anthropic Console</a> → Paste here → Save
           </div>
@@ -1448,14 +1501,14 @@ function renderTeacherSettings(store) {
         <thead><tr><th>ID</th><th>Name</th><th>Year</th><th>Country</th><th>Password</th><th>Edit</th></tr></thead>
         <tbody>${studentRows}</tbody>
       </table>
-      <h3 style="font-family:'Baloo 2',cursive;color:var(--navy);margin-bottom:14px;">Add Student</h3>
+      <h3 style="font-family:'Noto Serif KR',serif;color:var(--navy);margin-bottom:14px;">Add Student</h3>
       <div class="field-row">
         <div class="field"><label>ID</label><input id="ns_id" placeholder="student06"></div>
         <div class="field"><label>Name</label><input id="ns_name" placeholder="Full name"></div>
       </div>
       <div class="field-row">
         <div class="field"><label>Year</label><select id="ns_year">${yearSel}</select></div>
-        <div class="field"><label>Country</label><select id="ns_country" style="width:100%;padding:10px 13px;border:2px solid var(--border);border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;">
+        <div class="field"><label>Country</label><select id="ns_country" style="width:100%;padding:10px 13px;border:2px solid var(--border);border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-size:14px;outline:none;">
           <option value="AU">🇦🇺 Australian</option>
           <option value="KR">🇰🇷 Korean</option>
         </select></div>
@@ -1468,14 +1521,14 @@ function renderTeacherSettings(store) {
       <h2>👨‍👩‍👧 Parent Management</h2>
       <div id="parentCardsList">${buildParentCards(store)}</div>
       <div style="border-top:2px solid var(--border);padding-top:20px;margin-top:4px;">
-        <h3 style="font-family:'Baloo 2',cursive;color:var(--navy);margin-bottom:14px;">Add New Parent Account</h3>
+        <h3 style="font-family:'Noto Serif KR',serif;color:var(--navy);margin-bottom:14px;">Add New Parent Account</h3>
         <div class="field-row">
           <div class="field"><label>Parent ID</label><input id="np_id" placeholder="e.g. parent03"></div>
           <div class="field"><label>Password</label><input id="np_pw" value="parent2024"></div>
         </div>
         <div class="field">
           <label>First child's student ID</label>
-          <input id="np_child_id" placeholder="e.g. jimin01" style="width:100%;padding:10px 13px;border:2px solid var(--border);border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;">
+          <input id="np_child_id" placeholder="e.g. jimin01" style="width:100%;padding:10px 13px;border:2px solid var(--border);border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-size:14px;outline:none;">
           <div style="font-size:12px;color:var(--muted);margin-top:4px;">More children can be added after creating the account.</div>
         </div>
         <button class="btn-sm btn-navy" style="margin-top:6px;" onclick="addParent()">Create Parent Account ✓</button>
@@ -1561,17 +1614,17 @@ function buildParentCards(store) {
         <div style="flex:1;min-width:180px;">
           <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Parent ID</div>
           <input id="pe_id_${p.id}" value="${p.id}"
-            style="width:100%;padding:7px 10px;border:2px solid var(--border);border-radius:9px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;outline:none;">
+            style="width:100%;padding:7px 10px;border:2px solid var(--border);border-radius:9px;font-family:'Noto Sans KR',sans-serif;font-size:14px;font-weight:700;outline:none;">
         </div>
         <div style="flex:2;min-width:200px;">
           <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Display Name</div>
           <input id="pe_name_${p.id}" value="${autoName}"
-            style="width:100%;padding:7px 10px;border:2px solid var(--border);border-radius:9px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;outline:none;">
+            style="width:100%;padding:7px 10px;border:2px solid var(--border);border-radius:9px;font-family:'Noto Sans KR',sans-serif;font-size:14px;font-weight:700;outline:none;">
         </div>
         <div style="min-width:110px;">
           <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Password</div>
           <input id="pe_pw_${p.id}" value="${p.pw}"
-            style="width:100%;padding:7px 10px;border:2px solid var(--border);border-radius:9px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;">
+            style="width:100%;padding:7px 10px;border:2px solid var(--border);border-radius:9px;font-family:'Noto Sans KR',sans-serif;font-size:14px;outline:none;">
         </div>
         <div style="display:flex;gap:6px;padding-bottom:1px;">
           <button class="btn-sm btn-green" onclick="saveParentEdit('${p.id}')">Save</button>
@@ -1586,7 +1639,7 @@ function buildParentCards(store) {
         <div style="font-weight:700;font-size:13px;color:var(--navy);margin-bottom:6px;">➕ Add another child?</div>
         <div style="display:flex;gap:8px;align-items:center;">
           <input id="add_child_${p.id}" placeholder="Enter student ID (e.g. jimin02)"
-            style="flex:1;padding:8px 12px;border:2px solid var(--border);border-radius:10px;font-family:'Nunito',sans-serif;font-size:14px;outline:none;"
+            style="flex:1;padding:8px 12px;border:2px solid var(--border);border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-size:14px;outline:none;"
             onkeydown="if(event.key==='Enter')addChildToParent('${p.id}')">
           <button class="btn-sm btn-navy" onclick="addChildToParent('${p.id}')">+ Add</button>
         </div>
@@ -2297,7 +2350,7 @@ function renderParent() {
       html += `<button onclick="selectParentChild('${c.id}')" style="
         padding:10px 20px;border-radius:12px;border:2px solid ${isActive?'var(--navy)':'var(--border)'};
         background:${isActive?'var(--navy)':'#fff'};color:${isActive?'#fff':'var(--navy)'};
-        font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;cursor:pointer;">
+        font-family:'Noto Sans KR',sans-serif;font-weight:800;font-size:14px;cursor:pointer;">
         ${englishName(c.id)} <span style="font-size:12px;opacity:.7;">(Y${c.year})</span>
       </button>`;
     });
@@ -2422,55 +2475,102 @@ function renderParentReportSection(child, store, period) {
 
   data.results.forEach((r, ri) => {
     const cls = r.score>=80?'pill-a':r.score>=60?'pill-b':'pill-c';
-    html += `<div style="margin-bottom:16px;">
-      <div style="font-weight:800;color:var(--navy);font-size:14px;margin-bottom:8px;">📝 ${r.setTitle}</div>
-      <div class="report-score-row">
-        <div class="report-score-card">
-          <div class="big" style="color:${r.score>=80?'var(--green)':r.score>=60?'var(--gold2)':'var(--red)'};">${r.score}%</div>
-          <div class="lbl">점수</div>
-        </div>
-        <div class="report-score-card">
-          <div class="big" style="color:var(--navy);">${r.correct}/${r.total}</div>
-          <div class="lbl">정답</div>
-        </div>
-        <div class="report-score-card">
-          <div class="big" style="color:var(--red);">${r.wrongCount}</div>
-          <div class="lbl">오답</div>
-        </div>
-      </div>`;
+    html += `
+      <div style="margin-bottom:20px;">
+        <div style="font-weight:800;color:var(--navy);font-size:15px;margin-bottom:10px;">📝 ${r.setTitle}</div>
+        <div class="report-score-row">
+          <div class="report-score-card">
+            <div class="big" style="color:${r.score>=80?'var(--green)':r.score>=60?'var(--gold2)':'var(--red)'};">${r.score}%</div>
+            <div class="lbl">점수</div>
+          </div>
+          <div class="report-score-card">
+            <div class="big" style="color:var(--navy);">${r.correct}/${r.total}</div>
+            <div class="lbl">정답</div>
+          </div>
+          <div class="report-score-card">
+            <div class="big" style="color:var(--red);">${r.wrongCount}</div>
+            <div class="lbl">오답</div>
+          </div>
+        </div>`;
 
     if (r.weakAreas?.length > 0) {
-      html += `<div style="margin-bottom:10px;">
-        <div style="font-weight:800;font-size:12px;color:var(--navy);margin-bottom:4px;">📊 부족한 영역</div>
+      html += `<div style="margin-bottom:12px;">
+        <div style="font-weight:800;font-size:13px;color:var(--navy);margin-bottom:6px;">📊 부족한 영역</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          ${r.weakAreas.map(w=>`<span class="score-pill pill-c" style="font-size:11px;">${w.area} (${w.count})</span>`).join('')}
+          ${r.weakAreas.map(w=>`<span class="score-pill pill-c" style="font-size:12px;">${w.area} (${w.count})</span>`).join('')}
         </div>
       </div>`;
     }
 
-    if (r.remediation.length > 0) {
-      html += `<div style="margin-bottom:10px;">
-        <div style="font-weight:800;font-size:12px;color:var(--navy);margin-bottom:6px;">💪 보충학습 결과</div>`;
-      r.remediation.forEach(rem => {
-        const rCls = rem.score>=80?'pill-a':rem.score>=60?'pill-b':'pill-c';
-        html += `<div class="report-rem-round">
-          <div class="report-rem-round-title">연습 ${rem.round}회차 — <span class="score-pill ${rCls}" style="font-size:11px;">${rem.score}%</span> (${rem.correct}/${rem.total})</div>
-          ${rem.questions.map(q=>`<div class="report-rem-q ${q.ok?'ok':'wrong'}">${q.ok?'✅':'❌'} ${q.text}</div>`).join('')}
+    if (r.allQuestions?.length > 0) {
+      html += `<div style="margin-bottom:14px;">
+        <div style="font-weight:800;font-size:13px;color:var(--navy);margin-bottom:8px;">📋 전체 문제</div>`;
+      r.allQuestions.forEach(q => {
+        const icon = q.ok ? '✅' : '❌';
+        const bg = q.ok ? '#f0fdf4' : '#fff5f5';
+        const border = q.ok ? 'var(--green)' : 'var(--red)';
+        const ans = q.ok ? '' : `
+            <div style="margin-top:4px;font-size:11px;color:var(--muted);">
+              <span>학생 답안: <b style="color:var(--red);">${q.studentAnswer}</b></span>
+              <span style="margin-left:10px;">정답: <b style="color:var(--green);">${q.answer}</b></span>
+            </div>`;
+        html += `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 12px;
+          background:${bg};border-left:3px solid ${border};border-radius:8px;margin-bottom:6px;font-size:13px;">
+          <span style="flex-shrink:0;">${icon}</span>
+          <div><b>Q${q.num}.</b> ${q.text}${ans}</div>
         </div>`;
       });
       html += `</div>`;
     }
 
+    if (r.remediation.length > 0) {
+      r.remediation.forEach(rem => {
+        const rCls = rem.score>=80?'pill-a':rem.score>=60?'pill-b':'pill-c';
+        html += `<div style="margin-bottom:14px;">
+          <div style="font-weight:800;font-size:13px;color:var(--navy);margin-bottom:8px;">
+            💪 보충학습 Round ${rem.round}
+            <span class="score-pill ${rCls}" style="font-size:11px;margin-left:6px;">${rem.score}% (${rem.correct}/${rem.total})</span>
+          </div>`;
+
+        (rem.questionGroups || []).forEach(group => {
+          const srcQ = group.sourceQ;
+          html += `<div style="background:#f8f9ff;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;margin-bottom:10px;">`;
+          if (srcQ) {
+            html += `<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">📌 원본 틀린 문제: <b>Q${srcQ.num||''}</b> ${(srcQ.text||'').substring(0,60)}${(srcQ.text||'').length>60?'...':''}</div>`;
+          }
+          group.items.forEach((item, ii) => {
+            let statusTag = '';
+            if (item.ok && !item.hintUsed)      statusTag = `<span style="background:#dcfce7;color:#166534;font-size:10px;font-weight:800;padding:2px 7px;border-radius:99px;">첫 시도 정답</span>`;
+            else if (item.answeredAfterHint)    statusTag = `<span style="background:#fef3c7;color:#92400e;font-size:10px;font-weight:800;padding:2px 7px;border-radius:99px;">힌트 후 정답</span>`;
+            else if (item.showedAnswer)         statusTag = `<span style="background:#fee2e2;color:#991b1b;font-size:10px;font-weight:800;padding:2px 7px;border-radius:99px;">정답 공개됨</span>`;
+            else                                statusTag = `<span style="background:#fee2e2;color:#991b1b;font-size:10px;font-weight:800;padding:2px 7px;border-radius:99px;">오답</span>`;
+
+            const ansInfo = item.ok ? '' : `
+              <div style="margin-top:3px;font-size:11px;color:var(--muted);">
+                <span>학생 답안: <b style="color:var(--red);">${item.studentAnswer}</b></span>
+                <span style="margin-left:10px;">정답: <b style="color:var(--green);">${item.answer}</b></span>
+              </div>`;
+            html += `<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-top:1px solid #e2e8f0;font-size:12px;">
+              <span>${item.ok?'✅':'❌'}</span>
+              <div style="flex:1;">유사문제 ${ii+1}. ${item.text}${ansInfo}</div>
+              <span style="flex-shrink:0;">${statusTag}</span>
+            </div>`;
+          });
+          html += `</div>`;
+        });
+        html += `</div>`;
+      });
+    }
+
     // 카톡 메시지 표시 (이미 생성된 경우)
     if (r.kakaoMsg) {
-      html += `<div style="margin-top:8px;">
-        <div style="font-weight:800;font-size:12px;color:var(--navy);margin-bottom:4px;">💬 선생님 메시지</div>
+      html += `<div style="margin-top:12px;">
+        <div style="font-weight:800;font-size:13px;color:var(--navy);margin-bottom:4px;">💬 선생님 메시지</div>
         <div class="report-msg-box" style="font-size:13px;">${r.kakaoMsg}</div>
       </div>`;
     }
 
-    html += `</div>`;
-    if (ri < data.results.length - 1) html += `<hr style="border:none;border-top:1px solid var(--border);margin:12px 0;">`;
+    html += `</div><hr style="border:none;border-top:2px solid var(--border);margin:20px 0;">`;
   });
 
   html += `</div>`;
@@ -2925,6 +3025,28 @@ function buildReportDataForStudent(studentId, period, store) {
         const pqs = round.practiceQuestions || [];
         const pas = round.practiceAnswers || {};
         const pc = pqs.filter(q=>q && pas[q.id]===q.answer).length;
+
+        // 원본 틀린 문제별로 유사문제 그룹화
+        const wrongQMap = {};
+        (round.wrongQuestions || []).forEach(wq => { wrongQMap[wq.id] = wq; });
+
+        // sourceQId 기준으로 유사문제 묶기
+        const groups = {};
+        pqs.forEach(pq => {
+          const src = pq.sourceQId || 'unknown';
+          if (!groups[src]) groups[src] = { sourceQ: wrongQMap[src], items: [] };
+          const hintAttempt = (round.practiceHintAttempts || {})[pq.id] || 0;
+          groups[src].items.push({
+            text: pq.text,
+            answer: pq.answer,
+            studentAnswer: pas[pq.id] || '(no answer)',
+            ok: pq && pas[pq.id] === pq.answer,
+            hintUsed: hintAttempt >= 1,
+            answeredAfterHint: hintAttempt === 99 || (hintAttempt >= 1 && pas[pq.id] === pq.answer),
+            showedAnswer: hintAttempt === 2 && pas[pq.id] !== pq.answer
+          });
+        });
+
         remRounds.push({
           round: ri+1,
           total: pqs.length,
@@ -2933,7 +3055,8 @@ function buildReportDataForStudent(studentId, period, store) {
           questions: pqs.map(q=>({
             text: (q.text||'').substring(0,50),
             ok: q && pas[q.id]===q.answer
-          }))
+          })),
+          questionGroups: Object.values(groups)
         });
       });
     }
@@ -2946,6 +3069,14 @@ function buildReportDataForStudent(studentId, period, store) {
       total: autoQs.length,
       wrongCount: wrongQs.length,
       wrongQs: wrongQs.map((q,i)=>({num:i+1, text:q.text.substring(0,60)})),
+      allQuestions: autoQs.map(q => ({
+        num: q.num,
+        text: q.text,
+        type: q.type,
+        answer: q.answer,
+        studentAnswer: sub.answers[q.id] || '(no answer)',
+        ok: sub.answers[q.id] === q.answer
+      })),
       weakAreas: sub.reportData?.weakAreas || detectWeakAreas(wrongQs),
       remediation: remRounds,
       submittedAt: sub.submitTime,
@@ -3005,24 +3136,64 @@ function showTeacherReport(studentId) {
       </div>`;
     }
 
-    if (r.wrongQs?.length > 0) {
-      html += `<div style="margin-bottom:12px;">
-        <div style="font-weight:800;font-size:13px;color:var(--navy);margin-bottom:6px;">❌ 틀린 문제</div>
-        ${r.wrongQs.map(q=>`<div class="report-rem-q wrong">Q${q.num}. ${q.text}</div>`).join('')}
-      </div>`;
-    }
-
-    if (r.remediation.length > 0) {
-      html += `<div style="margin-bottom:12px;">
-        <div style="font-weight:800;font-size:13px;color:var(--navy);margin-bottom:8px;">💪 보충학습 결과</div>`;
-      r.remediation.forEach(rem => {
-        const rCls = rem.score>=80?'pill-a':rem.score>=60?'pill-b':'pill-c';
-        html += `<div class="report-rem-round">
-          <div class="report-rem-round-title">Practice Round ${rem.round} — <span class="score-pill ${rCls}" style="font-size:11px;">${rem.score}%</span> (${rem.correct}/${rem.total})</div>
-          ${rem.questions.map(q=>`<div class="report-rem-q ${q.ok?'ok':'wrong'}">${q.ok?'✅':'❌'} ${q.text}</div>`).join('')}
+    if (r.allQuestions?.length > 0) {
+      html += `<div style="margin-bottom:14px;">
+        <div style="font-weight:800;font-size:13px;color:var(--navy);margin-bottom:8px;">📋 전체 문제</div>`;
+      r.allQuestions.forEach(q => {
+        const icon = q.ok ? '✅' : '❌';
+        const bg = q.ok ? '#f0fdf4' : '#fff5f5';
+        const border = q.ok ? 'var(--green)' : 'var(--red)';
+        const ans = q.ok ? '' : `
+            <div style="margin-top:4px;font-size:11px;color:var(--muted);">
+              <span>학생 답안: <b style="color:var(--red);">${q.studentAnswer}</b></span>
+              <span style="margin-left:10px;">정답: <b style="color:var(--green);">${q.answer}</b></span>
+            </div>`;
+        html += `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 12px;
+          background:${bg};border-left:3px solid ${border};border-radius:8px;margin-bottom:6px;font-size:13px;">
+          <span style="flex-shrink:0;">${icon}</span>
+          <div><b>Q${q.num}.</b> ${q.text}${ans}</div>
         </div>`;
       });
       html += `</div>`;
+    }
+
+    if (r.remediation.length > 0) {
+      r.remediation.forEach(rem => {
+        const rCls = rem.score>=80?'pill-a':rem.score>=60?'pill-b':'pill-c';
+        html += `<div style="margin-bottom:14px;">
+          <div style="font-weight:800;font-size:13px;color:var(--navy);margin-bottom:8px;">
+            💪 보충학습 Round ${rem.round}
+            <span class="score-pill ${rCls}" style="font-size:11px;margin-left:6px;">${rem.score}% (${rem.correct}/${rem.total})</span>
+          </div>`;
+
+        (rem.questionGroups || []).forEach(group => {
+          const srcQ = group.sourceQ;
+          html += `<div style="background:#f8f9ff;border:1px solid #e2e8f0;border-radius:10px;padding:10px 14px;margin-bottom:10px;">`;
+          if (srcQ) {
+            html += `<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">📌 원본 틀린 문제: <b>Q${srcQ.num||''}</b> ${(srcQ.text||'').substring(0,60)}${(srcQ.text||'').length>60?'...':''}</div>`;
+          }
+          group.items.forEach((item, ii) => {
+            let statusTag = '';
+            if (item.ok && !item.hintUsed)      statusTag = `<span style="background:#dcfce7;color:#166534;font-size:10px;font-weight:800;padding:2px 7px;border-radius:99px;">첫 시도 정답</span>`;
+            else if (item.answeredAfterHint)    statusTag = `<span style="background:#fef3c7;color:#92400e;font-size:10px;font-weight:800;padding:2px 7px;border-radius:99px;">힌트 후 정답</span>`;
+            else if (item.showedAnswer)         statusTag = `<span style="background:#fee2e2;color:#991b1b;font-size:10px;font-weight:800;padding:2px 7px;border-radius:99px;">정답 공개됨</span>`;
+            else                                statusTag = `<span style="background:#fee2e2;color:#991b1b;font-size:10px;font-weight:800;padding:2px 7px;border-radius:99px;">오답</span>`;
+
+            const ansInfo = item.ok ? '' : `
+              <div style="margin-top:3px;font-size:11px;color:var(--muted);">
+                <span>학생 답안: <b style="color:var(--red);">${item.studentAnswer}</b></span>
+                <span style="margin-left:10px;">정답: <b style="color:var(--green);">${item.answer}</b></span>
+              </div>`;
+            html += `<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-top:1px solid #e2e8f0;font-size:12px;">
+              <span>${item.ok?'✅':'❌'}</span>
+              <div style="flex:1;">유사문제 ${ii+1}. ${item.text}${ansInfo}</div>
+              <span style="flex-shrink:0;">${statusTag}</span>
+            </div>`;
+          });
+          html += `</div>`;
+        });
+        html += `</div>`;
+      });
     }
 
     // ── 카톡 메시지 생성 버튼 ──
@@ -3259,22 +3430,33 @@ function dismissVerification() { /* auto-applied now */ }
 
 // ── REMEDIATION: EXPLANATIONS ───────────
 async function generateExplanationsForWrong(wrongQs, year) {
-  const prompt = `You are a math teacher. A Year ${year} student got the following questions wrong.
-For each question, give a SHORT explanation (1-2 sentences max) in English. Just explain the key idea or the correct method briefly.
+  const lines = wrongQs.map(q => {
+    let s = `- ID:${q.id} | Question: ${q.text} | Student answer: ${q.studentAnswer} | Correct answer: ${q.answer}`;
+    if (q.type === 'mc' && q.options) s += ` | Options: ${q.options.join(', ')}`;
+    return s;
+  }).join('\n');
 
-IMPORTANT: Return ONLY a JSON array. Format:
-[{"qId":"q0","explanation":"Brief 1-2 sentence explanation"}]
+  const prompt = `You are a math teacher. A Year ${year} student got these questions wrong.
+For each question provide exactly two things:
+1. "hint": ONE sentence guiding the student toward the answer WITHOUT revealing it. Do not mention the correct answer or give away numbers.
+2. "explanation": 1-2 sentences that clearly explain the correct method AND state the correct answer.
+
+Return ONLY a valid JSON array, no other text:
+[{"qId":"q0","hint":"Think about which operation combines equal groups...","explanation":"To find the total, multiply the number of groups by items per group. 3 x 4 = 12."}]
 
 Wrong questions:
-${wrongQs.map(q => `- ID:${q.id} | Question: ${q.text} | Student answer: ${q.studentAnswer} | Correct answer: ${q.answer}${q.type==='mc'&&q.options?' | Options: '+q.options.join(', '):''}`)
-.join('\n')}`;
+${lines}`;
 
   const raw = await callAI(prompt);
   const result = extractJSON(raw);
-  if (!result) throw new Error('Failed to generate explanations');
-  const map = {};
-  result.forEach(r => { map[r.qId] = r.explanation; });
-  return map;
+  if (!result) throw new Error('Failed to generate hints and explanations');
+  const hints = {};
+  const explanations = {};
+  result.forEach(r => {
+    hints[r.qId] = r.hint || '';
+    explanations[r.qId] = r.explanation || '';
+  });
+  return { hints, explanations };
 }
 
 // ── REMEDIATION: PRACTICE QUESTIONS ─────
@@ -3393,6 +3575,7 @@ async function startRemediation(setIdx) {
   if (!sub?.submitted) return;
 
   const rem = getRemediation(sub);
+  if (rem.finalDone) { renderFinalReport(setIdx); return; }
   const roundIdx = rem.currentRound + 1;
 
   // Determine which questions to remediate
@@ -3418,13 +3601,16 @@ async function startRemediation(setIdx) {
   </div></div>`;
 
   try {
-    const explanations = await generateExplanationsForWrong(wrongQs, currentUser.year);
+    const aiResult = await generateExplanationsForWrong(wrongQs, currentUser.year);
 
     rem.currentRound = roundIdx;
     rem.rounds[roundIdx] = {
       wrongQIds: wrongQs.map(q => q.id),
       wrongQuestions: wrongQs,
-      explanations: explanations,
+      hints: aiResult.hints,
+      explanations: aiResult.explanations,
+      hintAttempts: {},
+      hintAnswers: {},
       explanationRead: false,
       practiceQuestions: [],
       practiceAnswers: {},
@@ -3452,28 +3638,199 @@ function renderRemediationExplanation(setIdx, roundIdx) {
   const rem = getRemediation(sub);
   const round = rem.rounds[roundIdx];
   if (!round) return;
+  if (!round.hintAttempts) round.hintAttempts = {};
+  if (!round.hintAnswers) round.hintAnswers = {};
 
+  const qs = round.wrongQuestions;
+  const total = qs.length;
+
+  // hintQIdx가 범위를 벗어나면 보정
+  if (hintQIdx >= total) hintQIdx = total - 1;
+  if (hintQIdx < 0) hintQIdx = 0;
+
+  const q = qs[hintQIdx];
+  const attempts = round.hintAttempts[q.id] || 0;
+  const hint = (round.hints || {})[q.id] || '';
+  const expl = (round.explanations || {})[q.id] || '';
+  const isSolved = attempts === 99;
+  const letters = ['A','B','C','D','E'];
   const roundLabel = roundIdx === 0 ? 'Homework' : `Practice Round ${roundIdx}`;
-  let html = `<div class="exam-wrap">
-    <div class="remediation-section">
-      <div class="remediation-title">📖 Explanations for Wrong Answers <span class="round-badge">${roundLabel}</span></div>
-      <div class="remediation-sub">Read the explanations carefully. You got ${round.wrongQuestions.length} question${round.wrongQuestions.length>1?'s':''} wrong.</div>`;
 
-  round.wrongQuestions.forEach(q => {
-    const expl = round.explanations[q.id] || 'Explanation not available.';
-    html += `<div class="explanation-card">
+  // 전체 진행 상황 계산
+  const doneCount = qs.filter(q2 => {
+    const a = round.hintAttempts[q2.id] || 0;
+    return a === 99 || a >= 2;
+  }).length;
+  const allDone = doneCount === total;
+
+  // 진행 표시바
+  const progressBar = qs.map((q2, i) => {
+    const a = round.hintAttempts[q2.id] || 0;
+    const cls = (a === 99 || a >= 2) ? 'done' : a >= 1 ? 'active' : '';
+    const isCur = i === hintQIdx ? 'style="outline:2px solid var(--navy);outline-offset:2px;"' : '';
+    return `<div class="hint-progress-step ${cls}" ${isCur}></div>`;
+  }).join('');
+
+  // 현재 문제 카드 렌더링
+  let cardHtml = '';
+
+  if (isSolved) {
+    cardHtml = `<div class="hint-card stage-solved">
+      <div class="hint-stage-badge s-ok">✅ Solved!</div>
       <div class="explanation-q-title">Q. ${q.text}</div>
-      <div class="explanation-q-meta">Your answer: <span style="color:var(--red);font-weight:800;">${q.studentAnswer}</span> → Correct answer: <span style="color:var(--green);font-weight:800;">${q.answer}</span></div>
-      <div class="explanation-body">${expl}</div>
+      <div style="margin-top:8px;font-size:13px;color:#166534;font-weight:700;">
+        Great job! Correct answer: <span style="background:#dcfce7;padding:2px 8px;border-radius:6px;">${q.answer}</span>
+      </div>
+      <div style="margin-top:8px;font-size:13px;color:#555;line-height:1.7;">${expl}</div>
     </div>`;
-  });
+  } else if (attempts === 0) {
+    cardHtml = `<div class="hint-card">
+      <div class="hint-stage-badge s1">Step 1 of 3</div>
+      <div class="explanation-q-title">Q. ${q.text}</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:4px;margin-bottom:12px;">Your answer: <span style="color:var(--red);font-weight:800;">${q.studentAnswer}</span></div>
+      <button class="hint-get-btn" onclick="showHintStage(${setIdx},${roundIdx},'${q.id}',1)">💡 Get a Hint</button>
+    </div>`;
+  } else if (attempts === 1) {
+    let retryHtml = '';
+    if (q.type === 'mc' && q.options) {
+      retryHtml = `<div class="options">${q.options.map((opt, i) => {
+        const letter = letters[i];
+        return `<button class="opt-btn" onclick="answerHintRetry(${setIdx},${roundIdx},'${q.id}','${letter}')">${letter}. ${opt}</button>`;
+      }).join('')}</div>`;
+    } else if (q.type === 'ox') {
+      retryHtml = `<div class="ox-row">
+        <button class="ox-btn" onclick="answerHintRetry(${setIdx},${roundIdx},'${q.id}','O')">⭕ True</button>
+        <button class="ox-btn" onclick="answerHintRetry(${setIdx},${roundIdx},'${q.id}','X')">❌ False</button>
+      </div>`;
+    } else {
+      retryHtml = `<div style="display:flex;gap:8px;margin-top:4px;">
+        <input class="sa-input" id="hr_${q.id}" type="text" placeholder="Try again...">
+        <button class="btn-sm btn-navy" onclick="answerHintRetry(${setIdx},${roundIdx},'${q.id}',document.getElementById('hr_${q.id}').value)">Submit</button>
+      </div>`;
+    }
+    cardHtml = `<div class="hint-card stage-hint">
+      <div class="hint-stage-badge s1">💡 Hint — try again</div>
+      <div class="explanation-q-title">Q. ${q.text}</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:4px;margin-bottom:10px;">Your answer: <span style="color:var(--red);font-weight:800;">${q.studentAnswer}</span></div>
+      <div class="hint-box">💡 ${hint}</div>
+      <div class="hint-retry-section">
+        <div class="hint-retry-label">Try again — choose your answer:</div>
+        ${retryHtml}
+      </div>
+    </div>`;
+  } else if (attempts >= 2) {
+    let retryHtml2 = '';
+    if (q.type === 'mc' && q.options) {
+      retryHtml2 = `<div class="options">${q.options.map((opt, i) => {
+        const letter = letters[i];
+        return `<button class="opt-btn" onclick="answerHintRetry(${setIdx},${roundIdx},'${q.id}','${letter}')">${letter}. ${opt}</button>`;
+      }).join('')}</div>`;
+    } else if (q.type === 'ox') {
+      retryHtml2 = `<div class="ox-row">
+        <button class="ox-btn" onclick="answerHintRetry(${setIdx},${roundIdx},'${q.id}','O')">⭕ True</button>
+        <button class="ox-btn" onclick="answerHintRetry(${setIdx},${roundIdx},'${q.id}','X')">❌ False</button>
+      </div>`;
+    } else {
+      retryHtml2 = `<div style="display:flex;gap:8px;margin-top:4px;">
+        <input class="sa-input" id="hr2_${q.id}" type="text" placeholder="One more try...">
+        <button class="btn-sm btn-navy" onclick="answerHintRetry(${setIdx},${roundIdx},'${q.id}',document.getElementById('hr2_${q.id}').value)">Submit</button>
+      </div>`;
+    }
+    cardHtml = `<div class="hint-card stage-explain">
+      <div class="hint-stage-badge s2">📖 Explanation — last try</div>
+      <div class="explanation-q-title">Q. ${q.text}</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:4px;margin-bottom:10px;">Your answer: <span style="color:var(--red);font-weight:800;">${q.studentAnswer}</span></div>
+      <div class="concept-box">📚 ${expl}</div>
+      <div class="hint-retry-section">
+        <div class="hint-retry-label">One more chance — choose your answer:</div>
+        ${retryHtml2}
+      </div>
+    </div>`;
+  }
 
-  html += `<button class="btn-confirm-read" onclick="onExplanationRead(${setIdx},${roundIdx})">
-    ✅ I've Read Everything — Start Practice
-  </button>
-  </div></div>`;
+  // 이전/다음 버튼
+  const prevBtn = hintQIdx > 0
+    ? `<button class="btn-nav" onclick="hintQIdx=${hintQIdx-1};renderRemediationExplanation(${setIdx},${roundIdx})">← Prev</button>`
+    : `<button class="btn-nav" disabled>← Prev</button>`;
+
+  const curDone = attempts === 99 || attempts >= 2;
+  const nextBtn = hintQIdx < total - 1
+    ? `<button class="btn-nav" ${curDone ? '' : 'disabled'} onclick="hintQIdx=${hintQIdx+1};renderRemediationExplanation(${setIdx},${roundIdx})">Next →</button>`
+    : '';
+
+  const finishBtn = allDone
+    ? `<button class="all-done-btn" onclick="hintQIdx=0;onExplanationRead(${setIdx},${roundIdx})">💪 Start Practice Questions</button>`
+    : (hintQIdx === total - 1 && curDone)
+      ? `<button class="all-done-btn" disabled>Reviewing... (${doneCount}/${total} done)</button>`
+      : '';
+
+  const html = `<div class="exam-wrap">
+    <div class="remediation-section">
+      <div class="remediation-title">💡 Review Wrong Answers <span class="round-badge">${roundLabel}</span></div>
+      <div class="remediation-sub" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>Question <b>${hintQIdx + 1}</b> of <b>${total}</b></span>
+        <span style="font-size:12px;color:var(--muted);">${doneCount}/${total} reviewed</span>
+      </div>
+      <div class="hint-progress-bar" style="margin-top:10px;">${progressBar}</div>
+      ${cardHtml}
+      <div class="q-nav" style="margin-top:16px;justify-content:space-between;">
+        ${prevBtn}
+        ${nextBtn}
+      </div>
+      ${finishBtn}
+    </div>
+  </div>`;
 
   document.getElementById('mainContent').innerHTML = html;
+}
+
+function showHintStage(setIdx, roundIdx, qId, stage) {
+  const store = getStore();
+  const p = studentPeriod || store.currentPeriod;
+  const key = subKey(currentUser.id, p, setIdx);
+  const sub = store.submissions[key];
+  const rem = getRemediation(sub);
+  const round = rem.rounds[roundIdx];
+  if (!round.hintAttempts) round.hintAttempts = {};
+  round.hintAttempts[qId] = stage;
+  saveStore(store);
+  renderRemediationExplanation(setIdx, roundIdx);
+}
+
+function answerHintRetry(setIdx, roundIdx, qId, selectedAnswer) {
+  if (!selectedAnswer || !selectedAnswer.toString().trim()) return;
+  const store = getStore();
+  const p = studentPeriod || store.currentPeriod;
+  const key = subKey(currentUser.id, p, setIdx);
+  const sub = store.submissions[key];
+  const rem = getRemediation(sub);
+  const round = rem.rounds[roundIdx];
+  if (!round.hintAttempts) round.hintAttempts = {};
+  if (!round.hintAnswers) round.hintAnswers = {};
+
+  const ans = selectedAnswer.toString().trim().toUpperCase();
+  round.hintAnswers[qId] = ans;
+
+  const origQ = round.wrongQuestions.find(q => q.id === qId);
+  const correct = origQ?.answer?.toString().toUpperCase();
+
+  if (ans === correct) {
+    round.hintAttempts[qId] = 99;
+    saveStore(store);
+    // 정답이면 잠깐 후 자동으로 다음 문제로 이동
+    const total = round.wrongQuestions.length;
+    if (hintQIdx < total - 1) {
+      setTimeout(() => {
+        hintQIdx++;
+        renderRemediationExplanation(setIdx, roundIdx);
+      }, 800);
+    }
+  } else {
+    const cur = round.hintAttempts[qId] || 0;
+    round.hintAttempts[qId] = Math.min(cur + 1, 2);
+    saveStore(store);
+  }
+  renderRemediationExplanation(setIdx, roundIdx);
 }
 
 async function onExplanationRead(setIdx, roundIdx) {
@@ -3484,36 +3841,40 @@ async function onExplanationRead(setIdx, roundIdx) {
   const rem = getRemediation(sub);
   const round = rem.rounds[roundIdx];
   round.explanationRead = true;
+
+  const stillWrong = round.wrongQuestions.filter(q => {
+    const a = round.hintAttempts?.[q.id] || 0;
+    return a !== 99;
+  });
+
   saveStore(store);
 
-  // Check if this is the 4th round (index 3) — final report instead of more practice
-  if (roundIdx >= 2) {
+  if (roundIdx >= 2 || stillWrong.length === 0) {
     rem.finalDone = true;
-    rem.finalWrongQuestions = round.wrongQuestions;
+    rem.finalWrongQuestions = stillWrong;
     rem.finalExplanations = round.explanations;
     saveStore(store);
     renderFinalReport(setIdx);
     return;
   }
 
-  // Generate practice questions
   const mainEl = document.getElementById('mainContent');
   mainEl.innerHTML = `<div class="exam-wrap"><div class="ai-loading">
     <div class="ai-spinner"></div>
     <div>Making practice questions just for you! 😊</div>
-    <div class="ai-sub">${round.wrongQuestions.length} wrong question${round.wrongQuestions.length>1?'s':''} × ${roundIdx===0?3:2} practice each</div>
+    <div class="ai-sub">${stillWrong.length} question${stillWrong.length > 1 ? 's' : ''} × ${roundIdx === 0 ? 3 : 2} practice each</div>
   </div></div>`;
 
   try {
-    const practiceQs = await generatePracticeQuestions(round.wrongQuestions, currentUser.year, roundIdx);
+    const practiceQs = await generatePracticeQuestions(stillWrong, currentUser.year, roundIdx);
     round.practiceQuestions = practiceQs;
     saveStore(store);
     renderPracticeSet(setIdx, roundIdx);
-  } catch(e) {
+  } catch (e) {
     mainEl.innerHTML = `<div class="exam-wrap">
       <div style="padding:40px;text-align:center;">
         <div style="font-size:36px;margin-bottom:12px;">⚠️</div>
-        <div style="font-weight:800;color:#991b1b;">Practice question generation error: ${e.message}</div>
+        <div style="font-weight:800;color:#991b1b;">Error: ${e.message}</div>
         <button class="btn-sm btn-navy" style="margin-top:16px;" onclick="currentSetIdx=${setIdx};renderStudent()">← Go Back</button>
       </div>
     </div>`;
@@ -3522,6 +3883,7 @@ async function onExplanationRead(setIdx, roundIdx) {
 
 // ── PRACTICE SET RENDERING ──────────────
 let practiceQIdx = 0;
+let hintQIdx = 0;
 
 function renderPracticeSet(setIdx, roundIdx) {
   const store = getStore();
@@ -3592,24 +3954,72 @@ function renderPracticeSet(setIdx, roundIdx) {
     </div>
     <div class="qc-text">${q.text}</div>`;
 
-  if (q.type==='mc' && q.options) {
-    html += `<div class="options">`;
-    q.options.forEach((opt,i) => {
-      const letter = letters[i];
-      const sel = userAns===letter?'sel':'';
-      html += `<button class="opt-btn ${sel}" onclick="savePracticeAnswer(${setIdx},${roundIdx},'${q.id}','${letter}')">`
-        + `<span class="opt-circle">${letter}</span>${opt}</button>`;
-    });
-    html += `</div>`;
-  } else if (q.type==='ox') {
-    const oSel=userAns==='O'?'sel-o':'', xSel=userAns==='X'?'sel-x':'';
-    html += `<div class="ox-row">
-      <button class="ox-btn ${oSel}" onclick="savePracticeAnswer(${setIdx},${roundIdx},'${q.id}','O')">⭕ True</button>
-      <button class="ox-btn ${xSel}" onclick="savePracticeAnswer(${setIdx},${roundIdx},'${q.id}','X')">❌ False</button>
+  // 이 문제에 대한 힌트 상태
+  const pHints = round.practiceHints || {};
+  const pHintAttempts = round.practiceHintAttempts || {};
+  const pHintData = round.practiceHintData || {};
+  const pAttempt = pHintAttempts[q.id] || 0;
+  const pSolved = pAttempt === 99;
+
+  if (pSolved) {
+    // 정답 맞춤 — 초록 피드백 표시
+    html += `<div style="background:#dcfce7;border-radius:10px;padding:12px 16px;font-size:14px;font-weight:700;color:#166534;margin-top:8px;">
+      ✅ Correct! Well done!
     </div>`;
-  } else {
-    html += `<input class="sa-input" id="psa_${q.id}" type="text" placeholder="Enter your answer..."
-      value="${userAns||''}" oninput="savePracticeAnswerSA(${setIdx},${roundIdx},'${q.id}',this.value)">`;
+  } else if (pAttempt === 0) {
+    // 아직 답 선택 전 — 일반 선택지
+    if (q.type==='mc' && q.options) {
+      html += `<div class="options">`;
+      q.options.forEach((opt,i) => {
+        const letter = letters[i];
+        html += `<button class="opt-btn" onclick="practiceAnswerWithHint('${q.id}','${letter}',${setIdx},${roundIdx})">
+          <span class="opt-circle">${letter}</span>${opt}
+        </button>`;
+      });
+      html += `</div>`;
+    } else if (q.type==='ox') {
+      html += `<div class="ox-row">
+        <button class="ox-btn" onclick="practiceAnswerWithHint('${q.id}','O',${setIdx},${roundIdx})">⭕ True</button>
+        <button class="ox-btn" onclick="practiceAnswerWithHint('${q.id}','X',${setIdx},${roundIdx})">❌ False</button>
+      </div>`;
+    } else {
+      html += `<div style="display:flex;gap:8px;margin-top:4px;">
+        <input class="sa-input" id="psa_${q.id}" type="text" placeholder="Enter your answer...">
+        <button class="btn-sm btn-navy" onclick="practiceAnswerWithHint('${q.id}',document.getElementById('psa_${q.id}').value,${setIdx},${roundIdx})">Submit</button>
+      </div>`;
+    }
+  } else if (pAttempt === 1) {
+    // 1번 틀림 — 힌트 표시 후 재시도
+    const hintText = pHintData[q.id] || '';
+    let retryHtml = '';
+    if (q.type==='mc' && q.options) {
+      retryHtml = `<div class="options">${q.options.map((opt,i) => {
+        const letter = letters[i];
+        return `<button class="opt-btn" onclick="practiceAnswerWithHint('${q.id}','${letter}',${setIdx},${roundIdx})"><span class="opt-circle">${letter}</span>${opt}</button>`;
+      }).join('')}</div>`;
+    } else if (q.type==='ox') {
+      retryHtml = `<div class="ox-row">
+        <button class="ox-btn" onclick="practiceAnswerWithHint('${q.id}','O',${setIdx},${roundIdx})">⭕ True</button>
+        <button class="ox-btn" onclick="practiceAnswerWithHint('${q.id}','X',${setIdx},${roundIdx})">❌ False</button>
+      </div>`;
+    } else {
+      retryHtml = `<div style="display:flex;gap:8px;margin-top:4px;">
+        <input class="sa-input" id="psa2_${q.id}" type="text" placeholder="Try again...">
+        <button class="btn-sm btn-navy" onclick="practiceAnswerWithHint('${q.id}',document.getElementById('psa2_${q.id}').value,${setIdx},${roundIdx})">Submit</button>
+      </div>`;
+    }
+    html += `<div class="hint-box" style="margin-top:10px;">💡 ${hintText}</div>
+    <div class="hint-retry-section">
+      <div class="hint-retry-label">Try again with the hint:</div>
+      ${retryHtml}
+    </div>`;
+  } else if (pAttempt >= 2) {
+    // 2번 틀림 — 정답 공개
+    const explText = pHintData[q.id + '_expl'] || '';
+    html += `<div class="concept-box" style="margin-top:10px;">📚 ${explText}</div>
+    <div style="background:#fff3cd;border-radius:10px;padding:10px 14px;margin-top:8px;font-size:13px;font-weight:700;color:#856404;">
+      Correct answer: ${q.answer}
+    </div>`;
   }
 
   html += `</div><div class="nav-row">
@@ -3637,6 +4047,86 @@ function savePracticeAnswer(setIdx, roundIdx, qid, val) {
   round.practiceAnswers[qid] = val;
   saveStore(store);
   setTimeout(() => { practiceQIdx++; renderPracticeSet(setIdx, roundIdx); }, 300);
+}
+
+async function practiceAnswerWithHint(qId, selectedAnswer, setIdx, roundIdx) {
+  if (!selectedAnswer || !selectedAnswer.toString().trim()) return;
+  const store = getStore();
+  const p = studentPeriod || store.currentPeriod;
+  const key = subKey(currentUser.id, p, setIdx);
+  const sub = store.submissions[key];
+  const rem = getRemediation(sub);
+  const round = rem.rounds?.[roundIdx];
+  if (!round) return;
+
+  if (!round.practiceHintAttempts) round.practiceHintAttempts = {};
+  if (!round.practiceHintData) round.practiceHintData = {};
+  if (!round.practiceAnswers) round.practiceAnswers = {};
+
+  const ans = selectedAnswer.toString().trim().toUpperCase();
+  round.practiceAnswers[qId] = ans;
+
+  const q = (round.practiceQuestions || []).find(q2 => q2.id === qId);
+  const correct = q?.answer?.toString().toUpperCase();
+  const curAttempt = round.practiceHintAttempts[qId] || 0;
+
+  if (ans === correct) {
+    round.practiceHintAttempts[qId] = 99;
+    saveStore(store);
+    // 정답이면 0.8초 후 다음 문제
+    setTimeout(() => {
+      practiceQIdx++;
+      renderPracticeSet(setIdx, roundIdx);
+    }, 800);
+    renderPracticeSet(setIdx, roundIdx);
+    return;
+  }
+
+  // 틀렸을 때
+  if (curAttempt === 0) {
+    // 1번 틀림 → 힌트 생성
+    round.practiceHintAttempts[qId] = 1;
+    saveStore(store);
+    if (!round.practiceHintData[qId]) {
+      // AI로 힌트 생성
+      try {
+        const hintResult = await generatePracticeHint(q, currentUser.year);
+        round.practiceHintData[qId] = hintResult.hint;
+        round.practiceHintData[qId + '_expl'] = hintResult.explanation;
+        saveStore(store);
+      } catch(e) {
+        round.practiceHintData[qId] = 'Think carefully about the method needed for this type of problem.';
+        round.practiceHintData[qId + '_expl'] = `The correct answer is ${q.answer}.`;
+        saveStore(store);
+      }
+    }
+  } else if (curAttempt === 1) {
+    // 2번 틀림 → 정답 공개
+    round.practiceHintAttempts[qId] = 2;
+    saveStore(store);
+  } else {
+    // 3번 이상 → 그냥 다음으로
+    round.practiceHintAttempts[qId] = 2;
+    saveStore(store);
+  }
+  renderPracticeSet(setIdx, roundIdx);
+}
+
+async function generatePracticeHint(q, year) {
+  const prompt = `You are a math teacher. A Year ${year} student got this practice question wrong.
+Provide:
+1. "hint": ONE sentence guiding toward the answer WITHOUT revealing it.
+2. "explanation": 1-2 sentences explaining the correct method and stating the correct answer.
+
+Return ONLY JSON: {"hint":"...","explanation":"..."}
+
+Question: ${q.text}
+Correct answer: ${q.answer}${q.type==='mc'&&q.options?' | Options: '+q.options.join(', '):''}`;
+
+  const raw = await callAI(prompt);
+  const result = extractJSON(raw);
+  if (!result) return { hint: 'Think carefully about the method needed.', explanation: `The correct answer is ${q.answer}.` };
+  return { hint: result.hint || '', explanation: result.explanation || '' };
 }
 
 function savePracticeAnswerSA(setIdx, roundIdx, qid, val) {
