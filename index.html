@@ -729,7 +729,7 @@ function sha256js(str) {
     for(let j=0;j<64;j++){const S1=rightRotate(e,6)^rightRotate(e,11)^rightRotate(e,25);const ch=(e&f)^(~e&g);const t1=(hh+S1+ch+K[j]+w[j])&0xffffffff;const S0=rightRotate(a,2)^rightRotate(a,13)^rightRotate(a,22);const maj=(a&b)^(a&c)^(b&c);const t2=(S0+maj)&0xffffffff;hh=g;g=f;f=e;e=(d+t1)&0xffffffff;d=c;c=b;b=a;a=(t1+t2)&0xffffffff;}
     h=[h[0]+a,h[1]+b,h[2]+c,h[3]+d,h[4]+e,h[5]+f,h[6]+g,h[7]+hh].map(v=>v&0xffffffff);
   }
-  return h.map(v=>v.toString(16).padStart(8,'0')).join('');
+  return h.map(v=>(v>>>0).toString(16).padStart(8,'0')).join('');
 }
 function isHashed(pw) { return typeof pw === 'string' && /^[0-9a-f]{64}$/.test(pw); }
 
