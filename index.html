@@ -1181,7 +1181,7 @@ function renderTeacher() {
       <div style="display:flex;gap:8px;align-items:center;">
         <input id="topAIKey" type="password" placeholder="Paste API key here"
           style="padding:10px 14px;border:2px solid #d97706;border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-size:13px;width:220px;outline:none;">
-        <button class="btn-sm" style="background:#92400e;color:#fff;padding:10px 18px;" onclick="setAIKey(document.getElementById('topAIKey').value);if(getAIKey()){alert('✅ API Key saved!');renderTeacher();}else{alert('Please enter a key.');}">Save</button>
+        <button class="btn-sm" style="background:#92400e;color:#fff;padding:10px 18px;" onclick="setAIKey(document.getElementById('topAIKey').value);if(getAIKey()){showBackupToast('✅ API Key saved!');renderTeacher();}else{showBackupToast('⚠️ Please enter a key.');}">Save</button>
       </div>
     </div>` : ''}
     <div class="page-title">📋 Weekly Homework Management</div>
@@ -1822,7 +1822,7 @@ function renderTeacherSettings(store) {
             Get your key from <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--gold2);">Anthropic Console</a> → Paste here → Save
           </div>
         </div>
-        <button class="btn-sm btn-navy" onclick="setAIKey(document.getElementById('claudeKeyInput').value);alert('✅ API Key saved!');">Save API Key</button>
+        <button class="btn-sm btn-navy" onclick="setAIKey(document.getElementById('claudeKeyInput').value);showBackupToast('✅ API Key saved!');">Save API Key</button>
         ${getAIKey() ? '<span style="margin-left:8px;font-size:12px;color:var(--green);font-weight:700;">✅ Key configured</span>' : ''}
       </div>
       <div style="margin-top:16px;padding-top:16px;border-top:2px solid var(--border);">
