@@ -1154,6 +1154,7 @@ let editingSetIdx = null;      // -1=new set, 0+=editing existing set
 let editingCalcRanges = [];   // [{from, to, allowed}]
 
 function renderTeacher() {
+  closeModal();
   const store      = getStore();
   const p          = store.currentPeriod;
   const allStudents = store.users.filter(u => u.role==='student' && u.status !== 'inactive');
@@ -1825,7 +1826,7 @@ function renderTeacherSettings(store) {
             Get your key from <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--gold2);">Anthropic Console</a> → Paste here → Save
           </div>
         </div>
-        <button class="btn-sm btn-navy" onclick="setAIKey(document.getElementById('claudeKeyInput').value);showBackupToast('✅ API Key saved!');">Save API Key</button>
+        <button class="btn-sm btn-navy" onclick="setAIKey(document.getElementById('claudeKeyInput').value);showBackupToast('✅ API Key saved!');renderTeacher();">Save API Key</button>
         ${getAIKey() ? '<span style="margin-left:8px;font-size:12px;color:var(--green);font-weight:700;">✅ Key configured</span>' : ''}
       </div>
       <div style="margin-top:16px;padding-top:16px;border-top:2px solid var(--border);">
