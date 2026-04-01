@@ -204,7 +204,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .dot-set{background:var(--gold);}
 .dot-submitted{background:var(--green);}
 .status-text{font-size:13px;font-weight:700;color:var(--muted);}
-.sc-actions{display:flex;gap:8px;margin-top:14px;}
+.sc-actions{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap;}
+.sc-actions .btn-sm{font-size:12px;padding:6px 10px;min-width:0;flex:1 1 auto;}
 
 /* ── HOMEWORK EDITOR ── */
 .hw-editor{background:#fff;border-radius:var(--radius);padding:28px;box-shadow:0 2px 12px rgba(0,0,0,.08);margin-bottom:24px;border:2px solid var(--navy);}
@@ -432,15 +433,55 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .report-rem-q.wrong{background:#fff5f5;color:#991b1b;}
 
 @media(max-width:768px){
+  /* ── 로그인 화면: 위아래 배치 ── */
   #loginScreen{flex-direction:column;}
-  .login-left{padding:40px 24px 32px;flex:none;}
-  .login-right{flex:none;padding:32px 24px 40px;}
+  .login-left{padding:32px 16px 24px;flex:none;}
+  .login-right{flex:none;padding:24px 16px 32px;}
+  .login-crest-wrap{margin-bottom:16px;}
+  .login-crest{width:100px;height:100px;}
+  .login-title{font-size:24px;}
+  .login-sub-title{font-size:11px;letter-spacing:4px;}
+  .login-divider{margin:14px auto;}
+  .login-form-wrap{max-width:100%;}
+  .login-form-title{font-size:18px;}
   .login-contact-wrap{max-width:100%;}
   .contact-value{font-size:12px;}
-  .paste-area{grid-template-columns:1fr;}
-  .student-grid{grid-template-columns:1fr;}
-  .field-row{grid-template-columns:1fr;}
+  .login-left-test-wrap{margin-top:20px;}
+  .btn-level-test-big{font-size:20px;padding:20px 16px;}
+
+  /* ── 공통: 입력창 확대 방지 + 여백 ── */
+  input,select,textarea{font-size:16px!important;}
   .main{padding:16px;}
+  .topbar{padding:0 12px;height:52px;}
+  .topbar-logo{font-size:15px;}
+  .topbar-right{gap:8px;}
+  .topbar-user{font-size:11px;}
+  .btn-logout{padding:6px 10px;font-size:11px;}
+
+  /* ── 선생님 화면 ── */
+  .student-grid{grid-template-columns:1fr;}
+  .sc-actions{flex-wrap:wrap;}
+  .paste-area{grid-template-columns:1fr;}
+  .field-row{grid-template-columns:1fr;}
+  .page-title{font-size:20px;}
+  .week-bar{flex-wrap:wrap;gap:8px;padding:12px 14px;}
+
+  /* 테이블 가로 스크롤 */
+  .results-table{font-size:12px;display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap;}
+  .results-table td,.results-table th{padding:8px 10px;}
+  .settings-card{padding:16px;}
+
+  /* 버튼 최소 터치 영역 */
+  .btn-sm{min-height:44px;min-width:44px;padding:8px 12px!important;font-size:13px!important;}
+  .btn-login{min-height:48px;}
+  .role-tab{min-height:44px;}
+  .btn-level-test{min-height:48px;}
+
+  /* ── 학부모 화면 ── */
+  .parent-header{padding:18px 16px;gap:12px;flex-wrap:wrap;}
+  .parent-avatar{font-size:36px;}
+  .parent-child-name{font-size:20px;}
+  .parent-child-sub{font-size:12px;}
   .report-panel{padding:16px;}
   .report-score-row{gap:8px;}
   .report-score-card{min-width:80px;padding:12px 8px;}
@@ -451,8 +492,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   .report-msg-box{padding:14px;font-size:13px;}
   .report-history-item{flex-wrap:wrap;gap:8px;}
   .report-history-date{min-width:auto;}
-  .results-table{font-size:12px;}
-  .results-table td,.results-table th{padding:8px 10px;}
+
+  /* ── 모달 ── */
+  .modal-box{padding:16px;max-width:100vw;border-radius:14px;}
 }
 .hint-card{background:#f8f6ef;border-radius:14px;padding:20px;margin-bottom:14px;border-left:4px solid var(--gold);position:relative;}
 .hint-card.stage-hint{border-left-color:#f59e0b;background:#fffbeb;}
@@ -526,6 +568,47 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 /* ── TS 세트 카드 (학생 홈) ──────────────────── */
 .ts-set-card{background:#fff;border-radius:var(--radius);padding:22px 26px;box-shadow:0 2px 10px rgba(0,0,0,.06);display:flex;align-items:center;gap:18px;border:2px solid #2d4a8a;transition:all .2s;cursor:pointer;margin-bottom:14px;}
 .ts-set-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(45,74,138,.15);}
+
+/* ── PRINT STYLES ── */
+@media print {
+  body{background:#fff!important;color:#000!important;font-size:12pt;}
+  #loginScreen,#loadingOverlay,.topbar,.btn-logout,#btnBackupDownload,
+  .btn-copy-kakao,.btn-report,.modal-close,.btn-sm,
+  .btn-print-report,.btn-print-parent{display:none!important;}
+  .modal-bg{position:static!important;display:block!important;background:none!important;padding:0!important;overflow:visible!important;}
+  .modal-box{max-width:100%!important;max-height:none!important;overflow:visible!important;
+    box-shadow:none!important;border-radius:0!important;padding:0!important;border:none!important;}
+  .report-panel-title{font-size:18pt!important;color:#000!important;}
+  .report-panel-sub{font-size:10pt!important;color:#444!important;}
+  .report-student-header{background:#162040!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid;}
+  .report-score-row{break-inside:avoid;}
+  .report-score-card{background:#f5f5f5!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid;}
+  .report-score-card .big{font-size:22pt!important;}
+  .score-pill{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  div[style*="border-left:3px solid"]{break-inside:avoid;page-break-inside:avoid;}
+  div[style*="border-radius:10px"]{break-inside:avoid;page-break-inside:avoid;}
+  hr{border-top:1px solid #ccc!important;}
+  .print-header{display:flex!important;align-items:center;gap:12px;padding-bottom:12px;margin-bottom:16px;border-bottom:2px solid #162040;}
+  .print-header-logo{font-family:'Noto Serif KR',serif;font-size:16pt;font-weight:800;color:#162040;}
+  .print-header-logo span{color:#b8960c;}
+  .print-header-date{font-size:9pt;color:#666;margin-left:auto;}
+  /* ── parent view print ── */
+  #app{display:block!important;}
+  .main{padding:0!important;max-width:100%!important;}
+  .report-history,.btn-back,.q-nav{display:none!important;}
+  .account-mini,.info-card button{display:none!important;}
+  .parent-header{-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid;}
+  .info-card{box-shadow:none!important;border:1px solid #ddd!important;break-inside:avoid;page-break-inside:avoid;}
+  .report-panel{box-shadow:none!important;border:1px solid #ddd!important;page-break-inside:avoid;}
+  /* ── parent print header ── */
+  .parent-print-header{display:block!important;text-align:center;padding-bottom:12px;margin-bottom:16px;border-bottom:2px solid #162040;}
+  .parent-print-header-logo{font-family:'Noto Serif KR',serif;font-size:16pt;font-weight:800;color:#162040;}
+  .parent-print-header-logo span{color:#b8960c;}
+}
+@media not print {
+  .print-header{display:none!important;}
+  .parent-print-header{display:none!important;}
+}
 </style>
 </head>
 <body>
@@ -641,6 +724,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     </div>
     <div class="topbar-right">
       <div class="topbar-user" id="topbarUser"></div>
+      <button id="btnBackupDownload" class="btn-logout" style="display:none;background:rgba(212,175,55,.25);" onclick="manualBackupDownload()">📦 백업 다운로드</button>
       <button class="btn-logout" onclick="doLogout()">Log Out</button>
     </div>
   </div>
@@ -660,12 +744,25 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 //  DATA STORE
 // ═══════════════════════════════════════
 const STORE_KEY = 'solomon_hw_v3';
+const APP_VERSION = {
+  version: 'v2.4',
+  date: '2026-04-01',
+  note: 'deleteSet/출석/학부모/Year카드 테스트·퇴원 필터 완성'
+};
 let _pendingFbWrite = null;  // Firebase 연결 전 저장 대기열
+let _originalTeacher = null;
+window.isPreviewMode = false;
 
 function saveStore(d) {
+  if (window.isPreviewMode) return;
+  d.lastModified = Date.now();
   localStorage.setItem(STORE_KEY, JSON.stringify(d));
   if (window.fbReady && window.FB_REF) {
-    window.FB_REF.set(JSON.parse(JSON.stringify(d)));
+    window.FB_REF.set(JSON.parse(JSON.stringify(d))).catch(err => {
+      console.error('[Firebase] 저장 실패:', err);
+      _pendingFbWrite = JSON.parse(JSON.stringify(d));
+      showBackupToast('⚠️ Firebase 저장 실패 — 로컬에만 저장됨');
+    });
     _pendingFbWrite = null;
   } else {
     // Firebase 아직 준비 안 됨 → 나중에 연결되면 올림
@@ -758,16 +855,24 @@ async function initStore() {
     math2024:    await hashPw('math2024'),
     parent2024:  await hashPw('parent2024'),
   };
+  // 테스트 계정 비밀번호 생성
+  const testPws = {};
+  for (let y = 2; y <= 12; y++) testPws[y] = await hashPw('s' + y);
+  const testUsers = [];
+  for (let y = 2; y <= 12; y++) {
+    testUsers.push({ id:'t'+y, pw:testPws[y], role:'student', name:'Test Y'+y, year:y, country:'AU', status:'active', days:[], isTest:true });
+  }
   const d = {
     users: [
       { id:'teacher',   pw:pws.solomon2024, role:'teacher', name:'Teacher' },
-      { id:'student01', pw:pws.math2024,    role:'student', name:'Alex',   year:5 },
-      { id:'student02', pw:pws.math2024,    role:'student', name:'Sophie', year:7 },
-      { id:'student03', pw:pws.math2024,    role:'student', name:'Liam',   year:3 },
-      { id:'student04', pw:pws.math2024,    role:'student', name:'Mia',    year:9 },
-      { id:'student05', pw:pws.math2024,    role:'student', name:'Ethan',  year:6 },
-      { id:'parent01',  pw:pws.parent2024,  role:'parent',  name:"Alex's Parent",   childIds:['student01'] },
-      { id:'parent02',  pw:pws.parent2024,  role:'parent',  name:"Sophie's Parent", childIds:['student02'] },
+      { id:'student01', pw:pws.math2024,    role:'student', name:'Alex',   year:5, country:'AU', status:'active', days:[] },
+      { id:'student02', pw:pws.math2024,    role:'student', name:'Sophie', year:7, country:'AU', status:'active', days:[] },
+      { id:'student03', pw:pws.math2024,    role:'student', name:'Liam',   year:3, country:'AU', status:'active', days:[] },
+      { id:'student04', pw:pws.math2024,    role:'student', name:'Mia',    year:9, country:'AU', status:'active', days:[] },
+      { id:'student05', pw:pws.math2024,    role:'student', name:'Ethan',  year:6, country:'AU', status:'active', days:[] },
+      { id:'parent01',  pw:pws.parent2024,  role:'parent',  name:"Alex's Parent",   childIds:['student01'], status:'active' },
+      { id:'parent02',  pw:pws.parent2024,  role:'parent',  name:"Sophie's Parent", childIds:['student02'], status:'active' },
+      ...testUsers,
     ],
     currentPeriod: { year: new Date().getFullYear(), month: new Date().getMonth()+1, week: 1 },
     homeworkSets: {},
@@ -848,6 +953,12 @@ function getStore() {
   if (!d.homeworkSets) d.homeworkSets = {};
   if (!d.submissions)  d.submissions = {};
   if (!d.ts_progress) d.ts_progress = {};
+  if (!d.attendance) d.attendance = {};
+  d.users.forEach(u => {
+    if (u.role === 'student' && !u.days) u.days = [];
+    if ((u.role === 'student' || u.role === 'parent') && !u.status) u.status = 'active';
+    if (u.role === 'student' && /^t\d+$/.test(u.id) && !u.isTest) u.isTest = true;
+  });
   if (!d.currentPeriod) d.currentPeriod = { year: new Date().getFullYear(), month: new Date().getMonth()+1, week: 1 };
   // migrate old currentWeek → currentPeriod
   if (d.currentWeek !== undefined && !d.currentPeriod) {
@@ -903,6 +1014,12 @@ function getStore() {
       }
     });
   });
+  // migrate claudeApiKey from store to localStorage only
+  if (d.claudeApiKey) {
+    localStorage.setItem('claude_api_key', d.claudeApiKey);
+    delete d.claudeApiKey;
+    migrated = true;
+  }
   if (migrated) localStorage.setItem(STORE_KEY, JSON.stringify(d));
   return d;
 }
@@ -968,6 +1085,12 @@ async function doLogin() {
     document.getElementById('loginError').style.display='block';
     return;
   }
+  if (user.status === 'inactive') {
+    document.getElementById('loginError').textContent =
+      '접속이 제한되었습니다. 담당 선생님께 문의하세요.';
+    document.getElementById('loginError').style.display='block';
+    return;
+  }
   currentUser = user;
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
@@ -977,19 +1100,34 @@ async function doLogin() {
     : `${englishName(user.id)} (Year ${user.year})`;
   document.getElementById('loginError').style.display = 'none';
   try {
-    if (user.role==='teacher') renderTeacher();
+    if (user.role==='teacher') {
+      document.getElementById('btnBackupDownload').style.display = '';
+      renderTeacher();
+      autoBackupToFirebase();
+    }
     else if (user.role==='parent') renderParent();
     else { qIdx=0; currentSetIdx=null; studentPeriod=store.currentPeriod; renderStudent(); }
   } catch(e) {
-    document.getElementById('mainContent').innerHTML =
-      `<div style="padding:40px;color:red;font-weight:800;">
-        ⚠️ 화면 로딩 오류:<br><br>${e.message}<br><br>
-        <pre style="font-size:12px;white-space:pre-wrap;">${e.stack}</pre>
-      </div>`;
+    const errDiv = document.createElement('div');
+    errDiv.style.cssText = 'padding:40px;color:red;font-weight:800;';
+    errDiv.textContent = '⚠️ 화면 로딩 오류: ' + e.message;
+    const pre = document.createElement('pre');
+    pre.style.cssText = 'font-size:12px;white-space:pre-wrap;';
+    pre.textContent = e.stack;
+    errDiv.appendChild(pre);
+    const mc = document.getElementById('mainContent');
+    mc.innerHTML = '';
+    mc.appendChild(errDiv);
   }
 }
 
 function doLogout() {
+  window.isPreviewMode = false;
+  _originalTeacher = null;
+  document.getElementById('previewBanner')?.remove();
+  document.querySelector('.main')?.style.removeProperty('padding-top');
+  document.getElementById('btnBackupDownload').style.display = 'none';
+  document.querySelector('.btn-logout').style.display = '';
   currentUser = null;
   selectedStudentId = null;
   currentSetIdx = null;
@@ -1009,6 +1147,8 @@ function doLogout() {
 // ═══════════════════════════════════════
 let selectedYear    = null;    // currently selected year level
 let selectedCountry = 'AU';   // 'AU' | 'KR'
+let teacherTab      = 'homework';  // 'homework' | 'students' | 'settings'
+let attendanceMonth = null;        // {year, month} for attendance view
 let parsedQuestions = [];
 let editingSetIdx = null;      // -1=new set, 0+=editing existing set
 let editingCalcRanges = [];   // [{from, to, allowed}]
@@ -1016,8 +1156,8 @@ let editingCalcRanges = [];   // [{from, to, allowed}]
 function renderTeacher() {
   const store      = getStore();
   const p          = store.currentPeriod;
-  const allStudents = store.users.filter(u => u.role==='student');
-  const students   = allStudents.filter(s => (s.country||'AU') === selectedCountry);
+  const allStudents = store.users.filter(u => u.role==='student' && u.status !== 'inactive');
+  const students   = allStudents.filter(s => (s.country||'AU') === selectedCountry && !s.isTest);
   const years      = [...new Set(students.map(s=>s.year))].sort((a,b)=>a-b);
 
   const yearOpts  = [2024,2025,2026,2027,2028].map(y=>`<option value="${y}"${y===p.year?'selected':''}>${y}</option>`).join('');
@@ -1028,8 +1168,8 @@ function renderTeacher() {
     return `<option value="${w}"${w===p.week?'selected':''}>Week ${w}${range ? ' (' + range + ')' : ''}</option>`;
   }).join('');
 
-  const auCount = allStudents.filter(s=>(s.country||'AU')==='AU').length;
-  const krCount = allStudents.filter(s=>s.country==='KR').length;
+  const auCount = allStudents.filter(s=>(s.country||'AU')==='AU'&&!s.isTest).length;
+  const krCount = allStudents.filter(s=>s.country==='KR'&&!s.isTest).length;
 
   const _hasKey = !!getAIKey();
   let html = `
@@ -1087,7 +1227,7 @@ function renderTeacher() {
           <div class="sc-avatar" style="font-size:18px;font-weight:900;">Y${yr}</div>
           <div>
             <div class="sc-name">Year ${yr}</div>
-            <div class="sc-year">${yrStudents.map(s=>s.name).join(', ')}</div>
+            <div class="sc-year">${yrStudents.map(s=>s.name+(s.isTest?' [TEST]':'')).join(', ')}</div>
           </div>
         </div>
         <div class="sc-status">
@@ -1114,7 +1254,7 @@ function renderTeacher() {
       <div class="hw-editor" id="hwEditor">
         <div class="hw-editor-title">📝 Year ${selectedYear} – ${periodLabel(p)} Set Management</div>
         <div class="hw-editor-sub">
-          Students: ${yrStudents.map(s=>`<b>${s.name}</b>`).join(', ')} (${yrStudents.length}) — Sets must be completed in order.
+          Students: ${yrStudents.map(s=>`<b>${s.name}</b>${s.isTest?' [TEST]':''}`).join(', ')} (${yrStudents.length}) — Sets must be completed in order.
         </div>`;
 
     // existing set list
@@ -1235,14 +1375,14 @@ function renderTeacher() {
   html += `<div class="settings-card" style="margin-top:8px;">
     <h2>👨‍🎓 Student Status by Year — ${periodLabel(p)}</h2>`;
   years.forEach(yr => {
-    const yrStudents = students.filter(s=>s.year===yr);
+    const yrStudentsAll = allStudents.filter(s=>s.year===yr&&(s.country||'AU')===selectedCountry);
     const hw = store.homeworkSets[hwKey(yr, selectedCountry, p)];
     const sets = hw?.sets || [];
     html += `<div style="margin-bottom:16px;">
       <div style="font-weight:800;color:var(--navy);font-size:14px;margin-bottom:6px;">Year ${yr}</div>
       <table class="results-table">
         <thead><tr><th>Name</th><th>ID</th><th>Status</th><th>Score per Set</th><th>Report</th><th>Reset</th></tr></thead><tbody>`;
-    yrStudents.forEach(s => {
+    yrStudentsAll.forEach(s => {
       let status = sets.length > 0 ? 'Not submitted' : 'No homework';
       let scoreHtml = '-';
       const anySubmitted = sets.some((_,idx) => store.submissions[subKey(s.id,p,idx)]?.submitted);
@@ -1271,17 +1411,41 @@ function renderTeacher() {
         const hasSub = store.submissions[sk] && (store.submissions[sk].submitted || Object.keys(store.submissions[sk].answers||{}).length > 0);
         return hasSub ? `<button class="btn-sm btn-red" style="padding:2px 7px;font-size:11px;" onclick="resetSubmission('${s.id}',${idx})">↺ Set ${idx+1}</button>` : '';
       }).join('');
-      html += `<tr><td><b>${s.name}</b></td><td>${s.id}</td><td>${status}</td><td>${scoreHtml}</td><td>${reportBtn}</td><td style="white-space:nowrap;">${resetBtns||'-'}</td></tr>`;
+      html += `<tr><td><b>${s.name}</b>${s.isTest?' <span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;">TEST</span>':''}</td><td>${s.id}</td><td>${status}</td><td>${scoreHtml}</td><td>${reportBtn}</td><td style="white-space:nowrap;">${resetBtns||'-'}</td></tr>`;
     });
     html += `</tbody></table></div>`;
   });
   html += `</div>`;
 
-  document.getElementById('mainContent').innerHTML = html;
-  document.getElementById('mainContent').innerHTML += renderTeacherSettings(store);
+  // ── 탭 구조: homework 탭일 때만 숙제 관리 표시 ──
+  const previewStudents = store.users.filter(u=>u.role==='student'&&u.status!=='inactive');
+  const previewOpts = previewStudents.map(s =>
+    `<option value="${s.id}">${s.name}${s.isTest?' [TEST]':''} (Y${s.year})</option>`
+  ).join('');
+  const tabBar = `
+    <div style="display:flex;gap:8px;margin-bottom:20px;padding:12px 0;border-bottom:2px solid var(--border);flex-wrap:wrap;align-items:center;">
+      <button class="btn-sm ${teacherTab==='homework'?'btn-navy':'btn-blue'}" onclick="teacherTab='homework';renderTeacher()">📋 숙제 관리</button>
+      <button class="btn-sm ${teacherTab==='students'?'btn-navy':'btn-blue'}" onclick="teacherTab='students';renderTeacher()">👨‍🎓 학생/출석</button>
+      <button class="btn-sm ${teacherTab==='settings'?'btn-navy':'btn-blue'}" onclick="teacherTab='settings';renderTeacher()">⚙️ 설정</button>
+      <div style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap;">
+        <span style="font-size:13px;font-weight:700;color:var(--navy);">👁 학생 화면 보기:</span>
+        <select id="previewStudentSel" style="padding:6px 10px;border:2px solid var(--border);border-radius:8px;font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;">
+          <option value="">-- 학생 선택 --</option>
+          ${previewOpts}
+        </select>
+        <button class="btn-sm btn-navy" onclick="startPreviewMode()">미리보기 ▶</button>
+      </div>
+    </div>`;
 
-  if (selectedYear !== null) {
-    document.getElementById('hwEditor')?.scrollIntoView({behavior:'smooth', block:'start'});
+  if (teacherTab === 'homework') {
+    document.getElementById('mainContent').innerHTML = tabBar + html;
+    if (selectedYear !== null) {
+      document.getElementById('hwEditor')?.scrollIntoView({behavior:'smooth', block:'start'});
+    }
+  } else if (teacherTab === 'students') {
+    document.getElementById('mainContent').innerHTML = tabBar + renderAttendanceSection(store) + renderStudentManagementSection(store);
+  } else if (teacherTab === 'settings') {
+    document.getElementById('mainContent').innerHTML = tabBar + renderTeacherSettings(store);
   }
 }
 
@@ -1345,10 +1509,10 @@ function deleteSet(idx) {
   if (!hw?.sets) return;
   const setTitle = hw.sets[idx]?.title || `Set ${idx+1}`;
   if (!confirm(`Delete '${setTitle}'?\n(All student submissions for this set will also be deleted)`)) return;
-  const yrStudents = store.users.filter(u=>u.role==='student'&&u.year===selectedYear&&(u.country||'AU')===selectedCountry);
+  const yrStudents = store.users.filter(u=>u.role==='student'&&u.status!=='inactive'&&!u.isTest&&u.year===selectedYear&&(u.country||'AU')===selectedCountry);
   // delete submissions from this set onwards
   yrStudents.forEach(s => {
-    for (let i = idx; i <= hw.sets.length; i++) {
+    for (let i = idx; i < hw.sets.length; i++) {
       delete store.submissions[subKey(s.id, p, i)];
     }
   });
@@ -1507,7 +1671,11 @@ async function doVerifyAnswers() {
     showVerificationResults(parsedQuestions, verifications);
     if (btn) { btn.style.display = 'inline-block'; btn.disabled = false; }
   } catch(e) {
-    container.innerHTML = `<div style="color:#991b1b;font-weight:700;padding:8px;">⚠️ ${e.message}</div>`;
+    container.innerHTML = '';
+    const errEl = document.createElement('div');
+    errEl.style.cssText = 'color:#991b1b;font-weight:700;padding:8px;';
+    errEl.textContent = '⚠️ ' + e.message;
+    container.appendChild(errEl);
     if (btn) { btn.style.display = 'inline-block'; btn.textContent = '🔍 Retry Verification'; btn.disabled = false; }
   }
 }
@@ -1517,7 +1685,7 @@ function doSave() {
   const store = getStore();
   const p     = store.currentPeriod;
   const key   = hwKey(selectedYear, selectedCountry, p);
-  const yrStudents = store.users.filter(u=>u.role==='student' && u.year===selectedYear && (u.country||'AU')===selectedCountry);
+  const yrStudents = store.users.filter(u=>u.role==='student' && u.status!=='inactive' && !u.isTest && u.year===selectedYear && (u.country||'AU')===selectedCountry);
   const qs = parsedQuestions.map((q,i) => ({ ...q, id:`q${i}` }));
 
   if (!store.homeworkSets[key]) {
@@ -1589,7 +1757,7 @@ function viewResults(yr) {
   const p        = store.currentPeriod;
   const hw       = store.homeworkSets[hwKey(yr, selectedCountry, p)];
   if (!hw?.sets?.length) return;
-  const yrStudents = store.users.filter(u=>u.role==='student' && u.year===yr && (u.country||'AU')===selectedCountry);
+  const yrStudents = store.users.filter(u=>u.role==='student' && u.status!=='inactive' && !u.isTest && u.year===yr && (u.country||'AU')===selectedCountry);
 
   let html = `<h2 style="font-family:'Noto Serif KR',serif;color:var(--navy);margin-bottom:16px;">📊 Year ${yr} – ${periodLabel(p)} Results</h2>`;
 
@@ -1597,7 +1765,7 @@ function viewResults(yr) {
     const anySubmitted = hw.sets.some((_,idx) => store.submissions[subKey(s.id,p,idx)]?.submitted);
     html += `<div style="background:#f8f6ef;border-radius:12px;padding:16px 20px;margin-bottom:14px;">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-        <div style="font-size:20px;font-weight:900;color:var(--navy);flex:1;">${s.name}</div>
+        <div style="font-size:20px;font-weight:900;color:var(--navy);flex:1;">${s.name}${s.isTest?' <span style="background:#dbeafe;color:#1d4ed8;font-size:11px;font-weight:800;padding:2px 8px;border-radius:99px;">TEST</span>':''}</div>
         ${anySubmitted ? `<button class="btn-report" onclick="closeModal();setTimeout(()=>showTeacherReport('${s.id}'),200)">📝 학부모 리포트</button>` : ''}
       </div>`;
     hw.sets.forEach((set, setIdx) => {
@@ -1637,29 +1805,6 @@ function viewResults(yr) {
 }
 
 function renderTeacherSettings(store) {
-  const students = store.users.filter(u=>u.role==='student');
-  const parents  = store.users.filter(u=>u.role==='parent');
-  const yearSel  = [3,4,5,6,7,8,9].map(y=>`<option value="${y}">Year ${y}</option>`).join('');
-
-  const studentRows = students.map(s => `
-    <tr id="srow_${s.id}">
-      <td><input id="se_id_${s.id}" value="${s.id}" style="width:90px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:13px;"></td>
-      <td><input id="se_name_${s.id}" value="${s.name}" style="width:100px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:13px;"></td>
-      <td><select id="se_year_${s.id}" style="border:1px solid var(--border);border-radius:6px;padding:3px 4px;font-size:13px;">
-        ${[3,4,5,6,7,8,9].map(y=>`<option value="${y}"${y===s.year?'selected':''}>${y}</option>`).join('')}
-      </select></td>
-      <td><select id="se_country_${s.id}" style="border:1px solid var(--border);border-radius:6px;padding:3px 4px;font-size:13px;">
-        <option value="AU"${(s.country||'AU')==='AU'?'selected':''}>🇦🇺 AU</option>
-        <option value="KR"${s.country==='KR'?'selected':''}>🇰🇷 KR</option>
-      </select></td>
-      <td><input id="se_pw_${s.id}" value="${s.pw}" style="width:90px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:13px;"></td>
-      <td style="white-space:nowrap;">
-        <button class="btn-sm btn-green" style="padding:3px 8px;" onclick="saveStudentEdit('${s.id}')">Save</button>
-        <button class="btn-sm btn-red"   style="padding:3px 8px;" onclick="deleteStudent('${s.id}')">Delete</button>
-      </td>
-    </tr>`).join('');
-
-
   return `
     <div class="settings-card" style="margin-top:8px;">
       <h2>🔑 Teacher Account Settings</h2>
@@ -1687,13 +1832,164 @@ function renderTeacherSettings(store) {
         <button class="btn-sm btn-gold" onclick="forceUploadToFirebase()">⬆️ 이 컴 데이터 → Firebase 업로드</button>
         <button class="btn-sm btn-blue" onclick="forceDownloadFromFirebase()" style="margin-left:8px;">⬇️ Firebase → 이 컴으로 다운로드</button>
       </div>
+      <div style="margin-top:16px;padding-top:16px;border-top:2px solid var(--border);">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">💾 백업 관리 (Firebase 자동 백업)</div>
+        <div id="backupListContainer" style="margin-top:8px;">
+          <div style="color:var(--muted);font-size:13px;">로딩 중...</div>
+        </div>
+        <button class="btn-sm btn-navy" onclick="loadBackupList()" style="margin-top:10px;">🔄 백업 목록 새로고침</button>
+      </div>
     </div>
+    <div style="margin-top:24px;padding:12px 16px;background:#f8f6ef;border-radius:10px;border:1px solid var(--border);font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:space-between;">
+      <span>🛠 Solomon Platform</span>
+      <span><b style="color:var(--navy);">${APP_VERSION.version}</b> · ${APP_VERSION.date} · ${APP_VERSION.note}</span>
+    </div>`;
+  setTimeout(() => loadBackupList(), 300);
+}
+
+function toggleStudentDay(studentId, day) {
+  const store = getStore();
+  const u = store.users.find(u => u.id === studentId && u.role === 'student');
+  if (!u) return;
+  if (!u.days) u.days = [];
+  const idx = u.days.indexOf(day);
+  if (idx === -1) u.days.push(day);
+  else u.days.splice(idx, 1);
+  saveStore(store);
+}
+
+function deactivateStudent(id) {
+  if (!confirm('정말 퇴원 처리할까요?\n로그인이 차단되고 자료는 보존됩니다.')) return;
+  const store = getStore();
+  const student = store.users.find(u => u.id === id && u.role === 'student');
+  if (!student) return;
+  student.status = 'inactive';
+  // 연결된 학부모 자동 처리
+  store.users.filter(u => u.role === 'parent' && (u.childIds || []).includes(id)).forEach(p => {
+    const allInactive = (p.childIds || []).every(cid => {
+      const c = store.users.find(u => u.id === cid && u.role === 'student');
+      return !c || c.status === 'inactive';
+    });
+    if (allInactive) p.status = 'inactive';
+  });
+  saveStore(store);
+  renderTeacher();
+}
+
+function reactivateStudent(id) {
+  const store = getStore();
+  const student = store.users.find(u => u.id === id && u.role === 'student');
+  if (!student) return;
+  student.status = 'active';
+  // 연결된 학부모 자동 복원
+  store.users.filter(u => u.role === 'parent' && (u.childIds || []).includes(id)).forEach(p => {
+    p.status = 'active';
+  });
+  saveStore(store);
+  renderTeacher();
+}
+
+function renderStudentManagementSection(store) {
+  const normalActive = store.users.filter(u=>u.role==='student' && u.status !== 'inactive' && !u.isTest);
+  const testActive = store.users.filter(u=>u.role==='student' && u.status !== 'inactive' && u.isTest);
+  const inactiveStudents = store.users.filter(u=>u.role==='student' && u.status === 'inactive');
+  const parents  = store.users.filter(u=>u.role==='parent');
+  const yearSel  = [3,4,5,6,7,8,9].map(y=>`<option value="${y}">Year ${y}</option>`).join('');
+  const dayKeys = ['mon','tue','wed','thu','fri','sat','sun'];
+  const dayLabels = ['월','화','수','목','금','토','일'];
+
+  function buildStudentRow(s, inactive) {
+    const days = s.days || [];
+    const isTest = !!s.isTest;
+    const yearRange = isTest ? Array.from({length:11},(_,i)=>i+2) : [3,4,5,6,7,8,9];
+    const dayCheckboxes = dayKeys.map((dk,i) =>
+      `<label style="display:inline-flex;align-items:center;gap:2px;font-size:12px;cursor:pointer;">
+        <input type="checkbox" ${days.includes(dk)?'checked':''} onchange="toggleStudentDay('${s.id}','${dk}')" style="cursor:pointer;"${inactive?' disabled':''}>
+        ${dayLabels[i]}
+      </label>`
+    ).join(' ');
+    const testBadge = isTest ? ' <span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;">TEST</span>' : '';
+    if (inactive) {
+      return `<tr style="opacity:.5;background:#f5f5f5;">
+        <td>${s.id}${testBadge}</td><td>${s.name}</td><td>Y${s.year}</td><td>${(s.country||'AU')==='AU'?'🇦🇺':'🇰🇷'}</td>
+        <td style="white-space:nowrap;">${dayCheckboxes}</td>
+        <td><button class="btn-sm btn-green" style="padding:3px 8px;" onclick="reactivateStudent('${s.id}')">✅ 복원</button></td>
+      </tr>`;
+    }
+    return `
+    <tr id="srow_${s.id}">
+      <td><input id="se_id_${s.id}" value="${s.id}" style="width:90px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:13px;">${testBadge}</td>
+      <td><input id="se_name_${s.id}" value="${s.name}" style="width:100px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:13px;"></td>
+      <td><select id="se_year_${s.id}" style="border:1px solid var(--border);border-radius:6px;padding:3px 4px;font-size:13px;">
+        ${yearRange.map(y=>`<option value="${y}"${y===s.year?'selected':''}>${y}</option>`).join('')}
+      </select></td>
+      <td><select id="se_country_${s.id}" style="border:1px solid var(--border);border-radius:6px;padding:3px 4px;font-size:13px;">
+        <option value="AU"${(s.country||'AU')==='AU'?'selected':''}>🇦🇺 AU</option>
+        <option value="KR"${s.country==='KR'?'selected':''}>🇰🇷 KR</option>
+      </select></td>
+      <td style="white-space:nowrap;">${dayCheckboxes}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn-sm btn-green" style="padding:3px 8px;" onclick="saveStudentEdit('${s.id}')">Save</button>
+        <button class="btn-sm btn-navy" style="padding:3px 8px;" onclick="resetStudentPassword('${s.id}')">🔑 PW</button>
+        <button class="btn-sm btn-red" style="padding:3px 8px;" onclick="deactivateStudent('${s.id}')">🚪 퇴원</button>
+      </td>
+    </tr>`;
+  }
+
+  function buildTestRow(s) {
+    const yearRange = Array.from({length:11},(_,i)=>i+2);
+    const pw = 's' + s.id.replace(/\D/g,'');
+    const monoStyle = 'font-family:monospace;font-weight:800;color:var(--navy);';
+    return `
+    <tr id="srow_${s.id}" style="background:#f0f4ff;">
+      <td style="${monoStyle}">${s.id}</td>
+      <td style="${monoStyle}">${pw}</td>
+      <td><select id="se_year_${s.id}" style="border:1px solid var(--border);border-radius:6px;padding:3px 4px;font-size:13px;">
+        ${yearRange.map(y=>`<option value="${y}"${y===s.year?'selected':''}>${y}</option>`).join('')}
+      </select></td>
+      <td style="white-space:nowrap;">
+        <button class="btn-sm btn-green" style="padding:3px 8px;" onclick="saveStudentEdit('${s.id}')">Save</button>
+        <button class="btn-sm btn-navy" style="padding:3px 8px;" onclick="resetStudentPassword('${s.id}')">🔑 PW</button>
+        <button class="btn-sm btn-red" style="padding:3px 8px;" onclick="deactivateStudent('${s.id}')">🚪 퇴원</button>
+      </td>
+    </tr>`;
+  }
+
+  const normalRows = normalActive.map(s => buildStudentRow(s, false)).join('');
+  const testRows = testActive.map(s => buildTestRow(s)).join('');
+  const inactiveRows = inactiveStudents.map(s => buildStudentRow(s, true)).join('');
+
+  return `
     <div class="settings-card" style="margin-top:8px;">
       <h2>👨‍🎓 Student Management</h2>
+      <div style="overflow-x:auto;">
       <table class="results-table" style="margin-bottom:20px;">
-        <thead><tr><th>ID</th><th>Name</th><th>Year</th><th>Country</th><th>Password</th><th>Edit</th></tr></thead>
-        <tbody>${studentRows}</tbody>
+        <thead><tr><th>ID</th><th>Name</th><th>Year</th><th>Country</th><th>수업 요일</th><th>Edit</th></tr></thead>
+        <tbody>${normalRows}</tbody>
       </table>
+      </div>
+      ${testActive.length > 0 ? `
+      <div style="margin:20px 0;padding:16px;background:#f0f4ff;border:2px dashed #93c5fd;border-radius:12px;">
+        <h3 style="font-family:'Noto Serif KR',serif;color:#1d4ed8;margin-bottom:12px;">🧪 테스트 계정 (t2~t12)</h3>
+        <div style="overflow-x:auto;">
+        <table class="results-table" style="margin-bottom:0;">
+          <thead><tr><th>ID</th><th>Password</th><th>Year</th><th>Edit</th></tr></thead>
+          <tbody>${testRows}</tbody>
+        </table>
+        </div>
+      </div>` : ''}
+      ${inactiveStudents.length > 0 ? `
+      <details style="margin-bottom:20px;">
+        <summary style="cursor:pointer;font-weight:800;font-size:14px;color:var(--muted);padding:8px 0;">
+          퇴원 학생 보기 (${inactiveStudents.length}명)
+        </summary>
+        <div style="overflow-x:auto;margin-top:8px;">
+        <table class="results-table" style="opacity:.7;">
+          <thead><tr><th>ID</th><th>Name</th><th>Year</th><th>Country</th><th>수업 요일</th><th>복원</th></tr></thead>
+          <tbody>${inactiveRows}</tbody>
+        </table>
+        </div>
+      </details>` : ''}
       <h3 style="font-family:'Noto Serif KR',serif;color:var(--navy);margin-bottom:14px;">Add Student</h3>
       <div class="field-row">
         <div class="field"><label>ID</label><input id="ns_id" placeholder="student06"></div>
@@ -1734,6 +2030,16 @@ async function saveStudentEdit(oldId) {
   const store  = getStore();
   const u      = store.users.find(u=>u.id===oldId);
   if (!u) return;
+
+  if (u.isTest) {
+    // 테스트 계정: Year만 수정 가능
+    u.year = parseInt(document.getElementById(`se_year_${oldId}`).value);
+    saveStore(store);
+    alert(`✅ ${u.name}'s year updated.`);
+    renderTeacher();
+    return;
+  }
+
   const newId  = document.getElementById(`se_id_${oldId}`).value.trim();
   if (!newId) { alert('Please enter an ID.'); return; }
   if (newId !== oldId && store.users.find(u=>u.id===newId)) {
@@ -1759,27 +2065,15 @@ async function saveStudentEdit(oldId) {
   u.name    = document.getElementById(`se_name_${oldId}`).value.trim() || u.name;
   u.year    = parseInt(document.getElementById(`se_year_${oldId}`).value);
   u.country = document.getElementById(`se_country_${oldId}`)?.value || u.country || 'AU';
-  const newSpw = document.getElementById(`se_pw_${oldId}`).value.trim();
-  if (newSpw) u.pw = await hashPw(newSpw);
   saveStore(store);
   alert(`✅ ${u.name}'s info updated.`);
-  renderTeacher();
-}
-
-function deleteStudent(id) {
-  if (!confirm(`Delete student '${id}'?\n(All their submission records will also be deleted)`)) return;
-  const store = getStore();
-  store.users = store.users.filter(u=>u.id!==id);
-  // delete associated submission records
-  Object.keys(store.submissions).forEach(k=>{if(k.startsWith(id+'_'))delete store.submissions[k];});
-  saveStore(store);
   renderTeacher();
 }
 
 const childColors = ['#dbeafe|#1d4ed8','#dcfce7|#166534','#fef9c3|#854d0e','#fce7f3|#9d174d','#ede9fe|#6d28d9','#ffedd5|#c2410c'];
 
 function buildParentCards(store) {
-  const students = store.users.filter(u=>u.role==='student');
+  const students = store.users.filter(u=>u.role==='student'&&u.status!=='inactive');
   const parents  = store.users.filter(u=>u.role==='parent');
   if (!parents.length) return `<div class="empty" style="padding:20px 0;">No parent accounts yet.</div>`;
   return parents.map(p => {
@@ -1794,7 +2088,7 @@ function buildParentCards(store) {
           <div style="display:flex;align-items:center;gap:10px;background:${bg};border-radius:10px;padding:10px 14px;margin-bottom:6px;">
             <div style="flex:1;">
               <div style="font-weight:900;font-size:15px;color:${col};">${englishName(id)}</div>
-              <div style="font-size:12px;color:${col};opacity:.75;">ID: ${id}${s ? ` · Year ${s.year}` : ' · (not found)'}</div>
+              <div style="font-size:12px;color:${col};opacity:.75;">ID: ${id}${s ? ` · Year ${s.year}` : ' · (not found)'}${s&&s.status==='inactive'?' · <span style="background:#fee2e2;color:#991b1b;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;">퇴원</span>':''}</div>
             </div>
             <button onclick="removeChildFromParent('${p.id}','${id}')"
               style="background:none;border:2px solid ${col};border-radius:8px;color:${col};font-size:12px;font-weight:800;padding:3px 10px;cursor:pointer;">
@@ -1803,7 +2097,8 @@ function buildParentCards(store) {
           </div>`;
         }).join('');
     return `
-    <div style="border:2px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:16px;" id="pcard_${p.id}">
+    <div style="border:2px solid ${p.status==='inactive'?'#fca5a5':'var(--border)'};border-radius:14px;padding:18px 20px;margin-bottom:16px;${p.status==='inactive'?'background:#fff5f5;':''}" id="pcard_${p.id}">
+      ${p.status==='inactive'?'<div style="margin-bottom:10px;"><span style="background:#fee2e2;color:#991b1b;font-size:11px;font-weight:800;padding:2px 8px;border-radius:99px;">🚪 접속 차단됨</span></div>':''}
       <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
         <div style="flex:1;min-width:180px;">
           <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Parent ID</div>
@@ -1815,14 +2110,10 @@ function buildParentCards(store) {
           <input id="pe_name_${p.id}" value="${autoName}"
             style="width:100%;padding:7px 10px;border:2px solid var(--border);border-radius:9px;font-family:'Noto Sans KR',sans-serif;font-size:14px;font-weight:700;outline:none;">
         </div>
-        <div style="min-width:110px;">
-          <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Password</div>
-          <input id="pe_pw_${p.id}" value="${p.pw}"
-            style="width:100%;padding:7px 10px;border:2px solid var(--border);border-radius:9px;font-family:'Noto Sans KR',sans-serif;font-size:14px;outline:none;">
-        </div>
         <div style="display:flex;gap:6px;padding-bottom:1px;">
           <button class="btn-sm btn-green" onclick="saveParentEdit('${p.id}')">Save</button>
-          <button class="btn-sm btn-red"   onclick="deleteParent('${p.id}')">Delete</button>
+          <button class="btn-sm btn-navy" onclick="resetParentPassword('${p.id}')">🔑 PW</button>
+          <button class="btn-sm btn-red"   onclick="deleteParent('${p.id}')"${isProtectedAccount(p.id)?' disabled title="기본 계정은 삭제할 수 없습니다"':''}>Delete</button>
         </div>
       </div>
       <div style="font-weight:800;font-size:13px;color:var(--navy);margin-bottom:8px;">
@@ -1883,20 +2174,19 @@ async function saveParentEdit(oldId) {
   if (!u) return;
   const newId   = document.getElementById(`pe_id_${oldId}`).value.trim();
   const newName = document.getElementById(`pe_name_${oldId}`).value.trim();
-  const newPw   = document.getElementById(`pe_pw_${oldId}`).value.trim();
   if (!newId) { alert('Please enter an ID.'); return; }
   if (newId !== oldId && store.users.find(u=>u.id===newId)) {
     alert('This ID already exists.'); return;
   }
   if (newId !== oldId) u.id = newId;
   if (newName) u.name = newName;
-  if (newPw)   u.pw   = await hashPw(newPw);
   saveStore(store);
   renderTeacher();
   setTimeout(()=>{ document.getElementById('parentMgmt')?.scrollIntoView({behavior:'smooth',block:'start'}); }, 50);
 }
 
 function deleteParent(id) {
+  if (isProtectedAccount(id)) { alert('기본 계정은 삭제할 수 없습니다.'); return; }
   if (!confirm(`Delete parent '${id}'?`)) return;
   const store = getStore();
   store.users = store.users.filter(u=>u.id!==id);
@@ -1914,7 +2204,7 @@ async function addStudent() {
   const store=getStore();
   if(store.users.find(u=>u.id===id)){alert('This ID already exists.');return;}
   const hpw=await hashPw(pw);
-  store.users.push({id,pw:hpw,role:'student',name,year,country});
+  store.users.push({id,pw:hpw,role:'student',name,year,country,status:'active',days:[]});
   saveStore(store);
   document.getElementById('ns_ok').style.display='block';
   setTimeout(()=>renderTeacher(),800);
@@ -1935,7 +2225,7 @@ async function addParent() {
   }
   const name=parentDisplayName(childIds);
   const hpw=await hashPw(pw);
-  store.users.push({id,pw:hpw,role:'parent',name,childIds});
+  store.users.push({id,pw:hpw,role:'parent',name,childIds,status:'active'});
   saveStore(store);
   renderTeacher();
   setTimeout(()=>{ document.getElementById('parentMgmt')?.scrollIntoView({behavior:'smooth',block:'start'}); }, 50);
@@ -2394,11 +2684,18 @@ function startSet(idx) {
   try {
     renderStudent();
   } catch(e) {
-    document.getElementById('mainContent').innerHTML =
-      `<div style="padding:40px;color:red;font-weight:800;">
-        ⚠️ Loading error: ${e.message}
-        <br><button onclick="currentSetIdx=null;renderStudent()" style="margin-top:16px;padding:10px 20px;background:#162040;color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:800;">← Back to Set List</button>
-      </div>`;
+    const mc2 = document.getElementById('mainContent');
+    mc2.innerHTML = '';
+    const errWrap = document.createElement('div');
+    errWrap.style.cssText = 'padding:40px;color:red;font-weight:800;';
+    errWrap.textContent = '⚠️ Loading error: ' + e.message;
+    const backBtn = document.createElement('button');
+    backBtn.textContent = '← Back to Set List';
+    backBtn.style.cssText = 'margin-top:16px;padding:10px 20px;background:#162040;color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:800;';
+    backBtn.onclick = () => { currentSetIdx=null; renderStudent(); };
+    errWrap.appendChild(document.createElement('br'));
+    errWrap.appendChild(backBtn);
+    mc2.appendChild(errWrap);
   }
 }
 
@@ -2437,6 +2734,9 @@ function doSubmit() {
   const store=getStore();
   const p = studentPeriod||store.currentPeriod;
   const key=subKey(currentUser.id,p,currentSetIdx??0);
+  if (!store.submissions[key]) {
+    store.submissions[key] = { answers: {}, submitted: false };
+  }
   const sub = store.submissions[key];
   const hw = store.homeworkSets[hwKey(currentUser.year, currentUser.country||'AU', p)];
   const set = hw?.sets?.[currentSetIdx??0];
@@ -2519,7 +2819,7 @@ function selectParentChild(id) {
 function renderParent() {
   const store = getStore();
   const childIds = currentUser.childIds || [];
-  const children = store.users.filter(u => u.role==='student' && childIds.includes(u.id));
+  const children = store.users.filter(u => u.role==='student' && u.status !== 'inactive' && childIds.includes(u.id));
 
   if (!children.length) {
     document.getElementById('mainContent').innerHTML='<div class="empty">No children linked to this account.</div>';
@@ -2537,12 +2837,17 @@ function renderParent() {
 
   // ── 헤더 + 자녀 탭 ──
   let html = `
+    <div class="parent-print-header">
+      <div class="parent-print-header-logo">Solomon <span>Math</span> Academy</div>
+    </div>
     <div class="parent-header">
       <div class="parent-avatar">👨‍👩‍👧</div>
       <div style="flex:1;">
-        <div class="parent-child-name">${parentDisplayName(currentUser.childIds)}</div>
-        <div class="parent-child-sub">${children.map(c=>`${englishName(c.id)} (Y${c.year})`).join(' · ')} · ${periodLabel(p)}</div>
+        <div class="parent-child-name">${child.name}</div>
+        <div style="font-family:'Noto Serif KR',serif;font-size:16px;color:rgba(255,255,255,.85);font-weight:700;margin-top:2px;">Year ${child.year}</div>
+        <div class="parent-child-sub">${periodLabel(p)}</div>
       </div>
+      <button onclick="printParentReport()" style="padding:8px 16px;background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:800;cursor:pointer;" class="btn-print-parent">🖨️ 인쇄</button>
     </div>`;
 
   // 자녀가 2명 이상이면 탭 표시
@@ -2559,6 +2864,9 @@ function renderParent() {
     });
     html += `</div>`;
   }
+
+  // ── 출석 카드 ──
+  html += renderParentAttendanceCard(child.id, store);
 
   if (!hw || !hw.sets || hw.sets.length === 0) {
     html += `<div class="info-card"><div class="empty">No homework assigned yet.</div></div>`;
@@ -2590,14 +2898,34 @@ function renderParent() {
       const cls = pct>=80?'pill-a':pct>=60?'pill-b':'pill-c';
       const scoreMsg = pct>=80?'🎉 Excellent!':pct>=60?'👍 Good job!':'💪 Keep it up!';
       const wrongCount = autoQs.length - correct;
+      const wrongQs = autoQs.filter(q=>sub.answers[q.id]!==q.answer);
       html += `<div style="background:#fff;border-radius:12px;padding:16px 18px;margin-bottom:14px;border:2px solid ${pct>=80?'var(--green)':pct>=60?'var(--gold)':'var(--red)'};box-shadow:0 2px 8px rgba(0,0,0,.05);">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:${wrongCount>0?'12px':'0'};">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:${wrongCount>0?'12px':'0'};">
           <div style="font-weight:800;color:var(--navy);font-size:15px;">${set.title}</div>
           <span class="score-pill ${cls}" style="font-size:13px;">${pct}%</span>
           <span style="font-size:13px;color:var(--muted);">${correct}/${autoQs.length} correct</span>
-          <span style="font-size:13px;color:var(--muted);">·</span>
           <span style="font-size:13px;color:${wrongCount>0?'var(--red)':'var(--green)'};font-weight:700;">${wrongCount>0?`${wrongCount} wrong`:'All correct! 🎉'}</span>
         </div>`;
+      if (wrongQs.length > 0) {
+        html += `<div style="margin-bottom:10px;">
+          <div style="font-weight:800;font-size:12px;color:var(--navy);margin-bottom:6px;">❌ 오답 문항</div>`;
+        wrongQs.forEach((q,qi) => {
+          const qNum = set.questions.indexOf(q) + 1;
+          const typeLabel = q.type === 'multiple' ? '객관식' : q.type === 'short' ? '단답형' : q.type || '';
+          html += `<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 10px;background:#fff5f5;border-left:3px solid var(--red);border-radius:6px;margin-bottom:4px;font-size:12px;">
+            <span style="flex-shrink:0;">❌</span>
+            <div style="flex:1;">
+              <b>Q${qNum}.</b> ${renderMath((q.text||'').substring(0,80))}${(q.text||'').length>80?'...':''}
+              ${typeLabel?`<span style="background:#fee2e2;color:#991b1b;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;margin-left:4px;">${typeLabel}</span>`:''}
+              <div style="margin-top:2px;color:var(--muted);">
+                답안: <b style="color:var(--red);">${sub.answers[q.id]||'-'}</b>
+                <span style="margin-left:8px;">정답: <b style="color:var(--green);">${q.answer}</b></span>
+              </div>
+            </div>
+          </div>`;
+        });
+        html += `</div>`;
+      }
 
       // Show remediation rounds inline
       const rem = sub.remediation;
@@ -2673,7 +3001,10 @@ function renderParentReportSection(child, store, period) {
   if (!data || data.results.length === 0) return '';
 
   let html = `<div class="report-panel" style="margin-top:20px;">
-    <div class="report-panel-title">📋 학습 리포트</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div class="report-panel-title">📋 학습 리포트</div>
+      <button class="btn-print-parent" onclick="printParentReport()" style="padding:8px 14px;background:var(--navy);color:#fff;border:none;border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">🖨️ 인쇄 / PDF</button>
+    </div>
     <div class="report-panel-sub">${child.name} · Year ${child.year} · ${periodLabel(period)}</div>`;
 
   data.results.forEach((r, ri) => {
@@ -3132,6 +3463,8 @@ async function saveTeacherAccount() {
   if (newId !== oldId && store.users.find(x => x.id === newId)) {
     alert('This ID already exists.'); return;
   }
+  const oldIdIdx = PROTECTED_ACCOUNTS.indexOf(oldId);
+  if (oldIdIdx !== -1) PROTECTED_ACCOUNTS[oldIdIdx] = newId;
   u.id = newId;
   if (newPw) u.pw = await hashPw(newPw);
   currentUser.id = newId;
@@ -3300,7 +3633,14 @@ function showTeacherReport(studentId) {
   const s = data.student;
 
   let html = `
-    <div class="report-panel-title">📋 학부모 리포트 — ${s.name}</div>
+    <div class="print-header">
+      <div class="print-header-logo">Solomon <span>Math</span> Academy</div>
+      <div class="print-header-date">Report printed: ${new Date().toLocaleDateString('en-AU')}</div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div class="report-panel-title">📋 학부모 리포트 — ${s.name}</div>
+      <button class="btn-print-report" onclick="printReport()" style="padding:8px 16px;background:var(--navy);color:#fff;border:none;border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">🖨️ 인쇄 / PDF 저장</button>
+    </div>
     <div class="report-panel-sub">${periodLabel(p)} · Year ${s.year}</div>
     <div class="report-student-header">
       <div class="report-student-avatar">${s.name.charAt(0)}</div>
@@ -3487,11 +3827,16 @@ async function generateAndShowKakao(studentId, resultIdx, setIdx) {
         🔄 다시 생성
       </button>`;
   } catch(e) {
-    area.innerHTML = `
-      <div style="color:var(--red);font-weight:700;font-size:13px;margin-bottom:8px;">⚠️ ${e.message}</div>
-      <button class="btn-copy-kakao" onclick="generateAndShowKakao('${studentId}',${resultIdx},${setIdx})">
-        🔄 다시 시도
-      </button>`;
+    area.innerHTML = '';
+    const kakaoErr = document.createElement('div');
+    kakaoErr.style.cssText = 'color:var(--red);font-weight:700;font-size:13px;margin-bottom:8px;';
+    kakaoErr.textContent = '⚠️ ' + e.message;
+    area.appendChild(kakaoErr);
+    const retryBtn = document.createElement('button');
+    retryBtn.className = 'btn-copy-kakao';
+    retryBtn.textContent = '🔄 다시 시도';
+    retryBtn.onclick = () => generateAndShowKakao(studentId, resultIdx, setIdx);
+    area.appendChild(retryBtn);
   }
 }
 
@@ -3532,15 +3877,11 @@ function copyKakaoMsg(resultIdx) {
 //  GEMINI AI INTEGRATION
 // ═══════════════════════════════════════
 function getAIKey() {
-  const store = getStore();
-  return store.claudeApiKey || localStorage.getItem('claude_api_key') || '';
+  return localStorage.getItem('claude_api_key') || '';
 }
 function setAIKey(k) {
   const key = k.trim();
   localStorage.setItem('claude_api_key', key);
-  const store = getStore();
-  store.claudeApiKey = key;
-  saveStore(store);
 }
 
 async function callAI(prompt) {
@@ -3859,14 +4200,13 @@ async function startRemediation(setIdx) {
     saveStore(store);
     renderRemediationExplanation(setIdx, roundIdx);
   } catch(e) {
-    mainEl.innerHTML = `<div class="exam-wrap">
-      <div style="padding:40px;text-align:center;">
-        <div style="font-size:36px;margin-bottom:12px;">⚠️</div>
-        <div style="font-weight:800;color:#991b1b;font-size:16px;margin-bottom:8px;">AI Error</div>
-        <div style="color:var(--muted);font-size:14px;margin-bottom:16px;">${e.message}</div>
-        <button class="btn-sm btn-navy" onclick="currentSetIdx=${setIdx};renderStudent()">← Go Back</button>
-      </div>
-    </div>`;
+    mainEl.innerHTML = '<div class="exam-wrap"><div style="padding:40px;text-align:center;"><div style="font-size:36px;margin-bottom:12px;">⚠️</div><div style="font-weight:800;color:#991b1b;font-size:16px;margin-bottom:8px;">AI Error</div><div id="aiErrMsg" style="color:var(--muted);font-size:14px;margin-bottom:16px;"></div></div></div>';
+    document.getElementById('aiErrMsg').textContent = e.message;
+    const goBackBtn1 = document.createElement('button');
+    goBackBtn1.className = 'btn-sm btn-navy';
+    goBackBtn1.textContent = '← Go Back';
+    goBackBtn1.onclick = () => { currentSetIdx=setIdx; renderStudent(); };
+    document.getElementById('aiErrMsg').parentElement.appendChild(goBackBtn1);
   }
 }
 
@@ -4111,13 +4451,14 @@ async function onExplanationRead(setIdx, roundIdx) {
     saveStore(store);
     renderPracticeSet(setIdx, roundIdx);
   } catch (e) {
-    mainEl.innerHTML = `<div class="exam-wrap">
-      <div style="padding:40px;text-align:center;">
-        <div style="font-size:36px;margin-bottom:12px;">⚠️</div>
-        <div style="font-weight:800;color:#991b1b;">Error: ${e.message}</div>
-        <button class="btn-sm btn-navy" style="margin-top:16px;" onclick="currentSetIdx=${setIdx};renderStudent()">← Go Back</button>
-      </div>
-    </div>`;
+    mainEl.innerHTML = '<div class="exam-wrap"><div style="padding:40px;text-align:center;"><div style="font-size:36px;margin-bottom:12px;">⚠️</div><div id="remErrMsg" style="font-weight:800;color:#991b1b;"></div></div></div>';
+    document.getElementById('remErrMsg').textContent = 'Error: ' + e.message;
+    const goBackBtn2 = document.createElement('button');
+    goBackBtn2.className = 'btn-sm btn-navy';
+    goBackBtn2.style.marginTop = '16px';
+    goBackBtn2.textContent = '← Go Back';
+    goBackBtn2.onclick = () => { currentSetIdx=setIdx; renderStudent(); };
+    document.getElementById('remErrMsg').parentElement.appendChild(goBackBtn2);
   }
 }
 
@@ -5011,13 +5352,26 @@ async function startTSDay(day) {
     renderTSSession(questions, {}, day, false);
   } catch (err) {
     console.error('TS question generation error:', err);
-    document.getElementById('mainContent').innerHTML = `
-      <div class="exam-wrap" style="text-align:center;padding:40px;">
-        <p style="color:#c62828;font-weight:700;">Failed to generate questions.</p>
-        <p style="color:#888;font-size:13px;margin:8px 0;">${err.message||''}</p>
-        <button onclick="startTSDay(${day})" style="margin-top:12px;padding:10px 20px;background:#2d4a8a;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;">Retry</button>
-        <button onclick="renderTSWeekView()" style="margin-top:12px;margin-left:8px;padding:10px 20px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;cursor:pointer;font-weight:700;">← Back</button>
-      </div>`;
+    const tsErrWrap = document.createElement('div');
+    tsErrWrap.className = 'exam-wrap';
+    tsErrWrap.style.cssText = 'text-align:center;padding:40px;';
+    const tsErrP1 = document.createElement('p');
+    tsErrP1.style.cssText = 'color:#c62828;font-weight:700;';
+    tsErrP1.textContent = 'Failed to generate questions.';
+    const tsErrP2 = document.createElement('p');
+    tsErrP2.style.cssText = 'color:#888;font-size:13px;margin:8px 0;';
+    tsErrP2.textContent = err.message || '';
+    const tsRetryBtn = document.createElement('button');
+    tsRetryBtn.textContent = 'Retry';
+    tsRetryBtn.style.cssText = 'margin-top:12px;padding:10px 20px;background:#2d4a8a;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;';
+    tsRetryBtn.onclick = () => startTSDay(day);
+    const tsBackBtn = document.createElement('button');
+    tsBackBtn.textContent = '← Back';
+    tsBackBtn.style.cssText = 'margin-top:12px;margin-left:8px;padding:10px 20px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;cursor:pointer;font-weight:700;';
+    tsBackBtn.onclick = () => renderTSWeekView();
+    tsErrWrap.append(tsErrP1, tsErrP2, tsRetryBtn, tsBackBtn);
+    document.getElementById('mainContent').innerHTML = '';
+    document.getElementById('mainContent').appendChild(tsErrWrap);
   }
 }
 
@@ -5258,11 +5612,17 @@ async function buildRemediationSet() {
     renderTSWeekView();
   } catch (err) {
     console.error('Remediation generation error:', err);
-    document.getElementById('mainContent').innerHTML += `
-      <div style="text-align:center;padding:12px;color:#c62828;font-size:13px;">
-        Failed to generate remediation: ${err.message||''}
-        <button onclick="buildRemediationSet()" style="margin-left:8px;padding:4px 12px;border:1px solid #ddd;border-radius:6px;cursor:pointer;">Retry</button>
-      </div>`;
+    const remErrDiv = document.createElement('div');
+    remErrDiv.style.cssText = 'text-align:center;padding:12px;color:#c62828;font-size:13px;';
+    const remErrSpan = document.createElement('span');
+    remErrSpan.textContent = 'Failed to generate remediation: ' + (err.message||'');
+    remErrDiv.appendChild(remErrSpan);
+    const remRetryBtn = document.createElement('button');
+    remRetryBtn.textContent = 'Retry';
+    remRetryBtn.style.cssText = 'margin-left:8px;padding:4px 12px;border:1px solid #ddd;border-radius:6px;cursor:pointer;';
+    remRetryBtn.onclick = () => buildRemediationSet();
+    remErrDiv.appendChild(remRetryBtn);
+    document.getElementById('mainContent').appendChild(remErrDiv);
   }
 }
 
@@ -5339,15 +5699,25 @@ const firebaseConfig = {
         localStorage.setItem(STORE_KEY, JSON.stringify(_pendingFbWrite));
         _pendingFbWrite = null;
       } else if (fbData && localData) {
-        // 둘 다 있으면 유저 수가 많은 쪽이 최신 데이터
-        const fbUsers = (fbData.users || []).length;
-        const localUsers = (localData.users || []).length;
-        if (localUsers >= fbUsers) {
-          // 로컬이 같거나 많으면 Firebase로 업로드 (선생님 기기 기준)
-          window.FB_REF.set(localData);
+        // 둘 다 있으면 lastModified 가 최신인 쪽이 이김
+        const fbTs = fbData.lastModified || 0;
+        const localTs = localData.lastModified || 0;
+        if (fbTs && localTs) {
+          // 둘 다 lastModified 있으면 타임스탬프 비교
+          if (localTs >= fbTs) {
+            window.FB_REF.set(localData);
+          } else {
+            localStorage.setItem(STORE_KEY, JSON.stringify(fbData));
+          }
         } else {
-          // Firebase가 더 많으면 로컬에 반영
-          localStorage.setItem(STORE_KEY, JSON.stringify(fbData));
+          // 구버전 데이터 fallback: 유저 수 기준
+          const fbUsers = (fbData.users || []).length;
+          const localUsers = (localData.users || []).length;
+          if (localUsers >= fbUsers) {
+            window.FB_REF.set(localData);
+          } else {
+            localStorage.setItem(STORE_KEY, JSON.stringify(fbData));
+          }
         }
       } else if (fbData) {
         localStorage.setItem(STORE_KEY, JSON.stringify(fbData));
@@ -5372,6 +5742,506 @@ const firebaseConfig = {
     });
   }
 })();
+
+// ═══════════════════════════════════════
+//  출석 관리 (v1.2 — 요일 기반)
+// ═══════════════════════════════════════
+const DAY_KEYS = ['sun','mon','tue','wed','thu','fri','sat'];
+const DAY_LABELS_KR = ['일','월','화','수','목','금','토'];
+
+function getDayKeyFromDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return DAY_KEYS[d.getDay()];
+}
+
+function getStudentsForDate(store, dateStr) {
+  const dayKey = getDayKeyFromDate(dateStr);
+  return store.users.filter(u => u.role === 'student' && u.status !== 'inactive' && !u.isTest && (u.days || []).includes(dayKey));
+}
+
+function loadAttendanceCheck() {
+  const input = document.getElementById('attDateInput');
+  if (!input || !input.value) { alert('날짜를 선택해주세요.'); return; }
+  const dateStr = input.value;
+  const store = getStore();
+  const students = getStudentsForDate(store, dateStr);
+  const dayKey = getDayKeyFromDate(dateStr);
+  const dayLabel = DAY_LABELS_KR[DAY_KEYS.indexOf(dayKey)];
+  const container = document.getElementById('attCheckContainer');
+  if (!container) return;
+
+  if (students.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted);font-size:15px;">
+      ${dateStr} (${dayLabel}요일)은 수업이 없습니다.<br>
+      <span style="font-size:13px;">학생 관리에서 수업 요일을 설정해주세요.</span>
+    </div>`;
+    return;
+  }
+
+  const existing = store.attendance[dateStr] || {};
+  let html = `<div style="font-weight:800;color:var(--navy);font-size:15px;margin-bottom:12px;">
+    📅 ${dateStr} (${dayLabel}요일) — ${students.length}명
+  </div>`;
+
+  students.forEach(s => {
+    const v = existing[s.id] || '';
+    html += `<div style="display:flex;align-items:center;gap:14px;padding:10px 14px;background:#fff;border-radius:10px;margin-bottom:6px;border:1px solid var(--border);">
+      <div style="flex:1;font-weight:700;font-size:14px;">${s.name} <span style="font-size:12px;color:var(--muted);">Y${s.year}</span></div>
+      <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;">
+        <input type="radio" name="att_${s.id}" value="present" ${v==='present'?'checked':''}>✅ 출석
+      </label>
+      <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;">
+        <input type="radio" name="att_${s.id}" value="late" ${v==='late'?'checked':''}>⚠️ 지각
+      </label>
+      <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;">
+        <input type="radio" name="att_${s.id}" value="absent" ${v==='absent'?'checked':''}>❌ 결석
+      </label>
+    </div>`;
+  });
+
+  html += `<button class="btn-sm btn-navy" style="margin-top:12px;width:100%;padding:12px;" onclick="saveAttendanceCheck('${dateStr}')">✅ 저장</button>
+    <div id="attSaveOk" style="display:none;text-align:center;color:var(--green);font-weight:700;font-size:14px;margin-top:8px;">✅ 출석이 저장되었습니다</div>`;
+  container.innerHTML = html;
+}
+
+function saveAttendanceCheck(dateStr) {
+  const store = getStore();
+  const students = getStudentsForDate(store, dateStr);
+  if (!store.attendance[dateStr]) store.attendance[dateStr] = {};
+  students.forEach(s => {
+    const radio = document.querySelector(`input[name="att_${s.id}"]:checked`);
+    if (radio) store.attendance[dateStr][s.id] = radio.value;
+  });
+  saveStore(store);
+  const ok = document.getElementById('attSaveOk');
+  if (ok) { ok.style.display = 'block'; setTimeout(() => ok.style.display = 'none', 2500); }
+  // 월간 요약도 갱신
+  const summaryEl = document.getElementById('attMonthlySummary');
+  if (summaryEl) summaryEl.innerHTML = buildMonthlySummaryRows(store);
+}
+
+function deleteAttendanceDate(dateStr) {
+  if (!confirm(`${dateStr} 출석 기록을 삭제할까요?`)) return;
+  const store = getStore();
+  delete store.attendance[dateStr];
+  saveStore(store);
+  renderTeacher();
+}
+
+function buildMonthlySummaryRows(store) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const students = store.users.filter(u => u.role === 'student' && u.status !== 'inactive' && !u.isTest);
+  const dates = Object.keys(store.attendance).filter(d => {
+    const [y, mo] = d.split('-').map(Number);
+    return y === year && mo === month;
+  }).sort();
+
+  if (dates.length === 0) return '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px;">이번 달 출석 기록이 없습니다.</td></tr>';
+
+  return students.map(s => {
+    // 이 학생이 수업이 있는 날만 카운트
+    let present = 0, late = 0, absent = 0, total = 0;
+    dates.forEach(d => {
+      const v = store.attendance[d]?.[s.id];
+      if (v) {
+        total++;
+        if (v === 'present') present++;
+        else if (v === 'late') late++;
+        else if (v === 'absent') absent++;
+      }
+    });
+    if (total === 0) return '';
+    const rate = Math.round((present + late) / total * 100);
+    const rateColor = rate >= 80 ? 'var(--green)' : rate >= 60 ? 'var(--gold2)' : 'var(--red)';
+    return `<tr>
+      <td style="font-weight:700;">${s.name}${s.isTest?' <span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:800;padding:1px 5px;border-radius:99px;">T</span>':''}</td>
+      <td style="text-align:center;">${present}</td>
+      <td style="text-align:center;">${late}</td>
+      <td style="text-align:center;">${absent}</td>
+      <td style="text-align:center;font-weight:800;color:${rateColor};">${rate}%</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderAttendanceSection(store) {
+  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const monthNames = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+  // 이번 달 출석 기록이 있는 날짜
+  const dates = Object.keys(store.attendance).filter(d => {
+    const [y, mo] = d.split('-').map(Number);
+    return y === now.getFullYear() && mo === now.getMonth() + 1;
+  }).sort();
+
+  let html = `
+    <div class="settings-card" style="margin-top:8px;">
+      <h2>📅 출석 체크</h2>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+        <input type="date" id="attDateInput" value="${today}" style="padding:8px 12px;border:2px solid var(--border);border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-size:14px;">
+        <button class="btn-sm btn-navy" onclick="loadAttendanceCheck()">출석 체크</button>
+      </div>
+      <div id="attCheckContainer"></div>
+    </div>
+
+    <div class="settings-card" style="margin-top:8px;">
+      <h2>📊 ${monthNames[now.getMonth()]} 출석 요약</h2>
+      ${dates.length > 0 ? `<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">기록된 수업일: ${dates.map(d=>{
+        const day = d.split('-')[2];
+        const dk = getDayKeyFromDate(d);
+        return parseInt(day)+'일('+DAY_LABELS_KR[DAY_KEYS.indexOf(dk)]+')';
+      }).join(', ')}
+        </div>` : ''}
+      <div style="overflow-x:auto;">
+      <table class="results-table">
+        <thead><tr><th>이름</th><th style="text-align:center;">출석</th><th style="text-align:center;">지각</th><th style="text-align:center;">결석</th><th style="text-align:center;">출석률</th></tr></thead>
+        <tbody id="attMonthlySummary">${buildMonthlySummaryRows(store)}</tbody>
+      </table>
+      </div>
+      ${dates.length > 0 ? `<div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;">${dates.map(d => `<button class="btn-sm btn-red" style="padding:2px 8px;font-size:11px;" onclick="deleteAttendanceDate('${d}')">✕ ${d}</button>`).join('')}</div>` : ''}
+    </div>`;
+  return html;
+}
+
+function renderParentAttendanceCard(childId, store) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const monthNames = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+  const dates = Object.keys(store.attendance).filter(d => {
+    const [y,mo] = d.split('-').map(Number);
+    return y === year && mo === month;
+  }).sort();
+
+  // 이 학생의 출석 기록이 있는 날짜만 필터
+  const studentDates = dates.filter(d => store.attendance[d]?.[childId]);
+  if (studentDates.length === 0) return '';
+
+  let presentCount = 0, lateCount = 0, absentCount = 0;
+  const rows = studentDates.map(d => {
+    const v = store.attendance[d][childId];
+    if (v === 'present') presentCount++;
+    else if (v === 'late') { lateCount++; }
+    else if (v === 'absent') absentCount++;
+    const icon = v==='present'?'✅ 출석':v==='late'?'⚠️ 지각':v==='absent'?'❌ 결석':'— 미기록';
+    const color = v==='present'?'var(--green)':v==='late'?'var(--gold2)':v==='absent'?'var(--red)':'var(--muted)';
+    const day = d.split('-')[2];
+    const dk = getDayKeyFromDate(d);
+    const dayLabel = DAY_LABELS_KR[DAY_KEYS.indexOf(dk)];
+    return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;">
+      <span>${month}월 ${parseInt(day)}일 (${dayLabel})</span>
+      <span style="font-weight:700;color:${color};">${icon}</span>
+    </div>`;
+  }).join('');
+
+  const attended = presentCount + lateCount;
+  const total = studentDates.length;
+  const rate = Math.round(attended / total * 100);
+  const rateColor = rate >= 80 ? 'var(--green)' : rate >= 60 ? 'var(--gold2)' : 'var(--red)';
+  const perfect = lateCount === 0 && absentCount === 0;
+
+  return `
+    <div class="info-card" style="margin-bottom:16px;">
+      <h3>📅 출석 기록 — ${monthNames[month-1]}</h3>
+      <div style="display:flex;align-items:center;gap:16px;margin:12px 0;">
+        <div style="font-size:36px;font-weight:900;font-family:'Noto Serif KR',serif;color:${rateColor};">${rate}%</div>
+        <div style="font-size:13px;color:var(--muted);">
+          출석 ${presentCount}회 · 지각 ${lateCount}회 · 결석 ${absentCount}회<br>
+          총 ${total}회 수업
+        </div>
+      </div>
+      ${perfect ? '<div style="background:#f0fdf4;border-radius:10px;padding:10px 14px;color:#166534;font-weight:700;font-size:14px;margin-bottom:8px;">이번 달 개근입니다 🎉</div>' : ''}
+      ${rows}
+    </div>`;
+}
+
+// ═══════════════════════════════════════
+//  학생 화면 미리보기
+// ═══════════════════════════════════════
+function startPreviewMode() {
+  const sel = document.getElementById('previewStudentSel');
+  if (!sel || !sel.value) { alert('학생을 선택해주세요.'); return; }
+  const store = getStore();
+  const student = store.users.find(u => u.id === sel.value);
+  if (!student) return;
+  _originalTeacher = currentUser;
+  window.isPreviewMode = true;
+  currentUser = { ...student };
+  studentPeriod = store.currentPeriod;
+  currentSetIdx = null;
+  qIdx = 0;
+  tsViewState = null;
+  // topbar 갱신
+  document.getElementById('topbarUser').textContent = student.name + ' (Year ' + student.year + ')';
+  document.getElementById('btnBackupDownload').style.display = 'none';
+  document.querySelector('.btn-logout').style.display = 'none';
+  renderPreviewBanner();
+  renderStudent();
+}
+
+function renderPreviewBanner() {
+  document.getElementById('previewBanner')?.remove();
+  const banner = document.createElement('div');
+  banner.id = 'previewBanner';
+  banner.style.cssText = 'position:fixed;top:60px;left:0;right:0;background:#f97316;color:#fff;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;z-index:999;font-family:\'Noto Sans KR\',sans-serif;font-weight:700;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.2);flex-wrap:wrap;gap:8px;';
+  const info = document.createElement('span');
+  info.textContent = '\u{1F441} 미리보기 모드 \u2014 ' + currentUser.name + ' (Year ' + currentUser.year + ') \xB7 저장/제출이 실제 데이터에 반영되지 않습니다';
+  const btn = document.createElement('button');
+  btn.textContent = '\u2190 선생님 화면으로 돌아가기';
+  btn.style.cssText = 'padding:6px 16px;background:#fff;color:#f97316;border:none;border-radius:8px;font-family:\'Noto Sans KR\',sans-serif;font-weight:800;font-size:13px;cursor:pointer;';
+  btn.onclick = exitPreviewMode;
+  banner.appendChild(info);
+  banner.appendChild(btn);
+  document.body.appendChild(banner);
+  const main = document.querySelector('.main');
+  if (main) main.style.paddingTop = '100px';
+}
+
+function exitPreviewMode() {
+  window.isPreviewMode = false;
+  currentUser = _originalTeacher;
+  _originalTeacher = null;
+  currentSetIdx = null;
+  qIdx = 0;
+  tsViewState = null;
+  studentPeriod = null;
+  document.getElementById('previewBanner')?.remove();
+  const main = document.querySelector('.main');
+  if (main) main.style.removeProperty('padding-top');
+  // topbar 복원
+  document.getElementById('topbarUser').textContent = 'Teacher';
+  document.getElementById('btnBackupDownload').style.display = '';
+  document.querySelector('.btn-logout').style.display = '';
+  renderTeacher();
+}
+
+// ═══════════════════════════════════════
+//  기본 계정 보호 & 비밀번호 초기화
+// ═══════════════════════════════════════
+const PROTECTED_ACCOUNTS = ['teacher', 'parent01', 'parent02'];
+function isProtectedAccount(id) {
+  return PROTECTED_ACCOUNTS.includes(id);
+}
+
+async function resetStudentPassword(studentId) {
+  const newPw = prompt(`"${studentId}" 의 새 비밀번호를 입력하세요:`);
+  if (!newPw || !newPw.trim()) return;
+  const store = getStore();
+  const user = store.users.find(u => u.id === studentId && u.role === 'student');
+  if (!user) { alert('학생을 찾을 수 없습니다.'); return; }
+  user.pw = await hashPw(newPw.trim());
+  saveStore(store);
+  alert('✅ 비밀번호가 변경되었습니다.');
+  renderTeacher();
+}
+
+async function resetParentPassword(parentId) {
+  const newPw = prompt(`"${parentId}" 의 새 비밀번호를 입력하세요:`);
+  if (!newPw || !newPw.trim()) return;
+  const store = getStore();
+  const user = store.users.find(u => u.id === parentId && u.role === 'parent');
+  if (!user) { alert('학부모를 찾을 수 없습니다.'); return; }
+  user.pw = await hashPw(newPw.trim());
+  saveStore(store);
+  alert('✅ 비밀번호가 변경되었습니다.');
+  rebuildParentCards();
+}
+
+// ═══════════════════════════════════════
+//  리포트 인쇄
+// ═══════════════════════════════════════
+function printReport() {
+  window.print();
+}
+
+function printParentReport() {
+  window.print();
+}
+
+// ═══════════════════════════════════════
+//  백업 기능 (Firebase 자동 백업 + 수동 다운로드 + 복구)
+// ═══════════════════════════════════════
+const BACKUP_REF_PATH = 'solomon_backups';
+const BACKUP_MAX_COUNT = 30;
+
+function getBackupRef() {
+  return firebase.database().ref(BACKUP_REF_PATH);
+}
+
+// ── 1. Firebase 자동 백업 (선생님 로그인 시) ──
+async function autoBackupToFirebase() {
+  if (!window.FB_REF) return;
+  try {
+    const store = getStore();
+    if (!store) return;
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const backupKey = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}`;
+    const students = (store.users || []).filter(u => u.role === 'student');
+    const hwSetCount = Object.keys(store.homeworkSets || {}).length;
+    const backupEntry = {
+      timestamp: now.toISOString(),
+      studentCount: students.length,
+      hwSetCount: hwSetCount,
+      data: store
+    };
+    await getBackupRef().child(backupKey).set(backupEntry);
+    // 오래된 백업 자동 삭제 (최근 30개만 보관)
+    const snapshot = await getBackupRef().orderByKey().once('value');
+    const allKeys = [];
+    snapshot.forEach(child => { allKeys.push(child.key); });
+    if (allKeys.length > BACKUP_MAX_COUNT) {
+      const toDelete = allKeys.slice(0, allKeys.length - BACKUP_MAX_COUNT);
+      const updates = {};
+      toDelete.forEach(k => { updates[k] = null; });
+      await getBackupRef().update(updates);
+    }
+    console.log('[Backup] 자동 백업 완료:', backupKey);
+    showBackupToast('✅ 자동 백업 완료');
+  } catch(e) {
+    console.error('[Backup] 자동 백업 실패:', e);
+    showBackupToast('⚠️ 자동 백업 실패');
+  }
+}
+
+// ── 2. 수동 다운로드 백업 ──
+async function manualBackupDownload() {
+  const store = getStore();
+  if (!store) { alert('데이터가 없습니다.'); return; }
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  const fileName = `solomon_backup_${dateStr}.json`;
+  const jsonStr = JSON.stringify(store, null, 2);
+  const blob = new Blob([jsonStr], { type: 'application/json' });
+
+  // showSaveFilePicker 지원 시 사용, 아니면 fallback
+  if (window.showSaveFilePicker) {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: fileName,
+        types: [{
+          description: 'JSON Files',
+          accept: { 'application/json': ['.json'] }
+        }]
+      });
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      showBackupToast('✅ 백업 완료! 파일이 저장되었습니다.');
+      return;
+    } catch(e) {
+      if (e.name === 'AbortError') return; // 사용자가 취소
+    }
+  }
+  // fallback: 기존 다운로드 방식
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showBackupToast('✅ 백업 완료! 다운로드 폴더를 확인하세요.');
+}
+
+function showBackupToast(msg) {
+  const toast = document.createElement('div');
+  toast.textContent = msg;
+  Object.assign(toast.style, {
+    position:'fixed', bottom:'30px', left:'50%', transform:'translateX(-50%)',
+    background:'var(--navy)', color:'#fff', padding:'14px 28px', borderRadius:'12px',
+    fontWeight:'700', fontSize:'14px', zIndex:'10000', boxShadow:'0 4px 20px rgba(0,0,0,.3)',
+    fontFamily:"'Noto Sans KR',sans-serif"
+  });
+  document.body.appendChild(toast);
+  setTimeout(() => { toast.remove(); }, 3000);
+}
+
+// ── 3. 백업 목록 로드 및 복구 ──
+async function loadBackupList() {
+  const container = document.getElementById('backupListContainer');
+  if (!container) return;
+  if (!window.FB_REF) {
+    container.innerHTML = '<div style="color:var(--red);font-size:13px;">Firebase가 연결되지 않았습니다.</div>';
+    return;
+  }
+  container.innerHTML = '<div style="color:var(--muted);font-size:13px;">⏳ 백업 목록 로딩 중...</div>';
+  try {
+    const snapshot = await getBackupRef().orderByKey().once('value');
+    const backups = [];
+    snapshot.forEach(child => {
+      backups.push({ key: child.key, ...child.val() });
+    });
+    backups.reverse(); // 최신순
+    if (backups.length === 0) {
+      container.innerHTML = '<div style="color:var(--muted);font-size:13px;">저장된 백업이 없습니다.</div>';
+      return;
+    }
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:6px;">';
+    html += '<thead><tr style="border-bottom:2px solid var(--border);text-align:left;">'
+          + '<th style="padding:6px 8px;">날짜/시간</th>'
+          + '<th style="padding:6px 8px;">학생 수</th>'
+          + '<th style="padding:6px 8px;">숙제 세트</th>'
+          + '<th style="padding:6px 8px;">복구</th></tr></thead><tbody>';
+    backups.forEach(b => {
+      const displayDate = b.key.replace('_', ' ').replace(/-/g, function(m, offset) {
+        return offset <= 9 ? '-' : ':';
+      });
+      const label = b.key.replace(/_/g, ' ');
+      html += `<tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:6px 8px;font-weight:600;">${label}</td>
+        <td style="padding:6px 8px;">${b.studentCount ?? '-'}명</td>
+        <td style="padding:6px 8px;">${b.hwSetCount ?? '-'}개</td>
+        <td style="padding:6px 8px;">
+          <button class="btn-sm btn-gold" style="padding:3px 10px;font-size:12px;" onclick="restoreBackup('${b.key}')">이걸로 복구</button>
+        </td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  } catch(e) {
+    container.innerHTML = '';
+    const bkErr = document.createElement('div');
+    bkErr.style.cssText = 'color:var(--red);font-size:13px;';
+    bkErr.textContent = '백업 목록 로드 실패: ' + e.message;
+    container.appendChild(bkErr);
+  }
+}
+
+async function restoreBackup(backupKey) {
+  if (!confirm(`⚠️ 정말 "${backupKey}" 백업으로 복구할까요?\n\n현재 데이터는 사라지고 해당 시점의 데이터로 대체됩니다.`)) return;
+  if (!window.FB_REF) { alert('Firebase가 연결되지 않았습니다.'); return; }
+
+  // 로딩 오버레이 표시
+  const overlay = document.getElementById('loadingOverlay');
+  if (overlay) overlay.style.display = 'flex';
+
+  try {
+    const snapshot = await getBackupRef().child(backupKey).child('data').once('value');
+    const backupData = snapshot.val();
+    if (!backupData) {
+      alert('해당 백업에 데이터가 없습니다.');
+      if (overlay) overlay.style.display = 'none';
+      return;
+    }
+    // localStorage 복구
+    localStorage.setItem(STORE_KEY, JSON.stringify(backupData));
+    // Firebase 원본 데이터도 복구
+    await window.FB_REF.set(backupData);
+    alert('✅ 복구 완료! 페이지를 새로고침합니다.');
+    location.reload();
+  } catch(e) {
+    alert('복구 실패: ' + e.message);
+    if (overlay) overlay.style.display = 'none';
+  }
+}
+
+
 </script>
 </body>
 </html>
