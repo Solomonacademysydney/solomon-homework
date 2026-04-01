@@ -1472,11 +1472,19 @@ function renderTeacher() {
   } else if (teacherTab === 'students') {
     document.getElementById('mainContent').innerHTML = tabBar + renderAttendanceSection(store) + renderStudentManagementSection(store);
   } else if (teacherTab === 'settings') {
-    document.getElementById('mainContent').innerHTML = tabBar + renderTeacherSettings(store);
+    _showDebugError('STEP1: settings 렌더링 시작');
+    var _settingsHtml = renderTeacherSettings(store);
+    _showDebugError('STEP2: renderTeacherSettings 완료');
+    document.getElementById('mainContent').innerHTML = tabBar + _settingsHtml;
+    _showDebugError('STEP3: innerHTML 교체 완료');
+    var _ovCheck = document.getElementById('loadingOverlay');
+    _showDebugError('STEP4: overlay display=' + (_ovCheck ? _ovCheck.style.display : 'NULL') + ' computed=' + (_ovCheck ? getComputedStyle(_ovCheck).display : 'NULL'));
     setTimeout(() => loadBackupList(), 300);
+    _showDebugError('STEP5: 모든 단계 완료');
   }
   } catch(e) {
     console.error('renderTeacher error:', e);
+    _showDebugError('renderTeacher ERROR: ' + e.message + '\n' + e.stack);
     document.getElementById('mainContent').innerHTML = '<div style="padding:40px;color:#dc2626;font-weight:800;">⚠️ 화면 렌더링 오류: ' + e.message + '<br><button onclick="renderTeacher()" style="margin-top:12px;padding:8px 16px;cursor:pointer;">다시 시도</button></div>';
   }
 }
@@ -6301,4 +6309,26 @@ async function restoreBackup(backupKey) {
   if (overlay) overlay.style.display = 'flex';
 
   try {
-    const snapshot = await getBackupRef().child(
+    const snapshot = await getBackupRef().child(backupKey).child('data').once('value');
+    const backupData = snapshot.val();
+    if (!backupData) {
+      alert('해당 백업에 데이터가 없습니다.');
+      if (overlay) overlay.style.display = 'none';
+      return;
+    }
+    // localStorage 복구
+    localStorage.setItem(STORE_KEY, JSON.stringify(backupData));
+    // Firebase 원본 데이터도 복구
+    await window.FB_REF.set(backupData);
+    alert('✅ 복구 완료! 페이지를 새로고침합니다.');
+    location.reload();
+  } catch(e) {
+    alert('복구 실패: ' + e.message);
+    if (overlay) overlay.style.display = 'none';
+  }
+}
+
+
+</script>
+</body>
+</html>
