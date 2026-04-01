@@ -1158,6 +1158,8 @@ let editingCalcRanges = [];   // [{from, to, allowed}]
 
 function renderTeacher() {
   closeModal();
+  var _ovr = document.getElementById('loadingOverlay');
+  if (_ovr) _ovr.remove();
   try {
   const store      = getStore();
   const p          = store.currentPeriod;
