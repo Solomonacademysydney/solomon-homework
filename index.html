@@ -1446,6 +1446,7 @@ function renderTeacher() {
     document.getElementById('mainContent').innerHTML = tabBar + renderAttendanceSection(store) + renderStudentManagementSection(store);
   } else if (teacherTab === 'settings') {
     document.getElementById('mainContent').innerHTML = tabBar + renderTeacherSettings(store);
+    setTimeout(() => loadBackupList(), 300);
   }
 }
 
@@ -1844,7 +1845,6 @@ function renderTeacherSettings(store) {
       <span>🛠 Solomon Platform</span>
       <span><b style="color:var(--navy);">${APP_VERSION.version}</b> · ${APP_VERSION.date} · ${APP_VERSION.note}</span>
     </div>`;
-  setTimeout(() => loadBackupList(), 300);
 }
 
 function toggleStudentDay(studentId, day) {
@@ -3472,6 +3472,7 @@ async function saveTeacherAccount() {
   saveStore(store);
   document.getElementById('topbarUser').textContent = 'Teacher';
   showBackupToast('✅ Teacher account updated.');
+  closeModal();
   renderTeacher();
 }
 
