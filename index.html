@@ -740,6 +740,31 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 </div>
 
 <script>
+// ── 전역 에러 감지: 화면에 직접 표시 ──
+window.onerror = function(msg, src, line, col, err) {
+  _showDebugError('JS Error: ' + msg + ' (line ' + line + ')');
+};
+window.addEventListener('unhandledrejection', function(e) {
+  _showDebugError('Async Error: ' + (e.reason?.message || e.reason || 'unknown'));
+});
+function _showDebugError(text) {
+  let box = document.getElementById('_debugErrorBox');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = '_debugErrorBox';
+    box.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#dc2626;color:#fff;padding:12px 20px;font-size:13px;font-family:monospace;max-height:30vh;overflow-y:auto;white-space:pre-wrap;';
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕ 닫기';
+    closeBtn.style.cssText = 'position:absolute;top:6px;right:12px;background:#fff;color:#dc2626;border:none;border-radius:6px;padding:4px 12px;font-weight:900;cursor:pointer;';
+    closeBtn.onclick = function() { box.remove(); };
+    box.appendChild(closeBtn);
+    document.body.appendChild(box);
+  }
+  const line = document.createElement('div');
+  line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + text;
+  box.appendChild(line);
+}
+
 // ═══════════════════════════════════════
 //  DATA STORE
 // ═══════════════════════════════════════
