@@ -3880,19 +3880,9 @@ function getAIKey() {
 function setAIKey(k) {
   const key = k.trim();
   localStorage.setItem('claude_api_key', key);
-  const raw = localStorage.getItem(STORE_KEY);
-  if (raw) {
-    try {
-      const d = JSON.parse(raw);
-      d.claudeApiKey = key;
-      d.lastModified = Date.now();
-      localStorage.setItem(STORE_KEY, JSON.stringify(d));
-      if (window.fbReady && window.FB_REF) {
-        window.FB_REF.set(JSON.parse(JSON.stringify(d)))
-          .catch(err => console.error('[Firebase] 저장 실패:', err));
-      }
-    } catch(e) {}
-  }
+  const store = getStore();
+  store.claudeApiKey = key;
+  saveStore(store);
 }
 
 async function callAI(prompt) {
