@@ -618,6 +618,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   <div class="loading-spinner"></div>
   <div class="loading-text">Loading...</div>
 </div>
+<script>
+// 안전장치: 어떤 상황에서도 8초 후 오버레이 강제 제거
+setTimeout(function(){var o=document.getElementById('loadingOverlay');if(o)o.remove();},8000);
+</script>
 
 <!-- ══ LOGIN ══ -->
 <div id="loginScreen">
