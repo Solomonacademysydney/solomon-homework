@@ -1155,6 +1155,7 @@ let editingCalcRanges = [];   // [{from, to, allowed}]
 
 function renderTeacher() {
   closeModal();
+  try {
   const store      = getStore();
   const p          = store.currentPeriod;
   const allStudents = store.users.filter(u => u.role==='student' && u.status !== 'inactive');
@@ -1449,6 +1450,10 @@ function renderTeacher() {
     document.getElementById('mainContent').innerHTML = tabBar + renderTeacherSettings(store);
     setTimeout(() => loadBackupList(), 300);
   }
+  } catch(e) {
+    console.error('renderTeacher error:', e);
+    document.getElementById('mainContent').innerHTML = '<div style="padding:40px;color:#dc2626;font-weight:800;">⚠️ 화면 렌더링 오류: ' + e.message + '<br><button onclick="renderTeacher()" style="margin-top:12px;padding:8px 16px;cursor:pointer;">다시 시도</button></div>';
+  }
 }
 
 function setPeriod() {
@@ -1726,6 +1731,7 @@ function doSave() {
 
 // ─── TEACHER PREVIEW ───────────────────
 function previewHomework(yr) {
+  try {
   const store = getStore();
   const p     = store.currentPeriod;
   const hw    = store.homeworkSets[hwKey(yr, selectedCountry, p)];
@@ -1752,9 +1758,11 @@ function previewHomework(yr) {
 
   document.getElementById('modalContent').innerHTML = html;
   document.getElementById('modal').classList.add('open');
+  } catch(e) { console.error('previewHomework error:', e); closeModal(); }
 }
 
 function viewResults(yr) {
+  try {
   const store    = getStore();
   const p        = store.currentPeriod;
   const hw       = store.homeworkSets[hwKey(yr, selectedCountry, p)];
@@ -1804,6 +1812,7 @@ function viewResults(yr) {
 
   document.getElementById('modalContent').innerHTML = html;
   document.getElementById('modal').classList.add('open');
+  } catch(e) { console.error('viewResults error:', e); closeModal(); }
 }
 
 function renderTeacherSettings(store) {
@@ -3473,7 +3482,6 @@ async function saveTeacherAccount() {
   saveStore(store);
   document.getElementById('topbarUser').textContent = 'Teacher';
   showBackupToast('✅ Teacher account updated.');
-  closeModal();
   renderTeacher();
 }
 
@@ -3625,6 +3633,7 @@ function buildReportDataForStudent(studentId, period, store) {
 }
 
 function showTeacherReport(studentId) {
+  try {
   const store = getStore();
   const p = store.currentPeriod;
   const data = buildReportDataForStudent(studentId, p, store);
@@ -3791,6 +3800,7 @@ function showTeacherReport(studentId) {
 
   document.getElementById('modalContent').innerHTML = html;
   document.getElementById('modal').classList.add('open');
+  } catch(e) { console.error('showTeacherReport error:', e); closeModal(); }
 }
 
 async function generateAndShowKakao(studentId, resultIdx, setIdx) {
@@ -3882,11 +3892,7 @@ function getAIKey() {
   return localStorage.getItem('claude_api_key') || '';
 }
 function setAIKey(k) {
-  const key = k.trim();
-  localStorage.setItem('claude_api_key', key);
-  const store = getStore();
-  store.claudeApiKey = key;
-  saveStore(store);
+  localStorage.setItem('claude_api_key', k.trim());
 }
 
 async function callAI(prompt) {
@@ -4866,7 +4872,49 @@ function renderFinalReport(setIdx) {
 // ═══════════════════════════════════════
 function closeModal() {
   document.getElementById('modal').classList.remove('open');
+  // 안전장치: loadingOverlay도 숨김
+  const ov = document.getElementById('loadingOverlay');
+  if (ov) ov.style.display = 'none';
 }
+
+// ── ESC 키로 모달/오버레이 강제 닫기 ──
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeModal();
+  }
+});
+
+// ── 모달이 열린 상태에서 배경 클릭이 안 먹힐 때를 위한 안전장치 ──
+// 모달이 open 상태에서 10초 후에도 열려 있으면 강제 닫기 버튼 표시
+(function() {
+  let _modalWatchTimer = null;
+  const observer = new MutationObserver(function() {
+    const modal = document.getElementById('modal');
+    if (!modal) return;
+    if (modal.classList.contains('open')) {
+      clearTimeout(_modalWatchTimer);
+      _modalWatchTimer = setTimeout(function() {
+        if (modal.classList.contains('open')) {
+          let esc = document.getElementById('_modalEscBtn');
+          if (!esc) {
+            esc = document.createElement('button');
+            esc.id = '_modalEscBtn';
+            esc.textContent = '✕ 닫기 (ESC)';
+            esc.style.cssText = 'position:fixed;top:8px;right:8px;z-index:10001;background:#dc2626;color:#fff;border:none;border-radius:10px;padding:12px 24px;font-size:15px;font-weight:900;cursor:pointer;font-family:"Noto Sans KR",sans-serif;box-shadow:0 4px 20px rgba(0,0,0,.5);';
+            esc.onclick = function() { closeModal(); esc.remove(); };
+            document.body.appendChild(esc);
+          }
+        }
+      }, 10000);
+    } else {
+      clearTimeout(_modalWatchTimer);
+      const esc = document.getElementById('_modalEscBtn');
+      if (esc) esc.remove();
+    }
+  });
+  const modalEl = document.getElementById('modal');
+  if (modalEl) observer.observe(modalEl, { attributes: true, attributeFilter: ['class'] });
+})();
 
 // ═══════════════════════════════════════
 //  THINKING SKILLS (TS) SYSTEM
