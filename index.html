@@ -747,7 +747,7 @@ const STORE_KEY = 'solomon_hw_v3';
 const APP_VERSION = {
   version: 'v2.5',
   date: '2026-04-01',
-  note: 'API 키 Firebase 동기화 복원'
+  note: 'API 키 Firebase 동기화 복원 (무한루프 수정)'
 };
 let _pendingFbWrite = null;  // Firebase 연결 전 저장 대기열
 let _originalTeacher = null;
@@ -1034,6 +1034,10 @@ async function ensureStore() {
       }
     }
     if (pwMigrated) saveStore(store);
+  }
+  // store에만 있던 API 키를 localStorage로 이전 (1회)
+  if (store.claudeApiKey && !localStorage.getItem('claude_api_key')) {
+    localStorage.setItem('claude_api_key', store.claudeApiKey);
   }
   return store;
 }
@@ -3871,15 +3875,24 @@ function copyKakaoMsg(resultIdx) {
 //  GEMINI AI INTEGRATION
 // ═══════════════════════════════════════
 function getAIKey() {
-  const store = getStore();
-  return store.claudeApiKey || localStorage.getItem('claude_api_key') || '';
+  return localStorage.getItem('claude_api_key') || '';
 }
 function setAIKey(k) {
   const key = k.trim();
   localStorage.setItem('claude_api_key', key);
-  const store = getStore();
-  store.claudeApiKey = key;
-  saveStore(store);
+  const raw = localStorage.getItem(STORE_KEY);
+  if (raw) {
+    try {
+      const d = JSON.parse(raw);
+      d.claudeApiKey = key;
+      d.lastModified = Date.now();
+      localStorage.setItem(STORE_KEY, JSON.stringify(d));
+      if (window.fbReady && window.FB_REF) {
+        window.FB_REF.set(JSON.parse(JSON.stringify(d)))
+          .catch(err => console.error('[Firebase] 저장 실패:', err));
+      }
+    } catch(e) {}
+  }
 }
 
 async function callAI(prompt) {
