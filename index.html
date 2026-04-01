@@ -751,22 +751,24 @@ const APP_VERSION = {
 };
 let _pendingFbWrite = null;  // Firebase 연결 전 저장 대기열
 let _originalTeacher = null;
+let _skipNextSync = false;   // saveStore 직후 on('value') 중복 쓰기 방지
 window.isPreviewMode = false;
 
 function saveStore(d) {
   if (window.isPreviewMode) return;
   d.lastModified = Date.now();
-  localStorage.setItem(STORE_KEY, JSON.stringify(d));
+  const json = JSON.stringify(d);
+  localStorage.setItem(STORE_KEY, json);
   if (window.fbReady && window.FB_REF) {
-    window.FB_REF.set(JSON.parse(JSON.stringify(d))).catch(err => {
+    _skipNextSync = true;
+    window.FB_REF.set(JSON.parse(json)).catch(err => {
       console.error('[Firebase] 저장 실패:', err);
-      _pendingFbWrite = JSON.parse(JSON.stringify(d));
+      _pendingFbWrite = JSON.parse(json);
       showBackupToast('⚠️ Firebase 저장 실패 — 로컬에만 저장됨');
     });
     _pendingFbWrite = null;
   } else {
-    // Firebase 아직 준비 안 됨 → 나중에 연결되면 올림
-    _pendingFbWrite = JSON.parse(JSON.stringify(d));
+    _pendingFbWrite = JSON.parse(json);
   }
 }
 
@@ -2033,7 +2035,7 @@ async function saveStudentEdit(oldId) {
     // 테스트 계정: Year만 수정 가능
     u.year = parseInt(document.getElementById(`se_year_${oldId}`).value);
     saveStore(store);
-    alert(`✅ ${u.name}'s year updated.`);
+    showBackupToast(`✅ ${u.name}'s year updated.`);
     renderTeacher();
     return;
   }
@@ -2064,7 +2066,7 @@ async function saveStudentEdit(oldId) {
   u.year    = parseInt(document.getElementById(`se_year_${oldId}`).value);
   u.country = document.getElementById(`se_country_${oldId}`)?.value || u.country || 'AU';
   saveStore(store);
-  alert(`✅ ${u.name}'s info updated.`);
+  showBackupToast(`✅ ${u.name}'s info updated.`);
   renderTeacher();
 }
 
@@ -3469,7 +3471,7 @@ async function saveTeacherAccount() {
   if (newPw) currentUser.pw = u.pw;
   saveStore(store);
   document.getElementById('topbarUser').textContent = 'Teacher';
-  alert('✅ Teacher account updated.');
+  showBackupToast('✅ Teacher account updated.');
   renderTeacher();
 }
 
@@ -5676,6 +5678,7 @@ const firebaseConfig = {
     // 다른 기기에서 변경 시 실시간 반영
     window.FB_REF.on('value', (snapshot) => {
       if (!window.fbReady) return;
+      if (_skipNextSync) { _skipNextSync = false; return; }
       const data = snapshot.val();
       if (data) localStorage.setItem(STORE_KEY, JSON.stringify(data));
     });
@@ -6035,7 +6038,7 @@ async function resetStudentPassword(studentId) {
   if (!user) { alert('학생을 찾을 수 없습니다.'); return; }
   user.pw = await hashPw(newPw.trim());
   saveStore(store);
-  alert('✅ 비밀번호가 변경되었습니다.');
+  showBackupToast('✅ 비밀번호가 변경되었습니다.');
   renderTeacher();
 }
 
@@ -6047,7 +6050,7 @@ async function resetParentPassword(parentId) {
   if (!user) { alert('학부모를 찾을 수 없습니다.'); return; }
   user.pw = await hashPw(newPw.trim());
   saveStore(store);
-  alert('✅ 비밀번호가 변경되었습니다.');
+  showBackupToast('✅ 비밀번호가 변경되었습니다.');
   rebuildParentCards();
 }
 
