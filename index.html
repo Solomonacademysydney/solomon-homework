@@ -22,7 +22,7 @@
 body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
 
 /* ── LOADING OVERLAY ── */
-#loadingOverlay{position:fixed;inset:0;background:#0b1220;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:20px;}
+#loadingOverlay{position:fixed;inset:0;background:#0b1220;display:none;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:20px;}
 .loading-spinner{width:52px;height:52px;border:4px solid rgba(212,175,55,.2);border-top-color:#d4af37;border-radius:50%;animation:spin 1s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-text{color:#d4af37;font-family:'Noto Serif KR',serif;font-size:14px;letter-spacing:4px;text-transform:uppercase;}
@@ -614,7 +614,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 <body>
 
 <!-- ══ LOADING ══ -->
-<div id="loadingOverlay">
+<div id="loadingOverlay" style="display:flex">
   <div class="loading-spinner"></div>
   <div class="loading-text">Loading...</div>
 </div>
