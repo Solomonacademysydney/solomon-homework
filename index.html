@@ -1860,7 +1860,7 @@ function renderTeacherSettings(store) {
             Get your key from <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--gold2);">Anthropic Console</a> → Paste here → Save
           </div>
         </div>
-        <button class="btn-sm btn-navy" onclick="setAIKey(document.getElementById('claudeKeyInput').value);showBackupToast('✅ API Key saved!');renderTeacher();">Save API Key</button>
+        <button class="btn-sm btn-navy" onclick="setAIKey(document.getElementById('claudeKeyInput').value);showBackupToast('✅ API Key saved!');renderTeacher();setTimeout(function(){var el=document.elementFromPoint(window.innerWidth/2,window.innerHeight/2);_showDebugError('화면 중앙 위 요소: tag='+el.tagName+' id='+el.id+' class='+el.className+' display='+getComputedStyle(el).display+' zIndex='+getComputedStyle(el).zIndex+' pointer='+getComputedStyle(el).pointerEvents);var m=document.getElementById('modal');_showDebugError('modal open='+m.classList.contains('open')+' display='+getComputedStyle(m).display);var ov=document.getElementById('loadingOverlay');_showDebugError('overlay display='+ov.style.display);},500);">Save API Key</button>
         ${getAIKey() ? '<span style="margin-left:8px;font-size:12px;color:var(--green);font-weight:700;">✅ Key configured</span>' : ''}
       </div>
       <div style="margin-top:16px;padding-top:16px;border-top:2px solid var(--border);">
@@ -6301,26 +6301,4 @@ async function restoreBackup(backupKey) {
   if (overlay) overlay.style.display = 'flex';
 
   try {
-    const snapshot = await getBackupRef().child(backupKey).child('data').once('value');
-    const backupData = snapshot.val();
-    if (!backupData) {
-      alert('해당 백업에 데이터가 없습니다.');
-      if (overlay) overlay.style.display = 'none';
-      return;
-    }
-    // localStorage 복구
-    localStorage.setItem(STORE_KEY, JSON.stringify(backupData));
-    // Firebase 원본 데이터도 복구
-    await window.FB_REF.set(backupData);
-    alert('✅ 복구 완료! 페이지를 새로고침합니다.');
-    location.reload();
-  } catch(e) {
-    alert('복구 실패: ' + e.message);
-    if (overlay) overlay.style.display = 'none';
-  }
-}
-
-
-</script>
-</body>
-</html>
+    const snapshot = await getBackupRef().child(
