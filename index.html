@@ -1094,6 +1094,9 @@ async function doLogin() {
   currentUser = user;
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
+  // 로그인 성공 → 로딩 오버레이 완전 제거 (다시는 나타나지 않음)
+  var _ov = document.getElementById('loadingOverlay');
+  if (_ov) _ov.remove();
   document.getElementById('topbarUser').textContent =
     user.role==='teacher' ? `Teacher`
     : user.role==='parent' ? `${parentDisplayName(user.childIds)} 👨‍👩‍👧`
