@@ -778,6 +778,9 @@ function saveStore(d) {
 
 function renderMath(text) {
   if (!text || typeof text !== 'string') return text || '';
+  if (text.includes('\n')) {
+    return text.split('\n').map(line => renderMath(line)).join('<br>');
+  }
   if (typeof katex === 'undefined') return text;
   // block math: $$...$$ or \[...\]
   text = text.replace(/\$\$([\s\S]+?)\$\$/g, function(m, expr) {
@@ -1323,7 +1326,8 @@ function renderTeacher() {
           <div class="format-hint">
             <b>Question format:</b> Number. Question → Options A) B) C) D) → Multiple Choice &nbsp;|&nbsp; True or False → O/X &nbsp;|&nbsp; No options → Short Answer<br>
             <b>Answer format:</b> 1. B &nbsp; 2. O &nbsp; 3. 6<br>
-            <b>Math formulas:</b> Wrap in <code>$...$</code> for inline math. &nbsp; Examples: <code>$\frac{3}{4}$</code>, <code>$\sqrt{144}$</code>, <code>$x^2-5x+6=0$</code>
+            <b>Math formulas:</b> Wrap in <code>$...$</code> for inline math. &nbsp; Examples: <code>$\frac{3}{4}$</code>, <code>$\sqrt{144}$</code>, <code>$x^2-5x+6=0$</code><br>
+            <b>Data/Table questions:</b> Place schedule, table, or data lines between the question number and the options — they will be preserved automatically.
           </div>
           <div class="paste-area">
             <div class="paste-col">
@@ -3250,8 +3254,9 @@ function parseQuestions(raw) {
     const optTexts    = expanded.filter(l=>l.startsWith('__OPT__')).map(l=>l.slice(7));
     const nonOptLines = expanded.filter(l=>!l.startsWith('__OPT__'));
 
-    // If question text was empty (number only on its line), grab first non-option line
-    let qText = cur.text || nonOptLines[0] || '';
+    // Combine all non-option lines (preserves data/table lines inside a question)
+    const allTextLines = cur.text ? [cur.text, ...nonOptLines] : nonOptLines;
+    let qText = allTextLines.join('\n');
 
     let type = 'sa', options = null;
 
