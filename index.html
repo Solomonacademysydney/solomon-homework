@@ -1630,6 +1630,14 @@ function doParse() {
     </div>
     <div class="preview-list">`;
 
+  const riskyQs = questions.filter(hasMissingDataRisk);
+  if (riskyQs.length > 0) {
+    html += `<div style="background:#fef3c7;border:2px solid #f59e0b;border-radius:12px;padding:14px 18px;margin-bottom:12px;">
+      <div style="font-weight:800;color:#92400e;font-size:14px;">⚠️ ${riskyQs.length}개 문제에 자료 누락 가능성이 있습니다 (Q${riskyQs.map(q=>q.num).join(', Q')})</div>
+      <div style="font-size:12px;color:#78350f;margin-top:6px;">위 문제들의 Preview를 확인해서 시간표·표·지문 등 자료가 제대로 포함됐는지 확인하세요.</div>
+    </div>`;
+  }
+
   const letters=['A','B','C','D','E'];
   questions.forEach(q => {
     const typeLabel = {mc:'MC',sa:'Short Answer',ox:'O/X'}[q.type];
@@ -1647,6 +1655,7 @@ function doParse() {
           <div class="preview-meta">
             <span class="type-badge ${badgeCls}">${typeLabel}</span>
             ${q.answer ? `<span class="ans-tag">→ Answer: ${q.answer}</span>` : '<span style="color:var(--red);font-size:12px;font-weight:700;">No answer</span>'}
+            ${hasMissingDataRisk(q) ? `<span style="background:#fef3c7;color:#92400e;font-size:11px;font-weight:800;padding:2px 10px;border-radius:20px;border:1px solid #f59e0b;">⚠️ 자료 누락 가능</span>` : ''}
           </div>
         </div>
       </div>`;
@@ -3200,6 +3209,17 @@ function toSuperscript(str) {
   );
 }
 
+function hasMissingDataRisk(q) {
+  const text = (q.text || '').toLowerCase();
+  const triggerPhrases = [
+    'the following', 'below', 'the table', 'the schedule', 'the timetable',
+    'the diagram', 'the graph', 'the chart', 'the passage', 'the information',
+    'refer to', 'use the', 'based on', 'shown above', 'shown below',
+    'the list', 'the data', 'the results', 'the figure'
+  ];
+  return triggerPhrases.some(p => text.includes(p));
+}
+
 function parseQuestions(raw) {
   // ── 1. Normalize ──────────────────────────────────────────
   let text = raw
@@ -3947,7 +3967,9 @@ async function verifyAnswersWithAI(questions) {
   let prompt = `You are a math teacher. Review these math questions and their provided answers. For each question, determine if the provided answer is CORRECT. If incorrect, provide the correct answer.
 
 IMPORTANT: Return ONLY a JSON array, no other text. Format:
-[{"num":1,"isCorrect":true,"correctAnswer":"B","explanation":"brief reason"},...]
+[{"num":1,"isCorrect":true,"correctAnswer":"B","explanation":"brief reason","missingData":false},...]
+
+ALSO: If a question appears to be missing context (e.g. references a timetable, table, diagram, or data that is not present in the question text itself), set "missingData": true in that question's JSON object.
 
 Questions:\n`;
   questions.forEach(q => {
@@ -3980,6 +4002,15 @@ function showVerificationResults(questions, verifications) {
 
   // Show changes for review, wait for confirmation
   let html = '';
+
+  const missingDataQs = verifications.filter(v => v.missingData);
+  if (missingDataQs.length > 0) {
+    html += `<div style="background:#fef3c7;border:2px solid #f59e0b;border-radius:10px;padding:12px 16px;margin-bottom:12px;">
+      <div style="font-weight:800;color:#92400e;font-size:14px;">⚠️ AI가 자료 누락을 감지한 문제: Q${missingDataQs.map(v=>v.num).join(', Q')}</div>
+      <div style="font-size:12px;color:#78350f;margin-top:4px;">해당 문제에 시간표·표·지문 등 자료가 포함됐는지 원본과 대조 확인하세요.</div>
+    </div>`;
+  }
+
   if (changes.length > 0) {
     html += `<div style="background:#fef3c7;border:2px solid #f59e0b;border-radius:10px;padding:12px 16px;margin-bottom:12px;">
       <div style="font-weight:800;color:#92400e;font-size:14px;">⚠️ Found ${changes.length} answer(s) to correct — please review:</div>
