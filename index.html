@@ -953,6 +953,26 @@ function periodLabel(p) {
   return `${p.year} ${monthNames[p.month-1]} Week ${p.week}${range ? ' (' + range + ')' : ''}`;
 }
 
+function getTodayPeriod() {
+  const today = new Date();
+  const year  = today.getFullYear();
+  const month = today.getMonth() + 1;
+  const day   = today.getDate();
+  // 해당 월의 월요일 목록 수집
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const mondays = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    if (new Date(year, month - 1, d).getDay() === 1) mondays.push(d);
+  }
+  // 오늘이 속한 주: 해당 주의 월요일(오늘 포함 이전 가장 가까운 월요일)을 찾아 몇 번째인지
+  let week = 1;
+  for (let i = 0; i < mondays.length; i++) {
+    if (mondays[i] <= day) week = i + 1;
+    else break;
+  }
+  return { year, month, week };
+}
+
 function getStore() {
   const raw = localStorage.getItem(STORE_KEY);
   if (!raw) return { users:[], homeworkSets:{}, submissions:{}, ts_progress:{}, currentPeriod:{ year:new Date().getFullYear(), month:new Date().getMonth()+1, week:1 } };
@@ -1112,6 +1132,10 @@ async function doLogin() {
   try {
     if (user.role==='teacher') {
       document.getElementById('btnBackupDownload').style.display = '';
+      const todayPeriod = getTodayPeriod();
+      const _s = getStore();
+      _s.currentPeriod = todayPeriod;
+      saveStore(_s);
       renderTeacher();
       autoBackupToFirebase();
     }
@@ -1283,6 +1307,7 @@ function renderTeacher() {
             <span style="color:var(--muted);font-weight:600;font-size:13px;"> (${set.questions.length} questions)</span>
           </div>
           <button class="btn-sm btn-gold" onclick="editSet(${idx})">✏️ Edit</button>
+          <button class="btn-sm btn-blue" onclick="openMoveSetModal(${idx})" title="Move to another period">📦 Move</button>
           <button class="btn-sm btn-red" onclick="deleteSet(${idx})">🗑 Delete</button>
         </div>`;
       });
@@ -1544,6 +1569,132 @@ function deleteSet(idx) {
   saveStore(store);
   editingSetIdx = null;
   parsedQuestions = [];
+  renderTeacher();
+}
+
+function openMoveSetModal(idx) {
+  const store = getStore();
+  const p = store.currentPeriod;
+  const key = hwKey(selectedYear, selectedCountry, p);
+  const hw = store.homeworkSets[key];
+  if (!hw?.sets?.[idx]) return;
+  const setTitle = hw.sets[idx].title;
+
+  // 같은 country 내 학생이 있는 학년 목록
+  const allStudents = store.users.filter(u => u.role === 'student' && u.status !== 'inactive' && !u.isTest);
+  const years = [...new Set(allStudents.filter(s => (s.country || 'AU') === selectedCountry).map(s => s.year))].sort((a, b) => a - b);
+  const yearOpts = years.map(y => `<option value="${y}"${y === selectedYear ? 'selected' : ''}>Year ${y}</option>`).join('');
+
+  const yearRange = [2024, 2025, 2026, 2027, 2028];
+  const toYearOpts = yearRange.map(y => `<option value="${y}"${y === p.year ? 'selected' : ''}>${y}</option>`).join('');
+  const toMonthOpts = Array.from({length: 12}, (_, i) => i + 1).map(m =>
+    `<option value="${m}"${m === p.month ? 'selected' : ''}>${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1]}</option>`
+  ).join('');
+  const maxWeeks = weeksInMonth(p.year, p.month);
+  const toWeekOpts = Array.from({length: maxWeeks}, (_, i) => i + 1).map(w =>
+    `<option value="${w}"${w === p.week ? 'selected' : ''}>Week ${w}</option>`
+  ).join('');
+
+  const html = `
+    <div style="font-family:'Noto Sans KR',sans-serif;padding:4px;">
+      <h2 style="font-family:'Noto Serif KR',serif;color:var(--navy);margin-bottom:16px;">📦 Move Set</h2>
+      <div style="background:#f0f4ff;border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:14px;">
+        <b>Moving:</b> ${setTitle}<br>
+        <span style="color:var(--muted);">From: Year ${selectedYear} — ${periodLabel(p)}</span>
+      </div>
+      <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:10px 14px;margin-bottom:20px;font-size:13px;color:#92400e;">
+        ⚠️ 학생 제출 기록은 이동되지 않습니다. 이동 후 해당 세트의 기존 제출 데이터는 원래 위치에 남아 있습니다.
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div>
+          <label style="font-weight:700;font-size:13px;color:var(--navy);display:block;margin-bottom:6px;">이동할 학년</label>
+          <select id="moveToYear" style="width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:'Noto Sans KR',sans-serif;">
+            ${yearOpts}
+          </select>
+        </div>
+        <div>
+          <label style="font-weight:700;font-size:13px;color:var(--navy);display:block;margin-bottom:6px;">이동할 연도</label>
+          <select id="moveToPYear" style="width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:'Noto Sans KR',sans-serif;" onchange="updateMoveWeekOpts()">
+            ${toYearOpts}
+          </select>
+        </div>
+        <div>
+          <label style="font-weight:700;font-size:13px;color:var(--navy);display:block;margin-bottom:6px;">이동할 월</label>
+          <select id="moveToPMonth" style="width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:'Noto Sans KR',sans-serif;" onchange="updateMoveWeekOpts()">
+            ${toMonthOpts}
+          </select>
+        </div>
+        <div>
+          <label style="font-weight:700;font-size:13px;color:var(--navy);display:block;margin-bottom:6px;">이동할 주차</label>
+          <select id="moveToPWeek" style="width:100%;padding:10px 12px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:'Noto Sans KR',sans-serif;">
+            ${toWeekOpts}
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:24px;justify-content:flex-end;">
+        <button class="btn-sm" style="background:#e2e8f0;color:var(--navy);" onclick="closeModal()">취소</button>
+        <button class="btn-sm btn-navy" onclick="confirmMoveSet(${idx})">확인 — 이동</button>
+      </div>
+    </div>`;
+  document.getElementById('modalContent').innerHTML = html;
+  document.getElementById('modal').classList.add('open');
+}
+
+function updateMoveWeekOpts() {
+  const y = parseInt(document.getElementById('moveToPYear').value);
+  const m = parseInt(document.getElementById('moveToPMonth').value);
+  const maxW = weeksInMonth(y, m);
+  const sel = document.getElementById('moveToPWeek');
+  const cur = parseInt(sel.value) || 1;
+  sel.innerHTML = Array.from({length: maxW}, (_, i) => i + 1).map(w =>
+    `<option value="${w}"${w === Math.min(cur, maxW) ? 'selected' : ''}>Week ${w}</option>`
+  ).join('');
+}
+
+function confirmMoveSet(fromIdx) {
+  const toYearLevel = parseInt(document.getElementById('moveToYear').value);
+  const toPYear     = parseInt(document.getElementById('moveToPYear').value);
+  const toPMonth    = parseInt(document.getElementById('moveToPMonth').value);
+  const toPWeek     = parseInt(document.getElementById('moveToPWeek').value);
+
+  const store = getStore();
+  const p = store.currentPeriod;
+  const fromKey = hwKey(selectedYear, selectedCountry, p);
+  const toP = { year: toPYear, month: toPMonth, week: toPWeek };
+  const toKey = hwKey(toYearLevel, selectedCountry, toP);
+
+  // 같은 위치로 이동 방지
+  if (fromKey === toKey) {
+    showBackupToast('⚠️ 현재 위치와 동일합니다.');
+    return;
+  }
+
+  const fromHw = store.homeworkSets[fromKey];
+  if (!fromHw?.sets?.[fromIdx]) return;
+
+  const setToMove = { ...fromHw.sets[fromIdx] };
+
+  // 대상 key에 sets 배열 준비
+  if (!store.homeworkSets[toKey]) {
+    store.homeworkSets[toKey] = { year: toYearLevel, country: selectedCountry, period: toP, sets: [] };
+  }
+  const toHw = store.homeworkSets[toKey];
+
+  // 대상에 set 추가 (setIdx 재설정)
+  const newSetIdx = toHw.sets.length;
+  setToMove.setIdx = newSetIdx;
+  setToMove.title  = `Set ${newSetIdx + 1}`;
+  toHw.sets.push(setToMove);
+
+  // 원본에서 set 제거 후 재번호
+  fromHw.sets.splice(fromIdx, 1);
+  fromHw.sets.forEach((s, i) => { s.setIdx = i; s.title = `Set ${i + 1}`; });
+  if (fromHw.sets.length === 0) delete store.homeworkSets[fromKey];
+
+  saveStore(store);
+  closeModal();
+  editingSetIdx = null;
+  showBackupToast(`✅ Set을 Year ${toYearLevel} — ${periodLabel(toP)} 으로 이동했습니다.`);
   renderTeacher();
 }
 
