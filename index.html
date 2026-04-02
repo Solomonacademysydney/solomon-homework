@@ -925,53 +925,240 @@ function navigateStudentPeriod(dir) {
 }
 function subKey(sid, p, setIdx=0) { return `${sid}_${p.year}_m${String(p.month).padStart(2,'0')}_w${p.week}_s${setIdx}`; }
 function weeksInMonth(year, month) {
+  // ISO 8601 목요일 기준: 해당 월에 목요일이 속하는 주(월요일 기준)의 개수
   let count = 0;
   const days = new Date(year, month, 0).getDate();
   for (let d = 1; d <= days; d++) {
-    if (new Date(year, month - 1, d).getDay() === 1) count++;
+    if (new Date(year, month - 1, d).getDay() === 1) {
+      // 이 월요일의 목요일 = d+3
+      const thu = new Date(year, month - 1, d + 3);
+      if (thu.getMonth() + 1 === month) count++;
+    }
+  }
+  // 전월 월요일 중 목요일이 이번 달에 속하는 경우도 체크
+  for (let d = -6; d <= 0; d++) {
+    const dt = new Date(year, month - 1, d);
+    if (dt.getDay() === 1) {
+      const thu = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() + 3);
+      if (thu.getMonth() + 1 === month && thu.getFullYear() === year) count++;
+    }
   }
   return count || 1;
 }
 
 function weekDateRange(year, month, weekNum) {
   const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  // ISO 8601 목요일 기준으로 해당 월에 귀속되는 월요일 목록
   let mondays = [];
+  // 전월 마지막 주 월요일도 체크 (목요일이 이번 달에 속할 수 있음)
+  for (let d = -6; d <= 0; d++) {
+    const dt = new Date(year, month - 1, d);
+    if (dt.getDay() === 1) {
+      const thu = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() + 3);
+      if (thu.getMonth() + 1 === month && thu.getFullYear() === year) mondays.push(dt);
+    }
+  }
   const days = new Date(year, month, 0).getDate();
   for (let d = 1; d <= days; d++) {
-    if (new Date(year, month - 1, d).getDay() === 1) mondays.push(d);
+    if (new Date(year, month - 1, d).getDay() === 1) {
+      const thu = new Date(year, month - 1, d + 3);
+      if (thu.getMonth() + 1 === month) mondays.push(new Date(year, month - 1, d));
+    }
   }
   if (mondays.length === 0) return '';
-  const mon = mondays[weekNum - 1];
-  if (!mon) return '';
-  const fri = Math.min(mon + 4, days);
-  return `${monthNames[month-1]} ${mon}–${fri}`;
+  const monDate = mondays[weekNum - 1];
+  if (!monDate) return '';
+  const fri = new Date(monDate.getFullYear(), monDate.getMonth(), monDate.getDate() + 4);
+  const monM = monthNames[monDate.getMonth()];
+  const friM = monthNames[fri.getMonth()];
+  if (monDate.getMonth() === fri.getMonth()) {
+    return `${monM} ${monDate.getDate()}–${fri.getDate()}`;
+  }
+  return `${monM} ${monDate.getDate()}–${friM} ${fri.getDate()}`;
+}
+
+// ── NSW 2026 Term dates (Eastern Division) ──
+const NSW_TERMS_2026 = [
+  { term: 1, start: new Date(2026, 1, 2),  end: new Date(2026, 3, 2)  }, // Feb 2 – Apr 2
+  { term: 2, start: new Date(2026, 3, 22), end: new Date(2026, 6, 3)  }, // Apr 22 – Jul 3
+  { term: 3, start: new Date(2026, 6, 21), end: new Date(2026, 8, 25) }, // Jul 21 – Sep 25
+  { term: 4, start: new Date(2026, 9, 13), end: new Date(2026, 11, 17) }, // Oct 13 – Dec 17
+];
+
+function getNSWTerm(date) {
+  // 주어진 날짜의 Term 번호와 Term 주차를 반환
+  // 반환: { term: N, termWeek: W } 또는 { term: 0, termWeek: 0 } (방학)
+  if (!date) date = new Date();
+  for (const t of NSW_TERMS_2026) {
+    if (date >= t.start && date <= t.end) {
+      // Term 시작일의 월요일 기준으로 주차 계산
+      const startMon = new Date(t.start);
+      // Term 시작일이 월요일이 아니면 해당 주의 월요일로 조정
+      const startDay = startMon.getDay();
+      if (startDay !== 1) {
+        const diff = startDay === 0 ? -6 : 1 - startDay;
+        startMon.setDate(startMon.getDate() + diff);
+      }
+      const diffDays = Math.floor((date - startMon) / (1000 * 60 * 60 * 24));
+      const termWeek = Math.floor(diffDays / 7) + 1;
+      return { term: t.term, termWeek };
+    }
+  }
+  return { term: 0, termWeek: 0 }; // 방학
+}
+
+function termLabel(date) {
+  const t = getNSWTerm(date);
+  if (t.term === 0) return 'Holidays';
+  return `Term ${t.term} · W${t.termWeek}`;
 }
 
 function periodLabel(p) {
   const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const range = weekDateRange(p.year, p.month, p.week);
-  return `${p.year} ${monthNames[p.month-1]} Week ${p.week}${range ? ' (' + range + ')' : ''}`;
+  // Term 정보 계산: 해당 주의 목요일 기준
+  const monDate = _getMondayOfWeek(p.year, p.month, p.week);
+  let tl = '';
+  if (monDate) {
+    const thu = new Date(monDate.getFullYear(), monDate.getMonth(), monDate.getDate() + 3);
+    tl = '  |  ' + termLabel(thu);
+  }
+  return `${p.year} ${monthNames[p.month-1]} Week ${p.week}${range ? ' (' + range + ')' : ''}${tl}`;
+}
+
+function periodLabelShort(p) {
+  // 드롭다운용 짧은 레이블 (Term 정보 포함)
+  const range = weekDateRange(p.year, p.month, p.week);
+  const monDate = _getMondayOfWeek(p.year, p.month, p.week);
+  let tl = '';
+  if (monDate) {
+    const thu = new Date(monDate.getFullYear(), monDate.getMonth(), monDate.getDate() + 3);
+    const t = getNSWTerm(thu);
+    tl = t.term > 0 ? ` · T${t.term}W${t.termWeek}` : ' · Hol';
+  }
+  return `Week ${p.week}${range ? ' (' + range + ')' : ''}${tl}`;
+}
+
+function _getMondayOfWeek(year, month, weekNum) {
+  // ISO 목요일 기준으로 해당 월에 귀속되는 weekNum번째 월요일 Date 반환
+  let mondays = [];
+  for (let d = -6; d <= 0; d++) {
+    const dt = new Date(year, month - 1, d);
+    if (dt.getDay() === 1) {
+      const thu = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() + 3);
+      if (thu.getMonth() + 1 === month && thu.getFullYear() === year) mondays.push(dt);
+    }
+  }
+  const days = new Date(year, month, 0).getDate();
+  for (let d = 1; d <= days; d++) {
+    if (new Date(year, month - 1, d).getDay() === 1) {
+      const thu = new Date(year, month - 1, d + 3);
+      if (thu.getMonth() + 1 === month) mondays.push(new Date(year, month - 1, d));
+    }
+  }
+  return mondays[weekNum - 1] || null;
+}
+
+function _weekNumInMonth(year, month, mondayDate) {
+  // 주어진 월에 귀속되는 월요일 목록 중 mondayDate가 몇 번째인지 반환
+  let mondays = [];
+  for (let d = -6; d <= 0; d++) {
+    const dt = new Date(year, month - 1, d);
+    if (dt.getDay() === 1) {
+      const thu = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() + 3);
+      if (thu.getMonth() + 1 === month && thu.getFullYear() === year) mondays.push(dt);
+    }
+  }
+  const days = new Date(year, month, 0).getDate();
+  for (let d = 1; d <= days; d++) {
+    if (new Date(year, month - 1, d).getDay() === 1) {
+      const thu = new Date(year, month - 1, d + 3);
+      if (thu.getMonth() + 1 === month) mondays.push(new Date(year, month - 1, d));
+    }
+  }
+  for (let i = 0; i < mondays.length; i++) {
+    if (mondays[i].getTime() === mondayDate.getTime()) return i + 1;
+  }
+  return 1;
 }
 
 function getTodayPeriod() {
   const today = new Date();
-  const year  = today.getFullYear();
-  const month = today.getMonth() + 1;
-  const day   = today.getDate();
-  // 해당 월의 월요일 목록 수집
-  const daysInMonth = new Date(year, month, 0).getDate();
-  const mondays = [];
-  for (let d = 1; d <= daysInMonth; d++) {
-    if (new Date(year, month - 1, d).getDay() === 1) mondays.push(d);
+  // ISO 8601: 해당 주의 목요일이 속한 달로 귀속
+  // 먼저 오늘이 속한 주의 월요일을 찾기
+  const dow = today.getDay(); // 0=Sun
+  const diffToMon = dow === 0 ? -6 : 1 - dow;
+  const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + diffToMon);
+  const thursday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 3);
+
+  const year  = thursday.getFullYear();
+  const month = thursday.getMonth() + 1;
+
+  // 해당 월에 귀속되는 월요일 목록 (목요일 기준)
+  let mondays = [];
+  for (let d = -6; d <= 0; d++) {
+    const dt = new Date(year, month - 1, d);
+    if (dt.getDay() === 1) {
+      const thu = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() + 3);
+      if (thu.getMonth() + 1 === month && thu.getFullYear() === year) mondays.push(dt);
+    }
   }
-  // 오늘이 속한 주: 해당 주의 월요일(오늘 포함 이전 가장 가까운 월요일)을 찾아 몇 번째인지
+  const daysInMonth = new Date(year, month, 0).getDate();
+  for (let d = 1; d <= daysInMonth; d++) {
+    if (new Date(year, month - 1, d).getDay() === 1) {
+      const thu = new Date(year, month - 1, d + 3);
+      if (thu.getMonth() + 1 === month) mondays.push(new Date(year, month - 1, d));
+    }
+  }
+
   let week = 1;
   for (let i = 0; i < mondays.length; i++) {
-    if (mondays[i] <= day) week = i + 1;
-    else break;
+    if (monday.getTime() === mondays[i].getTime()) { week = i + 1; break; }
+    if (mondays[i] <= monday) week = i + 1;
   }
   return { year, month, week };
 }
+
+// ── ISO 8601 주차 검증 로그 ──
+(function verifyISOWeeks() {
+  const tests = [
+    { date: new Date(2026, 2, 31), expectMonth: 4, expectWeek: 1, label: 'Mar 31' },
+    { date: new Date(2026, 3, 6),  expectMonth: 4, expectWeek: 2, label: 'Apr 6'  },
+    { date: new Date(2026, 3, 22), expectMonth: 4, expectWeek: 4, label: 'Apr 22' },
+  ];
+  tests.forEach(t => {
+    // simulate getTodayPeriod for a specific date
+    const dow = t.date.getDay();
+    const diffToMon = dow === 0 ? -6 : 1 - dow;
+    const monday = new Date(t.date.getFullYear(), t.date.getMonth(), t.date.getDate() + diffToMon);
+    const thursday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 3);
+    const year = thursday.getFullYear(), month = thursday.getMonth() + 1;
+    let mondays = [];
+    for (let d = -6; d <= 0; d++) {
+      const dt = new Date(year, month - 1, d);
+      if (dt.getDay() === 1) {
+        const thu = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() + 3);
+        if (thu.getMonth() + 1 === month && thu.getFullYear() === year) mondays.push(dt);
+      }
+    }
+    const daysInM = new Date(year, month, 0).getDate();
+    for (let d = 1; d <= daysInM; d++) {
+      if (new Date(year, month - 1, d).getDay() === 1) {
+        const thu = new Date(year, month - 1, d + 3);
+        if (thu.getMonth() + 1 === month) mondays.push(new Date(year, month - 1, d));
+      }
+    }
+    let week = 1;
+    for (let i = 0; i < mondays.length; i++) {
+      if (monday.getTime() === mondays[i].getTime()) { week = i + 1; break; }
+      if (mondays[i] <= monday) week = i + 1;
+    }
+    const tInfo = termLabel(thursday);
+    const monthNames = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const pass = month === t.expectMonth && week === t.expectWeek;
+    console.log(`[ISO Week Check] ${t.label} → ${monthNames[month]} W${week}, ${tInfo} ${pass ? '✅' : '❌ EXPECTED ' + monthNames[t.expectMonth] + ' W' + t.expectWeek}`);
+  });
+})();
 
 function getStore() {
   const raw = localStorage.getItem(STORE_KEY);
@@ -1043,6 +1230,58 @@ function getStore() {
       }
     });
   });
+  // migrate ISO 8601 경계 주차 키 (목요일 기준 귀속 달 변경)
+  if (!d.migrationISO2026Done) {
+    const monthNames = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const keyPattern = /^(.+)_(\d{4})_m(\d{2})_w(\d+)(_s\d+)?$/;
+    // homeworkSets 키 마이그레이션
+    const hwKeys = Object.keys(d.homeworkSets||{});
+    hwKeys.forEach(key => {
+      const m = key.match(/^(.+)_(\d{4})_m(\d{2})_w(\d+)$/);
+      if (!m) return;
+      const prefix = m[1], yr = parseInt(m[2]), mo = parseInt(m[3]), wk = parseInt(m[4]);
+      const monDate = _getMondayOfWeek(yr, mo, wk);
+      if (!monDate) return;
+      const thu = new Date(monDate.getFullYear(), monDate.getMonth(), monDate.getDate() + 3);
+      const newMo = thu.getMonth() + 1;
+      const newYr = thu.getFullYear();
+      if (newMo !== mo || newYr !== yr) {
+        // 새 달에서의 주차 번호 계산
+        const newWeek = _weekNumInMonth(newYr, newMo, monDate);
+        const newKey = `${prefix}_${newYr}_m${String(newMo).padStart(2,'0')}_w${newWeek}`;
+        if (!d.homeworkSets[newKey]) {
+          d.homeworkSets[newKey] = d.homeworkSets[key];
+          delete d.homeworkSets[key];
+          migrated = true;
+          console.log(`[Migration] hwKey: ${key} → ${newKey}`);
+        }
+      }
+    });
+    // submissions 키 마이그레이션
+    const subKeys = Object.keys(d.submissions||{});
+    subKeys.forEach(key => {
+      const m = key.match(keyPattern);
+      if (!m) return;
+      const prefix = m[1], yr = parseInt(m[2]), mo = parseInt(m[3]), wk = parseInt(m[4]), suffix = m[5]||'';
+      const monDate = _getMondayOfWeek(yr, mo, wk);
+      if (!monDate) return;
+      const thu = new Date(monDate.getFullYear(), monDate.getMonth(), monDate.getDate() + 3);
+      const newMo = thu.getMonth() + 1;
+      const newYr = thu.getFullYear();
+      if (newMo !== mo || newYr !== yr) {
+        const newWeek = _weekNumInMonth(newYr, newMo, monDate);
+        const newKey = `${prefix}_${newYr}_m${String(newMo).padStart(2,'0')}_w${newWeek}${suffix}`;
+        if (!d.submissions[newKey]) {
+          d.submissions[newKey] = d.submissions[key];
+          delete d.submissions[key];
+          migrated = true;
+          console.log(`[Migration] subKey: ${key} → ${newKey}`);
+        }
+      }
+    });
+    d.migrationISO2026Done = true;
+    migrated = true;
+  }
   if (migrated) localStorage.setItem(STORE_KEY, JSON.stringify(d));
   return d;
 }
@@ -1202,8 +1441,8 @@ function renderTeacher() {
   const monthOpts = Array.from({length:12},(_,i)=>i+1).map(m=>`<option value="${m}"${m===p.month?'selected':''}>${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1]}</option>`).join('');
   const maxWeeks = weeksInMonth(p.year, p.month);
   const weekOpts = Array.from({length: maxWeeks}, (_,i) => i+1).map(w => {
-    const range = weekDateRange(p.year, p.month, w);
-    return `<option value="${w}"${w===p.week?'selected':''}>Week ${w}${range ? ' (' + range + ')' : ''}</option>`;
+    const lbl = periodLabelShort({year: p.year, month: p.month, week: w});
+    return `<option value="${w}"${w===p.week?'selected':''}>${lbl}</option>`;
   }).join('');
 
   const auCount = allStudents.filter(s=>(s.country||'AU')==='AU'&&!s.isTest).length;
