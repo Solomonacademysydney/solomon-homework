@@ -1478,6 +1478,9 @@ function renderTeacher() {
       <button class="btn-sm" style="background:#c04000;color:#fff;margin-left:6px;" onclick="openMovePeriodModal()">📦 이 주차 전체 이동</button>
       <span style="font-size:13px;color:var(--muted);margin-left:8px;">Current: <b>${periodLabel(p)}</b></span>
     </div>
+    <div id="migrateMar5Apr1Wrap" style="margin-bottom:14px;">
+      <button id="btnMigrateMar5" class="btn-sm" style="background:#7c3aed;color:#fff;font-weight:800;padding:10px 20px;font-size:14px;" onclick="migrateMar5ToApr1()">🔀 3월5주→4월1주 이동</button>
+    </div>
     <div class="student-grid">`;
 
   years.forEach(yr => {
@@ -1547,7 +1550,7 @@ function renderTeacher() {
             <span style="color:var(--muted);font-weight:600;font-size:13px;"> (${set.questions.length} questions)</span>
           </div>
           <button class="btn-sm btn-gold" onclick="editSet(${idx})">✏️ Edit</button>
-          <button class="btn-sm btn-blue" onclick="openMoveSetModal(${idx})" title="Move to another period">📦 Move</button>
+          <button class="btn-sm" style="background:#7c3aed;color:#fff;" onclick="openMoveSetModal(${idx})" title="Move to another period">📦 Move</button>
           <button class="btn-sm btn-red" onclick="deleteSet(${idx})">🗑 Delete</button>
         </div>`;
       });
@@ -1848,6 +1851,47 @@ function confirmMovePeriod() {
   renderTeacher();
 }
 
+function migrateMar5ToApr1() {
+  if (!confirm('2026년 3월 5주차 숙제를 4월 1주차로 전부 이동합니다. 계속할까요?')) return;
+  const store = getStore();
+  const fromP = { year:2026, month:3, week:5 };
+  const toP   = { year:2026, month:4, week:1 };
+  let movedCount = 0;
+  ['AU','KR'].forEach(country => {
+    for (let yr = 3; yr <= 9; yr++) {
+      const fk = hwKey(yr, country, fromP);
+      const tk = hwKey(yr, country, toP);
+      if (!store.homeworkSets[fk]) continue;
+      if (store.homeworkSets[tk]) {
+        // 대상에 이미 데이터 있으면 sets를 합치기
+        const existingSets = store.homeworkSets[tk].sets || [];
+        const incomingSets = store.homeworkSets[fk].sets || [];
+        incomingSets.forEach((s, i) => {
+          s.setIdx = existingSets.length + i;
+          s.title = `Set ${existingSets.length + i + 1}`;
+        });
+        store.homeworkSets[tk].sets = existingSets.concat(incomingSets);
+      } else {
+        store.homeworkSets[tk] = store.homeworkSets[fk];
+      }
+      delete store.homeworkSets[fk];
+      movedCount++;
+      console.log(`[Migrate] ${fk} → ${tk}`);
+    }
+  });
+  if (movedCount === 0) {
+    showBackupToast('⚠️ 3월 5주차에 숙제가 없습니다.');
+    return;
+  }
+  store.currentPeriod = toP;
+  saveStore(store);
+  const btn = document.getElementById('btnMigrateMar5');
+  if (btn) btn.parentElement.style.display = 'none';
+  showBackupToast(`✅ 3월5주→4월1주 이동 완료 (${movedCount}건)`);
+  selectedYear = null;
+  renderTeacher();
+}
+
 function selectYear(yr) {
   selectedYear = selectedYear===yr ? null : yr;
   parsedQuestions = [];
@@ -1932,9 +1976,10 @@ function openMoveSetModal(idx) {
     `<option value="${m}"${m === p.month ? 'selected' : ''}>${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1]}</option>`
   ).join('');
   const maxWeeks = weeksInMonth(p.year, p.month);
-  const toWeekOpts = Array.from({length: maxWeeks}, (_, i) => i + 1).map(w =>
-    `<option value="${w}"${w === p.week ? 'selected' : ''}>Week ${w}</option>`
-  ).join('');
+  const toWeekOpts = Array.from({length: maxWeeks}, (_, i) => i + 1).map(w => {
+    const lbl = periodLabelShort({year:p.year, month:p.month, week:w});
+    return `<option value="${w}"${w === p.week ? 'selected' : ''}>${lbl}</option>`;
+  }).join('');
 
   const html = `
     <div style="font-family:'Noto Sans KR',sans-serif;padding:4px;">
@@ -1987,9 +2032,10 @@ function updateMoveWeekOpts() {
   const maxW = weeksInMonth(y, m);
   const sel = document.getElementById('moveToPWeek');
   const cur = parseInt(sel.value) || 1;
-  sel.innerHTML = Array.from({length: maxW}, (_, i) => i + 1).map(w =>
-    `<option value="${w}"${w === Math.min(cur, maxW) ? 'selected' : ''}>Week ${w}</option>`
-  ).join('');
+  sel.innerHTML = Array.from({length: maxW}, (_, i) => i + 1).map(w => {
+    const lbl = periodLabelShort({year:y, month:m, week:w});
+    return `<option value="${w}"${w === Math.min(cur, maxW) ? 'selected' : ''}>${lbl}</option>`;
+  }).join('');
 }
 
 function confirmMoveSet(fromIdx) {
