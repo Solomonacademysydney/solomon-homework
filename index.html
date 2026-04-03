@@ -1475,6 +1475,7 @@ function renderTeacher() {
       <select id="selMonth">${monthOpts}</select>
       <select id="selWeek">${weekOpts}</select>
       <button class="btn-sm btn-navy" onclick="setPeriod()">Apply</button>
+      <button class="btn-sm" style="background:#c04000;color:#fff;margin-left:6px;" onclick="openMovePeriodModal()">📦 이 주차 전체 이동</button>
       <span style="font-size:13px;color:var(--muted);margin-left:8px;">Current: <b>${periodLabel(p)}</b></span>
     </div>
     <div class="student-grid">`;
@@ -1742,6 +1743,107 @@ function setPeriod() {
     week:  parseInt(document.getElementById('selWeek').value)
   };
   saveStore(store);
+  selectedYear = null;
+  renderTeacher();
+}
+
+function openMovePeriodModal() {
+  const store = getStore();
+  const p = store.currentPeriod;
+  const allStudents = store.users.filter(u => u.role==='student' && u.status!=='inactive' && (u.country||'AU')===selectedCountry && !u.isTest);
+  const years = [...new Set(allStudents.map(s=>s.year))].sort((a,b)=>a-b);
+  const affected = years.filter(yr => store.homeworkSets[hwKey(yr, selectedCountry, p)]);
+  if (affected.length === 0) {
+    showBackupToast('⚠️ 현재 주차에 숙제가 없습니다.');
+    return;
+  }
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const yearOpts = [2024,2025,2026,2027,2028].map(y=>`<option value="${y}"${y===p.year?'selected':''}>${y}</option>`).join('');
+  const monthOpts = Array.from({length:12},(_,i)=>i+1).map(m=>`<option value="${m}"${m===p.month?'selected':''}>${monthNames[m-1]}</option>`).join('');
+  const maxW = weeksInMonth(p.year, p.month);
+  const weekOpts = Array.from({length:maxW},(_,i)=>i+1).map(w=>{
+    const lbl = periodLabelShort({year:p.year,month:p.month,week:w});
+    return `<option value="${w}">${lbl}</option>`;
+  }).join('');
+  const affectedHtml = affected.map(yr => `<span style="display:inline-block;background:var(--navy);color:#fff;border-radius:8px;padding:4px 12px;margin:3px;font-weight:700;">Y${yr}</span>`).join('');
+
+  const dlg = document.createElement('div');
+  dlg.id = 'movePeriodModal';
+  dlg.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:9999;';
+  dlg.innerHTML = `
+    <div style="background:#fff;border-radius:18px;padding:32px 36px;max-width:440px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,.25);">
+      <div style="font-family:'Noto Serif KR',serif;font-size:18px;font-weight:800;color:var(--navy);margin-bottom:16px;">📦 주차 전체 이동</div>
+      <div style="background:#f8f6ef;border-radius:10px;padding:12px 16px;margin-bottom:16px;">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:4px;">현재 주차</div>
+        <div style="font-weight:800;color:var(--navy);">${periodLabel(p)}</div>
+        <div style="margin-top:8px;font-size:13px;color:var(--muted);">이동 대상 학년 (${affected.length}개)</div>
+        <div style="margin-top:4px;">${affectedHtml}</div>
+      </div>
+      <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;">이동할 주차 선택</div>
+      <div style="display:flex;gap:8px;margin-bottom:20px;">
+        <select id="moveToYear" style="padding:8px;border-radius:8px;border:2px solid var(--border);font-size:14px;">${yearOpts}</select>
+        <select id="moveToMonth" style="padding:8px;border-radius:8px;border:2px solid var(--border);font-size:14px;" onchange="updateMoveWeekDropdown()">${monthOpts}</select>
+        <select id="moveToWeek" style="padding:8px;border-radius:8px;border:2px solid var(--border);font-size:14px;">${weekOpts}</select>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn-sm" style="background:#888;color:#fff;padding:10px 20px;" onclick="document.getElementById('movePeriodModal').remove()">취소</button>
+        <button class="btn-sm" style="background:#c04000;color:#fff;padding:10px 20px;font-weight:800;" onclick="confirmMovePeriod()">이동 실행</button>
+      </div>
+    </div>`;
+  document.body.appendChild(dlg);
+}
+
+function updateMoveWeekDropdown() {
+  const yr = parseInt(document.getElementById('moveToYear').value);
+  const mo = parseInt(document.getElementById('moveToMonth').value);
+  const maxW = weeksInMonth(yr, mo);
+  const sel = document.getElementById('moveToWeek');
+  sel.innerHTML = Array.from({length:maxW},(_,i)=>i+1).map(w=>{
+    const lbl = periodLabelShort({year:yr,month:mo,week:w});
+    return `<option value="${w}">${lbl}</option>`;
+  }).join('');
+}
+
+function confirmMovePeriod() {
+  const store = getStore();
+  const fromP = store.currentPeriod;
+  const toP = {
+    year:  parseInt(document.getElementById('moveToYear').value),
+    month: parseInt(document.getElementById('moveToMonth').value),
+    week:  parseInt(document.getElementById('moveToWeek').value)
+  };
+  if (fromP.year===toP.year && fromP.month===toP.month && fromP.week===toP.week) {
+    showBackupToast('⚠️ 같은 주차입니다.');
+    return;
+  }
+  const allStudents = store.users.filter(u => u.role==='student' && u.status!=='inactive' && (u.country||'AU')===selectedCountry && !u.isTest);
+  const years = [...new Set(allStudents.map(s=>s.year))].sort((a,b)=>a-b);
+  let movedCount = 0;
+  years.forEach(yr => {
+    const fromKey = hwKey(yr, selectedCountry, fromP);
+    const toKey   = hwKey(yr, selectedCountry, toP);
+    if (store.homeworkSets[fromKey]) {
+      if (store.homeworkSets[toKey]) {
+        // 대상에 이미 데이터 있으면 건너뜀
+        console.log(`[MovePeriod] Skip Y${yr}: target key already exists (${toKey})`);
+        return;
+      }
+      store.homeworkSets[toKey] = store.homeworkSets[fromKey];
+      delete store.homeworkSets[fromKey];
+      movedCount++;
+      console.log(`[MovePeriod] Y${yr}: ${fromKey} → ${toKey}`);
+    }
+  });
+  if (movedCount === 0) {
+    showBackupToast('⚠️ 이동할 숙제가 없습니다.');
+    document.getElementById('movePeriodModal')?.remove();
+    return;
+  }
+  store.currentPeriod = toP;
+  saveStore(store);
+  document.getElementById('movePeriodModal')?.remove();
+  const monthNames = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  showBackupToast(`✅ ${movedCount}개 학년 숙제를 ${monthNames[toP.month]} W${toP.week}로 이동했습니다.`);
   selectedYear = null;
   renderTeacher();
 }
