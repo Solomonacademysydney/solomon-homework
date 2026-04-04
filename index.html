@@ -5075,6 +5075,7 @@ async function practiceAnswerWithHint(qId, selectedAnswer, setIdx, roundIdx) {
     // 1번 틀림 → 힌트 생성
     round.practiceHintAttempts[qId] = 1;
     saveStore(store);
+    renderPracticeSet(setIdx, roundIdx); // await 전에 즉시 렌더링 — 버튼 이중클릭 방지
     if (!round.practiceHintData[qId]) {
       // AI로 힌트 생성
       try {
