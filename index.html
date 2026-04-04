@@ -5084,11 +5084,6 @@ async function practiceAnswerWithHint(qId, selectedAnswer, setIdx, roundIdx) {
   if (ans === correct) {
     round.practiceHintAttempts[qId] = 99;
     saveStore(store);
-    // 정답이면 0.8초 후 다음 문제
-    setTimeout(() => {
-      practiceQIdx++;
-      renderPracticeSet(setIdx, roundIdx);
-    }, 800);
     renderPracticeSet(setIdx, roundIdx);
     return;
   }
