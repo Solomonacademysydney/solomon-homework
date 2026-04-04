@@ -3139,6 +3139,7 @@ function saveAnswer(qid, val) {
   const store=getStore();
   const key=subKey(currentUser.id,studentPeriod||store.currentPeriod,currentSetIdx??0);
   if(!store.submissions[key]) store.submissions[key]={answers:{},submitted:false,submitTime:null};
+  if(!store.submissions[key].answers) store.submissions[key].answers={};
   if(store.submissions[key].submitted) return;
   store.submissions[key].answers[qid]=val;
   saveStore(store);
