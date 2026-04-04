@@ -2729,25 +2729,6 @@ function renderStudent() {
         <div style="text-align:center;margin-bottom:20px;">
           <button class="btn-nav" onclick="currentSetIdx=null;renderStudent()">← Back to Set List</button>
         </div>
-        <div class="results-wrap" style="margin-bottom:20px;">
-          <h3>📊 ${set.title} Summary</h3>`;
-
-    qs.forEach((q,i) => {
-      const ans = sub.answers[q.id];
-      let cls='res-none', status='—';
-      if (ans!==undefined) {
-        const ok = q.answer && ans===q.answer;
-        cls = ok?'res-ok':'res-wrong';
-        status = ok ? '✅ Correct' : '❌ Wrong';
-      }
-      html += `<div class="res-q ${cls}">
-        <b style="min-width:36px;">Q${i+1}.</b>
-        <span style="flex:1;">${renderMath(q.text)}</span>
-        <span style="flex-shrink:0;font-weight:700;">${status}</span>
-      </div>`;
-    });
-    html += `</div>
-
       <div class="results-wrap">
         <h3>📚 Review Your Answers</h3>
         <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">Check each question to see where you went right or wrong.</p>`;
@@ -4716,18 +4697,36 @@ function renderRemediationExplanation(setIdx, roundIdx) {
       <div style="margin-top:8px;font-size:13px;color:#555;line-height:1.7;">${expl}</div>
     </div>`;
   } else if (attempts === 0) {
+    let optHtml0 = '';
+    if (q.type === 'mc' && q.options) {
+      optHtml0 = `<div class="options">${q.options.map((opt, i) => {
+        const letter = letters[i];
+        const cls = letter === q.studentAnswer ? 'opt-btn wrong' : 'opt-btn';
+        return `<button class="${cls}" onclick="answerHintRetry(${setIdx},${roundIdx},'${q.id}','${letter}')"><span class="opt-circle">${letter}</span>${renderMath(opt)}</button>`;
+      }).join('')}</div>`;
+    } else if (q.type === 'ox') {
+      optHtml0 = `<div class="ox-row">
+        <button class="ox-btn${q.studentAnswer==='O'?' sel-o':''}" onclick="answerHintRetry(${setIdx},${roundIdx},'${q.id}','O')">⭕ True</button>
+        <button class="ox-btn${q.studentAnswer==='X'?' sel-x':''}" onclick="answerHintRetry(${setIdx},${roundIdx},'${q.id}','X')">❌ False</button>
+      </div>`;
+    } else {
+      optHtml0 = `<div style="display:flex;gap:8px;margin-top:4px;">
+        <input class="sa-input" id="hr_${q.id}" type="text" placeholder="Try again...">
+        <button class="btn-sm btn-navy" onclick="answerHintRetry(${setIdx},${roundIdx},'${q.id}',document.getElementById('hr_${q.id}').value)">Submit</button>
+      </div>`;
+    }
     cardHtml = `<div class="hint-card">
       <div class="hint-stage-badge s1">Step 1 of 3</div>
       <div class="explanation-q-title">Q. ${renderMath(q.text)}</div>
-      <div style="font-size:13px;color:var(--muted);margin-top:4px;margin-bottom:12px;">Your answer: <span style="color:var(--red);font-weight:800;">${q.studentAnswer}</span></div>
-      <button class="hint-get-btn" onclick="showHintStage(${setIdx},${roundIdx},'${q.id}',1)">💡 Get a Hint</button>
+      ${optHtml0}
+      <button class="hint-get-btn" style="margin-top:14px;" onclick="showHintStage(${setIdx},${roundIdx},'${q.id}',1)">💡 Get a Hint</button>
     </div>`;
   } else if (attempts === 1) {
     let retryHtml = '';
     if (q.type === 'mc' && q.options) {
       retryHtml = `<div class="options">${q.options.map((opt, i) => {
         const letter = letters[i];
-        return `<button class="opt-btn" onclick="answerHintRetry(${setIdx},${roundIdx},'${q.id}','${letter}')">${letter}. ${renderMath(opt)}</button>`;
+        return `<button class="opt-btn" onclick="answerHintRetry(${setIdx},${roundIdx},'${q.id}','${letter}')"><span class="opt-circle">${letter}</span>${renderMath(opt)}</button>`;
       }).join('')}</div>`;
     } else if (q.type === 'ox') {
       retryHtml = `<div class="ox-row">
@@ -4741,9 +4740,8 @@ function renderRemediationExplanation(setIdx, roundIdx) {
       </div>`;
     }
     cardHtml = `<div class="hint-card stage-hint">
-      <div class="hint-stage-badge s1">💡 Hint — try again</div>
+      <div class="hint-stage-badge s1">💡 Hint shown ✓ — try again</div>
       <div class="explanation-q-title">Q. ${renderMath(q.text)}</div>
-      <div style="font-size:13px;color:var(--muted);margin-top:4px;margin-bottom:10px;">Your answer: <span style="color:var(--red);font-weight:800;">${q.studentAnswer}</span></div>
       <div class="hint-box">💡 ${hint}</div>
       <div class="hint-retry-section">
         <div class="hint-retry-label">Try again — choose your answer:</div>
@@ -4751,33 +4749,18 @@ function renderRemediationExplanation(setIdx, roundIdx) {
       </div>
     </div>`;
   } else if (attempts >= 2) {
-    let retryHtml2 = '';
-    if (q.type === 'mc' && q.options) {
-      retryHtml2 = `<div class="options">${q.options.map((opt, i) => {
-        const letter = letters[i];
-        return `<button class="opt-btn" onclick="answerHintRetry(${setIdx},${roundIdx},'${q.id}','${letter}')">${letter}. ${renderMath(opt)}</button>`;
-      }).join('')}</div>`;
-    } else if (q.type === 'ox') {
-      retryHtml2 = `<div class="ox-row">
-        <button class="ox-btn" onclick="answerHintRetry(${setIdx},${roundIdx},'${q.id}','O')">⭕ True</button>
-        <button class="ox-btn" onclick="answerHintRetry(${setIdx},${roundIdx},'${q.id}','X')">❌ False</button>
-      </div>`;
-    } else {
-      retryHtml2 = `<div style="display:flex;gap:8px;margin-top:4px;">
-        <input class="sa-input" id="hr2_${q.id}" type="text" placeholder="One more try...">
-        <button class="btn-sm btn-navy" onclick="answerHintRetry(${setIdx},${roundIdx},'${q.id}',document.getElementById('hr2_${q.id}').value)">Submit</button>
-      </div>`;
-    }
     cardHtml = `<div class="hint-card stage-explain">
-      <div class="hint-stage-badge s2">📖 Explanation — last try</div>
+      <div class="hint-stage-badge s2">❌ Incorrect</div>
       <div class="explanation-q-title">Q. ${renderMath(q.text)}</div>
-      <div style="font-size:13px;color:var(--muted);margin-top:4px;margin-bottom:10px;">Your answer: <span style="color:var(--red);font-weight:800;">${q.studentAnswer}</span></div>
-      <div class="concept-box">📚 ${expl}</div>
-      <div class="hint-retry-section">
-        <div class="hint-retry-label">One more chance — choose your answer:</div>
-        ${retryHtml2}
-      </div>
+      <div style="margin-top:8px;font-size:13px;font-weight:700;">Correct answer: <span style="background:#dcfce7;color:#166534;padding:2px 10px;border-radius:6px;">${q.answer}</span></div>
+      <div class="concept-box" style="margin-top:10px;">📚 ${expl}</div>
     </div>`;
+    // 자동으로 다음 문제로 이동
+    if (hintQIdx < total - 1) {
+      setTimeout(() => { hintQIdx++; renderRemediationExplanation(setIdx, roundIdx); }, 1200);
+    } else {
+      setTimeout(() => { hintQIdx = 0; onExplanationRead(setIdx, roundIdx); }, 1200);
+    }
   }
 
   // 이전/다음 버튼
@@ -4858,11 +4841,10 @@ function answerHintRetry(setIdx, roundIdx, qId, selectedAnswer) {
       }, 800);
     }
   } else {
-    const cur = round.hintAttempts[qId] || 0;
-    round.hintAttempts[qId] = Math.min(cur + 1, 2);
+    round.hintAttempts[qId] = 2;
     saveStore(store);
+    renderRemediationExplanation(setIdx, roundIdx);
   }
-  renderRemediationExplanation(setIdx, roundIdx);
 }
 
 async function onExplanationRead(setIdx, roundIdx) {
@@ -4881,7 +4863,7 @@ async function onExplanationRead(setIdx, roundIdx) {
 
   saveStore(store);
 
-  if (roundIdx >= 2 || stillWrong.length === 0) {
+  if (roundIdx >= 1 || stillWrong.length === 0) {
     rem.finalDone = true;
     rem.finalWrongQuestions = stillWrong;
     rem.finalExplanations = round.explanations;
