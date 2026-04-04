@@ -4779,11 +4779,7 @@ function renderRemediationExplanation(setIdx, roundIdx) {
     ? `<button class="btn-nav" disabled onclick="">Next →</button>`
     : '';
 
-  const finishBtn = allDone
-    ? `<button class="all-done-btn" onclick="hintQIdx=0;onExplanationRead(${setIdx},${roundIdx})">💪 Start Practice Questions</button>`
-    : (hintQIdx === total - 1 && curDone)
-      ? `<button class="all-done-btn" disabled>Reviewing... (${doneCount}/${total} done)</button>`
-      : '';
+
 
   const html = `<div class="exam-wrap">
     <div class="remediation-section">
@@ -4798,7 +4794,7 @@ function renderRemediationExplanation(setIdx, roundIdx) {
         ${prevBtn}
         ${nextBtn}
       </div>
-      ${finishBtn}
+
     </div>
   </div>`;
 
