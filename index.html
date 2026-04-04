@@ -916,7 +916,8 @@ function navigateStudentPeriod(dir) {
     studentPeriod = prevPeriod(cur);
   } else {
     const nxt = nextPeriod(cur);
-    studentPeriod = periodGte(nxt, store.currentPeriod) ? store.currentPeriod : nxt;
+    const today = getTodayPeriod();
+    studentPeriod = periodGte(nxt, today) ? today : nxt;
   }
   currentSetIdx = null;
   qIdx = 0;
@@ -1282,7 +1283,7 @@ function getStore() {
     d.migrationISO2026Done = true;
     migrated = true;
   }
-  if (migrated) localStorage.setItem(STORE_KEY, JSON.stringify(d));
+  if (migrated) saveStore(d);
   return d;
 }
 
@@ -1379,7 +1380,7 @@ async function doLogin() {
       autoBackupToFirebase();
     }
     else if (user.role==='parent') renderParent();
-    else { qIdx=0; currentSetIdx=null; studentPeriod=store.currentPeriod; renderStudent(); }
+    else { qIdx=0; currentSetIdx=null; studentPeriod=getTodayPeriod(); renderStudent(); }
   } catch(e) {
     const errDiv = document.createElement('div');
     errDiv.style.cssText = 'padding:40px;color:red;font-weight:800;';
@@ -3029,7 +3030,8 @@ function getCalcAllowed(ranges, qNum) {
 }
 
 function renderPeriodNav(p, currentP) {
-  const isLatest = periodGte(p, currentP) && periodGte(currentP, p);
+  const today = getTodayPeriod();
+  const isLatest = periodGte(p, today) && periodGte(today, p);
   return `
     <div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:12px;padding:12px 16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.05);">
       <button class="btn-sm btn-navy" onclick="navigateStudentPeriod(-1)">← Prev Week</button>
@@ -6168,7 +6170,14 @@ const firebaseConfig = {
       if (!window.fbReady) return;
       if (_skipNextSync) { _skipNextSync = false; return; }
       const data = snapshot.val();
-      if (data) localStorage.setItem(STORE_KEY, JSON.stringify(data));
+      if (!data) return;
+      const localRaw = localStorage.getItem(STORE_KEY);
+      const localData = localRaw ? JSON.parse(localRaw) : null;
+      const fbTs = data.lastModified || 0;
+      const localTs = localData?.lastModified || 0;
+      if (fbTs >= localTs) {
+        localStorage.setItem(STORE_KEY, JSON.stringify(data));
+      }
     });
 
     // 5초 안에 Firebase 응답 없으면 강제로 로딩 해제
