@@ -5213,12 +5213,10 @@ function renderPracticeResults(setIdx, roundIdx) {
     </div>`;
   } else {
     html += `<div style="text-align:center;padding:20px;background:#fef3c7;border-radius:var(--radius);margin-bottom:16px;">
-      <div style="font-size:16px;font-weight:800;color:#92400e;">You still got ${wrong.length} question${wrong.length>1?'s':''} wrong. Let's review and try again!</div>
+      <div style="font-size:16px;font-weight:800;color:#92400e;">You got ${wrong.length} question${wrong.length>1?'s':''} wrong. Keep practising!</div>
     </div>
     <div style="text-align:center;">
-      <button class="btn-confirm-read" style="max-width:400px;margin:0 auto;" onclick="startRemediation(${setIdx})">
-        📖 View Explanations
-      </button>
+      <button class="btn-nav" onclick="currentSetIdx=null;renderStudent()">← Back to Set List</button>
     </div>`;
   }
 
