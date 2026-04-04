@@ -1380,7 +1380,10 @@ async function doLogin() {
       autoBackupToFirebase();
     }
     else if (user.role==='parent') renderParent();
-    else { qIdx=0; currentSetIdx=null; studentPeriod=getTodayPeriod(); renderStudent(); }
+    else {
+      document.getElementById('btnBackupDownload').style.display = 'none';
+      qIdx=0; currentSetIdx=null; studentPeriod=getTodayPeriod(); renderStudent();
+    }
   } catch(e) {
     const errDiv = document.createElement('div');
     errDiv.style.cssText = 'padding:40px;color:red;font-weight:800;';
@@ -4772,8 +4775,8 @@ function renderRemediationExplanation(setIdx, roundIdx) {
     : `<button class="btn-nav" disabled>← Prev</button>`;
 
   const curDone = attempts === 99 || attempts >= 2;
-  const nextBtn = hintQIdx < total - 1
-    ? `<button class="btn-nav" ${curDone ? '' : 'disabled'} onclick="hintQIdx=${hintQIdx+1};renderRemediationExplanation(${setIdx},${roundIdx})">Next →</button>`
+  const nextBtn = hintQIdx < total - 1 && !curDone
+    ? `<button class="btn-nav" disabled onclick="">Next →</button>`
     : '';
 
   const finishBtn = allDone
