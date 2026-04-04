@@ -1283,7 +1283,7 @@ function getStore() {
     d.migrationISO2026Done = true;
     migrated = true;
   }
-  if (migrated) saveStore(d);
+  if (migrated) localStorage.setItem(STORE_KEY, JSON.stringify(d));
   return d;
 }
 
