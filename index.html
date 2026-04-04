@@ -4688,6 +4688,10 @@ function renderRemediationExplanation(setIdx, roundIdx) {
   let cardHtml = '';
 
   if (isSolved) {
+    const isLast = hintQIdx >= total - 1;
+    const solvedNextBtn = isLast
+      ? `<button class="all-done-btn" onclick="hintQIdx=0;onExplanationRead(${setIdx},${roundIdx})">💪 Start Practice Questions</button>`
+      : `<button class="btn-nav" style="margin-top:12px;" onclick="hintQIdx++;renderRemediationExplanation(${setIdx},${roundIdx})">Next →</button>`;
     cardHtml = `<div class="hint-card stage-solved">
       <div class="hint-stage-badge s-ok">✅ Solved!</div>
       <div class="explanation-q-title">Q. ${renderMath(q.text)}</div>
@@ -4695,6 +4699,7 @@ function renderRemediationExplanation(setIdx, roundIdx) {
         Great job! Correct answer: <span style="background:#dcfce7;padding:2px 8px;border-radius:6px;">${q.answer}</span>
       </div>
       <div style="margin-top:8px;font-size:13px;color:#555;line-height:1.7;">${expl}</div>
+      ${solvedNextBtn}
     </div>`;
   } else if (attempts === 0) {
     let optHtml0 = '';
@@ -4749,18 +4754,16 @@ function renderRemediationExplanation(setIdx, roundIdx) {
       </div>
     </div>`;
   } else if (attempts >= 2) {
+    const wrongNextBtn = hintQIdx < total - 1
+      ? `<button class="btn-nav" style="margin-top:12px;" onclick="hintQIdx++;renderRemediationExplanation(${setIdx},${roundIdx})">Next →</button>`
+      : `<button class="all-done-btn" onclick="hintQIdx=0;onExplanationRead(${setIdx},${roundIdx})">💪 Start Practice Questions</button>`;
     cardHtml = `<div class="hint-card stage-explain">
       <div class="hint-stage-badge s2">❌ Incorrect</div>
       <div class="explanation-q-title">Q. ${renderMath(q.text)}</div>
       <div style="margin-top:8px;font-size:13px;font-weight:700;">Correct answer: <span style="background:#dcfce7;color:#166534;padding:2px 10px;border-radius:6px;">${q.answer}</span></div>
       <div class="concept-box" style="margin-top:10px;">📚 ${expl}</div>
+      ${wrongNextBtn}
     </div>`;
-    // 자동으로 다음 문제로 이동
-    if (hintQIdx < total - 1) {
-      setTimeout(() => { hintQIdx++; renderRemediationExplanation(setIdx, roundIdx); }, 1200);
-    } else {
-      setTimeout(() => { hintQIdx = 0; onExplanationRead(setIdx, roundIdx); }, 1200);
-    }
   }
 
   // 이전/다음 버튼
@@ -4832,14 +4835,7 @@ function answerHintRetry(setIdx, roundIdx, qId, selectedAnswer) {
   if (ans === correct) {
     round.hintAttempts[qId] = 99;
     saveStore(store);
-    // 정답이면 잠깐 후 자동으로 다음 문제로 이동
-    const total = round.wrongQuestions.length;
-    if (hintQIdx < total - 1) {
-      setTimeout(() => {
-        hintQIdx++;
-        renderRemediationExplanation(setIdx, roundIdx);
-      }, 800);
-    }
+    renderRemediationExplanation(setIdx, roundIdx);
   } else {
     round.hintAttempts[qId] = 2;
     saveStore(store);
