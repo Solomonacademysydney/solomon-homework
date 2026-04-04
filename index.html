@@ -4479,25 +4479,8 @@ ${lines}`;
 // ── REMEDIATION: PRACTICE QUESTIONS ─────
 async function generatePracticeQuestions(wrongQs, year, roundIdx) {
   const originalPerQ = roundIdx === 0 ? 3 : 2;  // 1차: 3문제, 2차: 2문제
-  const MAX_TOTAL = 20;
-  const N = wrongQs.length;
-
-  // 문제당 유사문제 수 계산 (20문제 초과 시 균일하게 줄이고 마지막 문제로 맞춤)
-  let perQList;
-  let effectiveWrongQs = wrongQs;
-  if (N * originalPerQ <= MAX_TOTAL) {
-    perQList = wrongQs.map(() => originalPerQ);
-  } else if (N >= MAX_TOTAL) {
-    // 틀린 문제 자체가 20개 이상: 20개만 선택해 각 1문제씩
-    const step = N / MAX_TOTAL;
-    effectiveWrongQs = Array.from({length: MAX_TOTAL}, (_, i) => wrongQs[Math.floor(i * step)]);
-    perQList = effectiveWrongQs.map(() => 1);
-  } else {
-    // 틀린 문제는 전부 유지, 문제당 수를 줄이고 마지막 문제로 20문제에 맞춤
-    const base = Math.floor(MAX_TOTAL / N);
-    const lastCount = MAX_TOTAL - base * (N - 1);
-    perQList = wrongQs.map((_, i) => i < N - 1 ? base : lastCount);
-  }
+  const effectiveWrongQs = wrongQs;
+  const perQList = effectiveWrongQs.map(() => 1);
 
   const letters = ['A','B','C','D','E'];
   const prompt = `You are a math teacher creating practice problems. For each of the following wrong questions, create the specified number (Count) of similar practice questions.
