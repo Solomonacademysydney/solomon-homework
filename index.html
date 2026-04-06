@@ -704,7 +704,7 @@ const APP_VERSION = {
   note: 'API 키 Firebase 동기화 복원 (무한루프 수정)'
 };
 let _originalTeacher = null;
-let _skipNextSync = false;   // fbWrite 직후 on('value') 중복 쓰기 방지
+let _lastFbWriteTs = 0;   // fbWrite 직후 on('value') 중복 쓰기 방지 (타임스탬프 기반)
 window.isPreviewMode = false;
 
 function saveStore(d) {
@@ -717,8 +717,9 @@ function saveStore(d) {
 // ── Firebase Granular Write Helpers ──
 function fbWrite(updates) {
   if (!window.fbReady || !window.FB_REF) return;
-  _skipNextSync = true;
-  updates.lastModified = Date.now();
+  const ts = Date.now();
+  _lastFbWriteTs = ts;
+  updates.lastModified = ts;
   window.FB_REF.update(updates).catch(err => {
     console.error('[Firebase] 업데이트 실패:', err);
     showBackupToast('⚠️ Firebase 저장 실패 — 로컬에만 저장됨');
@@ -869,6 +870,7 @@ async function initStore() {
     submissions: {}
   };
   saveStore(d);
+  if (window.fbReady && window.FB_REF) window.FB_REF.set(d);
   return d;
 }
 
@@ -1611,7 +1613,7 @@ function renderTeacher() {
   html += `<div class="settings-card" style="margin-top:8px;">
     <h2>👨‍🎓 Student Status by Year — ${periodLabel(p)}</h2>`;
   years.forEach(yr => {
-    const yrStudentsAll = allStudents.filter(s=>s.year===yr&&(s.country||'AU')===selectedCountry);
+    const yrStudentsAll = allStudents.filter(s=>s.year===yr&&(s.country||'AU')===selectedCountry&&(showTestAccounts||!s.isTest));
     const hw = store.homeworkSets[hwKey(yr, selectedCountry, p)];
     const sets = hw?.sets || [];
     html += `<div style="margin-bottom:16px;">
@@ -5284,10 +5286,11 @@ const firebaseConfig = {
     // 다른 기기에서 변경 시 실시간 반영 (localStorage만 업데이트)
     window.FB_REF.on('value', (snapshot) => {
       if (!window.fbReady) return;
-      if (_skipNextSync) { _skipNextSync = false; return; }
       const data = snapshot.val();
       if (!data) return;
       if (!data.homeworkSets) return;
+      // 내가 직접 쓴 데이터의 echo는 무시 (타임스탬프 일치 시)
+      if (data.lastModified && data.lastModified === _lastFbWriteTs) return;
       const localRaw = localStorage.getItem(STORE_KEY);
       const localData = localRaw ? JSON.parse(localRaw) : null;
       const fbTs = data.lastModified || 0;
