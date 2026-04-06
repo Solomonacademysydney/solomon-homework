@@ -569,6 +569,77 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .ts-set-card{background:#fff;border-radius:var(--radius);padding:22px 26px;box-shadow:0 2px 10px rgba(0,0,0,.06);display:flex;align-items:center;gap:18px;border:2px solid #2d4a8a;transition:all .2s;cursor:pointer;margin-bottom:14px;}
 .ts-set-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(45,74,138,.15);}
 
+/* ── NEW TS SYSTEM (v2) ─────────────────────── */
+:root{
+  --tsLR:#6366F1;--tsPR:#8B5CF6;--tsSR:#0EA5E9;--tsVR:#10B981;
+  --tsAR:#F97316;--tsCT:#EC4899;--tsNR:#EAB308;
+}
+@keyframes tsFadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes tsShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
+@keyframes tsPulseGreen{0%{transform:scale(1)}50%{transform:scale(1.03)}100%{transform:scale(1)}}
+@keyframes tsStarPop{0%{transform:scale(0) rotate(-20deg);opacity:0}70%{transform:scale(1.4) rotate(10deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
+.tsn-header{background:linear-gradient(90deg,#0d1526,var(--navy));color:#fff;padding:14px 20px;border-radius:14px 14px 0 0;display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:0;}
+.tsn-track-info .tsn-label{font-size:15px;font-weight:800;color:#fff;display:block;}
+.tsn-track-info .tsn-week{font-size:12px;color:rgba(255,255,255,.7);}
+.tsn-stats{display:flex;gap:16px;}
+.tsn-stat{text-align:center;}
+.tsn-stat .tsn-sv{font-size:17px;font-weight:800;color:var(--gold);display:block;}
+.tsn-stat .tsn-sl{font-size:10px;color:rgba(255,255,255,.6);}
+.tsn-body{background:#f0f4f8;padding:16px;border-radius:0 0 14px 14px;}
+.tsn-adaptive{background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;border-radius:10px;padding:12px 16px;margin-bottom:12px;font-size:13px;display:none;}
+.tsn-adaptive.show{display:block;}
+.tsn-adaptive strong{display:block;font-size:14px;margin-bottom:3px;}
+.tsn-qcard{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.07);animation:tsFadeUp .3s ease;}
+.tsn-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;font-size:12px;font-weight:700;color:#fff;margin-bottom:12px;}
+.tsn-qmeta{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.tsn-qcounter{font-size:13px;color:#64748b;font-weight:600;}
+.tsn-qtext{font-size:17px;font-weight:700;color:#1e293b;margin-bottom:18px;line-height:1.6;white-space:pre-wrap;font-family:'Noto Sans KR',sans-serif;}
+.tsn-opts{display:flex;flex-direction:column;gap:9px;margin-bottom:16px;}
+.tsn-opt{display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:10px;border:2px solid #e2e8f0;background:#fff;cursor:pointer;font-size:15px;font-weight:600;color:#1e293b;text-align:left;transition:all .15s;min-height:52px;width:100%;font-family:'Noto Sans KR',sans-serif;}
+.tsn-opt:hover:not(:disabled):not(.tsn-greyed){border-color:var(--navy);background:#f8f9ff;transform:scale(1.01);}
+.tsn-opt.tsn-selected{border-color:var(--navy);background:#eef1ff;}
+.tsn-opt.tsn-correct{border-color:#22c55e;background:#dcfce7;}
+.tsn-opt.tsn-wrong{border-color:#ef4444;background:#fee2e2;animation:tsShake .4s ease;}
+.tsn-opt.tsn-greyed{border-color:#e2e8f0;background:#f8fafc;color:#94a3b8;opacity:.55;cursor:not-allowed;}
+.tsn-opt.tsn-revealed{border-color:#22c55e;background:#dcfce7;animation:tsPulseGreen .5s ease;}
+.tsn-opt-letter{width:30px;height:30px;border-radius:50%;background:#f0f4f8;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;transition:all .15s;}
+.tsn-opt.tsn-selected .tsn-opt-letter{background:var(--navy);color:#fff;}
+.tsn-opt.tsn-correct .tsn-opt-letter,.tsn-opt.tsn-revealed .tsn-opt-letter{background:#22c55e;color:#fff;}
+.tsn-opt.tsn-wrong .tsn-opt-letter{background:#ef4444;color:#fff;}
+.tsn-submit{width:100%;padding:13px;background:var(--navy);color:#fff;border:none;border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-size:15px;font-weight:800;cursor:pointer;transition:all .2s;}
+.tsn-submit:disabled{opacity:.45;cursor:not-allowed;}
+.tsn-submit:not(:disabled):hover{background:#0d1526;}
+.tsn-fb{border-radius:10px;padding:14px 18px;margin-top:14px;display:none;animation:tsFadeUp .3s ease;}
+.tsn-fb.tsn-fb-ok{background:#dcfce7;border:2px solid #22c55e;}
+.tsn-fb.tsn-fb-hint{background:#fef3c7;border:2px solid #f59e0b;}
+.tsn-fb.tsn-fb-wrong{background:#fee2e2;border:2px solid #ef4444;}
+.tsn-fb-hd{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:800;margin-bottom:8px;color:#1e293b;}
+.tsn-fb-txt{font-size:14px;line-height:1.65;color:#1e293b;}
+.tsn-fb-stars{font-size:22px;margin-top:8px;}
+.tsn-fb-stars .tsn-star{display:inline-block;animation:tsStarPop .4s ease forwards;}
+.tsn-fb-stars .tsn-star:nth-child(2){animation-delay:.15s;}
+.tsn-fb-actions{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;}
+.tsn-pbar{background:linear-gradient(90deg,#0d1526,var(--navy));padding:10px 20px;border-radius:0 0 14px 14px;display:flex;align-items:center;gap:12px;}
+.tsn-pbar-bg{flex:1;height:7px;background:rgba(255,255,255,.2);border-radius:4px;overflow:hidden;}
+.tsn-pbar-fill{height:100%;background:var(--gold);border-radius:4px;transition:width .4s ease;}
+.tsn-pbar-lbl{font-size:12px;color:rgba(255,255,255,.8);font-weight:700;white-space:nowrap;}
+.tsn-complete{background:linear-gradient(135deg,#1e1b4b,#2d1b69);border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.3);color:#f1f5f9;}
+.tsn-complete-hd{background:linear-gradient(135deg,#162040,#2A5080);color:#fff;padding:32px 24px;text-align:center;}
+.tsn-complete-hd h2{font-size:24px;color:#fff;margin:12px 0 6px;}
+.tsn-complete-hd p{color:rgba(255,255,255,.75);font-size:14px;}
+.tsn-stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:16px 0;}
+.tsn-stat-card{background:#f8f9ff;border-radius:10px;padding:14px;text-align:center;}
+.tsn-stat-card .tsn-sc-num{font-size:22px;font-weight:800;color:var(--navy);}
+.tsn-stat-card .tsn-sc-desc{font-size:11px;color:#64748b;margin-top:3px;}
+.tsn-streak-banner{background:linear-gradient(135deg,#FF6B35,#F4A820);color:#fff;border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.tsn-streak-banner .tsn-sb-num{font-size:24px;font-weight:800;}
+.tsn-weak-card{background:#f8f9ff;border-radius:10px;padding:14px 18px;margin-bottom:14px;}
+.tsn-weak-card h4{font-size:13px;color:#1e293b;margin-bottom:6px;font-weight:800;}
+.tsn-weak-card p{font-size:13px;color:#64748b;line-height:1.6;}
+.tsn-report-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.tsn-report-pill{padding:6px 14px;border-radius:20px;font-size:13px;font-weight:700;background:#eef1ff;color:var(--navy);}
+@media(max-width:480px){.tsn-stats-grid{grid-template-columns:1fr 1fr;}.tsn-qtext{font-size:15px;}.tsn-opt{font-size:14px;}}
+
 /* ── PRINT STYLES ── */
 @media print {
   body{background:#fff!important;color:#000!important;font-size:12pt;}
@@ -765,12 +836,15 @@ function saveStore(d) {
   localStorage.setItem(STORE_KEY, json);
   if (window.fbReady && window.FB_REF) {
     _skipNextSync = true;
-    window.FB_REF.set(JSON.parse(json)).catch(err => {
-      console.error('[Firebase] 저장 실패:', err);
-      _pendingFbWrite = JSON.parse(json);
-      showBackupToast('⚠️ Firebase 저장 실패 — 로컬에만 저장됨');
-    });
-    _pendingFbWrite = null;
+    window.FB_REF.set(JSON.parse(json))
+      .then(() => {
+        _pendingFbWrite = null;
+      })
+      .catch(err => {
+        console.error('[Firebase] 저장 실패:', err);
+        _pendingFbWrite = JSON.parse(json);
+        showBackupToast('⚠️ Firebase 저장 실패 — 로컬에만 저장됨');
+      });
   } else {
     _pendingFbWrite = JSON.parse(json);
   }
@@ -1291,6 +1365,12 @@ async function ensureStore() {
   const raw = localStorage.getItem(STORE_KEY);
   let store;
   if (!raw) {
+    if (!window.fbReady) {
+      // Firebase 연결 전이면 initStore() 실행하지 않음
+      // 빈 데이터로 Firebase를 덮어쓰는 사고를 방지
+      // 연결 후 once('value') 콜백에서 처리됨
+      return;
+    }
     store = await initStore();
   } else {
     store = getStore();
@@ -1621,32 +1701,34 @@ function renderTeacher() {
       </div>`;
     }
     // ── TS Assignment Section ──
-    const tsKey = `ts_${hwKey(selectedYear, selectedCountry, p)}`;
     const tsConfig = hw?.ts_config || store.homeworkSets[hwKey(selectedYear, selectedCountry, p)]?.ts_config || null;
     const tsEnabled = !!tsConfig?.enabled;
-    const tsWeekVal = tsConfig?.ts_week || 1;
-    const tsYearLabel = tsConfig?.ts_year_label || getTSYearLabel(selectedYear);
-    const tsWeekOpts = Array.from({length:40},(_,i)=>i+1).map(w => `<option value="${w}"${w===tsWeekVal?'selected':''}>Week ${w}</option>`).join('');
-    const tsYearLabelOpts = ['Y3_OC','Y4_OC','Y5_SEL','Y6_SEL'].map(yl => `<option value="${yl}"${yl===tsYearLabel?'selected':''}>${yl}</option>`).join('');
+    const tsTrack   = tsConfig?.track || (selectedYear<=3?'oc-foundation':selectedYear===4?'oc-intensive':selectedYear===5?'sel-foundation':'sel-intensive');
+    const tsQpd     = tsConfig?.qpd || TSv2_DEFAULT_QPD[tsTrack] || 5;
+    const tsWeekOv  = tsConfig?.weekOverride || '';
+    const tsTrackOpts = Object.entries(TSv2_CURRICULUM).map(([k,v])=>`<option value="${k}"${k===tsTrack?'selected':''}>${v.label}</option>`).join('');
 
     html += `
       <div class="ts-assignment-section" style="margin-top:16px;">
         <label style="font-weight:600;color:#2d4a8a;display:flex;align-items:center;gap:6px;">
           <input type="checkbox" id="ts-enable-check" ${tsEnabled?'checked':''} onchange="toggleTSAssignment(${selectedYear})">
-          🧠 Thinking Skills Daily (6 days x 10 questions)
+          🧠 Thinking Skills Daily Practice
         </label>
-        <div id="ts-week-selector" style="margin-top:8px;${tsEnabled?'':'display:none;'}">
+        <div id="ts-assign-panel" style="margin-top:8px;${tsEnabled?'':'display:none;'}">
           <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
-            <label style="font-size:13px;font-weight:700;">TS Year Label:
-              <select id="ts-year-label-select" style="padding:4px 8px;border:1px solid #c7d7ff;border-radius:6px;font-family:'Noto Sans KR',sans-serif;">${tsYearLabelOpts}</select>
+            <label style="font-size:13px;font-weight:700;">Track:
+              <select id="ts-track-select" style="padding:4px 8px;border:1px solid #c7d7ff;border-radius:6px;font-family:'Noto Sans KR',sans-serif;">${tsTrackOpts}</select>
             </label>
-            <label style="font-size:13px;font-weight:700;">TS Week:
-              <select id="ts-week-select" style="padding:4px 8px;border:1px solid #c7d7ff;border-radius:6px;font-family:'Noto Sans KR',sans-serif;">${tsWeekOpts}</select>
+            <label style="font-size:13px;font-weight:700;">Qs/day:
+              <input type="number" id="ts-qpd-input" value="${tsQpd}" min="1" max="10" style="width:56px;padding:4px 8px;border:1px solid #c7d7ff;border-radius:6px;font-family:'Noto Sans KR',sans-serif;">
+            </label>
+            <label style="font-size:13px;font-weight:700;">Week override:
+              <input type="number" id="ts-week-override" value="${tsWeekOv}" min="1" max="40" placeholder="auto" style="width:70px;padding:4px 8px;border:1px solid #c7d7ff;border-radius:6px;font-family:'Noto Sans KR',sans-serif;">
             </label>
             <button class="btn-sm btn-navy" onclick="saveTSAssignment(${selectedYear})" style="padding:6px 14px;">Save TS</button>
           </div>
           <span style="font-size:12px;color:#666;margin-top:4px;display:block;">
-            Students in Year ${selectedYear} will see the TS tab with auto-assigned questions.
+            Students in Year ${selectedYear} will see Thinking Skills with daily AI-generated questions.
           </span>
         </div>
       </div>`;
@@ -2669,8 +2751,8 @@ let currentSetIdx = null;      // null=set list screen, 0+=active set index
 function renderStudent() {
   // If TS view is active, render TS instead
   if (tsViewState) {
-    if (tsViewState.mode === 'week') { renderTSWeekView(); return; }
-    if (tsViewState.mode === 'quiz') { reloadTSSession(tsViewState.day, tsViewState.isRemediation); return; }
+    if (tsViewState.mode === 'session') { tsv2RenderQuiz(); return; }
+    if (tsViewState.mode === 'complete') { /* already rendered */ return; }
   }
 
   const store = getStore();
@@ -3519,6 +3601,28 @@ function renderParentReportSection(child, store, period) {
     html += `</div><hr style="border:none;border-top:2px solid var(--border);margin:20px 0;">`;
   });
 
+  // ── Parent TS Report ──
+  const tsReport = tsv2GetReportData(child.id, store);
+  const tsEntries = Object.entries(tsReport);
+  if (tsEntries.length > 0) {
+    html += `<div style="margin-top:12px;margin-bottom:20px;">
+      <div style="font-weight:800;color:var(--navy);font-size:15px;margin-bottom:10px;">🧠 Thinking Skills</div>`;
+    tsEntries.forEach(([track, tsR]) => {
+      html += `
+        <div style="background:#f8faff;border:1px solid #e0e7ff;border-radius:10px;padding:12px;margin-bottom:10px;">
+          <div style="font-size:13px;font-weight:700;color:#4f46e5;margin-bottom:8px;">${tsR.label} — Week ${tsR.currentWeek}/${tsR.totalWeeks}</div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:13px;">
+            <span>⭐ <b>${tsR.totalStars}</b> stars</span>
+            <span>🔥 <b>${tsR.streak}</b> day streak</span>
+            <span>✓ <b>${tsR.accuracy}%</b> accuracy</span>
+            <span>📝 <b>${tsR.totalQuestions}</b> questions</span>
+          </div>
+          ${tsR.weakTypes.length ? `<div style="font-size:12px;color:#ef4444;margin-top:6px;">⚠️ 더 연습 필요: ${tsR.weakTypes.join(', ')}</div>` : ''}
+        </div>`;
+    });
+    html += `</div><hr style="border:none;border-top:2px solid var(--border);margin:20px 0;">`;
+  }
+
   html += `</div>`;
   return html;
 }
@@ -4178,37 +4282,36 @@ function showTeacherReport(studentId) {
   // ── TS Report Section ──
   const hw = store.homeworkSets[hwKey(s.year, s.country||'AU', p)];
   if (hw?.ts_config?.enabled) {
-    const tsR = getTSReportData(studentId, hw.ts_config.ts_year_label, hw.ts_config.ts_week, store);
-    if (tsR.total > 0) {
-      const tsCls = tsR.accuracy>=80?'pill-a':tsR.accuracy>=60?'pill-b':'pill-c';
-      html += `
-        <div style="margin-bottom:20px;">
-          <div style="font-weight:800;color:#2d4a8a;font-size:15px;margin-bottom:10px;">🧠 Thinking Skills — Week ${hw.ts_config.ts_week}</div>
-          <div class="report-score-row">
-            <div class="report-score-card">
-              <div class="big" style="color:${tsR.accuracy>=80?'var(--green)':tsR.accuracy>=60?'var(--gold2)':'var(--red)'};">${tsR.accuracy}%</div>
-              <div class="lbl">Accuracy</div>
+    const tsReport = tsv2GetReportData(studentId, store);
+    const trackEntries = Object.entries(tsReport);
+    if (trackEntries.length > 0) {
+      html += `<div style="margin-bottom:20px;"><div style="font-weight:800;color:#2d4a8a;font-size:15px;margin-bottom:10px;">🧠 Thinking Skills Progress</div>`;
+      trackEntries.forEach(([track, tsR]) => {
+        html += `
+          <div style="background:#f8faff;border-radius:10px;padding:12px;margin-bottom:10px;">
+            <div style="font-size:13px;font-weight:700;color:#4f46e5;margin-bottom:8px;">${tsR.label} — Week ${tsR.currentWeek}/${tsR.totalWeeks}</div>
+            <div class="report-score-row">
+              <div class="report-score-card">
+                <div class="big" style="color:${tsR.accuracy>=80?'var(--green)':tsR.accuracy>=60?'var(--gold2)':'var(--red)'};">${tsR.accuracy}%</div>
+                <div class="lbl">Accuracy</div>
+              </div>
+              <div class="report-score-card">
+                <div class="big" style="color:#fbbf24;">⭐ ${tsR.totalStars}</div>
+                <div class="lbl">Stars</div>
+              </div>
+              <div class="report-score-card">
+                <div class="big" style="color:#f97316;">🔥 ${tsR.streak}</div>
+                <div class="lbl">Day Streak</div>
+              </div>
+              <div class="report-score-card">
+                <div class="big" style="color:#2d4a8a;">${tsR.totalQuestions}</div>
+                <div class="lbl">Questions Done</div>
+              </div>
             </div>
-            <div class="report-score-card">
-              <div class="big" style="color:var(--navy);">${tsR.correct}/${tsR.total}</div>
-              <div class="lbl">Correct</div>
-            </div>
-            <div class="report-score-card">
-              <div class="big" style="color:#2d4a8a;">${tsR.daysCompleted}/6</div>
-              <div class="lbl">Days Done</div>
-            </div>
-            <div class="report-score-card">
-              <div class="big" style="color:#f59e0b;">${tsR.hintUsed}</div>
-              <div class="lbl">Hints Used</div>
-            </div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:13px;font-weight:600;">
-            <span>Answers revealed: <b style="color:var(--red);">${tsR.revealed}</b></span>
-            <span>·</span>
-            <span>Remediation: <b>${tsR.remediationDone ? '✅ Done' : '⏳ Pending'}</b></span>
-          </div>
-        </div>
-        <hr style="border:none;border-top:2px solid var(--border);margin:20px 0;">`;
+            ${tsR.weakTypes.length ? `<div style="font-size:12px;color:#ef4444;margin-top:6px;">⚠️ Needs work: ${tsR.weakTypes.join(', ')}</div>` : ''}
+          </div>`;
+      });
+      html += `</div><hr style="border:none;border-top:2px solid var(--border);margin:20px 0;">`;
     }
   }
 
@@ -5312,795 +5415,712 @@ document.addEventListener('keydown', function(e) {
 })();
 
 // ═══════════════════════════════════════
-//  THINKING SKILLS (TS) SYSTEM
+//  THINKING SKILLS v2 (TSv2) SYSTEM
 // ═══════════════════════════════════════
 
-// ── TS 상수 ──────────────────────────────────────
-const TS_MODEL = "claude-sonnet-4-6";
-const TS_API_URL = "https://api.anthropic.com/v1/messages";
+// ── TSv2 Constants ──────────────────────────────────────────────
+const TSv2_TYPE_CFG = {
+  LR:{name:'Logical Reasoning', emoji:'🧩', color:'var(--tsLR)'},
+  PR:{name:'Pattern Recognition',emoji:'🔷', color:'var(--tsPR)'},
+  SR:{name:'Spatial Reasoning', emoji:'🧊', color:'var(--tsSR)'},
+  VR:{name:'Verbal Reasoning',  emoji:'📖', color:'var(--tsVR)'},
+  AR:{name:'Abstract Reasoning',emoji:'🌀', color:'var(--tsAR)'},
+  CT:{name:'Critical Thinking', emoji:'💡', color:'var(--tsCT)'},
+  NR:{name:'Numerical Reasoning',emoji:'🔢',color:'var(--tsNR)'}
+};
+const TSv2_GRADE_MAP = {
+  'oc-foundation': 'Year 3 (age 8-9)',
+  'oc-intensive':  'Year 4 (age 9-10)',
+  'sel-foundation':'Year 5 (age 10-11)',
+  'sel-intensive': 'Year 6 (age 11-12)'
+};
+const TSv2_DEFAULT_QPD = {
+  'oc-foundation':3, 'oc-intensive':4, 'sel-foundation':5, 'sel-intensive':6
+};
+const TSv2_MODEL = "claude-sonnet-4-6";
+const TSv2_API_URL = "https://api.anthropic.com/v1/messages";
 
-const TS_LEVEL_DESC = {
-  "Y3_OC":  "Year 3 students (age 8-9). Questions must be very simple, concrete, and visual where possible. Single-step reasoning only.",
-  "Y4_OC":  "Year 4 students (age 9-10). Moderate difficulty. 1-2 step reasoning. NSW OC exam style.",
-  "Y5_SEL": "Year 5 students (age 10-11). Intermediate difficulty. Multi-step reasoning. NSW Selective exam preparation.",
-  "Y6_SEL": "Year 6 students (age 11-12). Advanced difficulty. Complex multi-step reasoning. NSW Selective High School exam level.",
+// ── TSv2 Curriculum ─────────────────────────────────────────────
+const TSv2_CURRICULUM = {
+  'oc-foundation': { label:'OC Foundation (Y3, 20 weeks)', totalWeeks:20, weeks:[
+    {week:1, theme:'Introduction to Logical Reasoning',   types:['LR','PR']},
+    {week:2, theme:'Basic Pattern Recognition',           types:['PR','AR']},
+    {week:3, theme:'Simple Spatial Concepts',             types:['SR','AR']},
+    {week:4, theme:'Vocabulary & Verbal Skills',          types:['VR','LR']},
+    {week:5, theme:'Number Patterns & Sequences',         types:['NR','PR']},
+    {week:6, theme:'Analogies & Relationships',           types:['VR','LR']},
+    {week:7, theme:'Shape Transformations',               types:['SR','AR']},
+    {week:8, theme:'Critical Observation',                types:['CT','LR']},
+    {week:9, theme:'Matrix Patterns',                     types:['PR','AR']},
+    {week:10,theme:'Word Meanings & Context',             types:['VR','CT']},
+    {week:11,theme:'Logical Sequences',                   types:['LR','NR']},
+    {week:12,theme:'3D Spatial Reasoning',                types:['SR','AR']},
+    {week:13,theme:'Numerical Operations',                types:['NR','LR']},
+    {week:14,theme:'Deductive Reasoning',                 types:['LR','CT']},
+    {week:15,theme:'Complex Patterns',                    types:['PR','AR']},
+    {week:16,theme:'Inference & Evidence',                types:['CT','VR']},
+    {week:17,theme:'Mixed Spatial Challenges',            types:['SR','PR']},
+    {week:18,theme:'Advanced Verbal Reasoning',           types:['VR','LR']},
+    {week:19,theme:'Numerical Logic',                     types:['NR','CT']},
+    {week:20,theme:'Full Revision & Mixed Practice',      types:['LR','PR','SR','VR','AR','CT','NR']}
+  ]},
+  'sel-foundation': { label:'Selective Foundation (Y5, 40 weeks)', totalWeeks:40, weeks:[
+    {week:1, theme:'Logical Foundations',                 types:['LR','CT']},
+    {week:2, theme:'Advanced Pattern Recognition',        types:['PR','AR']},
+    {week:3, theme:'Spatial Visualisation',               types:['SR','AR']},
+    {week:4, theme:'Verbal Comprehension',                types:['VR','LR']},
+    {week:5, theme:'Numerical Sequences',                 types:['NR','PR']},
+    {week:6, theme:'Analogical Thinking',                 types:['VR','LR']},
+    {week:7, theme:'3D Shape Reasoning',                  types:['SR','AR']},
+    {week:8, theme:'Argument Evaluation',                 types:['CT','LR']},
+    {week:9, theme:'Matrix & Grid Patterns',              types:['PR','AR']},
+    {week:10,theme:'Synonym & Antonym Reasoning',         types:['VR','CT']},
+    {week:11,theme:'Syllogisms & Deductions',             types:['LR','NR']},
+    {week:12,theme:'Folding & Rotation',                  types:['SR','AR']},
+    {week:13,theme:'Arithmetic Patterns',                 types:['NR','LR']},
+    {week:14,theme:'Cause & Effect',                      types:['CT','LR']},
+    {week:15,theme:'Complex Matrix Patterns',             types:['PR','AR']},
+    {week:16,theme:'Inference from Passages',             types:['CT','VR']},
+    {week:17,theme:'Mixed Spatial Challenges',            types:['SR','PR']},
+    {week:18,theme:'Figurative Language',                 types:['VR','LR']},
+    {week:19,theme:'Number Logic Puzzles',                types:['NR','CT']},
+    {week:20,theme:'Integrated Reasoning I',              types:['LR','PR','SR']},
+    {week:21,theme:'Advanced Logical Chains',             types:['LR','CT']},
+    {week:22,theme:'Rhythm & Transformation',             types:['PR','AR']},
+    {week:23,theme:'Cross-Section Reasoning',             types:['SR','AR']},
+    {week:24,theme:'Vocabulary in Context',               types:['VR','CT']},
+    {week:25,theme:'Proportional Reasoning',              types:['NR','LR']},
+    {week:26,theme:'Relationship Mapping',                types:['VR','AR']},
+    {week:27,theme:'Perspective & Rotation',              types:['SR','PR']},
+    {week:28,theme:'Hypothesis Testing',                  types:['CT','LR']},
+    {week:29,theme:'Advanced Matrix Reasoning',           types:['PR','AR']},
+    {week:30,theme:'Extended Verbal Analogies',           types:['VR','LR']},
+    {week:31,theme:'Multi-Step Logical Chains',           types:['LR','NR']},
+    {week:32,theme:'Complex Spatial Nets',                types:['SR','AR']},
+    {week:33,theme:'Applied Numerical Reasoning',         types:['NR','CT']},
+    {week:34,theme:'Evaluating Arguments',                types:['CT','LR']},
+    {week:35,theme:'Composite Patterns',                  types:['PR','AR']},
+    {week:36,theme:'Reading Between the Lines',           types:['CT','VR']},
+    {week:37,theme:'Advanced Spatial Integration',        types:['SR','PR']},
+    {week:38,theme:'Sophisticated Verbal Reasoning',      types:['VR','LR']},
+    {week:39,theme:'Complex Number Puzzles',              types:['NR','CT']},
+    {week:40,theme:'Full Revision & Mixed Practice',      types:['LR','PR','SR','VR','AR','CT','NR']}
+  ]},
+  'oc-intensive':  { label:'OC Intensive (Y4, 16 weeks)',  totalWeeks:16, weeks:null },
+  'sel-intensive': { label:'Selective Intensive (Y6, 16 weeks)', totalWeeks:16, weeks:null }
+};
+// oc-intensive = last 16 weeks of oc-foundation (weeks 5-20 renumbered)
+TSv2_CURRICULUM['oc-intensive'].weeks = TSv2_CURRICULUM['oc-foundation'].weeks.slice(4).map((w,i)=>({...w,week:i+1}));
+// sel-intensive = last 16 weeks of sel-foundation (weeks 25-40 renumbered)
+TSv2_CURRICULUM['sel-intensive'].weeks = TSv2_CURRICULUM['sel-foundation'].weeks.slice(24).map((w,i)=>({...w,week:i+1}));
+
+// ── TSv2 Fallback Questions ─────────────────────────────────────
+const TSv2_FALLBACK = {
+  LR:[
+    {q:"If all dogs are animals and Rex is a dog, which statement must be true?", opts:["Rex is an animal","All animals are dogs","Rex is the only dog","Animals are all dogs"], ans:0, hint:"Think about what 'all dogs are animals' tells you about Rex specifically.", explain:"Since all dogs are animals, and Rex is a dog, Rex must be an animal. This is basic deductive reasoning."},
+    {q:"Some athletes are students. All students study hard. Maria is an athlete who is a student. What must be true?", opts:["All athletes study hard","Maria studies hard","Some athletes don't study","Maria is the best student"], ans:1, hint:"Focus on what we know about Maria specifically.", explain:"Since Maria is a student (given), and all students study hard, Maria must study hard."},
+    {q:"In a row of 5 children, Amy is 2nd from the left and 4th from the right. How many children are between Amy and the right end?", opts:["1","2","3","4"], ans:2, hint:"If Amy is 4th from the right, how many are to her right?", explain:"4th from the right means 3 children are to her right. So 3 children are between Amy and the right end."},
+    {q:"If today is Wednesday, what day will it be in 10 days?", opts:["Friday","Saturday","Sunday","Monday"], ans:1, hint:"Count 10 days forward from Wednesday, remembering weeks have 7 days.", explain:"10 days from Wednesday: 7 days = Wednesday again, then 3 more = Saturday."},
+    {q:"A shopkeeper has apples and oranges. He has more apples than oranges. He has 12 fruits total and 5 oranges. How many apples?", opts:["5","6","7","8"], ans:2, hint:"Total fruits minus oranges equals apples.", explain:"12 total - 5 oranges = 7 apples. Check: 7 > 5, so more apples than oranges. Correct!"}
+  ],
+  PR:[
+    {q:"What comes next in the sequence: 2, 4, 8, 16, ___?", opts:["24","28","32","36"], ans:2, hint:"Look at how each number relates to the previous one.", explain:"Each number doubles: 2×2=4, 4×2=8, 8×2=16, 16×2=32."},
+    {q:"What comes next: 1, 4, 9, 16, ___?", opts:["20","25","30","36"], ans:1, hint:"These are square numbers: 1²=1, 2²=4...", explain:"These are perfect squares: 1², 2², 3², 4², 5²=25."},
+    {q:"What comes next: A, C, E, G, ___?", opts:["H","I","J","K"], ans:1, hint:"Count the letters — are you skipping any?", explain:"Every second letter of the alphabet: A, C, E, G, I (skipping B, D, F, H)."},
+    {q:"Which shape completes the pattern: Circle, Square, Triangle, Circle, Square, ___?", opts:["Circle","Square","Triangle","Pentagon"], ans:2, hint:"The shapes repeat in a cycle of three.", explain:"The pattern repeats every 3 shapes: Circle, Square, Triangle. After Square comes Triangle."},
+    {q:"What comes next: 1, 1, 2, 3, 5, 8, ___?", opts:["11","12","13","14"], ans:2, hint:"Each number is the sum of the two before it.", explain:"Fibonacci sequence: each number = sum of previous two. 5+8=13."}
+  ],
+  SR:[
+    {q:"A square piece of paper is folded in half diagonally, then folded in half again. How many layers of paper are there?", opts:["2","3","4","5"], ans:2, hint:"Each fold doubles the number of layers.", explain:"Start: 1 layer. After 1st fold: 2 layers. After 2nd fold: 4 layers."},
+    {q:"If you look at a clock in a mirror at 3:00, what time does it appear to show?", opts:["9:00","12:00","3:00","6:00"], ans:0, hint:"A mirror reverses left and right. Where would the hour hand appear?", explain:"In a mirror, the clock is reversed. 3:00 becomes 9:00 (the hand moves to the opposite side)."},
+    {q:"A cube has 6 faces. If you paint all the outside faces of a 3×3×3 cube made of small cubes, how many small cubes have exactly 2 painted faces?", opts:["8","12","16","24"], ans:1, hint:"These are the edge cubes (not corner cubes) of the big cube.", explain:"Edge cubes (not corners) have exactly 2 painted faces. A 3×3×3 cube has 12 edges, each with 1 middle cube = 12."},
+    {q:"Which 2D shape cannot be folded into a cube net?", opts:["A cross of 6 squares","A row of 6 squares","An L-shape of 6 squares","A T-shape of 6 squares"], ans:1, hint:"A straight row of 6 squares — try folding it mentally.", explain:"A straight row of 6 squares cannot fold into a cube because opposite faces would overlap."},
+    {q:"A shape is rotated 90° clockwise. If it originally pointed up, it now points:", opts:["Down","Left","Right","Up"], ans:2, hint:"Imagine a compass needle rotating clockwise.", explain:"Rotating 90° clockwise: Up → Right. (Think of a clock hand moving from 12 to 3.)"}
+  ],
+  VR:[
+    {q:"Choose the word most similar in meaning to BENEVOLENT:", opts:["Cruel","Kind","Brave","Clever"], ans:1, hint:"Benevolent describes someone who wishes others well.", explain:"Benevolent means having a kindly disposition, being well-meaning and generous. Synonyms include kind, charitable, generous."},
+    {q:"SWIFT is to SLOW as HOT is to:", opts:["Warm","Fire","Cold","Temperature"], ans:2, hint:"Swift and slow are opposites. Find the opposite of hot.", explain:"Swift↔Slow are antonyms. Hot↔Cold are antonyms. The relationship is 'opposite of'."},
+    {q:"Which word does NOT belong: Apple, Banana, Carrot, Orange, Grape?", opts:["Apple","Banana","Carrot","Orange"], ans:2, hint:"Think about what category most of these words share.", explain:"Carrot is a vegetable; all others are fruits. Carrot does not belong."},
+    {q:"Choose the best meaning of the underlined word: The scientist made an ASTUTE observation.", opts:["Clever and perceptive","Loud and surprising","Slow and careful","Random and lucky"], ans:0, hint:"Astute describes a quality of perception or judgement.", explain:"Astute means having or showing an ability to accurately assess situations; clever and perceptive."},
+    {q:"Complete the analogy: Book is to Library as Painting is to:", opts:["Artist","Canvas","Gallery","Museum"], ans:2, hint:"Where are books kept/displayed? Where are paintings displayed?", explain:"Books are displayed/kept in a Library. Paintings are displayed in a Gallery."}
+  ],
+  AR:[
+    {q:"Which figure is the odd one out: Triangle, Square, Pentagon, Circle, Hexagon?", opts:["Triangle","Square","Circle","Hexagon"], ans:2, hint:"Think about what property most shapes share that one does not.", explain:"All other shapes have straight sides (polygons). Circle has no straight sides — it's the odd one out."},
+    {q:"In a series of shapes, each shape gains one side. Starting with 3 sides, what is the 5th shape?", opts:["Pentagon (5)","Hexagon (6)","Heptagon (7)","Octagon (8)"], ans:2, hint:"Start with triangle (3 sides) and count: 3, 4, 5, 6, 7.", explain:"Triangle(3)→Square(4)→Pentagon(5)→Hexagon(6)→Heptagon(7). The 5th shape is heptagon."},
+    {q:"If ○ = 3 and □ = 5, what does ○ + □ + ○ equal?", opts:["8","9","11","13"], ans:2, hint:"Replace each symbol with its value.", explain:"○+□+○ = 3+5+3 = 11."},
+    {q:"A pattern alternates: large circle, small square, large circle, small square. What is the 7th element?", opts:["Large circle","Small square","Large triangle","Small circle"], ans:0, hint:"The pattern repeats every 2 elements. Is 7 odd or even?", explain:"Positions 1,3,5,7... are large circle. Position 7 is odd, so large circle."},
+    {q:"Shapes are coded: ▲=A, ■=B, ●=C. What does B, A, C spell using shapes?", opts:["■▲●","▲■●","●▲■","■●▲"], ans:0, hint:"Swap each letter for its shape symbol directly.", explain:"B=■, A=▲, C=●. So B,A,C = ■▲●."}
+  ],
+  CT:[
+    {q:"All mammals breathe air. Whales breathe air. Therefore:", opts:["All whales are mammals","Whales might be mammals","Whales are definitely not fish","We cannot conclude whales are mammals from this alone"], ans:3, hint:"Does breathing air make something a mammal? Think about what we're NOT told.", explain:"Breathing air is a characteristic of mammals, but the argument is invalid — many animals breathe air. We cannot conclude whale is a mammal from this alone."},
+    {q:"A student argues: 'I got 100% on this test, so I must be smarter than everyone else in the class.' What is the main flaw?", opts:["The student may not be smart","One test doesn't measure overall intelligence","Tests are unfair","100% is not a real score"], ans:1, hint:"What does one test result actually tell you?", explain:"One test result doesn't measure overall intelligence or prove superiority. The conclusion is too broad for the evidence."},
+    {q:"'Sales of ice cream and sunburn cases both increase in summer. Therefore, eating ice cream causes sunburn.' What's wrong?", opts:["Ice cream is healthy","Sunburn is rare","Correlation doesn't imply causation","Summer is too hot"], ans:2, hint:"Both things happening at the same time doesn't mean one causes the other.", explain:"This is the correlation/causation fallacy. Both increase due to a third factor (hot weather/summer), not because one causes the other."},
+    {q:"Which evidence would BEST support the claim 'Exercise improves memory'?", opts:["A student who exercises got good grades","A study of 1000 people showing exercisers have better memory scores","An athlete says they have a good memory","Exercise is taught in schools"], ans:1, hint:"What kind of evidence is most reliable for a scientific claim?", explain:"A controlled study with many participants provides the strongest scientific evidence. Personal anecdotes and single cases are weaker."},
+    {q:"If the school decides to cancel art classes, which argument is STRONGEST against this decision?", opts:["Art is fun","Students who take art score higher in maths and reading","My friend loves art","Art materials are expensive"], ans:1, hint:"Look for the argument with data/evidence rather than personal opinion.", explain:"Evidence linking art to improved academic performance is the strongest argument because it uses data to show broader educational value."}
+  ],
+  NR:[
+    {q:"If 3 pens cost $4.50, how much do 7 pens cost?", opts:["$9.00","$10.50","$12.00","$13.50"], ans:1, hint:"First find the cost of 1 pen, then multiply by 7.", explain:"1 pen = $4.50÷3 = $1.50. 7 pens = 7×$1.50 = $10.50."},
+    {q:"What is 15% of 80?", opts:["10","11","12","15"], ans:2, hint:"15% = 15/100. Multiply 80 by 15 then divide by 100.", explain:"15% of 80 = 80 × 15/100 = 1200/100 = 12."},
+    {q:"A train travels 120 km in 2 hours. At the same speed, how far will it travel in 5 hours?", opts:["240 km","300 km","360 km","400 km"], ans:1, hint:"Find speed first (km per hour), then multiply by 5.", explain:"Speed = 120÷2 = 60 km/h. In 5 hours: 60×5 = 300 km."},
+    {q:"The average of 4 numbers is 12. Three of the numbers are 10, 11, 15. What is the fourth?", opts:["10","11","12","13"], ans:2, hint:"Average = total ÷ count. Find the total, then subtract the known numbers.", explain:"Total = 12×4 = 48. Known: 10+11+15=36. Fourth = 48-36 = 12."},
+    {q:"If a rectangle has area 48 cm² and width 6 cm, what is its perimeter?", opts:["22 cm","28 cm","36 cm","48 cm"], ans:1, hint:"Find length first (area = length × width), then use perimeter = 2×(length+width).", explain:"Length = 48÷6 = 8 cm. Perimeter = 2×(8+6) = 2×14 = 28 cm."}
+  ]
 };
 
-const TS_DAY_TYPES = {
-  1: ["sequences", "analogies"],
-  2: ["odd_one_out", "spatial"],
-  3: ["logic", "matrix"],
-  4: ["sequences", "logic", "analogies"],
-  5: ["spatial", "odd_one_out", "matrix"],
-  6: ["sequences", "analogies", "odd_one_out", "spatial", "logic", "matrix"],
+// ── TSv2 State ──────────────────────────────────────────────────
+let tsViewState = null; // kept same name; values: null | {mode:'session'} | {mode:'complete'}
+let _tsv2 = {
+  track: null,
+  questions: [],
+  qIdx: 0,
+  attempts: 0,
+  selected: null,
+  results: [],
+  preview: false
 };
 
-const TS_TYPE_DESC = {
-  sequences:   "number sequences, letter sequences, or symbol sequences with a hidden rule",
-  analogies:   "word analogies (A is to B as C is to ?) or shape/number analogies",
-  odd_one_out: "find the one item that does not belong to the group",
-  spatial:     "mirror images, rotations, paper folding, or 3D visualisation",
-  logic:       "logical deduction using if-then reasoning, true/false statements, or elimination",
-  matrix:      "2x2 or 3x3 matrix — find the missing piece using the transformation rule",
-};
-
-// ── TS 커리큘럼 데이터 ───────────────────────────
-const TS_CURRICULUM = {
-  "Y6_SEL": {
-    1:  { topics: ["Word analogies", "Odd one out", "Category classification"] },
-    2:  { topics: ["Arithmetic sequences", "Geometric sequences", "Mixed rules"] },
-    3:  { topics: ["Alphabet patterns", "Symbol sequences", "Alternating rules"] },
-    4:  { topics: ["If-then reasoning", "True/false statements", "Simple syllogisms"] },
-    5:  { topics: ["Shape patterns", "Rotating patterns", "Grid patterns"] },
-    6:  { topics: ["Multi-condition logic", "Process of elimination", "Contradiction"] },
-    7:  { topics: ["2D folding", "Mirror images", "Rotations"] },
-    8:  { topics: ["3D rotation", "Hidden cubes", "Block structures"] },
-    9:  { topics: ["Letter codes", "Number codes", "Substitution ciphers"] },
-    10: { topics: ["Multiple categories", "Properties & attributes", "Elimination"] },
-    11: { topics: ["2x2 matrices", "3x3 matrices", "Shape transformations in grids"] },
-    12: { topics: ["Colour & size rules", "Combined transformations", "Missing piece"] },
-    13: { topics: ["Cube nets", "Prism nets", "Folding predictions"] },
-    14: { topics: ["Reading between the lines", "Word relationships", "Hidden meanings"] },
-    15: { topics: ["Grid logic", "Ordering clues", "Positioning problems"] },
-    16: { topics: ["Multi-step deduction", "Relationship tables", "Complex elimination"] },
-  },
-  "Y5_SEL": {
-    1:  { topics: ["Sorting by one property", "Basic categories", "Grouping"] },
-    2:  { topics: ["Count on/back", "Add/subtract rules", "Fill the gap"] },
-    3:  { topics: ["Repeating patterns", "Growing patterns", "What comes next?"] },
-    4:  { topics: ["Simple word pairs", "Category analogies", "Part-whole"] },
-    5:  { topics: ["One clear difference", "Single property", "Simple elimination"] },
-    6:  { topics: ["Alphabet order", "Skip counting letters", "Simple letter rules"] },
-    7:  { topics: ["Horizontal flip", "Vertical flip", "Identifying reflections"] },
-    8:  { topics: ["Quarter turns", "Half turns", "Identifying rotated shapes"] },
-    9:  { topics: ["All/some/none", "If A then B", "Simple deduction"] },
-    10: { topics: ["True/false from clues", "Negation", "Simple syllogisms"] },
-    11: { topics: ["Multiply/divide rules", "Two-step rules", "Geometric sequences"] },
-    12: { topics: ["Simple letter-number codes", "Shift codes", "Matching codes"] },
-    13: { topics: ["Function analogies", "Degree analogies", "Synonym/antonym pairs"] },
-    14: { topics: ["Multiple properties", "Hidden categories", "Tricky grouping"] },
-    15: { topics: ["Shape changes", "Size changes", "Simple grid rules"] },
-    16: { topics: ["Simple paper folds", "Basic net recognition", "Folding predictions"] },
-    17: { topics: ["Alternating sequences", "Two-pattern sequences", "Mixed rules"] },
-    18: { topics: ["Two properties", "Overlapping groups", "Venn-style thinking"] },
-    19: { topics: ["Word codes", "Symbol codes", "Finding the rule"] },
-    20: { topics: ["Ordering from clues", "Position from clues", "Simple grids"] },
-    21: { topics: ["Grid patterns", "Colour patterns", "Growing & shrinking"] },
-    22: { topics: ["Counting cubes", "Front/side/top views", "Simple block buildings"] },
-    23: { topics: ["Word associations", "Categories within categories", "Definitions"] },
-    24: { topics: ["Mixed sequences", "Letter + number sequences", "Symbol sequences"] },
-    25: { topics: ["3x3 matrices", "Rotation rules", "Reflection rules in grids"] },
-    26: { topics: ["Two-condition problems", "Process of elimination", "Grid logic"] },
-    27: { topics: ["Cube nets", "Which net makes a cube?", "Predicting folded result"] },
-    28: { topics: ["Complex relationships", "Action analogies", "Tricky pairs"] },
-    29: { topics: ["Rotating patterns", "Alternating patterns", "Rule identification"] },
-    30: { topics: ["Hidden cubes", "Painted faces", "Cube assembly"] },
-    31: { topics: ["Combined rules", "Colour + size + shape", "Missing piece"] },
-    32: { topics: ["Multi-step codes", "Reverse engineering", "Complex ciphers"] },
-    33: { topics: ["Multi-clue logic grids", "Elimination tables", "Ordering"] },
-    34: { topics: ["Inference", "Hidden assumptions", "Logical conclusions"] },
-    35: { topics: ["Abstract properties", "Unexpected categories", "Multiple solutions"] },
-    36: { topics: ["Fibonacci-type", "Alternating operations", "Complex rules"] },
-    37: { topics: ["Paper cutting & folding", "Punched holes", "Unfolding predictions"] },
-    38: { topics: ["Short logic grids", "Clue-based positioning", "Simple constraints"] },
-    39: { topics: ["Multi-row logic grids", "Complex constraints", "Full elimination"] },
-    40: { topics: ["All topic types", "Timed mixed practice", "Exam strategies"] },
-  },
-  "Y4_OC": {
-    1:  { topics: ["Number sequences & patterns", "Shape & colour patterns", "Growing & shrinking patterns"] },
-    2:  { topics: ["If-then statements", "True/false logic problems", "Deductive reasoning basics"] },
-    3:  { topics: ["Venn diagrams & set relationships", "Category & classification problems", "All/some/none"] },
-    4:  { topics: ["Word analogies (A:B :: C:D)", "Category relationship types", "Part-whole analogies"] },
-    5:  { topics: ["Number & shape analogies", "Visual analogies", "Function & degree analogies"] },
-    6:  { topics: ["Arithmetic sequences (add/subtract)", "Geometric sequences (multiply/divide)", "Alternating patterns"] },
-    7:  { topics: ["Fibonacci-type patterns", "Two-rule sequences", "Letter & symbol sequences"] },
-    8:  { topics: ["Mental rotation of 2D shapes", "Mirror images & reflections", "Folding & unfolding patterns"] },
-    9:  { topics: ["Top, front & side views", "Cube & net problems", "Counting hidden cubes"] },
-    10: { topics: ["Letter-number substitution codes", "Caesar cipher & shifts", "Pattern-based codes"] },
-    11: { topics: ["Fact vs opinion", "Identifying assumptions", "Evaluating arguments"] },
-    12: { topics: ["Lateral thinking puzzles", "Logic grid puzzles", "Elimination strategies"] },
-    13: { topics: ["Identifying cause-effect relationships", "Chain reactions", "Reverse reasoning"] },
-    14: { topics: ["2x2 and 3x3 matrices", "Shape transformation rules", "Finding the missing piece"] },
-    15: { topics: ["Multi-step logic problems", "Combining different reasoning types"] },
-    16: { topics: ["Process of elimination", "Identifying question types quickly", "Time allocation"] },
-  },
-  "Y3_OC": {
-    1:  { topics: ["Sorting by colour, shape & size", "Making groups with a rule", "Finding the sorting rule"] },
-    2:  { topics: ["AB patterns", "ABC patterns", "AABB patterns", "Extending & predicting patterns"] },
-    3:  { topics: ["Patterns that get bigger by 1", "Growing by adding 2 or 3", "What comes next?"] },
-    4:  { topics: ["Count on by 2, 3, 5", "Fill in the missing number", "Patterns on a hundred chart"] },
-    5:  { topics: ["Count back by 2, 3, 5", "Patterns going down", "Two-way patterns"] },
-    6:  { topics: ["Which one is the same?", "What is different?", "More than / less than / equal to"] },
-    7:  { topics: ["One odd one out (colour)", "One odd one out (shape)", "Explaining the reason"] },
-    8:  { topics: ["Odd one out (number type)", "Odd one out (category)", "Multiple possible answers"] },
-    9:  { topics: ["Left-right reflections", "Which image is the mirror?", "Spotting differences"] },
-    10: { topics: ["Up-down reflections", "Combined reflections", "Is it symmetrical?"] },
-    11: { topics: ["Quarter turns (90°)", "Half turns (180°)", "Clockwise & anticlockwise"] },
-    12: { topics: ["Rotating shape patterns", "Alternating shape patterns", "What shape comes next?"] },
-    13: { topics: ["Big:Small :: ?:? analogies", "Whole:Part analogies", "Before:After analogies"] },
-    14: { topics: ["Shape change analogies", "Colour change analogies", "Rotation analogies"] },
-    15: { topics: ["Is this statement true or false?", "All dogs have four legs", "Which statement must be true?"] },
-    16: { topics: ["If A then B", "Simple conditions", "What must happen if…?"] },
-    17: { topics: ["Alphabet order (A, B, C…)", "Skip one letter (A, C, E…)", "Fill in the missing letter"] },
-    18: { topics: ["Skip two letters", "Alternating patterns", "Letter + number patterns"] },
-    19: { topics: ["A=1, B=2, C=3… codes", "Decode a word", "Simple substitution"] },
-    20: { topics: ["Shift codes (A=2, B=3…)", "Find the shift amount", "Symbol substitution codes"] },
-    21: { topics: ["Who is tallest/shortest?", "Putting things in order using clues", "Simple constraint problems"] },
-    22: { topics: ["Use clues to find the answer", "2-clue deduction problems", "Logic grid (2×2)"] },
-    23: { topics: ["Two sorting rules at once", "Overlapping groups", "Introduction to Venn diagrams"] },
-    24: { topics: ["What caused this?", "What will happen next?", "Predicting outcomes"] },
-    25: { topics: ["Front view of a building", "Side view", "Top (bird's eye) view"] },
-    26: { topics: ["Folding paper in half", "What does it look like folded?", "Punch-hole problems (simple)"] },
-    27: { topics: ["Multiply pattern (×2, ×3)", "Two-step patterns", "Continue the sequence"] },
-    28: { topics: ["Hot : Cold :: Day : ?", "Cat : Kitten :: Dog : ?", "Part : Whole analogies"] },
-    29: { topics: ["Sort by shape AND colour", "Sort by size AND number", "Finding things that fit both rules"] },
-    30: { topics: ["What is missing in this pattern?", "Shapes in a grid", "Two-rule completion"] },
-    31: { topics: ["Two possible answers – which is best?", "Abstract properties", "Explaining your reasoning"] },
-    32: { topics: ["2×2 grids: what goes in the empty box?", "Shape changes across rows", "Simple transformation rules"] },
-    33: { topics: ["Who has what? (2 people, 2 items)", "Using clues to fill a grid", "3-clue problems"] },
-    34: { topics: ["Read carefully for clues", "Highlighting key information", "Common trick questions"] },
-    35: { topics: ["Left, right, up, down", "North, South, East, West", "Following a path"] },
-    36: { topics: ["Fibonacci-style patterns", "Alternating add/subtract rules", "Mixed number & shape sequences"] },
-    37: { topics: ["Number analogies", "Word analogies", "Shape analogies"] },
-    38: { topics: ["Is this always true?", "Find an example that breaks the rule", "Making a reasonable guess"] },
-    39: { topics: ["Sequences + analogies", "Logic + spatial", "Codes + patterns"] },
-    40: { topics: ["How to read a question carefully", "Skip & come back strategy", "Process of elimination"] },
-  },
-};
-
-function getWeekTopics(yearLabel, tsWeek) {
-  const wd = (TS_CURRICULUM[yearLabel] || {})[tsWeek];
-  if (wd && wd.topics) return wd.topics;
-  return ["thinking skills", "logical reasoning", "pattern recognition"];
-}
-
-function getTSYearLabel(year) {
-  if (year <= 3) return 'Y3_OC';
-  if (year <= 4) return 'Y4_OC';
-  if (year <= 5) return 'Y5_SEL';
-  return 'Y6_SEL';
-}
-
-// ── Claude API call for TS ──
-async function callClaudeTS(prompt) {
-  const apiKey = getAIKey();
-  if (!apiKey) throw new Error('Claude API key is not set. Please set it in Teacher Settings.');
-  const res = await fetch(TS_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: TS_MODEL,
-      max_tokens: 4000,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  });
-  if (!res.ok) { const e = await res.text(); throw new Error(`Claude API Error: ${res.status}\n${e}`); }
-  const data = await res.json();
-  return (data.content?.[0]?.text || '').trim();
-}
-
-// ── TS 문제 생성 (Day 1~6) ──
-async function generateTSQuestions(yearLabel, tsWeek, day) {
-  const types = TS_DAY_TYPES[day];
-  const perType = Math.floor(10 / types.length);
-  const remainder = 10 % types.length;
-  const typeCounts = types.map((t, i) => ({ type: t, count: perType + (i < remainder ? 1 : 0) }));
-  const typeInstructions = typeCounts.map(tc =>
-    `- ${tc.type} (${TS_TYPE_DESC[tc.type]}): generate exactly ${tc.count} questions`
-  ).join("\n");
-  const weekTopics = getWeekTopics(yearLabel, tsWeek);
-
-  const prompt = `You are an expert NSW Thinking Skills question writer for primary school students.
-
-Target students: ${TS_LEVEL_DESC[yearLabel]}
-This week's curriculum topics: ${weekTopics.join(", ")}
-
-Generate exactly 10 multiple-choice Thinking Skills questions as follows:
-${typeInstructions}
-
-STRICT RULES:
-1. Each question must have EXACTLY 5 options: A, B, C, D, E
-2. Only ONE option is correct — no ambiguous questions
-3. All questions must be solvable with TEXT ONLY — no diagrams or images required
-4. hint1: Give a strategic approach WITHOUT stating the answer (e.g. "Look at how each term changes")
-5. hint2: Give a MORE SPECIFIC hint from a DIFFERENT ANGLE — still no answer reveal
-6. explanation: State the answer and explain step-by-step why it is correct
-7. Include a "type" field matching one of: sequences, analogies, odd_one_out, spatial, logic, matrix
-8. Questions within the same type must be clearly different from each other
-
-Return ONLY a valid JSON array of exactly 10 objects. No markdown. No extra text.
-
-Each object schema:
-{
-  "type": "sequences",
-  "text": "Full question text here",
-  "options": {"A": "...", "B": "...", "C": "...", "D": "...", "E": "..."},
-  "answer": "C",
-  "hint1": "Strategic approach hint (no answer)",
-  "hint2": "More specific hint from different angle (no answer)",
-  "explanation": "Step-by-step explanation of why the answer is correct"
-}`;
-
-  let raw = await callClaudeTS(prompt);
-  const cleaned = raw.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
-  const questions = JSON.parse(cleaned);
-  return questions.map((q, i) => ({ id: `day${day}_q${i + 1}`, ...q }));
-}
-
-// ── 유사문제 생성 (틀린 문제 기반) ──
-async function generateRemediationQuestions(yearLabel, wrongTypes, tsWeek) {
-  const typeCounts = {};
-  wrongTypes.forEach(t => { typeCounts[t] = (typeCounts[t] || 0) + 1; });
-  const typeInstructions = Object.entries(typeCounts).map(([t, count]) =>
-    `- ${t} (${TS_TYPE_DESC[t]}): generate exactly ${count} questions`
-  ).join("\n");
-  const total = wrongTypes.length;
-  const weekTopics = getWeekTopics(yearLabel, tsWeek);
-
-  const prompt = `You are an expert NSW Thinking Skills question writer.
-
-A student struggled with certain question types. Generate SIMILAR but DIFFERENT practice questions to help them improve.
-
-Target students: ${TS_LEVEL_DESC[yearLabel]}
-Curriculum context: ${weekTopics.join(", ")}
-
-Generate exactly ${total} questions as follows:
-${typeInstructions}
-
-IMPORTANT: These are remediation questions — they should:
-- Cover the SAME TYPES as above but use DIFFERENT content/numbers/words
-- Be at SIMILAR difficulty level (not easier, not harder)
-- Help the student understand the underlying pattern or reasoning method
-
-Same rules as before:
-1. Exactly 5 options A-E, only one correct
-2. Text-only questions (no diagrams needed)
-3. hint1: strategic approach (no answer)
-4. hint2: more specific hint, different angle (no answer)
-5. explanation: step-by-step with answer revealed
-6. Include "type" field
-
-Return ONLY a valid JSON array of exactly ${total} objects. No markdown. No extra text.
-
-Same schema as before.`;
-
-  let raw = await callClaudeTS(prompt);
-  const cleaned = raw.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
-  const questions = JSON.parse(cleaned);
-  return questions.map((q, i) => ({ id: `rem_q${i + 1}`, ...q }));
-}
-
-// ── Teacher: toggle TS checkbox ──
-function toggleTSAssignment(yr) {
-  const el = document.getElementById('ts-week-selector');
-  if (el) el.style.display = document.getElementById('ts-enable-check').checked ? '' : 'none';
-}
-
-// ── Teacher: save TS assignment ──
-function saveTSAssignment(yr) {
+// ── TSv2 Storage (Firebase via getStore/saveStore) ───────────────
+function tsv2LoadProgress(track) {
   const store = getStore();
-  const p = store.currentPeriod;
-  const key = hwKey(yr, selectedCountry, p);
-  const enabled = document.getElementById('ts-enable-check').checked;
-
-  if (!store.homeworkSets[key]) {
-    store.homeworkSets[key] = { year: yr, country: selectedCountry, period: p, sets: [] };
-  }
-
-  if (enabled) {
-    store.homeworkSets[key].ts_config = {
-      enabled: true,
-      ts_year_label: document.getElementById('ts-year-label-select').value,
-      ts_week: parseInt(document.getElementById('ts-week-select').value)
-    };
-  } else {
-    delete store.homeworkSets[key].ts_config;
-  }
-
-  saveStore(store);
-  renderTeacher();
-
-  const msg = document.createElement('div');
-  msg.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#2d4a8a;color:#fff;padding:14px 28px;border-radius:12px;font-family:"Noto Sans KR",sans-serif;font-weight:800;font-size:15px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);';
-  msg.textContent = enabled ? `🧠 Thinking Skills enabled for Year ${yr}` : `Thinking Skills disabled for Year ${yr}`;
-  document.body.appendChild(msg);
-  setTimeout(() => msg.remove(), 2500);
+  const uid = currentUser ? currentUser.id : 'guest';
+  return ((store.ts_progress || {})[uid] || {})[track] || {
+    currentWeek: 1, currentDay: 1,
+    streak: 0, lastDate: null,
+    totalStars: 0, totalQuestions: 0, totalCorrect: 0,
+    weekStats: {},
+    typeStats: {}
+  };
 }
 
-// ── Student: Show TS Panel in Set List ──
-let tsViewState = null; // { mode: 'week'|'quiz', day, isRemediation }
-
-function renderStudentWithTS() {
-  // Called from renderSetList — adds TS card if ts_config is enabled
-  const store = getStore();
-  const p = studentPeriod || store.currentPeriod;
-  const hw = store.homeworkSets[hwKey(currentUser.year, currentUser.country||'AU', p)];
-  if (!hw?.ts_config?.enabled) return '';
-
-  const tsConfig = hw.ts_config;
-  const progress = (store.ts_progress || {})[`${currentUser.id}_${tsConfig.ts_year_label}_${tsConfig.ts_week}`] || {};
-  const completedDays = [1,2,3,4,5,6].filter(d => (progress[`day${d}`] || {}).completed).length;
-  const allDone = completedDays === 6;
-  const remDone = (progress.remediation || {}).completed;
-  const weekDone = allDone && (remDone || !progress.remediation);
-
-  let statusText, iconEmoji, cardBg;
-  if (weekDone) {
-    statusText = '✅ All completed!'; iconEmoji = '🏆'; cardBg = '#e8f5e9';
-  } else if (allDone && progress.remediation && !remDone) {
-    statusText = 'Days done · Remediation in progress'; iconEmoji = '🔄'; cardBg = '#fff8e1';
-  } else {
-    statusText = `${completedDays}/6 days completed`; iconEmoji = completedDays > 0 ? '📝' : '▶'; cardBg = '#fff';
-  }
-
-  return `
-    <div class="ts-set-card" style="background:${cardBg};" onclick="openTSPanel()">
-      <div class="set-icon set-icon-open" style="background:#2d4a8a;color:#fff;font-size:24px;">🧠</div>
-      <div class="set-info">
-        <div class="set-name" style="color:#2d4a8a;">Thinking Skills — Week ${tsConfig.ts_week}</div>
-        <div class="set-meta">${statusText} · 6 days × 10 questions</div>
-      </div>
-      <span style="font-size:24px;">${iconEmoji}</span>
-    </div>`;
-}
-
-function _getTSConfig() {
-  const store = getStore();
-  const p = studentPeriod || store.currentPeriod;
-  const hw = store.homeworkSets[hwKey(currentUser.year, currentUser.country||'AU', p)];
-  return hw?.ts_config?.enabled ? hw.ts_config : null;
-}
-function _tsPKey() {
-  const c = _getTSConfig();
-  return c ? `${currentUser.id}_${c.ts_year_label}_${c.ts_week}` : null;
-}
-
-function openTSPanel() {
-  tsViewState = { mode: 'week' };
-  renderTSWeekView();
-}
-
-// ── 주간 뷰 (Day 카드 화면) ──
-function renderTSWeekView() {
-  const tsConfig = _getTSConfig();
-  if (!tsConfig) { tsViewState = null; renderStudent(); return; }
-  const pKey = _tsPKey();
-  const store = getStore();
-  const progress = (store.ts_progress || {})[pKey] || {};
-
-  let daysHtml = '';
-  for (let day = 1; day <= 6; day++) {
-    const dayData = progress[`day${day}`] || {};
-    const completed = dayData.completed || false;
-    const prevDone = day === 1 || (progress[`day${day-1}`] || {}).completed;
-    const locked = !prevDone;
-    const answersArr = Object.values(dayData.answers || {});
-    const correctCount = answersArr.filter(a => a.correct).length;
-
-    daysHtml += `
-      <div class="ts-day-card ${completed ? 'done' : ''} ${locked ? 'locked' : ''}"
-           ${locked ? '' : `onclick="startTSDay(${day})"`}>
-        <div class="ts-day-label">Day ${day}</div>
-        <div class="ts-day-icon">${completed ? '✅' : locked ? '🔒' : '▶'}</div>
-        <div class="ts-day-score">${completed ? correctCount+'/10' : locked ? '' : '10 questions'}</div>
-      </div>`;
-  }
-
-  // Remediation card
-  const allDaysDone = [1,2,3,4,5,6].every(d => (progress[`day${d}`] || {}).completed);
-  let remHtml = '';
-  if (allDaysDone) {
-    const rem = progress.remediation;
-    if (!rem) {
-      // collect wrong types
-      let wrongCount = 0;
-      for (let d = 1; d <= 6; d++) {
-        const ans = (progress[`day${d}`] || {}).answers || {};
-        wrongCount += Object.values(ans).filter(a => !a.correct).length;
-      }
-      if (wrongCount === 0) {
-        remHtml = `<div style="text-align:center;padding:20px;background:#e8f5e9;border-radius:12px;margin-top:16px;">
-          <div style="font-size:20px;font-weight:900;color:#166534;">🎉 Perfect! No wrong answers!</div>
-        </div>`;
-      } else {
-        remHtml = `<div class="ts-remediation-card">
-          <div class="rem-header">🔄 Generating remediation questions...</div>
-          <p style="color:#666;font-size:13px;">Preparing ${wrongCount} similar questions...</p>
-        </div>`;
-        setTimeout(() => buildRemediationSet(), 200);
-      }
-    } else {
-      const remDone = rem.completed || false;
-      const remCorrect = Object.values(rem.answers || {}).filter(a => a.correct).length;
-      const remTotal = (rem.questions || []).length;
-      remHtml = `
-        <div class="ts-remediation-card ${remDone ? 'done' : ''}">
-          <div class="rem-header">🔄 Remediation Practice Set</div>
-          <p>${remTotal} similar questions for wrong answers</p>
-          <button class="btn-start-rem" onclick="startTSRemediation()" ${remDone ? 'disabled' : ''}>
-            ${remDone ? `✅ Done (${remCorrect}/${remTotal})` : '▶ Start Practice'}
-          </button>
-        </div>`;
-    }
-  }
-
-  const html = `<div class="exam-wrap">
-    <div style="margin-bottom:12px;">
-      <button class="btn-back" onclick="tsViewState=null;currentSetIdx=null;renderStudent()">← Back to Homework</button>
-    </div>
-    <div class="ts-week-header">
-      <h3 style="font-family:'Noto Serif KR',serif;color:var(--navy);">🧠 Thinking Skills — Week ${tsConfig.ts_week}</h3>
-      <p style="color:#666;font-size:14px;">10 questions per day · ~10-15 min daily</p>
-    </div>
-    <div class="ts-days-grid">${daysHtml}</div>
-    ${remHtml}
-  </div>`;
-  document.getElementById('mainContent').innerHTML = html;
-  document.getElementById('mainContent').innerHTML += renderMyAccountCard();
-}
-
-// ── Day 시작: Claude API로 문제 생성 ──
-async function startTSDay(day) {
-  const tsConfig = _getTSConfig();
-  if (!tsConfig) return;
-  const pKey = _tsPKey();
+function tsv2SaveProgress(track, p) {
   const store = getStore();
   if (!store.ts_progress) store.ts_progress = {};
-  if (!store.ts_progress[pKey]) store.ts_progress[pKey] = {};
+  const uid = currentUser ? currentUser.id : 'guest';
+  if (!store.ts_progress[uid]) store.ts_progress[uid] = {};
+  store.ts_progress[uid][track] = p;
+  saveStore(store);
+}
 
-  const dayKey = `day${day}`;
-  let dayData = store.ts_progress[pKey][dayKey];
+// ── TSv2 Config (from teacher-assigned hw) ───────────────────────
+function tsv2GetConfig() {
+  try {
+    const store = getStore();
+    const yr = currentUser ? currentUser.year : null;
+    if (!yr) return null;
+    const key = hwKey(yr, selectedCountry || 'AU', studentPeriod || 'Term1');
+    const hw = (store.homeworkSets || {})[key];
+    if (!hw || !hw.ts_config || !hw.ts_config.enabled) return null;
+    return hw.ts_config; // { enabled, track, qpd, weekOverride }
+  } catch(e) { return null; }
+}
 
-  // If questions already generated, go straight to quiz
-  if (dayData && dayData.questions && dayData.questions.length > 0) {
-    tsViewState = { mode: 'quiz', day, isRemediation: false };
-    renderTSSession(dayData.questions, dayData.answers || {}, day, false);
+// ── TSv2 Entry Point (replaces openTSPanel) ──────────────────────
+async function openTSPanel() {
+  const cfg = tsv2GetConfig();
+  const track = (cfg && cfg.track) ? cfg.track : tsv2DefaultTrack();
+  if (!track) {
+    alert('No Thinking Skills track assigned. Please ask your teacher.');
     return;
   }
+  _tsv2.track = track;
+  _tsv2.preview = false;
 
-  // Show loading
+  const p = tsv2LoadProgress(track);
+  const curr = TSv2_CURRICULUM[track];
+  const week = (cfg && cfg.weekOverride) ? cfg.weekOverride : p.currentWeek;
+  const weekData = curr.weeks[Math.min(week, curr.totalWeeks) - 1];
+  const qpd = (cfg && cfg.qpd) ? cfg.qpd : TSv2_DEFAULT_QPD[track];
+
+  // Update streak
+  const today = new Date().toISOString().slice(0,10);
+  if (p.lastDate !== today) {
+    const yesterday = new Date(Date.now()-86400000).toISOString().slice(0,10);
+    if (p.lastDate === yesterday) p.streak = (p.streak||0) + 1;
+    else if (p.lastDate && p.lastDate !== today) p.streak = 1;
+    else if (!p.lastDate) p.streak = 1;
+    p.lastDate = today;
+    tsv2SaveProgress(track, p);
+  }
+
+  tsViewState = { mode: 'session' };
   document.getElementById('mainContent').innerHTML = `
-    <div class="exam-wrap" style="text-align:center;padding:60px 20px;">
-      <div style="font-size:40px;">🧠</div>
-      <p style="font-size:16px;margin-top:12px;color:#2d4a8a;font-weight:600;">Generating questions...</p>
-      <p style="color:#888;font-size:13px;">Please wait a moment</p>
+    <div style="text-align:center;padding:60px 20px;">
+      <div style="font-size:2.5rem;">🧠</div>
+      <div style="margin-top:12px;color:#94a3b8;">Loading questions for Week ${week}…</div>
     </div>`;
 
-  try {
-    const questions = await generateTSQuestions(tsConfig.ts_year_label, tsConfig.ts_week, day);
-    dayData = { questions, answers: {}, completed: false };
-    store.ts_progress[pKey][dayKey] = dayData;
-    saveStore(store);
-    tsViewState = { mode: 'quiz', day, isRemediation: false };
-    renderTSSession(questions, {}, day, false);
-  } catch (err) {
-    console.error('TS question generation error:', err);
-    const tsErrWrap = document.createElement('div');
-    tsErrWrap.className = 'exam-wrap';
-    tsErrWrap.style.cssText = 'text-align:center;padding:40px;';
-    const tsErrP1 = document.createElement('p');
-    tsErrP1.style.cssText = 'color:#c62828;font-weight:700;';
-    tsErrP1.textContent = 'Failed to generate questions.';
-    const tsErrP2 = document.createElement('p');
-    tsErrP2.style.cssText = 'color:#888;font-size:13px;margin:8px 0;';
-    tsErrP2.textContent = err.message || '';
-    const tsRetryBtn = document.createElement('button');
-    tsRetryBtn.textContent = 'Retry';
-    tsRetryBtn.style.cssText = 'margin-top:12px;padding:10px 20px;background:#2d4a8a;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;';
-    tsRetryBtn.onclick = () => startTSDay(day);
-    const tsBackBtn = document.createElement('button');
-    tsBackBtn.textContent = '← Back';
-    tsBackBtn.style.cssText = 'margin-top:12px;margin-left:8px;padding:10px 20px;background:#f5f5f5;border:1px solid #ddd;border-radius:8px;cursor:pointer;font-weight:700;';
-    tsBackBtn.onclick = () => renderTSWeekView();
-    tsErrWrap.append(tsErrP1, tsErrP2, tsRetryBtn, tsBackBtn);
-    document.getElementById('mainContent').innerHTML = '';
-    document.getElementById('mainContent').appendChild(tsErrWrap);
+  const questions = await tsv2FetchQuestions(track, week, weekData, qpd, p);
+  _tsv2.questions = questions;
+  _tsv2.qIdx = 0;
+  _tsv2.attempts = 0;
+  _tsv2.selected = null;
+  _tsv2.results = [];
+
+  tsv2RenderQuiz();
+}
+
+function tsv2DefaultTrack() {
+  if (!currentUser) return null;
+  const yr = currentUser.year;
+  if (yr <= 3) return 'oc-foundation';
+  if (yr === 4) return 'oc-intensive';
+  if (yr === 5) return 'sel-foundation';
+  return 'sel-intensive';
+}
+
+// ── TSv2 Question Fetching ───────────────────────────────────────
+async function tsv2FetchQuestions(track, week, weekData, qpd, p) {
+  const cacheKey = `tsv2_q_${track}_w${week}_${qpd}`;
+  const cached = sessionStorage.getItem(cacheKey);
+  if (cached) {
+    try { return JSON.parse(cached); } catch(e) {}
   }
+
+  // Determine weak types for adaptive targeting
+  const weakTypes = tsv2GetWeakTypes(p, weekData.types);
+  const types = weekData.types;
+
+  // Try Claude API
+  const apiKey = (typeof getAIKey === 'function') ? getAIKey() : null;
+  if (apiKey) {
+    try {
+      const qs = await tsv2GenerateWithClaude(apiKey, track, week, weekData, qpd, weakTypes);
+      if (qs && qs.length >= qpd) {
+        sessionStorage.setItem(cacheKey, JSON.stringify(qs));
+        return qs;
+      }
+    } catch(e) { console.warn('TSv2 Claude generation failed, using fallback:', e.message); }
+  }
+
+  // Fallback: pick from TSv2_FALLBACK pool
+  return tsv2FallbackQuestions(types, qpd);
 }
 
-// ── Remediation 시작 ──
-async function startTSRemediation() {
-  const tsConfig = _getTSConfig();
-  if (!tsConfig) return;
-  const pKey = _tsPKey();
-  const store = getStore();
-  const rem = (store.ts_progress[pKey] || {}).remediation;
-  if (!rem || !rem.questions) return;
-  tsViewState = { mode: 'quiz', day: 0, isRemediation: true };
-  renderTSSession(rem.questions, rem.answers || {}, null, true);
+function tsv2GetWeakTypes(p, availableTypes) {
+  const ts = p.typeStats || {};
+  return availableTypes
+    .filter(t => ts[t] && ts[t].correct / ts[t].total < 0.6)
+    .slice(0, 2);
 }
 
-// ── 문제 풀기 세션 렌더링 ──
-function renderTSSession(questions, answers, day, isRemediation) {
-  // Find next unanswered
-  const currentIdx = questions.findIndex(q => {
-    const a = answers[q.id];
-    return !a || (!a.correct && !a.answer_revealed);
+async function tsv2GenerateWithClaude(apiKey, track, week, weekData, qpd, weakTypes) {
+  const grade = TSv2_GRADE_MAP[track];
+  const weakNote = weakTypes.length ? `\nFocus extra questions on: ${weakTypes.map(t=>TSv2_TYPE_CFG[t].name).join(', ')} (student's weak areas).` : '';
+  const prompt = `Generate exactly ${qpd} thinking-skills multiple-choice questions for ${grade} students (NSW OC/Selective exam prep), Week ${week}: "${weekData.theme}".
+Question types to use: ${weekData.types.join(', ')} (${weekData.types.map(t=>TSv2_TYPE_CFG[t].name).join(', ')}).${weakNote}
+
+Return ONLY a JSON array (no markdown, no code blocks) of objects with this exact shape:
+[{"type":"LR","q":"...","opts":["A...","B...","C...","D..."],"ans":0,"hint":"...","explain":"..."}]
+
+Rules:
+- type: one of LR|PR|SR|VR|AR|CT|NR
+- opts: exactly 4 options (index 0-3)
+- ans: integer 0-3 (index of correct option)
+- hint: a useful clue without giving the answer
+- explain: clear explanation of why ans is correct
+- Age-appropriate difficulty for ${grade}
+- No trivial questions`;
+
+  const resp = await fetch(TSv2_API_URL, {
+    method:'POST',
+    headers:{
+      'content-type':'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body: JSON.stringify({
+      model: TSv2_MODEL,
+      max_tokens: 2048,
+      messages: [{ role:'user', content: prompt }]
+    })
   });
+  if (!resp.ok) throw new Error(`API ${resp.status}`);
+  const data = await resp.json();
+  const text = data.content[0].text.trim();
+  const jsonStr = text.startsWith('[') ? text : text.replace(/```json?\n?/g,'').replace(/```/g,'');
+  const qs = JSON.parse(jsonStr);
+  if (!Array.isArray(qs)) throw new Error('Not array');
+  return qs.slice(0, qpd).map(q => ({
+    type: q.type, q: q.q, opts: q.opts.slice(0,4),
+    ans: parseInt(q.ans), hint: q.hint, explain: q.explain
+  }));
+}
 
-  if (currentIdx === -1) {
-    onSessionComplete(day, isRemediation);
-    return;
+function tsv2FallbackQuestions(types, qpd) {
+  const pool = [];
+  types.forEach(t => { if (TSv2_FALLBACK[t]) pool.push(...TSv2_FALLBACK[t].map(q=>({...q,type:t}))); });
+  if (!pool.length) {
+    Object.entries(TSv2_FALLBACK).forEach(([t,qs]) => pool.push(...qs.map(q=>({...q,type:t}))));
   }
+  // Shuffle
+  for (let i = pool.length-1; i>0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [pool[i],pool[j]] = [pool[j],pool[i]];
+  }
+  return pool.slice(0, qpd);
+}
 
-  const q = questions[currentIdx];
-  const label = isRemediation ? '🔄 Remediation' : `Day ${day}`;
+// ── TSv2 Quiz Rendering ──────────────────────────────────────────
+function tsv2RenderQuiz(adaptiveMsg) {
+  const q = _tsv2.questions[_tsv2.qIdx];
+  if (!q) { tsv2CompleteSession(); return; }
+  const cfg = TSv2_TYPE_CFG[q.type] || {name:q.type, emoji:'❓', color:'#64748b'};
+  const total = _tsv2.questions.length;
+  const pct = Math.round((_tsv2.qIdx / total) * 100);
+  const track = _tsv2.track;
+  const curr = TSv2_CURRICULUM[track];
+  const p = tsv2LoadProgress(track);
 
-  const html = `<div class="exam-wrap">
-    <div class="ts-quiz-header">
-      <button class="btn-back" onclick="renderTSWeekView()">← Back</button>
-      <span style="font-weight:600;">${label} · ${currentIdx + 1} / ${questions.length}</span>
-      <span style="color:#888;font-size:13px;">${q.type||''}</span>
-    </div>
-    <div class="ts-question-card">
-      <div class="ts-q-text">${renderMath(q.text)}</div>
-      <div class="ts-options" id="ts-options">
-        ${['A','B','C','D','E'].map(opt => `
-          <button class="ts-option-btn" data-opt="${opt}"
-            onclick="handleTSAnswer('${q.id}','${opt}',${day===null?'null':day},${isRemediation})">
-            <span class="opt-label">${opt}</span>
-            <span class="opt-text">${renderMath((q.options||{})[opt]||'')}</span>
-          </button>`).join('')}
+  document.getElementById('mainContent').innerHTML = `
+    <div class="tsn-header">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;">
+        <button onclick="tsViewState=null;renderStudent()" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:0.85rem;">← Back</button>
+        <div style="text-align:center;flex:1;">
+          <div style="font-weight:700;color:#f1f5f9;font-size:1rem;">${curr.label}</div>
+          <div style="font-size:0.75rem;color:#94a3b8;">Week ${p.currentWeek} · Day ${_tsv2.qIdx+1}/${total}</div>
+        </div>
+        <div style="font-size:0.85rem;color:#fbbf24;">⭐ ${p.totalStars||0}</div>
       </div>
-      <div id="ts-hint-box" style="display:none;" class="ts-hint-box"></div>
+      <div class="tsn-pbar"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#6366f1,#8b5cf6);border-radius:4px;transition:width 0.3s;"></div></div>
     </div>
-    <div class="ts-progress-bar">
-      <div style="width:${(currentIdx/questions.length)*100}%"></div>
-    </div>
-  </div>`;
-  document.getElementById('mainContent').innerHTML = html;
+
+    ${adaptiveMsg ? `<div style="background:#1e293b;padding:8px 18px;text-align:center;font-size:0.8rem;color:#94a3b8;">🎯 ${adaptiveMsg}</div>` : ''}
+
+    <div style="padding:16px;max-width:640px;margin:0 auto;">
+      <div class="tsn-qcard">
+        <div class="tsn-badge" style="background:${cfg.color}20;color:${cfg.color};">${cfg.emoji} ${cfg.name}</div>
+        <div class="tsn-qtext">${q.q}</div>
+        <div class="tsn-opts" id="tsn-opts">
+          ${q.opts.map((o,i)=>`
+            <div class="tsn-opt" id="tsn-opt-${i}" onclick="tsv2SelectOpt(${i})">
+              <span style="font-weight:700;margin-right:10px;color:#94a3b8;">${['A','B','C','D'][i]}.</span>${o}
+            </div>`).join('')}
+        </div>
+        <div class="tsn-fb" id="tsn-fb" style="display:none;"></div>
+        <button class="tsn-submit" id="tsn-submit" onclick="tsv2Submit()" disabled>Check Answer</button>
+      </div>
+
+      <div style="text-align:center;margin-top:12px;color:#475569;font-size:0.8rem;">
+        🔥 ${p.streak||0} day streak
+      </div>
+    </div>`;
 }
 
-// ── 답안 처리 + 힌트 시스템 ──
-function handleTSAnswer(qId, selected, day, isRemediation) {
-  const tsConfig = _getTSConfig();
-  if (!tsConfig) return;
-  const pKey = _tsPKey();
-  const store = getStore();
-  if (!store.ts_progress[pKey]) store.ts_progress[pKey] = {};
-
-  const dataKey = isRemediation ? 'remediation' : `day${day}`;
-  const dayData = store.ts_progress[pKey][dataKey];
-  if (!dayData) return;
-  if (!dayData.answers) dayData.answers = {};
-
-  // Find the question object in the stored questions array
-  const q = (dayData.questions || []).find(x => x.id === qId);
-  if (!q) return;
-  const correct = q.answer;
-
-  const cur = dayData.answers[qId] || { attempts: 0, hint1_shown: false, hint2_shown: false };
-  const newAttempts = cur.attempts + 1;
-
-  // Disable buttons immediately
-  document.querySelectorAll('.ts-option-btn').forEach(b => b.onclick = null);
-
-  if (selected === correct) {
-    // ✅ Correct
-    dayData.answers[qId] = { ...cur, attempts: newAttempts, correct: true, answer_revealed: false };
-    saveStore(store);
-    showTSFeedback('correct', q, selected);
-    setTimeout(() => reloadTSSession(day, isRemediation), 1800);
-
-  } else if (newAttempts === 1) {
-    // ❌ 1st wrong → hint1
-    dayData.answers[qId] = { ...cur, attempts: 1, correct: false, hint1_shown: true };
-    saveStore(store);
-    showTSFeedback('hint1', q, selected);
-    rebindTSOptions(q, day, isRemediation, selected);
-
-  } else if (newAttempts === 2) {
-    // ❌ 2nd wrong → hint2
-    dayData.answers[qId] = { ...cur, attempts: 2, correct: false, hint2_shown: true };
-    saveStore(store);
-    showTSFeedback('hint2', q, selected);
-    rebindTSOptions(q, day, isRemediation, selected);
-
-  } else {
-    // ❌ 3rd wrong → reveal
-    dayData.answers[qId] = { ...cur, attempts: 3, correct: false, answer_revealed: true, hint1_shown: true, hint2_shown: true };
-    saveStore(store);
-    showTSFeedback('reveal', q, selected);
-    setTimeout(() => reloadTSSession(day, isRemediation), 2500);
-  }
-}
-
-function showTSFeedback(type, q, selected) {
-  document.querySelectorAll('.ts-option-btn').forEach(btn => {
-    btn.classList.add('disabled-opt');
-    if (btn.dataset.opt === q.answer) btn.classList.add('correct-opt');
-    if (btn.dataset.opt === selected && selected !== q.answer) btn.classList.add('wrong-opt');
-  });
-
-  const box = document.getElementById('ts-hint-box');
-  if (!box) return;
-  box.style.display = 'block';
-
-  const configs = {
-    correct: { badge: '✅ Correct!', cls: 'correct', text: q.explanation || 'Well done!', prompt: '' },
-    hint1:   { badge: '💡 Hint 1', cls: '', text: q.hint1 || 'Think about the pattern carefully.', prompt: 'Try again and choose the correct answer.' },
-    hint2:   { badge: '💡 Hint 2 (last chance)', cls: '', text: q.hint2 || 'Try a different approach.', prompt: 'Last chance! Choose the correct answer.' },
-    reveal:  { badge: `📖 Answer: ${q.answer}`, cls: 'reveal', text: q.explanation || '', prompt: 'You can practice similar questions later.' },
-  };
-  const c = configs[type];
-  box.innerHTML = `
-    <div class="ts-hint-badge ${c.cls}">${c.badge}</div>
-    <p class="ts-hint-text">${c.text}</p>
-    ${c.prompt ? `<p class="ts-hint-prompt">${c.prompt}</p>` : ''}
-  `;
-
-  // For hints: disable the wrong button, re-enable others
-  if (type === 'hint1' || type === 'hint2') {
-    document.querySelectorAll('.ts-option-btn').forEach(btn => {
-      if (btn.dataset.opt === selected) {
-        btn.classList.add('disabled-opt');
-        btn.onclick = null;
-      } else {
-        btn.classList.remove('disabled-opt', 'wrong-opt');
-      }
-    });
-  }
-}
-
-function rebindTSOptions(q, day, isRemediation, prevSelected) {
-  document.querySelectorAll('.ts-option-btn:not(.disabled-opt)').forEach(btn => {
-    btn.onclick = () => handleTSAnswer(q.id, btn.dataset.opt, day, isRemediation);
-  });
-}
-
-function reloadTSSession(day, isRemediation) {
-  const tsConfig = _getTSConfig();
-  if (!tsConfig) return;
-  const pKey = _tsPKey();
-  const store = getStore();
-  const dataKey = isRemediation ? 'remediation' : `day${day}`;
-  const data = (store.ts_progress[pKey] || {})[dataKey];
-  if (!data) { renderTSWeekView(); return; }
-  renderTSSession(data.questions, data.answers || {}, day, isRemediation);
-}
-
-// ── 세션 완료 처리 ──
-async function onSessionComplete(day, isRemediation) {
-  const tsConfig = _getTSConfig();
-  if (!tsConfig) return;
-  const pKey = _tsPKey();
-  const store = getStore();
-  if (!store.ts_progress[pKey]) store.ts_progress[pKey] = {};
-
-  const dataKey = isRemediation ? 'remediation' : `day${day}`;
-  if (store.ts_progress[pKey][dataKey]) {
-    store.ts_progress[pKey][dataKey].completed = true;
-    store.ts_progress[pKey][dataKey].completed_at = Date.now();
-  }
-
-  if (!isRemediation) {
-    const allDone = [1,2,3,4,5,6].every(d => (store.ts_progress[pKey][`day${d}`] || {}).completed);
-    if (allDone) {
-      // Check if there are wrong answers
-      let hasWrong = false;
-      for (let d = 1; d <= 6; d++) {
-        const ans = (store.ts_progress[pKey][`day${d}`] || {}).answers || {};
-        if (Object.values(ans).some(a => !a.correct)) { hasWrong = true; break; }
-      }
-      if (!hasWrong) store.ts_progress[pKey].week_completed = true;
+function tsv2SelectOpt(i) {
+  if (_tsv2.attempts >= 2) return;
+  const opts = document.querySelectorAll('.tsn-opt');
+  opts.forEach((el, idx) => {
+    el.classList.remove('tsn-selected');
+    if (!el.classList.contains('tsn-greyed') && !el.classList.contains('tsn-correct') && !el.classList.contains('tsn-wrong')) {
+      el.onclick = () => tsv2SelectOpt(idx);
     }
-  } else {
-    store.ts_progress[pKey].week_completed = true;
+  });
+  const opt = document.getElementById(`tsn-opt-${i}`);
+  if (opt && !opt.classList.contains('tsn-greyed')) {
+    opt.classList.add('tsn-selected');
+    _tsv2.selected = i;
+    const btn = document.getElementById('tsn-submit');
+    if (btn) btn.disabled = false;
   }
-
-  saveStore(store);
-  tsViewState = { mode: 'week' };
-  renderTSWeekView();
 }
 
-// ── 유사문제 세트 생성 (Claude API) ──
-async function buildRemediationSet() {
-  const tsConfig = _getTSConfig();
-  if (!tsConfig) return;
-  const pKey = _tsPKey();
-  const store = getStore();
-  const progress = store.ts_progress[pKey] || {};
+function tsv2Submit() {
+  if (_tsv2.selected === null) return;
+  const q = _tsv2.questions[_tsv2.qIdx];
+  const sel = _tsv2.selected;
+  const correct = q.ans;
+  const fb = document.getElementById('tsn-fb');
+  const btn = document.getElementById('tsn-submit');
 
-  // Collect wrong types
-  const wrongTypes = [];
-  for (let day = 1; day <= 6; day++) {
-    const dayData = progress[`day${day}`] || {};
-    const qMap = {};
-    (dayData.questions || []).forEach(q => { qMap[q.id] = q; });
-    Object.entries(dayData.answers || {}).forEach(([qId, ans]) => {
-      if (!ans.correct) {
-        const q = qMap[qId];
-        if (q && q.type) wrongTypes.push(q.type);
-      }
-    });
+  _tsv2.attempts++;
+
+  if (sel === correct) {
+    // Correct!
+    document.getElementById(`tsn-opt-${sel}`).classList.add('tsn-correct');
+    document.querySelectorAll('.tsn-opt').forEach(el => el.onclick = null);
+    const stars = _tsv2.attempts === 1 ? 2 : 1;
+    _tsv2.results.push({ q, sel, correct: true, stars, attempts: _tsv2.attempts });
+    fb.className = 'tsn-fb tsn-fb-ok';
+    fb.innerHTML = `${stars===2?'⭐⭐ Perfect!':'⭐ Correct!'} <span style="font-size:0.85rem;opacity:0.85;">${q.explain}</span>`;
+    fb.style.display = 'block';
+    btn.textContent = _tsv2.qIdx < _tsv2.questions.length - 1 ? 'Next Question →' : 'Finish Session';
+    btn.disabled = false;
+    btn.onclick = tsv2Next;
+  } else if (_tsv2.attempts === 1) {
+    // First wrong: hint + grey out + retry
+    document.getElementById(`tsn-opt-${sel}`).classList.remove('tsn-selected');
+    document.getElementById(`tsn-opt-${sel}`).classList.add('tsn-greyed');
+    document.getElementById(`tsn-opt-${sel}`).onclick = null;
+    fb.className = 'tsn-fb tsn-fb-hint';
+    fb.innerHTML = `💡 Hint: ${q.hint}`;
+    fb.style.display = 'block';
+    _tsv2.selected = null;
+    btn.disabled = true;
+    btn.textContent = 'Check Answer';
+  } else {
+    // Second wrong: reveal answer + explain
+    document.getElementById(`tsn-opt-${sel}`).classList.add('tsn-wrong');
+    document.getElementById(`tsn-opt-${correct}`).classList.add('tsn-revealed');
+    document.querySelectorAll('.tsn-opt').forEach(el => el.onclick = null);
+    _tsv2.results.push({ q, sel, correct: false, stars: 0, attempts: _tsv2.attempts });
+    fb.className = 'tsn-fb tsn-fb-wrong';
+    fb.innerHTML = `❌ The correct answer is <strong>${['A','B','C','D'][correct]}: ${q.opts[correct]}</strong><br><span style="font-size:0.85rem;">${q.explain}</span>`;
+    fb.style.display = 'block';
+    btn.textContent = _tsv2.qIdx < _tsv2.questions.length - 1 ? 'Next Question →' : 'Finish Session';
+    btn.disabled = false;
+    btn.onclick = tsv2Next;
+  }
+}
+
+function tsv2Next() {
+  _tsv2.qIdx++;
+  _tsv2.attempts = 0;
+  _tsv2.selected = null;
+  if (_tsv2.qIdx >= _tsv2.questions.length) {
+    tsv2CompleteSession();
+  } else {
+    tsv2RenderQuiz();
+    document.getElementById('mainContent').scrollTop = 0;
+    window.scrollTo(0,0);
+  }
+}
+
+// ── TSv2 Session Complete ────────────────────────────────────────
+function tsv2CompleteSession() {
+  const track = _tsv2.track;
+  const res = _tsv2.results;
+  const p = tsv2LoadProgress(track);
+  const cfg = tsv2GetConfig();
+
+  const firstCorrect  = res.filter(r=>r.correct && r.attempts===1).length;
+  const secondCorrect = res.filter(r=>r.correct && r.attempts===2).length;
+  const gaveUp        = res.filter(r=>!r.correct).length;
+  const sessionStars  = firstCorrect*2 + secondCorrect*1;
+
+  // Update progress
+  p.totalStars    = (p.totalStars || 0) + sessionStars;
+  p.totalQuestions = (p.totalQuestions || 0) + res.length;
+  p.totalCorrect  = (p.totalCorrect || 0) + (firstCorrect + secondCorrect);
+
+  // Type stats
+  if (!p.typeStats) p.typeStats = {};
+  res.forEach(r => {
+    const t = r.q.type;
+    if (!p.typeStats[t]) p.typeStats[t] = { correct:0, total:0, stars:0 };
+    p.typeStats[t].total++;
+    if (r.correct) { p.typeStats[t].correct++; p.typeStats[t].stars += r.stars; }
+  });
+
+  // Week stats
+  const week = p.currentWeek;
+  if (!p.weekStats) p.weekStats = {};
+  p.weekStats[`w${week}`] = {
+    stars: sessionStars, firstCorrect, secondCorrect, gaveUp,
+    date: new Date().toISOString().slice(0,10)
+  };
+
+  // Advance day/week
+  const curr = TSv2_CURRICULUM[track];
+  const weekData = curr.weeks[week - 1];
+  p.currentDay = (p.currentDay || 1) + 1;
+  if (p.currentDay > (weekData.daysPerWeek || 5)) {
+    p.currentDay = 1;
+    if (p.currentWeek < curr.totalWeeks) p.currentWeek++;
   }
 
-  if (wrongTypes.length === 0) {
-    store.ts_progress[pKey].week_completed = true;
+  tsv2SaveProgress(track, p);
+  tsViewState = { mode: 'complete' };
+  tsv2RenderComplete(track, p, res, firstCorrect, secondCorrect, gaveUp, sessionStars);
+}
+
+function tsv2RenderComplete(track, p, res, fc, sc, gc, se) {
+  // Support being called without arguments (for tsViewState restore)
+  if (!track) { tsViewState = null; renderStudent(); return; }
+  const curr = TSv2_CURRICULUM[track];
+  const total = res ? res.length : 0;
+  const pct = total ? Math.round(((fc+sc)/total)*100) : 0;
+  const starMax = total * 2;
+
+  tsv2Confetti(pct >= 80);
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="tsn-complete">
+      <div style="font-size:3rem;">${pct>=80?'🌟':pct>=60?'⭐':'💪'}</div>
+      <h2 style="color:#f1f5f9;margin:8px 0;">Session Complete!</h2>
+      <div style="color:#94a3b8;font-size:0.9rem;">${curr.label}</div>
+
+      <div class="tsn-stats-grid" style="margin-top:20px;">
+        <div class="tsn-stat-card">
+          <div style="font-size:1.8rem;font-weight:800;color:#fbbf24;">${se}</div>
+          <div style="font-size:0.8rem;color:#94a3b8;">Stars earned</div>
+        </div>
+        <div class="tsn-stat-card">
+          <div style="font-size:1.8rem;font-weight:800;color:#34d399;">${pct}%</div>
+          <div style="font-size:0.8rem;color:#94a3b8;">Accuracy</div>
+        </div>
+        <div class="tsn-stat-card">
+          <div style="font-size:1.8rem;font-weight:800;color:#818cf8;">${p.streak||1}</div>
+          <div style="font-size:0.8rem;color:#94a3b8;">Day streak</div>
+        </div>
+        <div class="tsn-stat-card">
+          <div style="font-size:1.8rem;font-weight:800;color:#f1f5f9;">${p.totalStars||se}</div>
+          <div style="font-size:0.8rem;color:#94a3b8;">Total stars</div>
+        </div>
+      </div>
+
+      ${p.streak >= 7 ? `<div class="tsn-streak-banner">🔥 ${p.streak}-day streak! Amazing consistency!</div>` : ''}
+
+      <div style="margin-top:20px;font-size:0.9rem;color:#94a3b8;">
+        ⭐⭐ First try: ${fc} &nbsp;|&nbsp; ⭐ Second try: ${sc} &nbsp;|&nbsp; ✗ Missed: ${gc}
+      </div>
+
+      ${gc > 0 ? `
+        <div class="tsn-weak-card">
+          <div style="font-weight:600;color:#f1f5f9;margin-bottom:8px;">Questions to review:</div>
+          ${(res||[]).filter(r=>!r.correct).map(r=>`
+            <div style="margin-bottom:8px;padding:8px;background:#1e293b;border-radius:8px;">
+              <div style="color:#94a3b8;font-size:0.85rem;">${r.q.q}</div>
+              <div style="color:#34d399;font-size:0.8rem;margin-top:4px;">✓ ${r.q.opts[r.q.ans]}</div>
+            </div>`).join('')}
+        </div>` : ''}
+
+      <div style="margin-top:24px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <button class="tsn-submit" onclick="tsViewState=null;renderStudent()" style="background:#334155;">← Back to Homework</button>
+        <button class="tsn-submit" onclick="openTSPanel()">Practice Again 🔄</button>
+      </div>
+    </div>`;
+}
+
+function tsv2Confetti(burst) {
+  if (!burst) return;
+  const colors = ['#6366f1','#8b5cf6','#fbbf24','#34d399','#f97316'];
+  for (let i = 0; i < 60; i++) {
+    setTimeout(() => {
+      const d = document.createElement('div');
+      d.style.cssText = `position:fixed;top:-10px;left:${Math.random()*100}vw;width:10px;height:10px;border-radius:50%;background:${colors[Math.floor(Math.random()*colors.length)]};animation:tsFadeUp ${1+Math.random()*2}s ease forwards;z-index:9999;pointer-events:none;`;
+      document.body.appendChild(d);
+      setTimeout(() => d.remove(), 3000);
+    }, i * 50);
+  }
+}
+
+// ── TSv2 Teacher Functions ───────────────────────────────────────
+function toggleTSAssignment(yr) {
+  const enabled = document.getElementById('ts-enable-check').checked;
+  const panel = document.getElementById('ts-assign-panel');
+  if (panel) panel.style.display = enabled ? 'block' : 'none';
+}
+
+function saveTSAssignment(yr) {
+  const store = getStore();
+  const key = hwKey(yr, selectedCountry, store.currentPeriod);
+  if (!store.homeworkSets) store.homeworkSets = {};
+  if (!store.homeworkSets[key]) store.homeworkSets[key] = {};
+  const enabled = document.getElementById('ts-enable-check') && document.getElementById('ts-enable-check').checked;
+  if (!enabled) {
+    if (store.homeworkSets[key].ts_config) store.homeworkSets[key].ts_config.enabled = false;
     saveStore(store);
-    renderTSWeekView();
+    alert('Thinking Skills disabled for this class.');
     return;
   }
-
-  try {
-    const remQuestions = await generateRemediationQuestions(tsConfig.ts_year_label, wrongTypes, tsConfig.ts_week);
-    store.ts_progress[pKey].remediation = {
-      questions: remQuestions,
-      source_wrong_types: wrongTypes,
-      answers: {},
-      completed: false,
-      created_at: Date.now(),
-    };
-    saveStore(store);
-    renderTSWeekView();
-  } catch (err) {
-    console.error('Remediation generation error:', err);
-    const remErrDiv = document.createElement('div');
-    remErrDiv.style.cssText = 'text-align:center;padding:12px;color:#c62828;font-size:13px;';
-    const remErrSpan = document.createElement('span');
-    remErrSpan.textContent = 'Failed to generate remediation: ' + (err.message||'');
-    remErrDiv.appendChild(remErrSpan);
-    const remRetryBtn = document.createElement('button');
-    remRetryBtn.textContent = 'Retry';
-    remRetryBtn.style.cssText = 'margin-left:8px;padding:4px 12px;border:1px solid #ddd;border-radius:6px;cursor:pointer;';
-    remRetryBtn.onclick = () => buildRemediationSet();
-    remErrDiv.appendChild(remRetryBtn);
-    document.getElementById('mainContent').appendChild(remErrDiv);
-  }
+  const trackEl = document.getElementById('ts-track-select');
+  const qpdEl   = document.getElementById('ts-qpd-input');
+  const weekEl  = document.getElementById('ts-week-override');
+  const track = trackEl ? trackEl.value : tsv2DefaultTrack();
+  const qpd   = qpdEl   ? Math.max(1, Math.min(10, parseInt(qpdEl.value)||5)) : 5;
+  const weekOv = weekEl && weekEl.value ? parseInt(weekEl.value) : null;
+  store.homeworkSets[key].ts_config = { enabled:true, track, qpd, weekOverride: weekOv };
+  saveStore(store);
+  alert(`Thinking Skills saved! Track: ${TSv2_CURRICULUM[track].label}, ${qpd} questions/day${weekOv?' (Week '+weekOv+' override)':''}`);
 }
 
-// ── Teacher TS Report ──
+function getTSYearLabel(track) {
+  return TSv2_GRADE_MAP[track] || 'Year ?';
+}
+
+// ── TSv2 Student Card (called from renderSetList) ─────────────────
+function renderStudentWithTS() {
+  const cfg = tsv2GetConfig();
+  if (!cfg) return '';
+  const track = cfg.track || tsv2DefaultTrack();
+  const p = tsv2LoadProgress(track);
+  const curr = TSv2_CURRICULUM[track];
+  if (!curr) return '';
+  const acc = p.totalQuestions ? Math.round((p.totalCorrect/p.totalQuestions)*100) : 0;
+  const streakColor = p.streak >= 7 ? '#f97316' : p.streak >= 3 ? '#fbbf24' : '#94a3b8';
+
+  return `
+    <div class="ts-set-card" style="background:linear-gradient(135deg,#1e1b4b,#2d1b69);border:1px solid #4f46e5;border-radius:16px;padding:18px;margin-bottom:14px;cursor:pointer;" onclick="openTSPanel()">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:1.6rem;">🧠</span>
+          <div>
+            <div style="font-weight:700;color:#f1f5f9;font-size:0.95rem;">Thinking Skills</div>
+            <div style="font-size:0.75rem;color:#94a3b8;">${curr.label}</div>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:1.1rem;color:#fbbf24;font-weight:700;">⭐ ${p.totalStars||0}</div>
+          <div style="font-size:0.75rem;color:${streakColor};">🔥 ${p.streak||0} day streak</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;font-size:0.8rem;color:#94a3b8;">
+        <span>Week ${p.currentWeek||1}/${curr.totalWeeks}</span>
+        <span>•</span>
+        <span>${acc}% accuracy</span>
+        <span>•</span>
+        <span>${p.totalQuestions||0} questions done</span>
+      </div>
+      <div style="margin-top:8px;background:#0f172a;border-radius:6px;height:6px;overflow:hidden;">
+        <div style="width:${Math.round(((p.currentWeek||1)-1)/curr.totalWeeks*100)}%;height:100%;background:linear-gradient(90deg,#6366f1,#8b5cf6);border-radius:6px;"></div>
+      </div>
+    </div>`;
+}
+
+// ── TSv2 Report Data (for teacher/parent views) ──────────────────
+function tsv2GetReportData(studentId, store) {
+  const prog = (store.ts_progress || {})[studentId] || {};
+  const report = {};
+  Object.entries(prog).forEach(([track, p]) => {
+    const curr = TSv2_CURRICULUM[track];
+    if (!curr) return;
+    const acc = p.totalQuestions ? Math.round((p.totalCorrect/p.totalQuestions)*100) : 0;
+    const typeStats = p.typeStats || {};
+    const weakTypes = Object.entries(typeStats)
+      .filter(([t,s]) => s.total >= 2 && s.correct/s.total < 0.6)
+      .map(([t]) => TSv2_TYPE_CFG[t] ? TSv2_TYPE_CFG[t].name : t);
+    report[track] = {
+      label: curr.label,
+      currentWeek: p.currentWeek || 1,
+      totalWeeks: curr.totalWeeks,
+      streak: p.streak || 0,
+      totalStars: p.totalStars || 0,
+      totalQuestions: p.totalQuestions || 0,
+      accuracy: acc,
+      weakTypes,
+      typeStats
+    };
+  });
+  return report;
+}
+
+// Legacy alias for old teacher report code
 function getTSReportData(studentId, yearLabel, tsWeek, store) {
-  const pKey = `${studentId}_${yearLabel}_${tsWeek}`;
-  const progress = (store.ts_progress || {})[pKey] || {};
-
-  let totalQ = 0, correct = 0, hintUsed = 0, revealed = 0;
-  for (let day = 1; day <= 6; day++) {
-    const answers = (progress[`day${day}`] || {}).answers || {};
-    for (const ans of Object.values(answers)) {
-      totalQ++;
-      if (ans.correct) correct++;
-      if (ans.hint1_shown || ans.hint2_shown) hintUsed++;
-      if (ans.answer_revealed) revealed++;
-    }
-  }
-
+  const r = tsv2GetReportData(studentId, store);
+  const tracks = Object.values(r);
+  if (!tracks.length) return { enabled:false };
+  const t = tracks[0];
   return {
-    total: totalQ,
-    correct,
-    accuracy: totalQ ? Math.round((correct / totalQ) * 100) : 0,
-    hintUsed,
-    revealed,
-    daysCompleted: [1,2,3,4,5,6].filter(d => (progress[`day${d}`] || {}).completed).length,
-    remediationDone: (progress.remediation || {}).completed || false
+    enabled: true,
+    currentWeek: t.currentWeek,
+    streak: t.streak,
+    totalStars: t.totalStars,
+    accuracy: t.accuracy,
+    weakTypes: t.weakTypes,
+    summary: `Week ${t.currentWeek}/${t.totalWeeks} · ⭐${t.totalStars} · ${t.accuracy}% accuracy`
   };
 }
-
 // ═══════════════════════════════════════
 //  FIREBASE 설정 ← 여기에 본인 설정값 입력
 // ═══════════════════════════════════════
@@ -6126,6 +6146,8 @@ const firebaseConfig = {
       if (_skipNextSync) { _skipNextSync = false; return; }
       const data = snapshot.val();
       if (!data) return;
+      // 빈 데이터(homeworkSets 누락)로 로컬을 덮어쓰지 않도록 방어
+      if (!data.homeworkSets) return;
       const localRaw = localStorage.getItem(STORE_KEY);
       const localData = localRaw ? JSON.parse(localRaw) : null;
       const fbTs = data.lastModified || 0;
@@ -6160,7 +6182,7 @@ const firebaseConfig = {
         const localTs = localData.lastModified || 0;
         if (fbTs && localTs) {
           // 둘 다 lastModified 있으면 타임스탬프 비교
-          if (localTs >= fbTs) {
+          if (localTs > fbTs) {
             window.FB_REF.set(localData);
           } else {
             localStorage.setItem(STORE_KEY, JSON.stringify(fbData));
