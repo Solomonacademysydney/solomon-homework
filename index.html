@@ -5156,8 +5156,8 @@ function importTsJsonForYear(input, yr) {
       type: q.type || 'general'
     }));
 
-    const totalDays = 6;
-    const qPerDay = Math.ceil(questions.length / totalDays);
+    const qPerDay = 5;
+    const totalDays = Math.ceil(questions.length / qPerDay);
 
     const store = getStore();
     const p = store.currentPeriod;
