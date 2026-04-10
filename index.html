@@ -1003,7 +1003,7 @@ function renderTeacher() {
       const hasTS = tsData?.enabled && tsData?.questions?.length > 0;
       html += `
         <div style="margin-top:16px;padding:16px;background:linear-gradient(135deg,#1e1b4b 0%,#312e81 100%);border-radius:14px;border:2px solid #6366f1;">
-          <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:${hasTS?'12px':'0'};">
             <div>
               <div style="font-size:16px;font-weight:900;color:#e0e7ff;">🧠 Thinking Skills</div>
               <div style="font-size:12px;color:#a5b4fc;margin-top:2px;">
@@ -1011,11 +1011,21 @@ function renderTeacher() {
               </div>
             </div>
             <div style="display:flex;gap:8px;">
+              ${hasTS ? `<button class="btn-sm" style="background:rgba(255,255,255,.15);color:#e0e7ff;" onclick="toggleTSPreview(${selectedYear})">👁 미리보기</button>` : ''}
               <button class="btn-sm" style="background:#6366f1;color:#fff;" onclick="document.getElementById('tsJsonFileInput_${selectedYear}').click()">📂 TS JSON 업로드</button>
               <input type="file" id="tsJsonFileInput_${selectedYear}" accept=".json" style="display:none;" onchange="importTsJsonForYear(this, ${selectedYear})">
               ${hasTS ? `<button class="btn-sm" style="background:#ef4444;color:#fff;" onclick="removeTSForYear(${selectedYear})">🗑 삭제</button>` : ''}
             </div>
           </div>
+          ${hasTS ? `<div id="tsPreview_${selectedYear}" style="display:none;margin-top:4px;max-height:320px;overflow-y:auto;border-radius:10px;background:rgba(0,0,0,.25);">
+            ${tsData.questions.map((q,i) => `
+              <div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.07);font-size:13px;">
+                <span style="color:#a5b4fc;font-weight:800;margin-right:8px;">Q${q.num ?? i+1}</span>
+                <span style="color:#e0e7ff;">${(q.text||'').substring(0,80)}${(q.text||'').length>80?'…':''}</span>
+                <span style="margin-left:8px;background:rgba(99,102,241,.4);color:#c4b5fd;font-size:11px;font-weight:800;padding:2px 8px;border-radius:99px;">${q.type||'TS'}</span>
+                ${q.hint1 ? '<span style="margin-left:4px;color:#fbbf24;font-size:11px;">💡힌트</span>' : ''}
+              </div>`).join('')}
+          </div>` : ''}
         </div>`;
     }
 
@@ -5173,6 +5183,12 @@ function importTsJsonForYear(input, yr) {
     setTimeout(() => msg.remove(), 3000);
   };
   reader.readAsText(file, 'utf-8');
+}
+
+function toggleTSPreview(yr) {
+  const el = document.getElementById(`tsPreview_${yr}`);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
 function removeTSForYear(yr) {
