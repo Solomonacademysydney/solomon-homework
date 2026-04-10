@@ -11,555 +11,7 @@
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<style>
-:root {
-  --navy:#162040; --gold:#d4af37; --gold2:#b8960c;
-  --green:#22c55e; --red:#ef4444; --orange:#f97316;
-  --bg:#f8f6ef; --card:#fff; --text:#1e293b; --muted:#64748b; --border:#e2e8f0;
-  --radius:16px;
-}
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
-
-/* ── LOADING OVERLAY ── */
-#loadingOverlay{position:fixed;inset:0;background:#0b1220;display:none;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:20px;}
-.loading-spinner{width:52px;height:52px;border:4px solid rgba(212,175,55,.2);border-top-color:#d4af37;border-radius:50%;animation:spin 1s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg)}}
-.loading-text{color:#d4af37;font-family:'Noto Serif KR',serif;font-size:14px;letter-spacing:4px;text-transform:uppercase;}
-
-/* ── LOGIN ── */
-@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-#loginScreen{min-height:100vh;display:flex;align-items:stretch;background:#0b1220;}
-.login-left{
-  flex:1.1;background:linear-gradient(160deg,#0b1220,#162040,#1e2e55);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:60px 48px;position:relative;overflow:hidden;
-}
-.login-left::before{
-  content:'';position:absolute;inset:0;
-  background-image:linear-gradient(rgba(212,175,55,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(212,175,55,.07) 1px,transparent 1px);
-  background-size:48px 48px;pointer-events:none;
-}
-.login-crest-wrap{animation:fadeUp .8s ease both,float 5s ease-in-out infinite;margin-bottom:28px;}
-.login-crest{width:160px;height:160px;filter:drop-shadow(0 0 20px rgba(212,175,55,.3));}
-.login-title{font-family:'Noto Serif KR',serif;font-size:34px;font-weight:700;color:#fff;text-align:center;text-shadow:0 2px 20px rgba(212,175,55,.3);animation:fadeUp .9s .15s ease both;}
-.login-title span{color:var(--gold);}
-.login-sub-title{font-family:'Noto Serif KR',serif;font-size:14px;color:rgba(255,255,255,.45);letter-spacing:6px;text-transform:uppercase;margin-top:6px;text-align:center;}
-.login-divider{width:120px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:22px auto;animation:fadeUp .9s .25s ease both;}
-.login-tagline{font-size:12px;color:rgba(255,255,255,.35);letter-spacing:2px;text-transform:uppercase;text-align:center;}
-.login-right{
-  flex:.9;background:#f8f6ef;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;padding:60px 48px;position:relative;
-}
-.login-right::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:linear-gradient(180deg,transparent,var(--gold) 30%,var(--gold) 70%,transparent);}
-.login-form-wrap{width:100%;max-width:360px;animation:fadeUp .8s .2s ease both;}
-.login-form-title{font-family:'Noto Serif KR',serif;font-size:22px;font-weight:700;color:var(--navy);margin-bottom:4px;}
-.login-form-sub{font-size:13px;color:#94a3b8;margin-bottom:28px;}
-.role-tabs{display:flex;background:#edeae0;border-radius:12px;padding:4px;margin-bottom:24px;}
-.role-tab{flex:1;padding:9px;border:none;background:none;border-radius:10px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;font-weight:700;font-size:13px;color:var(--muted);transition:all .2s;}
-.role-tab.active{background:#fff;color:var(--navy);box-shadow:0 2px 8px rgba(0,0,0,.1);}
-.form-group{margin-bottom:16px;}
-.form-group label{display:block;font-weight:700;font-size:13px;color:var(--navy);margin-bottom:6px;}
-.form-group input{width:100%;padding:12px 16px;border:2px solid var(--border);border-radius:12px;font-family:'Noto Sans KR',sans-serif;font-size:15px;outline:none;transition:border-color .2s;}
-.form-group input:focus{border-color:var(--gold2);}
-.btn-login{width:100%;padding:14px;background:var(--navy);color:#fff;border:none;border-radius:12px;font-family:'Noto Sans KR',sans-serif;font-size:16px;font-weight:800;cursor:pointer;transition:all .2s;margin-top:8px;}
-.btn-login:hover{background:linear-gradient(90deg,#0d1526,var(--navy));transform:translateY(-1px);}
-.login-error{color:var(--red);font-size:13px;margin-top:10px;display:none;font-weight:700;}
-.login-divider-thin{width:100%;height:1px;background:var(--border);margin:20px 0;}
-@keyframes goldPulse{0%,100%{box-shadow:0 0 0 0 rgba(212,175,55,.5),0 4px 20px rgba(212,175,55,.25)}50%{box-shadow:0 0 0 8px rgba(212,175,55,0),0 4px 28px rgba(212,175,55,.4)}}
-@keyframes shimmer{0%{background-position:200% center}100%{background-position:-200% center}}
-.btn-level-test{
-  display:block;width:100%;padding:20px 16px;
-  background:linear-gradient(270deg,#d4af37,#b8960c,#f0d060,#d4af37);
-  background-size:300% auto;
-  color:var(--navy);
-  border:none;border-radius:14px;
-  font-family:'Noto Sans KR',sans-serif;font-size:18px;font-weight:900;
-  cursor:pointer;text-align:center;text-decoration:none;letter-spacing:.5px;
-  animation:goldPulse 2s ease-in-out infinite, shimmer 4s linear infinite;
-  position:relative;overflow:hidden;
-}
-.btn-level-test:hover{transform:translateY(-2px);filter:brightness(1.08);animation:shimmer 1.5s linear infinite;}
-.btn-level-test-wrap{margin-top:4px;}
-.btn-level-test-label{font-size:11px;text-align:center;color:var(--muted);margin-top:8px;font-weight:700;letter-spacing:.5px;}
-
-/* ── LEFT SIDE LEVEL TEST (BIG) ── */
-.login-left-test-wrap{margin-top:32px;width:100%;max-width:400px;animation:fadeUp 1s .4s ease both;text-align:center;}
-.btn-level-test-big{
-  display:block;padding:28px 24px;
-  background:linear-gradient(270deg,#d4af37,#b8960c,#f0d060,#d4af37);
-  background-size:300% auto;
-  color:var(--navy);border:none;border-radius:18px;
-  font-family:'Noto Sans KR',sans-serif;font-size:28px;font-weight:900;
-  cursor:pointer;text-align:center;text-decoration:none;letter-spacing:1px;
-  animation:goldPulse 2s ease-in-out infinite, shimmer 4s linear infinite;
-  position:relative;overflow:hidden;line-height:1.4;
-}
-.btn-level-test-big:hover{transform:translateY(-3px);filter:brightness(1.1);animation:shimmer 1.5s linear infinite;}
-.btn-level-test-big-kr{font-size:0.63em;opacity:0.85;font-weight:700;letter-spacing:0;}
-.btn-level-test-big-label{font-size:13px;color:rgba(255,255,255,.55);margin-top:12px;font-weight:700;letter-spacing:.5px;line-height:1.6;}
-
-/* ── CONTACT INFO CARD ── */
-.login-contact-wrap{
-  margin-top:28px;width:100%;max-width:400px;
-  animation:fadeUp 1s .55s ease both;
-}
-.login-contact-divider{
-  display:flex;align-items:center;gap:12px;margin-bottom:18px;
-}
-.login-contact-divider::before,.login-contact-divider::after{
-  content:'';flex:1;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(212,175,55,.35),transparent);
-}
-.login-contact-divider span{
-  font-size:10px;letter-spacing:3px;text-transform:uppercase;
-  color:rgba(212,175,55,.5);font-family:'Noto Serif KR',serif;white-space:nowrap;
-}
-.login-contact-card{
-  background:rgba(255,255,255,.04);
-  border:1px solid rgba(212,175,55,.18);
-  border-radius:16px;padding:18px 22px;
-  backdrop-filter:blur(8px);
-  display:flex;flex-direction:column;gap:13px;
-}
-.contact-row{
-  display:flex;align-items:center;gap:14px;
-}
-.contact-icon{
-  width:34px;height:34px;border-radius:10px;
-  background:rgba(212,175,55,.12);border:1px solid rgba(212,175,55,.25);
-  display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;
-}
-.contact-icon svg{width:16px;height:16px;}
-.contact-text{line-height:1.35;}
-.contact-label{
-  font-size:9px;letter-spacing:2px;text-transform:uppercase;
-  color:rgba(212,175,55,.55);font-family:'Noto Serif KR',serif;
-}
-.contact-value{
-  font-size:13px;font-weight:700;color:rgba(255,255,255,.85);
-  letter-spacing:.3px;
-}
-.contact-value a{
-  color:rgba(255,255,255,.85);text-decoration:none;
-  transition:color .2s;
-}
-.contact-value a:hover{color:var(--gold);}
-.contact-divider-line{
-  height:1px;background:rgba(255,255,255,.07);margin:2px 0;
-}
-.btn-kakao-contact{
-  display:inline-block;margin-top:5px;
-  padding:7px 14px;
-  background:#FEE500;color:#3A1D1D;
-  border-radius:10px;font-family:'Noto Sans KR',sans-serif;
-  font-size:12px;font-weight:800;text-decoration:none;
-  letter-spacing:.3px;transition:all .2s;
-}
-.btn-kakao-contact:hover{background:#f5db00;transform:translateY(-1px);box-shadow:0 4px 12px rgba(254,229,0,.35);}
-
-/* ── APP SHELL ── */
-#app{display:none;min-height:100vh;}
-.topbar{background:linear-gradient(90deg,#0d1526,var(--navy));color:#fff;padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(26,39,68,.3);}
-.topbar-logo{font-family:'Noto Serif KR',serif;font-size:19px;font-weight:800;}
-.topbar-logo span{color:var(--gold);}
-.topbar-right{display:flex;align-items:center;gap:14px;}
-.topbar-user{font-size:13px;font-weight:700;opacity:.85;}
-.btn-logout{padding:6px 14px;background:rgba(255,255,255,.15);border:none;border-radius:8px;color:#fff;font-family:'Noto Sans KR',sans-serif;font-weight:700;font-size:13px;cursor:pointer;}
-.btn-logout:hover{background:rgba(255,255,255,.25);}
-.main{padding:28px;max-width:1000px;margin:0 auto;}
-
-/* ── TEACHER ── */
-.page-title{font-family:'Noto Serif KR',serif;font-size:24px;font-weight:800;color:var(--navy);margin-bottom:6px;}
-.page-sub{font-size:14px;color:var(--muted);margin-bottom:24px;}
-.week-bar{display:flex;align-items:center;gap:12px;background:#fff;border-radius:var(--radius);padding:16px 20px;margin-bottom:24px;box-shadow:0 2px 10px rgba(0,0,0,.05);}
-.week-bar label{font-weight:800;font-size:14px;color:var(--navy);}
-.week-bar input{width:70px;padding:8px 12px;border:2px solid var(--border);border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-size:15px;font-weight:800;text-align:center;outline:none;}
-.week-bar input:focus{border-color:var(--gold2);}
-.btn-sm{padding:8px 18px;border:none;border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-weight:800;font-size:13px;cursor:pointer;transition:all .2s;}
-.btn-navy{background:var(--navy);color:#fff;}
-.btn-navy:hover{background:#0d1526;}
-.btn-gold{background:var(--gold);color:var(--navy);}
-.btn-gold:hover{background:var(--gold2);}
-.btn-green{background:var(--green);color:#fff;}
-.btn-green:hover{background:#16a34a;}
-.btn-red{background:#fee2e2;color:var(--red);}
-.btn-red:hover{background:var(--red);color:#fff;}
-.btn-blue{background:#dbeafe;color:#1d4ed8;}
-.btn-blue:hover{background:#1d4ed8;color:#fff;}
-
-.student-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:24px;}
-.student-card{background:#fff;border-radius:var(--radius);padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.06);border:2px solid transparent;cursor:pointer;transition:all .2s;}
-.student-card:hover{border-color:var(--gold);transform:translateY(-2px);}
-.student-card.active{border-color:var(--navy);background:#f8f9ff;}
-.sc-top{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
-.sc-avatar{width:44px;height:44px;border-radius:12px;background:var(--navy);color:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;flex-shrink:0;}
-.sc-name{font-weight:800;font-size:16px;color:var(--navy);}
-.sc-year{font-size:12px;color:var(--muted);font-weight:600;}
-.sc-status{display:flex;align-items:center;gap:8px;margin-top:4px;}
-.status-dot{width:8px;height:8px;border-radius:50%;}
-.dot-none{background:#cbd5e1;}
-.dot-set{background:var(--gold);}
-.dot-submitted{background:var(--green);}
-.status-text{font-size:13px;font-weight:700;color:var(--muted);}
-.sc-actions{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap;}
-.sc-actions .btn-sm{font-size:12px;padding:6px 10px;min-width:0;flex:1 1 auto;}
-
-/* ── HOMEWORK EDITOR ── */
-.hw-editor{background:#fff;border-radius:var(--radius);padding:28px;box-shadow:0 2px 12px rgba(0,0,0,.08);margin-bottom:24px;border:2px solid var(--navy);}
-.hw-editor-title{font-family:'Noto Serif KR',serif;font-size:20px;color:var(--navy);margin-bottom:6px;}
-.hw-editor-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
-.paste-area{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
-.paste-col label{display:block;font-weight:800;font-size:13px;color:var(--navy);margin-bottom:6px;}
-.paste-col textarea{width:100%;height:260px;padding:14px;border:2px solid var(--border);border-radius:12px;font-family:'Noto Sans KR',sans-serif;font-size:13px;resize:vertical;outline:none;transition:border-color .2s;line-height:1.6;}
-.paste-col textarea:focus{border-color:var(--gold2);}
-.format-hint{background:#f8f6ef;border-radius:10px;padding:12px 16px;font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.8;}
-.format-hint b{color:var(--navy);}
-.editor-actions{display:flex;gap:10px;align-items:center;}
-
-/* ── PARSE PREVIEW ── */
-.preview-list{margin-top:20px;}
-.preview-q{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;background:#f8f6ef;border-radius:12px;margin-bottom:8px;}
-.preview-num{width:32px;height:32px;background:var(--navy);color:var(--gold);border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;flex-shrink:0;}
-.preview-info{flex:1;}
-.preview-text{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;}
-.preview-meta{display:flex;gap:8px;align-items:center;}
-.type-badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:800;text-transform:uppercase;}
-.badge-mc{background:#fef8e1;color:#7a6200;}
-.badge-sa{background:#dbeafe;color:#1d4ed8;}
-.badge-ox{background:#f3e8ff;color:#7c3aed;}
-.ans-tag{font-size:12px;font-weight:700;color:var(--green);}
-
-/* ── EXAM (STUDENT) ── */
-.exam-wrap{max-width:680px;margin:0 auto;}
-.exam-header-card{background:linear-gradient(135deg,var(--navy),#1e2e55);color:#fff;border-radius:var(--radius);padding:24px 28px;margin-bottom:16px;}
-.exam-header-top{display:flex;justify-content:space-between;align-items:flex-start;}
-.exam-title{font-family:'Noto Serif KR',serif;font-size:22px;font-weight:800;}
-.exam-sub{font-size:13px;opacity:.7;margin-top:4px;}
-.exam-counter{text-align:right;}
-.exam-counter .big{font-size:32px;font-weight:900;color:var(--gold);line-height:1;}
-.exam-counter .lbl{font-size:11px;opacity:.7;}
-.progress-wrap{margin-top:16px;}
-.progress-track{height:6px;background:rgba(255,255,255,.2);border-radius:99px;overflow:hidden;}
-.progress-fill{height:100%;background:var(--gold);border-radius:99px;transition:width .3s;}
-.progress-lbl{display:flex;justify-content:space-between;font-size:11px;opacity:.7;margin-top:5px;}
-
-.q-nav{display:flex;flex-wrap:wrap;gap:6px;padding:16px;background:#fff;border-radius:var(--radius);margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.05);}
-.qn-btn{width:34px;height:34px;border-radius:8px;border:2px solid var(--border);background:#fff;font-family:'Noto Sans KR',sans-serif;font-weight:800;font-size:12px;cursor:pointer;color:var(--muted);transition:all .15s;}
-.qn-btn:hover{border-color:var(--gold2);}
-.qn-btn.cur{background:var(--navy);color:var(--gold);border-color:var(--navy);}
-.qn-btn.done{background:#dbeafe;color:#1d4ed8;border-color:#93c5fd;}
-.qn-btn.ok{background:#dcfce7;color:#166534;border-color:#86efac;}
-.qn-btn.wrong{background:#fee2e2;color:#991b1b;border-color:#fca5a5;}
-
-.question-card{background:#fff;border-radius:var(--radius);padding:32px 36px;box-shadow:0 4px 20px rgba(0,0,0,.08);margin-bottom:16px;border:2px solid transparent;}
-.qc-num-row{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
-.qc-num{width:40px;height:40px;background:var(--navy);color:var(--gold);border-radius:11px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;}
-.qc-text{font-size:17px;font-weight:700;color:var(--navy);line-height:1.55;margin-bottom:24px;}
-
-.options{display:flex;flex-direction:column;gap:10px;}
-.opt-btn{display:flex;align-items:center;gap:14px;padding:14px 18px;border:2px solid var(--border);border-radius:13px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;font-weight:700;font-size:15px;background:#fff;text-align:left;transition:all .15s;}
-.opt-btn:hover:not([disabled]){border-color:var(--gold2);background:#fef8e1;}
-.opt-btn.sel{border-color:var(--navy);background:#eef2ff;}
-.opt-btn.correct{border-color:var(--green);background:#dcfce7;color:#166534;}
-.opt-btn.wrong{border-color:var(--red);background:#fee2e2;color:#991b1b;}
-.opt-btn[disabled]{cursor:default;}
-.opt-circle{width:30px;height:30px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;flex-shrink:0;color:var(--navy);}
-.opt-btn.sel .opt-circle{background:var(--navy);color:var(--gold);}
-.opt-btn.correct .opt-circle{background:var(--green);color:#fff;}
-.opt-btn.wrong .opt-circle{background:var(--red);color:#fff;}
-
-.ox-row{display:flex;gap:14px;}
-.ox-btn{flex:1;padding:18px;border:2px solid var(--border);border-radius:14px;font-size:24px;cursor:pointer;background:#fff;font-weight:900;transition:all .15s;font-family:'Noto Sans KR',sans-serif;}
-.ox-btn:hover:not([disabled]){transform:scale(1.04);}
-.ox-btn.sel-o{border-color:var(--gold2);background:#fef8e1;}
-.ox-btn.sel-x{border-color:var(--orange);background:#fff7ed;}
-.ox-btn.correct{border-color:var(--green);background:#dcfce7;}
-.ox-btn.wrong{border-color:var(--red);background:#fee2e2;}
-
-.sa-input{width:100%;max-width:320px;padding:13px 16px;border:2px solid var(--border);border-radius:12px;font-family:'Noto Sans KR',sans-serif;font-size:16px;font-weight:700;outline:none;transition:border-color .2s;}
-.sa-input:focus{border-color:var(--gold2);}
-.sa-input.correct-i{border-color:var(--green);background:#f0fdf4;}
-.sa-input.wrong-i{border-color:var(--red);background:#fff5f5;}
-
-.qc-feedback{margin-top:18px;padding:13px 16px;border-radius:11px;font-size:14px;font-weight:700;}
-.fb-correct{background:#dcfce7;color:#166534;}
-.fb-wrong{background:#fee2e2;color:#991b1b;}
-
-.nav-row{display:flex;justify-content:space-between;align-items:center;gap:12px;}
-.btn-nav{padding:12px 26px;border:2px solid var(--border);border-radius:12px;background:#fff;font-family:'Noto Sans KR',sans-serif;font-weight:800;font-size:15px;cursor:pointer;color:var(--navy);transition:all .2s;}
-.btn-nav:hover:not([disabled]){border-color:var(--navy);background:var(--navy);color:#fff;}
-.btn-nav[disabled]{opacity:.35;cursor:default;}
-.btn-submit-all{padding:13px 32px;background:var(--green);color:#fff;border:none;border-radius:12px;font-family:'Noto Sans KR',sans-serif;font-weight:800;font-size:16px;cursor:pointer;transition:all .2s;}
-.btn-submit-all:hover:not([disabled]){background:#16a34a;transform:translateY(-1px);}
-.btn-submit-all[disabled]{background:var(--border);color:var(--muted);cursor:default;transform:none;}
-
-/* ── SCORE BANNER ── */
-.score-banner{background:linear-gradient(135deg,#166534,var(--green));color:#fff;border-radius:var(--radius);padding:32px;text-align:center;margin-bottom:24px;}
-.score-big{font-size:72px;font-weight:900;font-family:'Noto Serif KR',serif;line-height:1;}
-.score-msg{font-size:18px;font-weight:700;opacity:.9;margin-top:10px;}
-
-/* ── RESULTS TABLE ── */
-.results-wrap{background:#fff;border-radius:var(--radius);padding:24px;box-shadow:0 2px 10px rgba(0,0,0,.06);}
-.results-wrap h3{font-family:'Noto Serif KR',serif;font-size:20px;color:var(--navy);margin-bottom:16px;}
-.res-q{padding:11px 14px;border-radius:10px;font-size:14px;font-weight:600;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;}
-.res-ok{background:#f0fdf4;border-left:4px solid var(--green);}
-.res-wrong{background:#fff5f5;border-left:4px solid var(--red);}
-.res-pending{background:#fefce8;border-left:4px solid var(--gold);}
-.res-none{background:var(--bg);border-left:4px solid var(--border);}
-
-/* ── TEACHER RESULTS ── */
-.results-table{width:100%;border-collapse:collapse;}
-.results-table th{background:linear-gradient(90deg,#0d1526,var(--navy));color:#fff;padding:13px 16px;text-align:left;font-size:13px;font-weight:800;}
-.results-table th:first-child{border-radius:12px 0 0 0;}
-.results-table th:last-child{border-radius:0 12px 0 0;}
-.results-table td{padding:13px 16px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600;background:#fff;}
-.results-table tr:hover td{background:#f8faff;}
-.score-pill{display:inline-block;padding:3px 12px;border-radius:20px;font-weight:800;font-size:13px;}
-.pill-a{background:#dcfce7;color:#166534;}
-.pill-b{background:#fef8e1;color:#7a6200;}
-.pill-c{background:#fee2e2;color:#991b1b;}
-.pill-none{background:var(--border);color:var(--muted);}
-
-/* ── SET LIST (STUDENT) ── */
-.set-list{display:flex;flex-direction:column;gap:14px;margin-bottom:24px;}
-.set-card{background:#fff;border-radius:var(--radius);padding:22px 26px;box-shadow:0 2px 10px rgba(0,0,0,.06);display:flex;align-items:center;gap:18px;border:2px solid transparent;transition:all .2s;}
-.set-card.unlocked{cursor:pointer;}
-.set-card.unlocked:hover{border-color:var(--gold);transform:translateY(-2px);}
-.set-card.locked{opacity:.5;background:#f1f5f9;cursor:default;}
-.set-card.done{border-color:var(--green);background:#f0fdf4;}
-.set-icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;}
-.set-icon-locked{background:#e2e8f0;}
-.set-icon-open{background:var(--navy);}
-.set-icon-done{background:var(--green);}
-.set-info{flex:1;}
-.set-name{font-family:'Noto Serif KR',serif;font-size:18px;font-weight:800;color:var(--navy);}
-.set-meta{font-size:13px;color:var(--muted);margin-top:3px;}
-
-/* ── PARENT ── */
-.parent-header{background:linear-gradient(135deg,var(--navy),#1e2e55);color:#fff;border-radius:var(--radius);padding:26px 30px;margin-bottom:20px;display:flex;align-items:center;gap:18px;}
-.parent-avatar{font-size:48px;}
-.parent-child-name{font-family:'Noto Serif KR',serif;font-size:26px;font-weight:800;color:var(--gold);}
-.parent-child-sub{font-size:14px;opacity:.7;margin-top:3px;}
-.info-card{background:#fff;border-radius:var(--radius);padding:22px 26px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,.06);}
-.info-card h3{font-family:'Noto Serif KR',serif;font-size:18px;color:var(--navy);margin-bottom:14px;}
-
-/* ── SETTINGS ── */
-.settings-card{background:#fff;border-radius:var(--radius);padding:26px;box-shadow:0 2px 10px rgba(0,0,0,.06);margin-bottom:20px;}
-.settings-card h2{font-family:'Noto Serif KR',serif;font-size:20px;color:var(--navy);margin-bottom:16px;}
-.field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
-.field{margin-bottom:14px;}
-.field label{display:block;font-weight:800;font-size:13px;color:var(--navy);margin-bottom:6px;}
-.field input,.field select{width:100%;padding:10px 13px;border:2px solid var(--border);border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-size:14px;outline:none;transition:border-color .2s;}
-.field input:focus,.field select:focus{border-color:var(--gold2);}
-.success-msg{color:var(--green);font-weight:800;font-size:14px;margin-top:10px;display:none;}
-.empty{text-align:center;padding:40px;color:var(--muted);font-weight:700;}
-
-/* ── MODAL ── */
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:999;align-items:center;justify-content:center;padding:20px;}
-.modal-bg.open{display:flex;}
-.modal-box{background:#fff;border-radius:20px;max-width:92vw;max-height:92vh;overflow:auto;padding:28px;position:relative;}
-.modal-close{position:absolute;top:12px;right:16px;background:none;border:none;font-size:24px;cursor:pointer;color:var(--muted);}
-
-/* ── REMEDIATION & PRACTICE ── */
-.remediation-section{background:#fff;border-radius:var(--radius);padding:28px;box-shadow:0 4px 20px rgba(0,0,0,.08);margin-bottom:16px;border:2px solid var(--gold);}
-.remediation-title{font-family:'Noto Serif KR',serif;font-size:20px;color:var(--navy);margin-bottom:6px;}
-.remediation-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
-.explanation-card{background:#f8f6ef;border-radius:14px;padding:20px;margin-bottom:14px;border-left:4px solid var(--gold);}
-.explanation-q-title{font-weight:800;color:var(--navy);font-size:15px;margin-bottom:4px;}
-.explanation-q-meta{font-size:12px;color:var(--muted);margin-bottom:10px;}
-.explanation-body{font-size:14px;color:var(--text);line-height:1.8;white-space:pre-wrap;}
-.btn-confirm-read{display:block;width:100%;padding:16px;background:var(--navy);color:#fff;border:none;border-radius:14px;font-family:'Noto Sans KR',sans-serif;font-size:16px;font-weight:800;cursor:pointer;margin-top:20px;transition:all .2s;}
-.btn-confirm-read:hover{background:#0d1526;transform:translateY(-1px);}
-.practice-header{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border-radius:var(--radius);padding:20px 24px;margin-bottom:16px;text-align:center;}
-.practice-header h3{font-family:'Noto Serif KR',serif;font-size:20px;margin-bottom:4px;}
-.practice-header p{font-size:13px;opacity:.85;}
-.ai-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px;color:var(--navy);font-weight:700;font-size:15px;}
-.ai-loading .ai-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
-.ai-loading .ai-sub{font-size:12px;color:var(--muted);font-weight:600;}
-.verification-card{background:#fff;border-radius:14px;padding:16px 20px;margin-bottom:10px;border:2px solid var(--border);}
-.verification-card.changed{border-color:var(--gold);background:#fefce8;}
-.verification-original{color:var(--red);text-decoration:line-through;font-size:13px;margin-top:4px;}
-.verification-corrected{color:var(--green);font-weight:700;font-size:14px;margin-top:2px;}
-.account-mini{background:rgba(255,255,255,.6);border-radius:10px;padding:12px 16px;margin-top:20px;border:1px solid var(--border);}
-.account-mini summary{font-size:11px;color:var(--muted);cursor:pointer;font-weight:700;list-style:none;display:flex;align-items:center;gap:6px;user-select:none;}
-.account-mini summary::-webkit-details-marker{display:none;}
-.account-mini summary::before{content:'⚙';font-size:13px;}
-.account-mini[open] summary{margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);}
-.account-mini .mini-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
-.account-mini .mini-fields input{width:100%;padding:6px 10px;font-size:12px;border:1.5px solid var(--border);border-radius:8px;font-family:'Noto Sans KR',sans-serif;outline:none;}
-.account-mini .mini-fields input:focus{border-color:var(--gold2);}
-.account-mini .mini-fields label{display:block;font-size:10px;font-weight:700;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px;}
-.final-report{background:#fff;border-radius:var(--radius);padding:24px;border:2px solid var(--red);margin-top:16px;}
-.final-report-title{color:#991b1b;font-family:'Noto Serif KR',serif;font-size:18px;margin-bottom:12px;}
-.round-badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:800;background:#fef3c7;color:#92400e;margin-left:8px;}
-
-/* ── PARENT REPORT ── */
-.report-panel{background:#fff;border-radius:var(--radius);padding:28px;box-shadow:0 4px 20px rgba(0,0,0,.08);margin-bottom:20px;border:2px solid var(--gold);}
-.report-panel-title{font-family:'Noto Serif KR',serif;font-size:20px;color:var(--navy);margin-bottom:4px;display:flex;align-items:center;gap:10px;}
-.report-panel-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
-.report-student-header{display:flex;align-items:center;gap:14px;padding:16px 20px;background:linear-gradient(135deg,var(--navy),#1e2e55);border-radius:14px;margin-bottom:16px;color:#fff;}
-.report-student-avatar{width:48px;height:48px;border-radius:14px;background:rgba(212,175,55,.2);color:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;}
-.report-student-name{font-family:'Noto Serif KR',serif;font-size:18px;font-weight:800;}
-.report-student-meta{font-size:12px;opacity:.7;margin-top:2px;}
-.report-score-row{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
-.report-score-card{flex:1;min-width:120px;background:#f8f6ef;border-radius:12px;padding:16px;text-align:center;}
-.report-score-card .big{font-size:32px;font-weight:900;font-family:'Noto Serif KR',serif;line-height:1;}
-.report-score-card .lbl{font-size:11px;color:var(--muted);font-weight:700;margin-top:4px;}
-.report-msg-box{background:#f8f6ef;border-radius:14px;padding:20px;margin-bottom:16px;font-size:14px;line-height:1.8;color:var(--text);white-space:pre-wrap;border:2px solid var(--border);}
-.btn-copy-kakao{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:18px 24px;background:linear-gradient(135deg,#fee500,#f5da00);color:#3c1e1e;border:none;border-radius:14px;font-family:'Noto Sans KR',sans-serif;font-size:18px;font-weight:900;cursor:pointer;transition:all .2s;box-shadow:0 4px 16px rgba(254,229,0,.4);}
-.btn-copy-kakao:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(254,229,0,.5);}
-.btn-copy-kakao:active{transform:translateY(0);}
-.btn-copy-kakao.copied{background:linear-gradient(135deg,var(--green),#16a34a);color:#fff;}
-.report-history{margin-top:20px;}
-.report-history-title{font-weight:800;font-size:15px;color:var(--navy);margin-bottom:12px;}
-.report-history-item{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#f8f6ef;border-radius:10px;margin-bottom:8px;cursor:pointer;transition:all .15s;}
-.report-history-item:hover{background:#edeae0;transform:translateX(4px);}
-.report-history-date{font-weight:800;font-size:13px;color:var(--navy);min-width:100px;}
-.report-history-score{font-weight:800;font-size:13px;}
-.report-history-detail{font-size:12px;color:var(--muted);flex:1;}
-.report-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px;text-align:center;}
-.report-loading .ai-spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
-.report-loading .msg{font-weight:700;color:var(--navy);font-size:15px;}
-.report-loading .sub{font-size:12px;color:var(--muted);}
-.btn-report{padding:6px 14px;background:linear-gradient(135deg,#fee500,#f5da00);color:#3c1e1e;border:none;border-radius:8px;font-family:'Noto Sans KR',sans-serif;font-weight:800;font-size:12px;cursor:pointer;transition:all .2s;}
-.btn-report:hover{transform:translateY(-1px);filter:brightness(1.05);}
-.report-rem-round{background:#fff;border-radius:12px;padding:14px 18px;margin-bottom:10px;border:2px solid var(--border);}
-.report-rem-round-title{font-weight:800;font-size:13px;color:var(--navy);margin-bottom:6px;}
-.report-rem-q{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;margin-bottom:4px;font-size:13px;font-weight:600;}
-.report-rem-q.ok{background:#f0fdf4;color:#166534;}
-.report-rem-q.wrong{background:#fff5f5;color:#991b1b;}
-
-@media(max-width:768px){
-  /* ── 로그인 화면: 위아래 배치 ── */
-  #loginScreen{flex-direction:column;}
-  .login-left{padding:32px 16px 24px;flex:none;}
-  .login-right{flex:none;padding:24px 16px 32px;}
-  .login-crest-wrap{margin-bottom:16px;}
-  .login-crest{width:100px;height:100px;}
-  .login-title{font-size:24px;}
-  .login-sub-title{font-size:11px;letter-spacing:4px;}
-  .login-divider{margin:14px auto;}
-  .login-form-wrap{max-width:100%;}
-  .login-form-title{font-size:18px;}
-  .login-contact-wrap{max-width:100%;}
-  .contact-value{font-size:12px;}
-  .login-left-test-wrap{margin-top:20px;}
-  .btn-level-test-big{font-size:20px;padding:20px 16px;}
-
-  /* ── 공통: 입력창 확대 방지 + 여백 ── */
-  input,select,textarea{font-size:16px!important;}
-  .main{padding:16px;}
-  .topbar{padding:0 12px;height:52px;}
-  .topbar-logo{font-size:15px;}
-  .topbar-right{gap:8px;}
-  .topbar-user{font-size:11px;}
-  .btn-logout{padding:6px 10px;font-size:11px;}
-
-  /* ── 선생님 화면 ── */
-  .student-grid{grid-template-columns:1fr;}
-  .sc-actions{flex-wrap:wrap;}
-  .paste-area{grid-template-columns:1fr;}
-  .field-row{grid-template-columns:1fr;}
-  .page-title{font-size:20px;}
-  .week-bar{flex-wrap:wrap;gap:8px;padding:12px 14px;}
-
-  /* 테이블 가로 스크롤 */
-  .results-table{font-size:12px;display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap;}
-  .results-table td,.results-table th{padding:8px 10px;}
-  .settings-card{padding:16px;}
-
-  /* 버튼 최소 터치 영역 */
-  .btn-sm{min-height:44px;min-width:44px;padding:8px 12px!important;font-size:13px!important;}
-  .btn-login{min-height:48px;}
-  .role-tab{min-height:44px;}
-  .btn-level-test{min-height:48px;}
-
-  /* ── 학부모 화면 ── */
-  .parent-header{padding:18px 16px;gap:12px;flex-wrap:wrap;}
-  .parent-avatar{font-size:36px;}
-  .parent-child-name{font-size:20px;}
-  .parent-child-sub{font-size:12px;}
-  .report-panel{padding:16px;}
-  .report-score-row{gap:8px;}
-  .report-score-card{min-width:80px;padding:12px 8px;}
-  .report-score-card .big{font-size:24px;}
-  .report-student-header{padding:12px 16px;gap:10px;}
-  .report-student-name{font-size:16px;}
-  .btn-copy-kakao{padding:14px 16px;font-size:16px;}
-  .report-msg-box{padding:14px;font-size:13px;}
-  .report-history-item{flex-wrap:wrap;gap:8px;}
-  .report-history-date{min-width:auto;}
-
-  /* ── 모달 ── */
-  .modal-box{padding:16px;max-width:100vw;border-radius:14px;}
-}
-.hint-card{background:#f8f6ef;border-radius:14px;padding:20px;margin-bottom:14px;border-left:4px solid var(--gold);position:relative;}
-.hint-card.stage-hint{border-left-color:#f59e0b;background:#fffbeb;}
-.hint-card.stage-explain{border-left-color:#3b82f6;background:#eff6ff;}
-.hint-card.stage-solved{border-left-color:var(--green);background:#f0fdf4;}
-.hint-stage-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:800;margin-bottom:10px;}
-.hint-stage-badge.s1{background:#fef3c7;color:#92400e;}
-.hint-stage-badge.s2{background:#dbeafe;color:#1e40af;}
-.hint-stage-badge.s-ok{background:#dcfce7;color:#166534;}
-.hint-box{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:12px 14px;font-size:14px;color:#78350f;line-height:1.7;margin-bottom:12px;}
-.concept-box{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);border-radius:10px;padding:12px 14px;font-size:14px;color:#1e40af;line-height:1.7;margin-bottom:12px;}
-.hint-retry-section{margin-top:14px;padding-top:14px;border-top:1px dashed var(--border);}
-.hint-retry-label{font-size:11px;font-weight:800;color:var(--muted);margin-bottom:10px;letter-spacing:.5px;text-transform:uppercase;}
-.hint-get-btn{padding:9px 20px;background:#f59e0b;color:#fff;border:none;border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-weight:800;font-size:13px;cursor:pointer;transition:all .2s;margin-top:4px;}
-.hint-get-btn:hover{background:#d97706;transform:translateY(-1px);}
-.hint-progress-bar{display:flex;gap:6px;margin-bottom:16px;}
-.hint-progress-step{flex:1;height:4px;border-radius:4px;background:var(--border);}
-.hint-progress-step.done{background:var(--green);}
-.hint-progress-step.active{background:var(--gold);}
-.all-done-btn{display:block;width:100%;padding:16px;background:linear-gradient(90deg,#16a34a,#15803d);color:#fff;border:none;border-radius:14px;font-family:'Noto Sans KR',sans-serif;font-size:16px;font-weight:800;cursor:pointer;margin-top:20px;transition:all .2s;}
-.all-done-btn:hover{transform:translateY(-1px);filter:brightness(1.08);}
-.all-done-btn:disabled{background:#9ca3af;cursor:not-allowed;transform:none;}
-
-
-/* ── PRINT STYLES ── */
-@media print {
-  body{background:#fff!important;color:#000!important;font-size:12pt;}
-  #loginScreen,#loadingOverlay,.topbar,.btn-logout,#btnBackupDownload,
-  .btn-copy-kakao,.btn-report,.modal-close,.btn-sm,
-  .btn-print-report,.btn-print-parent{display:none!important;}
-  .modal-bg{position:static!important;display:block!important;background:none!important;padding:0!important;overflow:visible!important;}
-  .modal-box{max-width:100%!important;max-height:none!important;overflow:visible!important;
-    box-shadow:none!important;border-radius:0!important;padding:0!important;border:none!important;}
-  .report-panel-title{font-size:18pt!important;color:#000!important;}
-  .report-panel-sub{font-size:10pt!important;color:#444!important;}
-  .report-student-header{background:#162040!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid;}
-  .report-score-row{break-inside:avoid;}
-  .report-score-card{background:#f5f5f5!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid;}
-  .report-score-card .big{font-size:22pt!important;}
-  .score-pill{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-  div[style*="border-left:3px solid"]{break-inside:avoid;page-break-inside:avoid;}
-  div[style*="border-radius:10px"]{break-inside:avoid;page-break-inside:avoid;}
-  hr{border-top:1px solid #ccc!important;}
-  .print-header{display:flex!important;align-items:center;gap:12px;padding-bottom:12px;margin-bottom:16px;border-bottom:2px solid #162040;}
-  .print-header-logo{font-family:'Noto Serif KR',serif;font-size:16pt;font-weight:800;color:#162040;}
-  .print-header-logo span{color:#b8960c;}
-  .print-header-date{font-size:9pt;color:#666;margin-left:auto;}
-  /* ── parent view print ── */
-  #app{display:block!important;}
-  .main{padding:0!important;max-width:100%!important;}
-  .report-history,.btn-back,.q-nav{display:none!important;}
-  .account-mini,.info-card button{display:none!important;}
-  .parent-header{-webkit-print-color-adjust:exact;print-color-adjust:exact;break-inside:avoid;}
-  .info-card{box-shadow:none!important;border:1px solid #ddd!important;break-inside:avoid;page-break-inside:avoid;}
-  .report-panel{box-shadow:none!important;border:1px solid #ddd!important;page-break-inside:avoid;}
-  /* ── parent print header ── */
-  .parent-print-header{display:block!important;text-align:center;padding-bottom:12px;margin-bottom:16px;border-bottom:2px solid #162040;}
-  .parent-print-header-logo{font-family:'Noto Serif KR',serif;font-size:16pt;font-weight:800;color:#162040;}
-  .parent-print-header-logo span{color:#b8960c;}
-}
-@media not print {
-  .print-header{display:none!important;}
-  .parent-print-header{display:none!important;}
-}
-</style>
+<link rel="stylesheet" href="solomon.css">
 </head>
 <body>
 
@@ -906,6 +358,8 @@ function navigateStudentPeriod(dir) {
   renderStudent();
 }
 function subKey(sid, p, setIdx=0) { return `${sid}_${p.year}_m${String(p.month).padStart(2,'0')}_w${p.week}_s${setIdx}`; }
+function tsSubKey(sid, p) { return `ts_${sid}_${p.year}_m${String(p.month).padStart(2,'0')}_w${p.week}`; }
+function fbSetTSProgress(key, data) { fbWrite({ ['submissions/' + key]: data }); }
 function weeksInMonth(year, month) {
   // ISO 8601 목요일 기준: 해당 월에 목요일이 속하는 주(월요일 기준)의 개수
   let count = 0;
@@ -1541,6 +995,28 @@ function renderTeacher() {
         </div>`;
       });
       html += `</div>`;
+    }
+
+    // ── TS 관리 섹션 ──────────────────────────────────
+    {
+      const tsData = hw?.ts;
+      const hasTS = tsData?.enabled && tsData?.questions?.length > 0;
+      html += `
+        <div style="margin-top:16px;padding:16px;background:linear-gradient(135deg,#1e1b4b 0%,#312e81 100%);border-radius:14px;border:2px solid #6366f1;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:16px;font-weight:900;color:#e0e7ff;">🧠 Thinking Skills</div>
+              <div style="font-size:12px;color:#a5b4fc;margin-top:2px;">
+                ${hasTS ? `✅ ${tsData.questions.length}문제 등록됨 · ${tsData.day_config.total_days}일 × ${tsData.day_config.questions_per_day}문제` : '등록된 TS 없음'}
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn-sm" style="background:#6366f1;color:#fff;" onclick="document.getElementById('tsJsonFileInput_${selectedYear}').click()">📂 TS JSON 업로드</button>
+              <input type="file" id="tsJsonFileInput_${selectedYear}" accept=".json" style="display:none;" onchange="importTsJsonForYear(this, ${selectedYear})">
+              ${hasTS ? `<button class="btn-sm" style="background:#ef4444;color:#fff;" onclick="removeTSForYear(${selectedYear})">🗑 삭제</button>` : ''}
+            </div>
+          </div>
+        </div>`;
     }
 
     // editor (new set or editing existing set)
@@ -2644,6 +2120,8 @@ async function addParent() {
 // ═══════════════════════════════════════
 let qIdx = 0;
 let currentSetIdx = null;      // null=set list screen, 0+=active set index
+let currentTSDay = null;       // null=not in TS day view, 1+=active TS day
+let tsQIdx = 0;                // current question index within a TS day
 
 function renderStudent() {
   const store = getStore();
@@ -2666,6 +2144,9 @@ function renderStudent() {
     document.getElementById('mainContent').innerHTML += renderMyAccountCard();
     return;
   }
+
+  // TS Day가 열려있으면 TS 화면 렌더링
+  if (currentTSDay !== null) { renderTSDay(); return; }
 
   // no set selected → show set list
   if (currentSetIdx === null) { renderSetList(hw || { sets: [] }, store, p); return; }
@@ -2999,7 +2480,8 @@ function renderPeriodNav(p, currentP) {
 
 function renderSetList(hw, store, p) {
   const sets = hw.sets || [];
-  const hasTS = hw?.ts_config?.enabled;
+  const tsData = hw?.ts;
+  const hasTS = tsData?.enabled && tsData?.questions?.length > 0;
   let html = `<div class="exam-wrap">
     ${renderPeriodNav(p, store.currentPeriod)}
     <div class="exam-header-card" style="margin-bottom:20px;">
@@ -3054,7 +2536,14 @@ function renderSetList(hw, store, p) {
       </div>`;
   });
 
-  html += `</div></div>`;
+  html += `</div>`;
+
+  // ── TS 블록 (MR 아래) ──
+  if (hasTS) {
+    html += renderTSBlock(tsData, store, p);
+  }
+
+  html += `</div>`;
   document.getElementById('mainContent').innerHTML = html;
   document.getElementById('mainContent').innerHTML += renderMyAccountCard();
 }
@@ -5631,6 +5120,370 @@ async function restoreBackup(backupKey) {
   }
 }
 
+// ── TS JSON Import & Management ────────────────────────────────────────────
+function importTsJsonForYear(input, yr) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    let raw;
+    try { raw = JSON.parse(e.target.result); }
+    catch(err) { alert('JSON 파싱 오류: ' + err.message); return; }
+
+    const arr = Array.isArray(raw) ? raw : (raw.questions || []);
+    if (!arr.length) { alert('문제가 없습니다.'); return; }
+
+    const questions = arr.map((q, i) => ({
+      num: q.num ?? (i + 1),
+      text: q.text || '',
+      options: q.options || null,
+      answer: q.corrected_answer || q.answer || null,
+      hint1: q.hint1 || '',
+      hint2: q.hint2 || '',
+      explanation: q.explanation || '',
+      type: q.type || 'general'
+    }));
+
+    const totalDays = 6;
+    const qPerDay = Math.ceil(questions.length / totalDays);
+
+    const store = getStore();
+    const p = store.currentPeriod;
+    const key = hwKey(yr, selectedCountry, p);
+
+    if (!store.homeworkSets[key]) {
+      store.homeworkSets[key] = { year: yr, country: selectedCountry, period: p, sets: [] };
+    }
+    store.homeworkSets[key].ts = {
+      enabled: true,
+      questions,
+      day_config: { questions_per_day: qPerDay, total_days: totalDays }
+    };
+
+    saveStore(store);
+    fbSetHomeworkSet(key, store.homeworkSets[key]);
+    renderTeacher();
+
+    const msg = document.createElement('div');
+    msg.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#4f46e5;color:#fff;padding:14px 28px;border-radius:12px;font-weight:800;font-size:15px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);';
+    msg.textContent = `🧠 TS ${questions.length}문제 등록 완료! (${totalDays}일 × ${qPerDay}문제)`;
+    document.body.appendChild(msg);
+    setTimeout(() => msg.remove(), 3000);
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+function removeTSForYear(yr) {
+  if (!confirm('이 학년의 TS 문제를 삭제하시겠습니까?')) return;
+  const store = getStore();
+  const p = store.currentPeriod;
+  const key = hwKey(yr, selectedCountry, p);
+  if (store.homeworkSets[key]?.ts) {
+    delete store.homeworkSets[key].ts;
+    saveStore(store);
+    fbSetHomeworkSet(key, store.homeworkSets[key]);
+    renderTeacher();
+  }
+}
+
+// ── TS Student Functions ────────────────────────────────────────────────────
+function renderTSBlock(ts, store, p) {
+  const tsKey = tsSubKey(currentUser.id, p);
+  const tsProgress = store.submissions[tsKey] || {};
+  const { questions_per_day: qPerDay, total_days: totalDays } = ts.day_config;
+  const totalQ = ts.questions.length;
+
+  let totalCompleted = 0;
+  for (let d = 1; d <= totalDays; d++) {
+    if (tsProgress[`day${d}`]?.completed) totalCompleted++;
+  }
+  const progressPct = Math.round((totalCompleted / totalDays) * 100);
+
+  let html = `
+    <div style="margin-top:24px;background:linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#4c1d95 100%);border-radius:20px;padding:24px;box-shadow:0 8px 32px rgba(79,70,229,.3);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <div>
+          <div style="font-size:22px;font-weight:900;color:#e0e7ff;letter-spacing:-0.5px;">🧠 Thinking Skills</div>
+          <div style="font-size:13px;color:#a5b4fc;margin-top:4px;">${totalDays} days · ${qPerDay} questions per day · Hints available</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:28px;font-weight:900;color:#fbbf24;">${progressPct}%</div>
+          <div style="font-size:11px;color:#a5b4fc;">Progress</div>
+        </div>
+      </div>
+      <div style="background:rgba(255,255,255,.1);border-radius:99px;height:8px;margin-bottom:20px;overflow:hidden;">
+        <div style="background:linear-gradient(90deg,#fbbf24,#f59e0b);height:100%;border-radius:99px;width:${progressPct}%;transition:width .5s;"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">`;
+
+  for (let day = 1; day <= totalDays; day++) {
+    const dayData = tsProgress[`day${day}`];
+    const completed = !!dayData?.completed;
+    const prevDone = day === 1 || !!tsProgress[`day${day - 1}`]?.completed;
+    const locked = !prevDone && !completed;
+    const answeredCount = dayData?.answers ? Object.keys(dayData.answers).length : 0;
+    const inProgress = !completed && answeredCount > 0;
+    const startIdx = (day - 1) * qPerDay;
+    const endIdx = Math.min(day * qPerDay, totalQ);
+    const dayQCount = endIdx - startIdx;
+
+    let correctCount = 0, stars = 0;
+    if (completed && dayData?.answers) {
+      correctCount = Object.values(dayData.answers).filter(a => a.correct).length;
+      stars = Object.values(dayData.answers).filter(a => a.correct && !a.hint1_used && !a.hint2_used).length;
+    }
+
+    let cardBg, statusHtml, cursor, onclick;
+    if (locked) {
+      cardBg = 'rgba(255,255,255,.05)';
+      statusHtml = '<div style="font-size:24px;">🔒</div><div style="font-size:11px;color:#6366f1;">Locked</div>';
+      cursor = 'default'; onclick = '';
+    } else if (completed) {
+      cardBg = 'rgba(34,197,94,.15)';
+      const pct = dayQCount > 0 ? Math.round(correctCount / dayQCount * 100) : 0;
+      statusHtml = `<div style="font-size:14px;font-weight:900;color:#4ade80;">${pct}%</div><div style="font-size:11px;color:#86efac;">${stars > 0 ? '⭐'.repeat(Math.min(stars, 5)) : '✅ Done'}</div>`;
+      cursor = 'pointer'; onclick = `onclick="openTSDay(${day})"`;
+    } else {
+      cardBg = 'rgba(99,102,241,.2)';
+      statusHtml = inProgress
+        ? `<div style="font-size:13px;font-weight:700;color:#c4b5fd;">${answeredCount}/${dayQCount}</div><div style="font-size:11px;color:#a5b4fc;">Continue →</div>`
+        : `<div style="font-size:13px;font-weight:700;color:#e0e7ff;">${dayQCount}Q</div><div style="font-size:11px;color:#a5b4fc;">Start →</div>`;
+      cursor = 'pointer'; onclick = `onclick="openTSDay(${day})"`;
+    }
+
+    html += `
+      <div ${onclick} style="background:${cardBg};border-radius:14px;padding:16px;text-align:center;cursor:${cursor};border:2px solid ${completed?'rgba(74,222,128,.3)':locked?'transparent':'rgba(99,102,241,.3)'};transition:transform .15s;"
+           onmouseover="if('${cursor}'!=='default')this.style.transform='translateY(-2px)';"
+           onmouseout="this.style.transform='none';">
+        <div style="font-size:12px;font-weight:800;color:#c4b5fd;margin-bottom:8px;">DAY ${day}</div>
+        ${statusHtml}
+      </div>`;
+  }
+
+  html += `</div></div>`;
+  return html;
+}
+
+function openTSDay(day) {
+  currentTSDay = day;
+  tsQIdx = 0;
+  renderTSDay();
+}
+
+function renderTSDay() {
+  const store = getStore();
+  const p = studentPeriod || store.currentPeriod;
+  const hw = store.homeworkSets[hwKey(currentUser.year, currentUser.country || 'AU', p)];
+  const ts = hw?.ts;
+  if (!ts) return;
+
+  const { questions_per_day: qPerDay } = ts.day_config;
+  const startIdx = (currentTSDay - 1) * qPerDay;
+  const endIdx = Math.min(currentTSDay * qPerDay, ts.questions.length);
+  const dayQuestions = ts.questions.slice(startIdx, endIdx);
+  const totalQ = dayQuestions.length;
+
+  const tsKey = tsSubKey(currentUser.id, p);
+  if (!store.submissions[tsKey]) { store.submissions[tsKey] = {}; saveStore(store); }
+  const dayKey = `day${currentTSDay}`;
+  if (!store.submissions[tsKey][dayKey]) {
+    store.submissions[tsKey][dayKey] = { answers: {}, completed: false };
+    saveStore(store);
+  }
+  const dayProgress = store.submissions[tsKey][dayKey];
+
+  if (tsQIdx >= totalQ) tsQIdx = totalQ - 1;
+  const q = dayQuestions[tsQIdx];
+  const qKey = `q${startIdx + tsQIdx}`;
+  const ansData = dayProgress.answers[qKey] || null;
+  const userAns = ansData?.selected || null;
+  const isRevealed = ansData?.correct !== undefined;
+  const isCorrect = ansData?.correct || false;
+  const hint1Used = ansData?.hint1_used || false;
+  const hint2Used = ansData?.hint2_used || false;
+  const pct = Math.round((tsQIdx + 1) / totalQ * 100);
+
+  const letters = ['A', 'B', 'C', 'D', 'E'];
+  let opts = [];
+  if (q.options && typeof q.options === 'object' && !Array.isArray(q.options)) {
+    opts = letters.map(l => ({ letter: l, text: q.options[l] })).filter(o => o.text);
+  } else if (Array.isArray(q.options)) {
+    opts = q.options.map((t, i) => ({ letter: letters[i], text: t }));
+  }
+
+  let html = `<div class="ts-day-view" style="min-height:100vh;background:linear-gradient(180deg,#0f0a2e 0%,#1e1b4b 40%,#312e81 100%);padding:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <button onclick="currentTSDay=null;currentSetIdx=null;renderStudent();"
+              style="background:rgba(255,255,255,.1);border:none;color:#c4b5fd;padding:8px 16px;border-radius:10px;font-weight:700;cursor:pointer;font-size:13px;min-height:44px;">
+        ← Back
+      </button>
+      <div style="color:#e0e7ff;font-weight:800;font-size:15px;">🧠 Day ${currentTSDay}</div>
+      <div style="color:#a5b4fc;font-size:13px;font-weight:700;">${tsQIdx + 1} / ${totalQ}</div>
+    </div>
+    <div style="background:rgba(255,255,255,.1);border-radius:99px;height:6px;margin-bottom:20px;overflow:hidden;">
+      <div style="background:linear-gradient(90deg,#818cf8,#6366f1);height:100%;border-radius:99px;width:${pct}%;transition:width .3s;"></div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <span style="background:rgba(139,92,246,.3);color:#c4b5fd;font-size:11px;font-weight:800;padding:4px 12px;border-radius:99px;">${q.type || 'Thinking Skills'}</span>
+    </div>
+    <div style="background:rgba(255,255,255,.07);border-radius:18px;padding:24px;border:1px solid rgba(139,92,246,.2);margin-bottom:16px;">
+      <div style="font-size:16px;font-weight:700;color:#e0e7ff;line-height:1.7;">${renderMath(q.text)}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">`;
+
+  opts.forEach(opt => {
+    let bg, border, textColor;
+    if (isRevealed) {
+      if (opt.letter === q.answer) { bg='rgba(34,197,94,.2)'; border='2px solid #4ade80'; textColor='#4ade80'; }
+      else if (opt.letter === userAns && !isCorrect) { bg='rgba(239,68,68,.2)'; border='2px solid #f87171'; textColor='#f87171'; }
+      else { bg='rgba(255,255,255,.05)'; border='1px solid rgba(255,255,255,.1)'; textColor='#94a3b8'; }
+    } else if (opt.letter === userAns) {
+      bg='rgba(99,102,241,.3)'; border='2px solid #818cf8'; textColor='#e0e7ff';
+    } else {
+      bg='rgba(255,255,255,.05)'; border='1px solid rgba(255,255,255,.1)'; textColor='#e0e7ff';
+    }
+    html += `
+      <button ${!isRevealed ? `onclick="selectTSAnswer('${qKey}','${opt.letter}')"` : ''}
+              style="background:${bg};border:${border};border-radius:14px;padding:14px 18px;text-align:left;cursor:${!isRevealed?'pointer':'default'};display:flex;align-items:center;gap:12px;transition:background .2s;min-height:48px;">
+        <div style="width:32px;height:32px;border-radius:50%;background:${opt.letter===userAns?'#6366f1':'rgba(255,255,255,.1)'};display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:${opt.letter===userAns?'#fff':textColor};flex-shrink:0;">${opt.letter}</div>
+        <span style="font-size:14px;font-weight:600;color:${textColor};">${renderMath(opt.text)}</span>
+      </button>`;
+  });
+
+  html += `</div>`;
+
+  if (!isRevealed) {
+    if (userAns) {
+      html += `<button onclick="submitTSAnswer('${qKey}')" style="width:100%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:900;cursor:pointer;margin-bottom:12px;box-shadow:0 4px 16px rgba(99,102,241,.4);min-height:52px;">Check Answer ✓</button>`;
+    }
+    html += `<div style="display:flex;gap:10px;margin-bottom:16px;">`;
+    if (!hint1Used && q.hint1) {
+      html += `<button onclick="useTSHint('${qKey}',1)" style="flex:1;background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.3);color:#fbbf24;border-radius:12px;padding:12px;font-weight:700;cursor:pointer;font-size:13px;min-height:48px;">💡 Hint 1</button>`;
+    }
+    if (hint1Used && !hint2Used && q.hint2) {
+      html += `<button onclick="useTSHint('${qKey}',2)" style="flex:1;background:rgba(251,146,36,.15);border:1px solid rgba(251,146,36,.3);color:#fb923c;border-radius:12px;padding:12px;font-weight:700;cursor:pointer;font-size:13px;min-height:48px;">💡 Hint 2</button>`;
+    }
+    html += `</div>`;
+    if (hint1Used && q.hint1) {
+      html += `<div style="background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.2);border-radius:14px;padding:16px;margin-bottom:10px;"><div style="font-size:11px;font-weight:800;color:#fbbf24;margin-bottom:6px;">💡 HINT 1</div><div style="font-size:14px;color:#fde68a;line-height:1.6;">${renderMath(q.hint1)}</div></div>`;
+    }
+    if (hint2Used && q.hint2) {
+      html += `<div style="background:rgba(251,146,60,.1);border:1px solid rgba(251,146,60,.2);border-radius:14px;padding:16px;margin-bottom:10px;"><div style="font-size:11px;font-weight:800;color:#fb923c;margin-bottom:6px;">💡 HINT 2</div><div style="font-size:14px;color:#fed7aa;line-height:1.6;">${renderMath(q.hint2)}</div></div>`;
+    }
+  }
+
+  if (isRevealed) {
+    html += `
+      <div style="background:${isCorrect?'rgba(34,197,94,.15)':'rgba(239,68,68,.15)'};border:1px solid ${isCorrect?'rgba(34,197,94,.3)':'rgba(239,68,68,.3)'};border-radius:14px;padding:16px;margin-bottom:12px;">
+        <div style="font-size:16px;font-weight:900;color:#e0e7ff;">${isCorrect?'✅ Correct!':'❌ Incorrect — Answer: ' + q.answer}</div>
+      </div>`;
+    if (q.explanation) {
+      html += `<div style="background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);border-radius:14px;padding:16px;margin-bottom:12px;"><div style="font-size:11px;font-weight:800;color:#818cf8;margin-bottom:6px;">📖 EXPLANATION</div><div style="font-size:14px;color:#c7d2fe;line-height:1.7;">${renderMath(q.explanation)}</div></div>`;
+    }
+  }
+
+  const allAnswered = dayQuestions.every((_, i) => dayProgress.answers[`q${startIdx + i}`]?.correct !== undefined);
+  html += `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.1);">
+      <button onclick="tsGoQ(${tsQIdx - 1})" ${tsQIdx===0?'disabled':''} style="background:rgba(255,255,255,.1);border:none;color:#c4b5fd;padding:10px 20px;border-radius:10px;font-weight:700;cursor:${tsQIdx===0?'default':'pointer'};opacity:${tsQIdx===0?'.3':'1'};font-size:13px;min-height:44px;">← Prev</button>`;
+
+  if (tsQIdx === totalQ - 1 && allAnswered && !dayProgress.completed) {
+    html += `<button onclick="completeTSDay()" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#1e1b4b;border:none;border-radius:12px;padding:12px 24px;font-weight:900;cursor:pointer;font-size:14px;box-shadow:0 4px 16px rgba(251,191,36,.4);min-height:48px;">🎉 Complete Day ${currentTSDay}</button>`;
+  } else if (tsQIdx < totalQ - 1) {
+    html += `<button onclick="tsGoQ(${tsQIdx + 1})" style="background:rgba(99,102,241,.3);border:none;color:#e0e7ff;padding:10px 20px;border-radius:10px;font-weight:700;cursor:pointer;font-size:13px;min-height:44px;">Next →</button>`;
+  } else {
+    html += `<div></div>`;
+  }
+
+  html += `</div></div>`;
+  document.getElementById('mainContent').innerHTML = html;
+}
+
+function selectTSAnswer(qKey, letter) {
+  const store = getStore();
+  const p = studentPeriod || store.currentPeriod;
+  const tsKey = tsSubKey(currentUser.id, p);
+  const dayKey = `day${currentTSDay}`;
+  if (!store.submissions[tsKey]) store.submissions[tsKey] = {};
+  if (!store.submissions[tsKey][dayKey]) store.submissions[tsKey][dayKey] = { answers: {}, completed: false };
+  const dayProgress = store.submissions[tsKey][dayKey];
+  if (dayProgress.answers[qKey]?.correct !== undefined) return;
+  if (!dayProgress.answers[qKey]) dayProgress.answers[qKey] = { selected: null, attempts: 0, correct: undefined, hint1_used: false, hint2_used: false };
+  dayProgress.answers[qKey].selected = letter;
+  saveStore(store);
+  renderTSDay();
+}
+
+function submitTSAnswer(qKey) {
+  const store = getStore();
+  const p = studentPeriod || store.currentPeriod;
+  const hw = store.homeworkSets[hwKey(currentUser.year, currentUser.country || 'AU', p)];
+  const ts = hw?.ts;
+  if (!ts) return;
+  const tsKey = tsSubKey(currentUser.id, p);
+  const dayKey = `day${currentTSDay}`;
+  const dayProgress = store.submissions[tsKey][dayKey];
+  const ansData = dayProgress.answers[qKey];
+  if (!ansData || ansData.correct !== undefined) return;
+  const qIdx2 = parseInt(qKey.replace('q', ''));
+  const q = ts.questions[qIdx2];
+  const isCorrect = ansData.selected === q.answer;
+  ansData.attempts = (ansData.attempts || 0) + 1;
+  ansData.correct = isCorrect;
+  saveStore(store);
+  fbSetTSProgress(tsKey, store.submissions[tsKey]);
+  renderTSDay();
+  if (isCorrect) {
+    const { questions_per_day: qPerDay } = ts.day_config;
+    const endIdx = Math.min(currentTSDay * qPerDay, ts.questions.length);
+    const totalQ = endIdx - (currentTSDay - 1) * qPerDay;
+    if (tsQIdx < totalQ - 1) setTimeout(() => { tsQIdx++; renderTSDay(); }, 800);
+  }
+}
+
+function useTSHint(qKey, hintNum) {
+  const store = getStore();
+  const p = studentPeriod || store.currentPeriod;
+  const tsKey = tsSubKey(currentUser.id, p);
+  const dayKey = `day${currentTSDay}`;
+  if (!store.submissions[tsKey]?.[dayKey]) return;
+  const dayProgress = store.submissions[tsKey][dayKey];
+  if (!dayProgress.answers[qKey]) dayProgress.answers[qKey] = { selected: null, attempts: 0, correct: undefined, hint1_used: false, hint2_used: false };
+  if (hintNum === 1) dayProgress.answers[qKey].hint1_used = true;
+  if (hintNum === 2) dayProgress.answers[qKey].hint2_used = true;
+  saveStore(store);
+  renderTSDay();
+}
+
+function tsGoQ(idx) {
+  const store = getStore();
+  const p = studentPeriod || store.currentPeriod;
+  const hw = store.homeworkSets[hwKey(currentUser.year, currentUser.country || 'AU', p)];
+  const ts = hw?.ts;
+  if (!ts) return;
+  const { questions_per_day: qPerDay } = ts.day_config;
+  const endIdx = Math.min(currentTSDay * qPerDay, ts.questions.length);
+  const totalQ = endIdx - (currentTSDay - 1) * qPerDay;
+  if (idx < 0 || idx >= totalQ) return;
+  tsQIdx = idx;
+  renderTSDay();
+}
+
+function completeTSDay() {
+  const store = getStore();
+  const p = studentPeriod || store.currentPeriod;
+  const tsKey = tsSubKey(currentUser.id, p);
+  const dayKey = `day${currentTSDay}`;
+  store.submissions[tsKey][dayKey].completed = true;
+  store.submissions[tsKey][dayKey].completed_at = new Date().toISOString();
+  saveStore(store);
+  fbSetTSProgress(tsKey, store.submissions[tsKey]);
+  currentTSDay = null;
+  currentSetIdx = null;
+  renderStudent();
+}
 
 </script>
 </body>
