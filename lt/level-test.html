@@ -1,252 +1,115 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Solomon Academy – Free Level Test</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --navy: #0a1628;
-    --navy2: #112240;
-    --gold: #c9a84c;
-    --gold2: #f0d080;
-    --white: #f8f6f0;
-    --gray: #8a9bb0;
-    --red: #e05252;
-    --green: #4caf7d;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Noto Sans KR', sans-serif;
-    background: var(--navy);
-    color: var(--white);
-    min-height: 100vh;
-  }
-
-  /* ── HEADER ── */
-  header {
-    background: linear-gradient(135deg, var(--navy2) 0%, #0d1f3c 100%);
-    border-bottom: 2px solid var(--gold);
-    padding: 18px 24px;
-    display: flex; align-items: center; gap: 14px;
-  }
-  header .title { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: var(--gold2); }
-  header .sub { font-size: 0.75rem; color: var(--gray); margin-top: 2px; }
-
-  /* ── MAIN CONTAINER ── */
-  .container { max-width: 680px; margin: 0 auto; padding: 32px 20px 60px; }
-
-  /* ── SCREEN ── */
-  .screen { display: none; }
-  .screen.active { display: block; animation: fadeUp .4s ease; }
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  /* ── CARD ── */
-  .card {
-    background: var(--navy2);
-    border: 1px solid rgba(201,168,76,.25);
-    border-radius: 16px; padding: 32px 28px; margin-bottom: 20px;
-  }
-
-  /* ── HERO ── */
-  .hero-badge {
-    display: inline-block; background: linear-gradient(90deg, var(--gold), var(--gold2));
-    color: var(--navy); font-size: .72rem; font-weight: 700;
-    padding: 5px 14px; border-radius: 20px; margin-bottom: 18px; letter-spacing: .5px;
-  }
-  h1.hero-title {
-    font-family: 'Playfair Display', serif; font-size: 2.1rem; line-height: 1.25;
-    color: var(--white); margin-bottom: 10px;
-  }
-  h1.hero-title span { color: var(--gold); }
-  .hero-desc { color: var(--gray); font-size: .92rem; line-height: 1.65; margin-bottom: 24px; }
-  .features { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
-  .feature {
-    display: flex; align-items: center; gap: 10px;
-    font-size: .88rem; color: var(--white);
-  }
-  .feature .icon {
-    width: 28px; height: 28px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--gold), var(--gold2));
-    display: flex; align-items: center; justify-content: center;
-    font-size: .75rem; color: var(--navy); flex-shrink: 0;
-  }
-
-  /* ── FORM ── */
-  .form-group { margin-bottom: 18px; }
-  label { display: block; font-size: .82rem; color: var(--gold2); margin-bottom: 7px; font-weight: 500; }
-  input[type="text"], input[type="tel"], input[type="email"] {
-    width: 100%; background: rgba(255,255,255,.06);
-    border: 1px solid rgba(201,168,76,.3);
-    border-radius: 10px; padding: 13px 16px;
-    color: var(--white); font-size: .95rem; font-family: 'Noto Sans KR', sans-serif;
-    transition: border-color .2s;
-  }
-  input:focus { outline: none; border-color: var(--gold); background: rgba(255,255,255,.09); }
-  input::placeholder { color: var(--gray); }
-
-  /* ── YEAR GRID ── */
-  .year-grid {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 8px;
-  }
-  .year-btn {
-    background: rgba(255,255,255,.05);
-    border: 1px solid rgba(201,168,76,.2);
-    border-radius: 10px; padding: 12px 6px;
-    text-align: center; cursor: pointer;
-    transition: all .2s; color: var(--white); font-size: .85rem; font-weight: 500;
-  }
-  .year-btn:hover { border-color: var(--gold); background: rgba(201,168,76,.1); }
-  .year-btn.selected { background: linear-gradient(135deg, var(--gold), var(--gold2)); color: var(--navy); border-color: var(--gold2); font-weight: 700; }
-  .year-label { font-size: .68rem; color: inherit; display: block; margin-top: 3px; opacity: .75; }
-
-  /* ── CONSENT ── */
-  .consent-box {
-    background: rgba(255,255,255,.04); border: 1px solid rgba(201,168,76,.15);
-    border-radius: 10px; padding: 14px 16px; margin-bottom: 20px;
-    display: flex; gap: 12px; align-items: flex-start;
-  }
-  .consent-box input[type="checkbox"] { width: 18px; height: 18px; flex-shrink: 0; margin-top: 2px; accent-color: var(--gold); cursor: pointer; }
-  .consent-text { font-size: .78rem; color: var(--gray); line-height: 1.6; }
-  .consent-text strong { color: var(--gold2); }
-
-  /* ── BUTTONS ── */
-  .btn-primary {
-    width: 100%; padding: 16px;
-    background: linear-gradient(135deg, var(--gold) 0%, var(--gold2) 100%);
-    color: var(--navy); border: none; border-radius: 12px;
-    font-size: 1rem; font-weight: 700; cursor: pointer;
-    font-family: 'Noto Sans KR', sans-serif;
-    transition: opacity .2s, transform .1s;
-    letter-spacing: .3px;
-  }
-  .btn-primary:hover { opacity: .9; transform: translateY(-1px); }
-  .btn-primary:disabled { opacity: .4; cursor: not-allowed; transform: none; }
-  .btn-secondary {
-    background: transparent; border: 1px solid rgba(201,168,76,.4);
-    color: var(--gold); padding: 10px 22px; border-radius: 10px;
-    cursor: pointer; font-size: .88rem; font-family: 'Noto Sans KR', sans-serif;
-    transition: all .2s;
-  }
-  .btn-secondary:hover { background: rgba(201,168,76,.1); }
-
-  /* ── ERROR ── */
-  .error-msg { color: var(--red); font-size: .8rem; margin-top: 6px; display: none; }
-  .error-msg.show { display: block; }
-
-  /* ── QUIZ ── */
-  .quiz-header { margin-bottom: 24px; }
-  .quiz-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-  .quiz-label { font-size: .8rem; color: var(--gold); font-weight: 600; letter-spacing: .5px; }
-  .timer {
-    background: rgba(201,168,76,.15); border: 1px solid rgba(201,168,76,.3);
-    padding: 5px 14px; border-radius: 20px; font-size: .88rem; font-weight: 700; color: var(--gold2);
-  }
-  .timer.warning { color: var(--red); border-color: var(--red); background: rgba(224,82,82,.15); }
-  .progress-bar {
-    height: 5px; background: rgba(255,255,255,.1); border-radius: 3px; overflow: hidden;
-  }
-  .progress-fill {
-    height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold2));
-    border-radius: 3px; transition: width .4s ease;
-  }
-  .q-number { font-size: .78rem; color: var(--gray); margin-bottom: 8px; }
-  .q-text { font-size: 1.05rem; line-height: 1.65; margin-bottom: 22px; color: var(--white); }
-  .options { display: flex; flex-direction: column; gap: 10px; }
-  .option {
-    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
-    border-radius: 10px; padding: 13px 16px; cursor: pointer;
-    transition: all .2s; font-size: .92rem; display: flex; align-items: center; gap: 12px;
-  }
-  .option:hover { border-color: var(--gold); background: rgba(201,168,76,.1); }
-  .option.selected { border-color: var(--gold); background: rgba(201,168,76,.15); color: var(--gold2); }
-  .option.correct { border-color: var(--green); background: rgba(76,175,125,.15); color: #7ee8a8; }
-  .option.wrong { border-color: var(--red); background: rgba(224,82,82,.15); color: #f08080; }
-  .option-letter {
-    width: 26px; height: 26px; border-radius: 50%;
-    background: rgba(255,255,255,.1); display: flex; align-items: center; justify-content: center;
-    font-size: .78rem; font-weight: 700; flex-shrink: 0;
-  }
-  .quiz-nav { display: flex; justify-content: flex-end; margin-top: 24px; }
-
-  /* ── RESULTS ── */
-  .score-ring {
-    width: 130px; height: 130px; margin: 0 auto 24px;
-    position: relative; display: flex; align-items: center; justify-content: center;
-  }
-  .score-ring svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); }
-  .score-ring .score-num {
-    font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 900; color: var(--gold);
-    text-align: center; line-height: 1;
-  }
-  .score-ring .score-label { font-size: .7rem; color: var(--gray); }
-  .result-grade { text-align: center; margin-bottom: 24px; }
-  .result-grade .grade-badge {
-    display: inline-block; padding: 6px 20px;
-    border-radius: 20px; font-size: .88rem; font-weight: 700; margin-bottom: 10px;
-  }
-  .grade-A { background: linear-gradient(90deg, #4caf7d, #7ee8a8); color: var(--navy); }
-  .grade-B { background: linear-gradient(90deg, var(--gold), var(--gold2)); color: var(--navy); }
-  .grade-C { background: linear-gradient(90deg, #5b8dee, #90b4f8); color: var(--navy); }
-  .grade-D { background: rgba(224,82,82,.25); color: var(--red); border: 1px solid var(--red); }
-  .result-title { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--white); margin-bottom: 6px; }
-  .result-sub { color: var(--gray); font-size: .88rem; }
-  .recommend-box {
-    background: linear-gradient(135deg, rgba(201,168,76,.12), rgba(201,168,76,.05));
-    border: 1px solid rgba(201,168,76,.35); border-radius: 14px; padding: 20px;
-    margin-bottom: 20px;
-  }
-  .recommend-box h3 { color: var(--gold2); font-size: .95rem; margin-bottom: 12px; }
-  .recommend-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; font-size: .88rem; }
-  .recommend-item .dot { width: 7px; height: 7px; background: var(--gold); border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
-  .breakdown { margin-bottom: 24px; }
-  .breakdown h3 { font-size: .88rem; color: var(--gold2); margin-bottom: 12px; }
-  .breakdown-item { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-  .breakdown-topic { font-size: .82rem; color: var(--white); width: 130px; flex-shrink: 0; }
-  .breakdown-bar { flex: 1; height: 8px; background: rgba(255,255,255,.08); border-radius: 4px; overflow: hidden; }
-  .breakdown-fill { height: 100%; border-radius: 4px; transition: width .8s ease; }
-  .breakdown-pct { font-size: .78rem; color: var(--gray); width: 36px; text-align: right; }
-  .cta-box {
-    background: linear-gradient(135deg, var(--navy2), #0d1f3c);
-    border: 2px solid var(--gold); border-radius: 16px; padding: 24px;
-    text-align: center;
-  }
-  .cta-box h3 { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: var(--gold2); margin-bottom: 8px; }
-  .cta-box p { color: var(--gray); font-size: .85rem; margin-bottom: 18px; }
-  .contact-methods { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-  .contact-btn {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 11px 20px; border-radius: 10px;
-    font-size: .88rem; font-weight: 600; text-decoration: none; cursor: pointer; border: none;
-    font-family: 'Noto Sans KR', sans-serif; transition: opacity .2s;
-  }
-  .contact-btn:hover { opacity: .85; }
-  .contact-kakao { background: #FEE500; color: #3C1E1E; }
-  .contact-phone { background: var(--green); color: white; }
-  .disclaimer {
-    font-size: .72rem; color: var(--gray); text-align: center;
-    margin-top: 20px; line-height: 1.6; padding: 0 10px;
-  }
-
-  /* ── BLOCKED ── */
-  .blocked-card { text-align: center; padding: 48px 24px; }
-  .blocked-icon { font-size: 3rem; margin-bottom: 16px; }
-  .blocked-card h2 { color: var(--gold); font-family: 'Playfair Display', serif; margin-bottom: 10px; }
-  .blocked-card p { color: var(--gray); font-size: .88rem; line-height: 1.6; }
-
-  @media (max-width: 480px) {
-    .year-grid { grid-template-columns: repeat(3, 1fr); }
-    h1.hero-title { font-size: 1.65rem; }
-    .card { padding: 22px 18px; }
-  }
+:root{--navy:#0a1628;--navy2:#112240;--gold:#c9a84c;--gold2:#f0d080;--white:#f8f6f0;--gray:#8a9bb0;--red:#e05252;--green:#4caf7d;--orange:#f59e0b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--navy);color:var(--white);min-height:100vh;}
+header{background:linear-gradient(135deg,var(--navy2) 0%,#0d1f3c 100%);border-bottom:2px solid var(--gold);padding:18px 24px;display:flex;align-items:center;gap:14px;}
+header .title{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--gold2);}
+header .sub{font-size:.75rem;color:var(--gray);margin-top:2px;}
+.container{max-width:680px;margin:0 auto;padding:32px 20px 60px;}
+.screen{display:none;}
+.screen.active{display:block;animation:fadeUp .4s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.card{background:var(--navy2);border:1px solid rgba(201,168,76,.25);border-radius:16px;padding:32px 28px;margin-bottom:20px;}
+.hero-badge{display:inline-block;background:linear-gradient(90deg,var(--gold),var(--gold2));color:var(--navy);font-size:.72rem;font-weight:700;padding:5px 14px;border-radius:20px;margin-bottom:18px;letter-spacing:.5px;}
+h1.hero-title{font-family:'Playfair Display',serif;font-size:2.1rem;line-height:1.25;color:var(--white);margin-bottom:10px;}
+h1.hero-title span{color:var(--gold);}
+.hero-desc{color:var(--gray);font-size:.92rem;line-height:1.65;margin-bottom:24px;}
+.features{display:flex;flex-direction:column;gap:10px;margin-bottom:28px;}
+.feature{display:flex;align-items:center;gap:10px;font-size:.88rem;color:var(--white);}
+.feature .icon{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:.75rem;color:var(--navy);flex-shrink:0;}
+.form-group{margin-bottom:18px;}
+label{display:block;font-size:.82rem;color:var(--gold2);margin-bottom:7px;font-weight:500;}
+input[type="text"],input[type="tel"],input[type="email"]{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(201,168,76,.3);border-radius:10px;padding:13px 16px;color:var(--white);font-size:.95rem;font-family:'Noto Sans KR',sans-serif;transition:border-color .2s;}
+input:focus{outline:none;border-color:var(--gold);background:rgba(255,255,255,.09);}
+input::placeholder{color:var(--gray);}
+.year-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:8px;}
+.year-btn{background:rgba(255,255,255,.05);border:1px solid rgba(201,168,76,.2);border-radius:10px;padding:12px 6px;text-align:center;cursor:pointer;transition:all .2s;color:var(--white);font-size:.85rem;font-weight:500;}
+.year-btn:hover{border-color:var(--gold);background:rgba(201,168,76,.1);}
+.year-btn.selected{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);border-color:var(--gold2);font-weight:700;}
+.consent-box{background:rgba(255,255,255,.04);border:1px solid rgba(201,168,76,.15);border-radius:10px;padding:14px 16px;margin-bottom:20px;display:flex;gap:12px;align-items:flex-start;}
+.consent-box input[type="checkbox"]{width:18px;height:18px;flex-shrink:0;margin-top:2px;accent-color:var(--gold);cursor:pointer;}
+.consent-text{font-size:.78rem;color:var(--gray);line-height:1.6;}
+.consent-text strong{color:var(--gold2);}
+.error-msg{color:var(--red);font-size:.8rem;margin-top:6px;display:none;}
+.error-msg.show{display:block;}
+.btn-primary{width:100%;padding:16px;background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 100%);color:var(--navy);border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:opacity .2s,transform .1s;letter-spacing:.3px;}
+.btn-primary:hover{opacity:.9;transform:translateY(-1px);}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.btn-secondary{background:transparent;border:1px solid rgba(201,168,76,.4);color:var(--gold);padding:10px 22px;border-radius:10px;cursor:pointer;font-size:.88rem;font-family:'Noto Sans KR',sans-serif;transition:all .2s;}
+.btn-secondary:hover{background:rgba(201,168,76,.1);}
+.quiz-header{margin-bottom:24px;}
+.quiz-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.quiz-label{font-size:.8rem;color:var(--gold);font-weight:600;letter-spacing:.5px;}
+.timer{background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.3);padding:5px 14px;border-radius:20px;font-size:.88rem;font-weight:700;color:var(--gold2);}
+.timer.warning{color:var(--red);border-color:var(--red);background:rgba(224,82,82,.15);}
+.progress-bar{height:5px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:3px;transition:width .4s ease;}
+.q-number{font-size:.78rem;color:var(--gray);margin-bottom:8px;}
+.q-text{font-size:1.05rem;line-height:1.65;margin-bottom:22px;color:var(--white);}
+.options{display:flex;flex-direction:column;gap:10px;}
+.option{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:13px 16px;cursor:pointer;transition:all .2s;font-size:.92rem;display:flex;align-items:center;gap:12px;}
+.option:hover{border-color:var(--gold);background:rgba(201,168,76,.1);}
+.option.selected{border-color:var(--gold);background:rgba(201,168,76,.15);color:var(--gold2);}
+.option.correct{border-color:var(--green);background:rgba(76,175,125,.15);color:#7ee8a8;}
+.option.wrong{border-color:var(--red);background:rgba(224,82,82,.15);color:#f08080;}
+.option-letter{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;flex-shrink:0;}
+.quiz-nav{display:flex;justify-content:flex-end;margin-top:24px;}
+.score-ring{width:130px;height:130px;margin:0 auto 24px;position:relative;display:flex;align-items:center;justify-content:center;}
+.score-ring svg{position:absolute;top:0;left:0;transform:rotate(-90deg);}
+.score-ring .score-num{font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:900;color:var(--gold);text-align:center;line-height:1;}
+.score-ring .score-label{font-size:.7rem;color:var(--gray);}
+.result-grade{text-align:center;margin-bottom:24px;}
+.grade-badge{display:inline-block;padding:6px 20px;border-radius:20px;font-size:.88rem;font-weight:700;margin-bottom:10px;}
+.grade-A{background:linear-gradient(90deg,#4caf7d,#7ee8a8);color:var(--navy);}
+.grade-B{background:linear-gradient(90deg,var(--gold),var(--gold2));color:var(--navy);}
+.grade-C{background:rgba(245,158,11,.25);color:var(--orange);border:1px solid var(--orange);}
+.grade-D{background:rgba(224,82,82,.25);color:var(--red);border:1px solid var(--red);}
+.result-title{font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--white);margin-bottom:6px;}
+.result-sub{color:var(--gray);font-size:.88rem;}
+.breakdown{margin-bottom:20px;}
+.breakdown h3{font-size:.9rem;color:var(--gold2);margin-bottom:14px;font-weight:700;}
+.breakdown-item{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.breakdown-topic{font-size:.8rem;color:var(--white);width:110px;flex-shrink:0;}
+.breakdown-bar{flex:1;height:10px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden;}
+.breakdown-fill{height:100%;border-radius:5px;transition:width .8s ease;}
+.breakdown-pct{font-size:.78rem;width:38px;text-align:right;font-weight:600;}
+.weak-area-box{background:rgba(224,82,82,.08);border:1px solid rgba(224,82,82,.3);border-radius:14px;padding:20px;margin-bottom:20px;}
+.weak-area-box h3{color:#f08080;font-size:.95rem;margin-bottom:14px;}
+.weak-item{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,.06);}
+.weak-item:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none;}
+.weak-topic{font-size:.85rem;font-weight:700;color:var(--white);margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.weak-pct-badge{font-size:.7rem;padding:2px 8px;border-radius:10px;background:rgba(224,82,82,.3);color:#f08080;}
+.weak-desc{font-size:.8rem;color:var(--gray);line-height:1.6;}
+.recommend-box{background:linear-gradient(135deg,rgba(201,168,76,.12),rgba(201,168,76,.05));border:1px solid rgba(201,168,76,.35);border-radius:14px;padding:20px;margin-bottom:20px;}
+.recommend-box h3{color:var(--gold2);font-size:.95rem;margin-bottom:12px;}
+.recommend-item{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;font-size:.88rem;}
+.recommend-item .dot{width:7px;height:7px;background:var(--gold);border-radius:50%;flex-shrink:0;margin-top:6px;}
+.cta-box{background:linear-gradient(135deg,var(--navy2),#0d1f3c);border:2px solid var(--gold);border-radius:16px;padding:24px;text-align:center;}
+.cta-box h3{font-family:'Playfair Display',serif;font-size:1.3rem;color:var(--gold2);margin-bottom:8px;}
+.cta-box p{color:var(--gray);font-size:.85rem;margin-bottom:18px;}
+.contact-methods{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.contact-btn{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:10px;font-size:.88rem;font-weight:600;text-decoration:none;cursor:pointer;border:none;font-family:'Noto Sans KR',sans-serif;transition:opacity .2s;}
+.contact-btn:hover{opacity:.85;}
+.contact-kakao{background:#FEE500;color:#3C1E1E;}
+.contact-phone{background:var(--green);color:white;}
+.disclaimer{font-size:.72rem;color:var(--gray);text-align:center;margin-top:20px;line-height:1.6;padding:0 10px;}
+.blocked-card{text-align:center;padding:48px 24px;}
+.blocked-icon{font-size:3rem;margin-bottom:16px;}
+.blocked-card h2{color:var(--gold);font-family:'Playfair Display',serif;margin-bottom:10px;}
+.blocked-card p{color:var(--gray);font-size:.88rem;line-height:1.6;}
+@media(max-width:480px){.year-grid{grid-template-columns:repeat(4,1fr);}h1.hero-title{font-size:1.65rem;}.card{padding:22px 18px;}}
 </style>
 </head>
 <body>
-
 <header>
   <img src="../solomon_academy_logo_transparent.png" style="width:54px;height:54px;object-fit:contain;flex-shrink:0;" alt="Solomon Academy">
   <div>
@@ -254,23 +117,21 @@
     <div class="sub">West Ryde · NSW Selective / OC / NAPLAN</div>
   </div>
 </header>
-
 <div class="container">
 
-  <!-- ══════════ SCREEN 1: INTRO ══════════ -->
+  <!-- SCREEN 1: INTRO -->
   <div class="screen active" id="screen-intro">
     <div class="card">
       <div class="hero-badge">🎓 Free Level Test</div>
-      <h1 class="hero-title">Does your child need<br><span>to improve in Maths?</span></h1>
-      <p class="hero-desc">Find out your child's current level and weak areas with our Year 1–12 diagnostic test. We'll recommend the perfect class based on your results.</p>
+      <h1 class="hero-title">Find your child's<br><span>Maths level today</span></h1>
+      <p class="hero-desc">A 30-question diagnostic test covering Year 1–10 NSW curriculum. Get instant results, topic breakdown and personalised recommendations — completely free.</p>
       <div class="features">
-        <div class="feature"><div class="icon">✓</div> NSW curriculum-aligned questions by year group</div>
-        <div class="feature"><div class="icon">✓</div> Instant marking + automatic weak area analysis</div>
-        <div class="feature"><div class="icon">✓</div> Personalised class recommendation + free consultation</div>
-        <div class="feature"><div class="icon">✓</div> Completely free · 15 minutes</div>
+        <div class="feature"><div class="icon">✓</div> NSW curriculum-aligned · 3 difficulty levels</div>
+        <div class="feature"><div class="icon">✓</div> Instant marking + weak area analysis</div>
+        <div class="feature"><div class="icon">✓</div> Personalised class recommendation</div>
+        <div class="feature"><div class="icon">✓</div> 30 questions · 20 minutes · Free</div>
       </div>
     </div>
-
     <div class="card">
       <div class="form-group">
         <label>Student Name *</label>
@@ -280,7 +141,7 @@
       <div class="form-group">
         <label>Parent Contact (Australian mobile) *</label>
         <input type="tel" id="inp-phone" placeholder="e.g. 0424 743 564" />
-        <div class="error-msg" id="err-phone">Please enter a contact number.</div>
+        <div class="error-msg" id="err-phone">Please enter a valid contact number.</div>
       </div>
       <div class="form-group">
         <label>Email (optional)</label>
@@ -299,21 +160,19 @@
         </div>
       </div>
       <div class="error-msg" id="err-consent">Please agree to the privacy consent.</div>
-      <button class="btn-primary" id="btn-start" onclick="startTest()">Start Test →</button>
+      <button class="btn-primary" onclick="startTest()">Start Test →</button>
     </div>
   </div>
 
-  <!-- ══════════ SCREEN 2: QUIZ ══════════ -->
+  <!-- SCREEN 2: QUIZ -->
   <div class="screen" id="screen-quiz">
     <div class="card">
       <div class="quiz-header">
         <div class="quiz-meta">
-          <span class="quiz-label" id="quiz-label">Question 1 / 15</span>
-          <span class="timer" id="timer-display">15:00</span>
+          <span class="quiz-label" id="quiz-label">Question 1 / 30</span>
+          <span class="timer" id="timer-display">20:00</span>
         </div>
-        <div class="progress-bar">
-          <div class="progress-fill" id="progress-fill" style="width:0%"></div>
-        </div>
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
       </div>
       <div class="q-number" id="q-number"></div>
       <div class="q-text" id="q-text"></div>
@@ -324,25 +183,16 @@
     </div>
   </div>
 
-  <!-- ══════════ SCREEN 3: RESULTS ══════════ -->
+  <!-- SCREEN 3: RESULTS -->
   <div class="screen" id="screen-result">
     <div class="card">
       <div class="score-ring">
         <svg width="130" height="130" viewBox="0 0 130 130">
           <circle cx="65" cy="65" r="56" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="10"/>
-          <circle cx="65" cy="65" r="56" fill="none" stroke="url(#scoreGrad)" stroke-width="10"
-            stroke-linecap="round" stroke-dasharray="352" id="score-arc" stroke-dashoffset="352"/>
-          <defs>
-            <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#c9a84c"/>
-              <stop offset="100%" stop-color="#f0d080"/>
-            </linearGradient>
-          </defs>
+          <circle cx="65" cy="65" r="56" fill="none" stroke="url(#scoreGrad)" stroke-width="10" stroke-linecap="round" stroke-dasharray="352" id="score-arc" stroke-dashoffset="352"/>
+          <defs><linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#c9a84c"/><stop offset="100%" stop-color="#f0d080"/></linearGradient></defs>
         </svg>
-        <div>
-          <div class="score-num" id="score-num">0%</div>
-          <div class="score-label" id="score-label">0 / 15</div>
-        </div>
+        <div><div class="score-num" id="score-num">0%</div><div class="score-label" id="score-label">0 / 30</div></div>
       </div>
       <div class="result-grade">
         <div class="grade-badge" id="grade-badge"></div>
@@ -351,40 +201,40 @@
       </div>
     </div>
 
-    <div class="recommend-box" id="recommend-box">
-      <h3>📚 Recommended Class & Learning Path</h3>
-      <div id="recommend-content"></div>
+    <div class="card breakdown">
+      <h3>📊 Topic Breakdown</h3>
+      <div id="breakdown-content" style="margin-top:4px;"></div>
     </div>
 
-    <div class="card breakdown">
-      <h3>Topic Breakdown</h3>
-      <div id="breakdown-content" style="margin-top:16px;"></div>
+    <div class="weak-area-box" id="weak-area-box" style="display:none;">
+      <h3>⚠️ Areas Needing Attention</h3>
+      <div id="weak-area-content"></div>
+    </div>
+
+    <div class="recommend-box">
+      <h3>📚 Recommended Class &amp; Learning Path</h3>
+      <div id="recommend-content"></div>
     </div>
 
     <div class="cta-box">
       <h3>Book a Free Consultation</h3>
       <p>We'll recommend the perfect class based on your results.<br>Contact us now!</p>
       <div class="contact-methods">
-        <a href="https://open.kakao.com/o/sVMZVsmi" class="contact-btn contact-kakao" target="_blank">
-          💬 KakaoTalk Chat
-        </a>
-        <a href="tel:0424743564" class="contact-btn contact-phone">
-          📞 Call Us
-        </a>
+        <a id="cta-kakao" href="#" class="contact-btn contact-kakao" target="_blank">💬 KakaoTalk Chat</a>
+        <a id="cta-phone" href="#" class="contact-btn contact-phone">📞 Call Us</a>
       </div>
     </div>
 
     <div class="disclaimer">
       This test is a diagnostic assessment based on the NSW curriculum.<br>
-      Results are indicative only. Final class placement is determined through a separate consultation.
+      Results are indicative only. Final class placement is determined through consultation.
     </div>
-
     <div style="text-align:center;margin-top:24px;">
       <button class="btn-secondary" onclick="resetTest()">↺ Start Again</button>
     </div>
   </div>
 
-  <!-- ══════════ SCREEN 4: BLOCKED ══════════ -->
+  <!-- SCREEN 4: BLOCKED -->
   <div class="screen" id="screen-blocked">
     <div class="card blocked-card">
       <div class="blocked-icon">⏳</div>
@@ -392,266 +242,543 @@
       <p>Only one test per contact number within a 24-hour period is allowed.<br>If you need assistance, please contact us below.</p>
       <div style="margin-top:24px;">
         <div class="contact-methods">
-          <a href="https://open.kakao.com/o/sVMZVsmi" class="contact-btn contact-kakao" target="_blank">💬 KakaoTalk Chat</a>
-          <a href="tel:0424743564" class="contact-btn contact-phone">📞 Call Us</a>
+          <a id="blocked-kakao" href="#" class="contact-btn contact-kakao" target="_blank">💬 KakaoTalk Chat</a>
+          <a id="blocked-phone" href="#" class="contact-btn contact-phone">📞 Call Us</a>
         </div>
       </div>
     </div>
   </div>
 
-</div><!-- /container -->
+</div>
 
 <script>
-/* ══════════════════════════════════════════
-   문제 데이터베이스 (Year별)
-══════════════════════════════════════════ */
-const QUESTION_BANK = {
+/* ── CONSTANTS ── */
+const KAKAO_LINK   = 'https://open.kakao.com/o/sVMZVsmi';
+const PHONE_NUMBER = '0424743564';
+const PHONE_DISPLAY = '0424 743 564';
+
+/* ── FIREBASE ── */
+const firebaseConfig = {
+  apiKey:            'AIzaSyDvj7CDHZ7_Wci0palB9KpbjvCUkvcCRZY',
+  authDomain:        'solomon-76715.firebaseapp.com',
+  databaseURL:       'https://solomon-76715-default-rtdb.asia-southeast1.firebasedatabase.app',
+  projectId:         'solomon-76715',
+  storageBucket:     'solomon-76715.appspot.com',
+  messagingSenderId: '',
+  appId:             ''
+};
+try { firebase.initializeApp(firebaseConfig); } catch(e) {}
+let LT_REF = null;
+try { LT_REF = firebase.database().ref('lt_results'); } catch(e) {}
+
+/* ── CTA LINKS ── */
+document.getElementById('cta-kakao').href     = KAKAO_LINK;
+document.getElementById('cta-phone').href     = 'tel:' + PHONE_NUMBER;
+document.getElementById('cta-phone').appendChild(document.createTextNode(''));
+document.getElementById('blocked-kakao').href = KAKAO_LINK;
+document.getElementById('blocked-phone').href = 'tel:' + PHONE_NUMBER;
+
+/* ═══════════════════════════════════════
+   QUESTION BANK  (40 per year, d: easy/medium/hard)
+   Selection: 12 easy + 12 medium + 6 hard = 30
+═══════════════════════════════════════ */
+const QB = {
   1: [
-    { topic:'Number', q:'Which odd number is less than 10?', opts:['2','4','7','8'], ans:2 },
-    { topic:'Number', q:'3 + 5 = ?', opts:['6','7','8','9'], ans:2 },
-    { topic:'Number', q:'10 - 4 = ?', opts:['4','5','6','7'], ans:2 },
-    { topic:'Measurement', q:'How many days are in a week?', opts:['5','6','7','8'], ans:2 },
-    { topic:'Number', q:'Which is the largest number?', opts:['3','7','5','9'], ans:3 },
-    { topic:'Number', q:'2 + 2 + 2 = ?', opts:['4','5','6','8'], ans:2 },
-    { topic:'Measurement', q:'How many hours are in a day?', opts:['12','20','24','48'], ans:2 },
-    { topic:'Number', q:'What is the largest even number less than 20?', opts:['16','17','18','19'], ans:2 },
-    { topic:'Number', q:'5 + ? = 9', opts:['3','4','5','6'], ans:1 },
-    { topic:'Geometry', q:'How many vertices does a triangle have?', opts:['2','3','4','5'], ans:1 },
-    { topic:'Number', q:'1, 2, 3, 4, __. What is the next number?', opts:['4','5','6','7'], ans:1 },
-    { topic:'Number', q:'10 + 3 = ?', opts:['12','13','14','15'], ans:1 },
-    { topic:'Measurement', q:'How many months are in a year?', opts:['10','11','12','13'], ans:2 },
-    { topic:'Number', q:'9 - 3 = ?', opts:['4','5','6','7'], ans:2 },
-    { topic:'Geometry', q:'How many sides does a square have?', opts:['3','4','5','6'], ans:1 },
+    // easy (15)
+    {topic:'Number',q:'Which number comes after 5?',opts:['4','5','6','7'],ans:2,d:'easy'},
+    {topic:'Number',q:'2 + 3 = ?',opts:['4','5','6','7'],ans:1,d:'easy'},
+    {topic:'Number',q:'10 − 3 = ?',opts:['5','6','7','8'],ans:2,d:'easy'},
+    {topic:'Number',q:'Which is the largest number?',opts:['3','7','5','9'],ans:3,d:'easy'},
+    {topic:'Measurement',q:'How many days are in a week?',opts:['5','6','7','8'],ans:2,d:'easy'},
+    {topic:'Number',q:'5 + 5 = ?',opts:['8','9','10','11'],ans:2,d:'easy'},
+    {topic:'Geometry',q:'How many sides does a triangle have?',opts:['2','3','4','5'],ans:1,d:'easy'},
+    {topic:'Number',q:'Which number is smallest?',opts:['8','4','6','2'],ans:3,d:'easy'},
+    {topic:'Measurement',q:'How many months are in a year?',opts:['10','11','12','13'],ans:2,d:'easy'},
+    {topic:'Number',q:'3 + 3 = ?',opts:['5','6','7','8'],ans:1,d:'easy'},
+    {topic:'Geometry',q:'How many sides does a square have?',opts:['3','4','5','6'],ans:1,d:'easy'},
+    {topic:'Number',q:'8 − 5 = ?',opts:['2','3','4','5'],ans:1,d:'easy'},
+    {topic:'Number',q:'2 + 5 = ?',opts:['6','7','8','9'],ans:1,d:'easy'},
+    {topic:'Measurement',q:'How many hours are in a day?',opts:['12','20','24','48'],ans:2,d:'easy'},
+    {topic:'Number',q:'4 + 0 = ?',opts:['0','3','4','5'],ans:2,d:'easy'},
+    // medium (15)
+    {topic:'Number',q:'5 + ? = 12',opts:['5','6','7','8'],ans:2,d:'medium'},
+    {topic:'Number',q:'What is 2 more than 7?',opts:['8','9','10','11'],ans:1,d:'medium'},
+    {topic:'Number',q:'Which number is even?',opts:['1','3','5','8'],ans:3,d:'medium'},
+    {topic:'Number',q:'10 + 10 = ?',opts:['11','15','20','25'],ans:2,d:'medium'},
+    {topic:'Number',q:'What comes next? 2, 4, 6, 8, __',opts:['9','10','11','12'],ans:1,d:'medium'},
+    {topic:'Number',q:'I have 10 apples and eat 6. How many left?',opts:['3','4','5','6'],ans:1,d:'medium'},
+    {topic:'Geometry',q:'How many corners does a rectangle have?',opts:['2','3','4','5'],ans:2,d:'medium'},
+    {topic:'Number',q:'Which number is between 5 and 9?',opts:['4','7','10','11'],ans:1,d:'medium'},
+    {topic:'Number',q:'How many tens are in 30?',opts:['1','2','3','4'],ans:2,d:'medium'},
+    {topic:'Measurement',q:'Tom has 3 red balls and 4 blue balls. Total?',opts:['5','6','7','8'],ans:2,d:'medium'},
+    {topic:'Number',q:'20 − 8 = ?',opts:['10','11','12','13'],ans:2,d:'medium'},
+    {topic:'Number',q:'Which is the smallest odd number?',opts:['0','1','2','3'],ans:1,d:'medium'},
+    {topic:'Number',q:'4 + 4 + 4 = ?',opts:['8','10','12','14'],ans:2,d:'medium'},
+    {topic:'Measurement',q:'A pencil is 10 cm. Another is 4 cm shorter. How long?',opts:['4 cm','5 cm','6 cm','7 cm'],ans:2,d:'medium'},
+    {topic:'Number',q:'9 − 4 = ?',opts:['4','5','6','7'],ans:1,d:'medium'},
+    // hard (10)
+    {topic:'Number',q:'? + 6 = 15',opts:['7','8','9','10'],ans:2,d:'hard'},
+    {topic:'Measurement',q:'How many days are in 2 weeks?',opts:['10','12','14','16'],ans:2,d:'hard'},
+    {topic:'Number',q:'5 × 2 = ?',opts:['7','8','10','12'],ans:2,d:'hard'},
+    {topic:'Number',q:'I count by 5s: 5, 10, 15, __. Next?',opts:['16','18','20','25'],ans:2,d:'hard'},
+    {topic:'Number',q:'Which two numbers add to make 10?',opts:['3 and 5','4 and 7','6 and 4','7 and 5'],ans:2,d:'hard'},
+    {topic:'Number',q:'3 + 5 + 4 = ?',opts:['10','11','12','13'],ans:2,d:'hard'},
+    {topic:'Geometry',q:'A shape has 3 sides and 3 angles. What is it?',opts:['Square','Rectangle','Triangle','Circle'],ans:2,d:'hard'},
+    {topic:'Number',q:'What number is 5 less than 18?',opts:['11','12','13','14'],ans:2,d:'hard'},
+    {topic:'Number',q:'What is the next even number after 16?',opts:['17','18','19','20'],ans:1,d:'hard'},
+    {topic:'Measurement',q:'If today is Monday, what day is it in 3 days?',opts:['Wednesday','Thursday','Friday','Saturday'],ans:1,d:'hard'},
   ],
   2: [
-    { topic:'Number', q:'15 + 8 = ?', opts:['21','22','23','24'], ans:2 },
-    { topic:'Number', q:'30 - 14 = ?', opts:['14','15','16','17'], ans:2 },
-    { topic:'Number', q:'2 × 6 = ?', opts:['10','11','12','13'], ans:2 },
-    { topic:'Measurement', q:'1 m = ? cm', opts:['10','100','1,000','10,000'], ans:1 },
-    { topic:'Number', q:'What is half of 50?', opts:['20','25','30','35'], ans:1 },
-    { topic:'Number', q:'Which number is NOT odd?', opts:['13','17','22','31'], ans:2 },
-    { topic:'Number', q:'3 × 4 = ?', opts:['10','11','12','13'], ans:2 },
-    { topic:'Geometry', q:'How many sides does a rectangle have?', opts:['3','4','5','6'], ans:1 },
-    { topic:'Number', q:'45 + 35 = ?', opts:['70','75','80','85'], ans:2 },
-    { topic:'Number', q:'100 - 43 = ?', opts:['55','56','57','58'], ans:2 },
-    { topic:'Measurement', q:'1 kg = ? g', opts:['10','100','1,000','10,000'], ans:2 },
-    { topic:'Number', q:'5 × 5 = ?', opts:['20','25','30','35'], ans:1 },
-    { topic:'Number', q:'2, 4, 6, 8, __. What comes next?', opts:['9','10','11','12'], ans:1 },
-    { topic:'Fractions', q:'Which represents one half?', opts:['1/4','1/2','1/3','2/3'], ans:1 },
-    { topic:'Number', q:'10 × 3 = ?', opts:['13','20','30','33'], ans:2 },
+    // easy (15)
+    {topic:'Number',q:'15 + 8 = ?',opts:['21','22','23','24'],ans:2,d:'easy'},
+    {topic:'Number',q:'30 − 14 = ?',opts:['14','15','16','17'],ans:2,d:'easy'},
+    {topic:'Number',q:'2 × 6 = ?',opts:['10','11','12','13'],ans:2,d:'easy'},
+    {topic:'Measurement',q:'1 m = ? cm',opts:['10','100','1000','10000'],ans:1,d:'easy'},
+    {topic:'Number',q:'What is half of 50?',opts:['20','25','30','35'],ans:1,d:'easy'},
+    {topic:'Number',q:'3 × 4 = ?',opts:['10','11','12','13'],ans:2,d:'easy'},
+    {topic:'Number',q:'45 + 35 = ?',opts:['70','75','80','85'],ans:2,d:'easy'},
+    {topic:'Number',q:'100 − 43 = ?',opts:['55','56','57','58'],ans:2,d:'easy'},
+    {topic:'Measurement',q:'1 kg = ? g',opts:['10','100','1000','10000'],ans:2,d:'easy'},
+    {topic:'Number',q:'5 × 5 = ?',opts:['20','25','30','35'],ans:1,d:'easy'},
+    {topic:'Number',q:'2, 4, 6, 8, __. What comes next?',opts:['9','10','11','12'],ans:1,d:'easy'},
+    {topic:'Fractions',q:'Which represents one half?',opts:['1/4','1/2','1/3','2/3'],ans:1,d:'easy'},
+    {topic:'Number',q:'10 × 3 = ?',opts:['13','20','30','33'],ans:2,d:'easy'},
+    {topic:'Number',q:'Which number is NOT odd?',opts:['13','17','22','31'],ans:2,d:'easy'},
+    {topic:'Geometry',q:'How many sides does a rectangle have?',opts:['3','4','5','6'],ans:1,d:'easy'},
+    // medium (15)
+    {topic:'Number',q:'67 + 25 = ?',opts:['88','90','92','94'],ans:2,d:'medium'},
+    {topic:'Number',q:'4 × 7 = ?',opts:['24','26','28','30'],ans:2,d:'medium'},
+    {topic:'Fractions',q:'What is one quarter of 20?',opts:['4','5','6','7'],ans:1,d:'medium'},
+    {topic:'Measurement',q:'How many cm in half a metre?',opts:['25','40','50','75'],ans:2,d:'medium'},
+    {topic:'Number',q:'80 − 37 = ?',opts:['41','42','43','44'],ans:2,d:'medium'},
+    {topic:'Number',q:'5 × 8 = ?',opts:['35','40','45','50'],ans:1,d:'medium'},
+    {topic:'Number',q:'Which is largest? 132, 123, 312, 213',opts:['132','123','312','213'],ans:2,d:'medium'},
+    {topic:'Number',q:'3 × 3 × 3 = ?',opts:['9','18','27','36'],ans:2,d:'medium'},
+    {topic:'Number',q:'56 ÷ 7 = ?',opts:['6','7','8','9'],ans:2,d:'medium'},
+    {topic:'Measurement',q:'A book costs $12. How much for 3 books?',opts:['$24','$30','$36','$42'],ans:2,d:'medium'},
+    {topic:'Number',q:'What is 10 more than 85?',opts:['75','90','95','100'],ans:2,d:'medium'},
+    {topic:'Number',q:'64 ÷ 8 = ?',opts:['6','7','8','9'],ans:2,d:'medium'},
+    {topic:'Number',q:'5, 10, 15, 20, __. Next?',opts:['22','24','25','30'],ans:2,d:'medium'},
+    {topic:'Fractions',q:'Which fraction is bigger: 1/2 or 1/4?',opts:['1/4','1/2','They are equal','Cannot tell'],ans:1,d:'medium'},
+    {topic:'Geometry',q:'How many faces does a cube have?',opts:['4','5','6','7'],ans:2,d:'medium'},
+    // hard (10)
+    {topic:'Number',q:'128 + 235 = ?',opts:['353','363','373','383'],ans:1,d:'hard'},
+    {topic:'Number',q:'9 × 7 = ?',opts:['54','56','63','72'],ans:2,d:'hard'},
+    {topic:'Fractions',q:'3/4 of 24 = ?',opts:['12','16','18','20'],ans:2,d:'hard'},
+    {topic:'Number',q:'200 − 84 = ?',opts:['114','116','118','120'],ans:1,d:'hard'},
+    {topic:'Number',q:'6 × 8 = ?',opts:['42','46','48','54'],ans:2,d:'hard'},
+    {topic:'Measurement',q:'A rectangle is 9 cm long and 4 cm wide. Perimeter?',opts:['26 cm','28 cm','30 cm','36 cm'],ans:0,d:'hard'},
+    {topic:'Number',q:'Remainder when 25 is divided by 4?',opts:['0','1','2','3'],ans:1,d:'hard'},
+    {topic:'Number',q:'Round 47 to the nearest 10.',opts:['40','45','50','55'],ans:2,d:'hard'},
+    {topic:'Fractions',q:'1/2 + 1/4 = ?',opts:['1/4','2/6','3/4','1'],ans:2,d:'hard'},
+    {topic:'Number',q:'12 × 12 = ?',opts:['122','132','144','148'],ans:2,d:'hard'},
   ],
   3: [
-    { topic:'Number', q:'256 + 178 = ?', opts:['424','434','444','454'], ans:1 },
-    { topic:'Number', q:'500 - 237 = ?', opts:['253','263','273','283'], ans:2 },
-    { topic:'Multiplication', q:'7 × 8 = ?', opts:['54','56','58','60'], ans:1 },
-    { topic:'Fractions', q:'1/2 + 1/4 = ?', opts:['1/4','1/2','3/4','1'], ans:2 },
-    { topic:'Measurement', q:'2 hours 30 minutes = ? minutes', opts:['120','130','140','150'], ans:3 },
-    { topic:'Multiplication', q:'9 × 6 = ?', opts:['52','54','56','58'], ans:1 },
-    { topic:'Number', q:'What is the largest even number less than 1000?', opts:['996','997','998','999'], ans:2 },
-    { topic:'Division', q:'48 ÷ 6 = ?', opts:['6','7','8','9'], ans:2 },
-    { topic:'Fractions', q:'3/4 equals what percentage?', opts:['50%','60%','70%','75%'], ans:3 },
-    { topic:'Measurement', q:'A square has perimeter 20 cm. What is the side length?', opts:['4 cm','5 cm','6 cm','7 cm'], ans:1 },
-    { topic:'Number', q:'356 × 3 = ?', opts:['1,058','1,068','1,078','1,088'], ans:1 },
-    { topic:'Geometry', q:'If the radius of a circle is 5 cm, what is the diameter?', opts:['5 cm','8 cm','10 cm','12 cm'], ans:2 },
-    { topic:'Division', q:'63 ÷ 9 = ?', opts:['5','6','7','8'], ans:2 },
-    { topic:'Number', q:'What is the smallest 4-digit number?', opts:['999','1,000','1,001','1,010'], ans:1 },
-    { topic:'Fractions', q:'Express 2/5 as a decimal.', opts:['0.2','0.4','0.5','0.6'], ans:1 },
+    // easy (15)
+    {topic:'Number',q:'256 + 178 = ?',opts:['424','434','444','454'],ans:1,d:'easy'},
+    {topic:'Number',q:'500 − 237 = ?',opts:['253','263','273','283'],ans:1,d:'easy'},
+    {topic:'Multiplication',q:'7 × 8 = ?',opts:['54','56','58','60'],ans:1,d:'easy'},
+    {topic:'Fractions',q:'1/2 + 1/4 = ?',opts:['1/4','1/2','3/4','1'],ans:2,d:'easy'},
+    {topic:'Measurement',q:'2 hours 30 min = ? minutes',opts:['120','130','140','150'],ans:3,d:'easy'},
+    {topic:'Multiplication',q:'9 × 6 = ?',opts:['52','54','56','58'],ans:1,d:'easy'},
+    {topic:'Division',q:'48 ÷ 6 = ?',opts:['6','7','8','9'],ans:2,d:'easy'},
+    {topic:'Fractions',q:'3/4 equals what percentage?',opts:['50%','60%','70%','75%'],ans:3,d:'easy'},
+    {topic:'Number',q:'356 × 3 = ?',opts:['1058','1068','1078','1088'],ans:1,d:'easy'},
+    {topic:'Division',q:'63 ÷ 9 = ?',opts:['5','6','7','8'],ans:2,d:'easy'},
+    {topic:'Number',q:'Smallest 4-digit number?',opts:['999','1000','1001','1010'],ans:1,d:'easy'},
+    {topic:'Fractions',q:'Express 2/5 as a decimal.',opts:['0.2','0.4','0.5','0.6'],ans:1,d:'easy'},
+    {topic:'Measurement',q:'A square has perimeter 20 cm. Side length?',opts:['4 cm','5 cm','6 cm','7 cm'],ans:1,d:'easy'},
+    {topic:'Geometry',q:'Radius of circle is 5 cm. Diameter?',opts:['5 cm','8 cm','10 cm','12 cm'],ans:2,d:'easy'},
+    {topic:'Number',q:'Largest even number less than 1000?',opts:['996','997','998','999'],ans:2,d:'easy'},
+    // medium (15)
+    {topic:'Number',q:'1234 + 567 = ?',opts:['1791','1801','1811','1821'],ans:1,d:'medium'},
+    {topic:'Fractions',q:'Which fraction is equivalent to 2/4?',opts:['1/3','1/2','2/3','3/4'],ans:1,d:'medium'},
+    {topic:'Division',q:'84 ÷ 7 = ?',opts:['10','11','12','13'],ans:2,d:'medium'},
+    {topic:'Multiplication',q:'12 × 11 = ?',opts:['122','132','142','152'],ans:1,d:'medium'},
+    {topic:'Measurement',q:'How many cm in 3.5 m?',opts:['305','350','355','400'],ans:1,d:'medium'},
+    {topic:'Number',q:'Round 4,678 to the nearest hundred.',opts:['4600','4700','4800','4900'],ans:1,d:'medium'},
+    {topic:'Fractions',q:'1 − 3/8 = ?',opts:['3/8','5/8','6/8','7/8'],ans:1,d:'medium'},
+    {topic:'Geometry',q:'Area of a square with side 9 cm?',opts:['36 cm²','72 cm²','81 cm²','90 cm²'],ans:2,d:'medium'},
+    {topic:'Number',q:'What is 1/4 of 200?',opts:['25','40','50','75'],ans:2,d:'medium'},
+    {topic:'Division',q:'120 ÷ 8 = ?',opts:['13','14','15','16'],ans:2,d:'medium'},
+    {topic:'Multiplication',q:'15 × 15 = ?',opts:['175','200','225','250'],ans:2,d:'medium'},
+    {topic:'Fractions',q:'Which is smallest? 1/2, 1/3, 1/4',opts:['1/2','1/3','1/4','All equal'],ans:2,d:'medium'},
+    {topic:'Number',q:'5,000 − 2,348 = ?',opts:['2552','2642','2652','2752'],ans:2,d:'medium'},
+    {topic:'Measurement',q:'365 days ÷ 7 days. Approx. how many weeks?',opts:['48','50','52','54'],ans:2,d:'medium'},
+    {topic:'Geometry',q:'Triangle angles 60° and 70°. Third angle?',opts:['40°','50°','60°','70°'],ans:1,d:'medium'},
+    // hard (10)
+    {topic:'Number',q:'2,345 × 4 = ?',opts:['9180','9280','9380','9480'],ans:2,d:'hard'},
+    {topic:'Fractions',q:'2/3 of 120 = ?',opts:['60','70','80','90'],ans:2,d:'hard'},
+    {topic:'Division',q:'525 ÷ 25 = ?',opts:['19','20','21','22'],ans:2,d:'hard'},
+    {topic:'Number',q:'LCM of 4 and 6 = ?',opts:['8','10','12','24'],ans:2,d:'hard'},
+    {topic:'Geometry',q:'Area of rectangle 12 cm × 7 cm?',opts:['72 cm²','82 cm²','84 cm²','86 cm²'],ans:2,d:'hard'},
+    {topic:'Fractions',q:'4/5 − 1/3 = ?',opts:['3/15','7/15','8/15','9/15'],ans:1,d:'hard'},
+    {topic:'Number',q:'GCF of 36 and 48?',opts:['6','9','12','18'],ans:2,d:'hard'},
+    {topic:'Measurement',q:'2.5 L container, 250 mL cups. How many cups?',opts:['8','9','10','11'],ans:2,d:'hard'},
+    {topic:'Number',q:'15% of 200 = ?',opts:['20','25','30','35'],ans:2,d:'hard'},
+    {topic:'Geometry',q:'Circumference of circle, diameter 10 cm? (π≈3.14)',opts:['31.4 cm','34.1 cm','37.4 cm','41.3 cm'],ans:0,d:'hard'},
   ],
   4: [
-    { topic:'Number', q:'3,456 + 2,789 = ?', opts:['6,145','6,245','6,345','6,445'], ans:1 },
-    { topic:'Multiplication', q:'23 × 14 = ?', opts:['312','322','332','342'], ans:1 },
-    { topic:'Division', q:'156 ÷ 12 = ?', opts:['12','13','14','15'], ans:1 },
-    { topic:'Fractions', q:'2/3 + 1/6 = ?', opts:['3/9','5/6','1','7/6'], ans:1 },
-    { topic:'Decimals', q:'3.4 + 2.8 = ?', opts:['5.8','6.0','6.2','6.4'], ans:2 },
-    { topic:'Measurement', q:'What is the area of a rectangle with length 8 cm and width 5 cm?', opts:['26 cm²','36 cm²','40 cm²','48 cm²'], ans:2 },
-    { topic:'Multiplication', q:'45 × 11 = ?', opts:['485','495','505','515'], ans:1 },
-    { topic:'Fractions', q:'7/8 - 3/8 = ?', opts:['1/2','3/8','4/8','5/8'], ans:0 },
-    { topic:'Decimals', q:'5.2 × 3 = ?', opts:['14.6','15.6','16.6','17.6'], ans:1 },
-    { topic:'Number', q:'What is the GCD of 12 and 18?', opts:['2','3','6','9'], ans:2 },
-    { topic:'Geometry', q:'What is the sum of interior angles of a triangle?', opts:['90°','180°','270°','360°'], ans:1 },
-    { topic:'Fractions', q:'1¼ + 2½ = ?', opts:['3¼','3½','3¾','4'], ans:2 },
-    { topic:'Measurement', q:'1 L = ? mL', opts:['10','100','1,000','10,000'], ans:2 },
-    { topic:'Decimals', q:'10.5 - 4.8 = ?', opts:['5.3','5.5','5.7','5.9'], ans:2 },
-    { topic:'Number', q:'How many factors does 72 have?', opts:['10','11','12','13'], ans:2 },
+    // easy (15)
+    {topic:'Number',q:'3,456 + 2,789 = ?',opts:['6145','6245','6345','6445'],ans:1,d:'easy'},
+    {topic:'Multiplication',q:'23 × 14 = ?',opts:['312','322','332','342'],ans:1,d:'easy'},
+    {topic:'Division',q:'156 ÷ 12 = ?',opts:['12','13','14','15'],ans:1,d:'easy'},
+    {topic:'Fractions',q:'2/3 + 1/6 = ?',opts:['3/9','5/6','1','7/6'],ans:1,d:'easy'},
+    {topic:'Decimals',q:'3.4 + 2.8 = ?',opts:['5.8','6.0','6.2','6.4'],ans:2,d:'easy'},
+    {topic:'Measurement',q:'Area of rectangle: length 8 cm, width 5 cm?',opts:['26 cm²','36 cm²','40 cm²','48 cm²'],ans:2,d:'easy'},
+    {topic:'Multiplication',q:'45 × 11 = ?',opts:['485','495','505','515'],ans:1,d:'easy'},
+    {topic:'Fractions',q:'7/8 − 3/8 = ?',opts:['1/2','3/8','4/8','5/8'],ans:0,d:'easy'},
+    {topic:'Decimals',q:'5.2 × 3 = ?',opts:['14.6','15.6','16.6','17.6'],ans:1,d:'easy'},
+    {topic:'Number',q:'GCF of 12 and 18?',opts:['2','3','6','9'],ans:2,d:'easy'},
+    {topic:'Geometry',q:'Sum of interior angles of a triangle?',opts:['90°','180°','270°','360°'],ans:1,d:'easy'},
+    {topic:'Fractions',q:'1¼ + 2½ = ?',opts:['3¼','3½','3¾','4'],ans:2,d:'easy'},
+    {topic:'Measurement',q:'1 L = ? mL',opts:['10','100','1000','10000'],ans:2,d:'easy'},
+    {topic:'Decimals',q:'10.5 − 4.8 = ?',opts:['5.3','5.5','5.7','5.9'],ans:2,d:'easy'},
+    {topic:'Number',q:'How many factors does 24 have?',opts:['4','6','8','10'],ans:2,d:'easy'},
+    // medium (15)
+    {topic:'Decimals',q:'4.56 + 7.89 = ?',opts:['12.35','12.45','12.55','12.65'],ans:1,d:'medium'},
+    {topic:'Fractions',q:'3/4 of 96 = ?',opts:['60','68','72','76'],ans:2,d:'medium'},
+    {topic:'Number',q:'LCM of 6 and 10 = ?',opts:['20','25','30','60'],ans:2,d:'medium'},
+    {topic:'Multiplication',q:'36 × 25 = ?',opts:['800','850','900','950'],ans:2,d:'medium'},
+    {topic:'Geometry',q:'Perimeter of square with side 13 cm?',opts:['39 cm','48 cm','52 cm','56 cm'],ans:2,d:'medium'},
+    {topic:'Decimals',q:'15.6 ÷ 4 = ?',opts:['3.6','3.8','3.9','4.0'],ans:2,d:'medium'},
+    {topic:'Fractions',q:'2½ × 4 = ?',opts:['8','9','10','11'],ans:2,d:'medium'},
+    {topic:'Number',q:'Express 45% as a fraction in simplest form.',opts:['9/20','45/100','5/10','9/100'],ans:0,d:'medium'},
+    {topic:'Measurement',q:'Convert 3.5 km to metres.',opts:['350','3050','3500','35000'],ans:2,d:'medium'},
+    {topic:'Division',q:'364 ÷ 14 = ?',opts:['24','25','26','27'],ans:2,d:'medium'},
+    {topic:'Geometry',q:'Area of triangle: base 14 cm, height 8 cm?',opts:['48 cm²','52 cm²','56 cm²','64 cm²'],ans:2,d:'medium'},
+    {topic:'Number',q:'0.3 × 0.4 = ?',opts:['0.07','0.12','0.7','1.2'],ans:1,d:'medium'},
+    {topic:'Fractions',q:'Which is largest? 2/3, 3/4, 5/6',opts:['2/3','3/4','5/6','All equal'],ans:2,d:'medium'},
+    {topic:'Measurement',q:'$24 item discounted by 25%. New price?',opts:['$16','$17','$18','$20'],ans:2,d:'medium'},
+    {topic:'Number',q:'12² (12 squared) = ?',opts:['124','134','144','154'],ans:2,d:'medium'},
+    // hard (10)
+    {topic:'Number',q:'2⁵ = ?',opts:['10','16','32','64'],ans:2,d:'hard'},
+    {topic:'Fractions',q:'3/4 ÷ 3/8 = ?',opts:['1','2','3','4'],ans:1,d:'hard'},
+    {topic:'Decimals',q:'(3.2)² = ?',opts:['9.24','10.24','11.24','12.24'],ans:1,d:'hard'},
+    {topic:'Number',q:'LCM of 8, 12 and 18 = ?',opts:['36','48','72','144'],ans:2,d:'hard'},
+    {topic:'Fractions',q:'2/3 × 1.5 = ?',opts:['3/4 cup','1','1 1/3','1 1/2'],ans:1,d:'hard'},
+    {topic:'Measurement',q:'2 hours 45 minutes = ? minutes',opts:['145','155','165','175'],ans:2,d:'hard'},
+    {topic:'Number',q:'15% of 320 = ?',opts:['40','44','48','52'],ans:2,d:'hard'},
+    {topic:'Geometry',q:'Square has area 196 cm². Side length?',opts:['12 cm','13 cm','14 cm','15 cm'],ans:2,d:'hard'},
+    {topic:'Number',q:'Which is a prime number?',opts:['51','57','59','63'],ans:2,d:'hard'},
+    {topic:'Geometry',q:'Sector area: angle 90°, radius 6 cm. (π≈3.14)',opts:['28.26 cm²','29.26 cm²','30.26 cm²','31.26 cm²'],ans:0,d:'hard'},
   ],
   5: [
-    { topic:'Fractions', q:'3/4 × 2/3 = ?', opts:['1/2','5/12','6/12','7/12'], ans:0 },
-    { topic:'Decimals', q:'0.6 × 0.4 = ?', opts:['0.024','0.24','2.4','24'], ans:1 },
-    { topic:'Percentage', q:'What is 25% of 80?', opts:['16','18','20','22'], ans:2 },
-    { topic:'Algebra', q:'If 2x + 5 = 13, then x = ?', opts:['3','4','5','6'], ans:1 },
-    { topic:'Measurement', q:'A triangle has base 10 cm and height 6 cm. What is its area?', opts:['20 cm²','30 cm²','40 cm²','60 cm²'], ans:1 },
-    { topic:'Fractions', q:'5/6 ÷ 1/3 = ?', opts:['5/18','5/6','5/2','10/3'], ans:2 },
-    { topic:'Percentage', q:'What percentage is 60 out of 100?', opts:['6%','16%','60%','160%'], ans:2 },
-    { topic:'Number', q:'Which number is NOT a prime?', opts:['11','13','15','17'], ans:2 },
-    { topic:'Algebra', q:'If 3y = 21, then y = ?', opts:['5','6','7','8'], ans:2 },
-    { topic:'Decimals', q:'4.5 ÷ 0.9 = ?', opts:['4','5','6','50'], ans:1 },
-    { topic:'Measurement', q:'If the diameter of a circle is 14 cm, what is the radius?', opts:['5 cm','6 cm','7 cm','8 cm'], ans:2 },
-    { topic:'Fractions', q:'1⅔ × 1½ = ?', opts:['2','2½','3','3½'], ans:1 },
-    { topic:'Percentage', q:'What is 30% of 40?', opts:['10','12','14','16'], ans:1 },
-    { topic:'Algebra', q:'If n ÷ 4 = 7, then n = ?', opts:['24','28','32','36'], ans:1 },
-    { topic:'Number', q:'LCM of 4 and 6 = ?', opts:['8','10','12','24'], ans:2 },
+    // easy (15)
+    {topic:'Fractions',q:'3/4 × 2/3 = ?',opts:['1/2','5/12','6/12','7/12'],ans:0,d:'easy'},
+    {topic:'Decimals',q:'0.6 × 0.4 = ?',opts:['0.024','0.24','2.4','24'],ans:1,d:'easy'},
+    {topic:'Percentage',q:'25% of 80 = ?',opts:['16','18','20','22'],ans:2,d:'easy'},
+    {topic:'Measurement',q:'Area of triangle: base 10 cm, height 6 cm?',opts:['20 cm²','30 cm²','40 cm²','60 cm²'],ans:1,d:'easy'},
+    {topic:'Fractions',q:'5/6 ÷ 1/3 = ?',opts:['5/18','5/6','5/2','10/3'],ans:2,d:'easy'},
+    {topic:'Percentage',q:'60 out of 100 = what %?',opts:['6%','16%','60%','160%'],ans:2,d:'easy'},
+    {topic:'Number',q:'Which is NOT prime?',opts:['11','13','15','17'],ans:2,d:'easy'},
+    {topic:'Decimals',q:'4.5 ÷ 0.9 = ?',opts:['4','5','6','50'],ans:1,d:'easy'},
+    {topic:'Measurement',q:'Diameter of circle = 14 cm. Radius?',opts:['5 cm','6 cm','7 cm','8 cm'],ans:2,d:'easy'},
+    {topic:'Fractions',q:'1⅔ × 1½ = ?',opts:['2','2½','3','3½'],ans:1,d:'easy'},
+    {topic:'Percentage',q:'30% of 40 = ?',opts:['10','12','14','16'],ans:1,d:'easy'},
+    {topic:'Number',q:'LCM of 4 and 6 = ?',opts:['8','10','12','24'],ans:2,d:'easy'},
+    {topic:'Algebra',q:'3y = 21. y = ?',opts:['5','6','7','8'],ans:2,d:'easy'},
+    {topic:'Algebra',q:'n ÷ 4 = 7. n = ?',opts:['24','28','32','36'],ans:1,d:'easy'},
+    {topic:'Percentage',q:'$40 shirt + 10% GST. Total?',opts:['$42','$44','$46','$48'],ans:1,d:'easy'},
+    // medium (15)
+    {topic:'Algebra',q:'2x + 5 = 13. x = ?',opts:['3','4','5','6'],ans:1,d:'medium'},
+    {topic:'Statistics',q:'Mean of 4, 7, 9, 10, 15 = ?',opts:['8','9','10','11'],ans:1,d:'medium'},
+    {topic:'Fractions',q:'Convert 3/8 to a decimal.',opts:['0.325','0.375','0.425','0.475'],ans:1,d:'medium'},
+    {topic:'Percentage',q:'$60 item reduced by 20%. Sale price?',opts:['$44','$46','$48','$50'],ans:2,d:'medium'},
+    {topic:'Geometry',q:'Volume of prism: 5×4×3 cm?',opts:['48 cm³','54 cm³','60 cm³','72 cm³'],ans:2,d:'medium'},
+    {topic:'Algebra',q:'5x − 3 = 22. x = ?',opts:['4','5','6','7'],ans:1,d:'medium'},
+    {topic:'Statistics',q:'Median of: 3, 5, 7, 9, 11',opts:['5','7','8','9'],ans:1,d:'medium'},
+    {topic:'Fractions',q:'2/3 + 3/4 = ?',opts:['5/12','17/12','5/7','1½'],ans:1,d:'medium'},
+    {topic:'Percentage',q:'Increase 80 by 15%.',opts:['88','90','92','96'],ans:2,d:'medium'},
+    {topic:'Number',q:'√144 = ?',opts:['10','11','12','13'],ans:2,d:'medium'},
+    {topic:'Algebra',q:'2(x + 4) = 18. x = ?',opts:['4','5','6','7'],ans:1,d:'medium'},
+    {topic:'Statistics',q:'Mode of: 3, 5, 7, 7, 9, 11',opts:['5','7','9','11'],ans:1,d:'medium'},
+    {topic:'Geometry',q:'Area of circle, radius 7 cm. (π≈3.14)',opts:['143.4 cm²','153.86 cm²','163.4 cm²','173.86 cm²'],ans:1,d:'medium'},
+    {topic:'Number',q:'Express 0.125 as a fraction.',opts:['1/6','1/8','1/4','1/3'],ans:1,d:'medium'},
+    {topic:'Fractions',q:'3/5 of 75 = ?',opts:['40','42','45','48'],ans:2,d:'medium'},
+    // hard (10)
+    {topic:'Algebra',q:'3x + 2 = x + 14. x = ?',opts:['4','6','8','10'],ans:1,d:'hard'},
+    {topic:'Number',q:'2³ × 3² = ?',opts:['54','62','72','86'],ans:2,d:'hard'},
+    {topic:'Statistics',q:'Range of: 12, 7, 19, 3, 15, 8',opts:['12','14','16','18'],ans:2,d:'hard'},
+    {topic:'Percentage',q:'15% of a number is 45. The number?',opts:['250','280','300','320'],ans:2,d:'hard'},
+    {topic:'Geometry',q:'Rhombus diagonals 10 cm and 6 cm. Area?',opts:['24 cm²','30 cm²','36 cm²','60 cm²'],ans:1,d:'hard'},
+    {topic:'Fractions',q:'2/3 ÷ 4/9 = ?',opts:['3/2','2/3','8/27','9/8'],ans:0,d:'hard'},
+    {topic:'Algebra',q:'4(2x − 1) = 28. x = ?',opts:['3','4','5','6'],ans:1,d:'hard'},
+    {topic:'Number',q:'Smallest number divisible by 2, 3, 4 and 5?',opts:['30','40','60','120'],ans:2,d:'hard'},
+    {topic:'Statistics',q:'Mean of 5 numbers is 12. Remove one → mean=11. Removed number?',opts:['14','15','16','17'],ans:2,d:'hard'},
+    {topic:'Geometry',q:'Sector: angle 90°, radius 6 cm. Area? (π≈3.14)',opts:['28.26 cm²','29.26 cm²','30.26 cm²','31.26 cm²'],ans:0,d:'hard'},
   ],
   6: [
-    { topic:'Algebra', q:'If 2(x + 3) = 14, then x = ?', opts:['3','4','5','6'], ans:1 },
-    { topic:'Ratio', q:'In the ratio 3:4, what fraction represents 3?', opts:['3/7','4/7','3/4','4/3'], ans:0 },
-    { topic:'Percentage', q:'A $80 item is discounted by 25%. What is the sale price?', opts:['$55','$60','$65','$70'], ans:1 },
-    { topic:'Measurement', q:'What is the formula for the area of a circle (r = radius)?', opts:['2πr','πr²','πd','2πd'], ans:1 },
-    { topic:'Fractions', q:'(-2/3) + (5/6) = ?', opts:['-1/6','1/6','1/2','2/3'], ans:1 },
-    { topic:'Algebra', q:'If 4x - 7 = 13, then x = ?', opts:['4','5','6','7'], ans:1 },
-    { topic:'Statistics', q:'What is the median of: 2, 4, 4, 6, 9?', opts:['2','4','5','6'], ans:1 },
-    { topic:'Ratio', q:'If 2:5 = 6:x, then x = ?', opts:['12','13','14','15'], ans:3 },
-    { topic:'Measurement', q:'What is the volume of a rectangular prism with length 4, width 3, height 5?', opts:['48','56','60','72'], ans:2 },
-    { topic:'Percentage', q:'A price drops from $150 to $120. What is the percentage decrease?', opts:['15%','20%','25%','30%'], ans:1 },
-    { topic:'Algebra', q:'If 3x + 2y = 12 and y = 3, then x = ?', opts:['1','2','3','4'], ans:1 },
-    { topic:'Geometry', q:'What is the sum of interior angles of a quadrilateral?', opts:['180°','270°','360°','540°'], ans:2 },
-    { topic:'Statistics', q:'What is the mode of: 3, 5, 7, 7, 8?', opts:['3','5','7','8'], ans:2 },
-    { topic:'Ratio', q:'Divide 12 in the ratio 3:1. What is the larger part?', opts:['6','8','9','10'], ans:2 },
-    { topic:'Fractions', q:'(-3/4) × (-2/3) = ?', opts:['-1/2','1/2','3/4','1'], ans:1 },
+    // easy (15)
+    {topic:'Algebra',q:'2(x + 3) = 14. x = ?',opts:['3','4','5','6'],ans:1,d:'easy'},
+    {topic:'Ratio',q:'In ratio 3:4, fraction representing 3?',opts:['3/7','4/7','3/4','4/3'],ans:0,d:'easy'},
+    {topic:'Percentage',q:'$80 item discounted 25%. Sale price?',opts:['$55','$60','$65','$70'],ans:1,d:'easy'},
+    {topic:'Fractions',q:'(−2/3) + (5/6) = ?',opts:['−1/6','1/6','1/2','2/3'],ans:1,d:'easy'},
+    {topic:'Algebra',q:'4x − 7 = 13. x = ?',opts:['4','5','6','7'],ans:1,d:'easy'},
+    {topic:'Statistics',q:'Median of: 2, 4, 4, 6, 9',opts:['2','4','5','6'],ans:1,d:'easy'},
+    {topic:'Ratio',q:'2:5 = 6:x. x = ?',opts:['12','13','14','15'],ans:3,d:'easy'},
+    {topic:'Measurement',q:'Volume of prism: 4×3×5?',opts:['48','56','60','72'],ans:2,d:'easy'},
+    {topic:'Percentage',q:'$150 drops to $120. % decrease?',opts:['15%','20%','25%','30%'],ans:1,d:'easy'},
+    {topic:'Algebra',q:'3x + 2y = 12, y = 3. x = ?',opts:['1','2','3','4'],ans:1,d:'easy'},
+    {topic:'Geometry',q:'Sum of interior angles of a quadrilateral?',opts:['180°','270°','360°','540°'],ans:2,d:'easy'},
+    {topic:'Statistics',q:'Mode of: 3, 5, 7, 7, 8',opts:['3','5','7','8'],ans:2,d:'easy'},
+    {topic:'Ratio',q:'Divide 12 in ratio 3:1. Larger part?',opts:['6','8','9','10'],ans:2,d:'easy'},
+    {topic:'Fractions',q:'(−3/4) × (−2/3) = ?',opts:['−1/2','1/2','3/4','1'],ans:1,d:'easy'},
+    {topic:'Measurement',q:'Area of circle, radius 5 cm. (π≈3.14)',opts:['62.8 cm²','70.5 cm²','78.5 cm²','86.4 cm²'],ans:2,d:'easy'},
+    // medium (15)
+    {topic:'Algebra',q:'3x + 4 = 2x + 11. x = ?',opts:['5','6','7','8'],ans:2,d:'medium'},
+    {topic:'Ratio',q:'Ratio of 45 min to 3 hours?',opts:['1:3','1:4','3:12','15:60'],ans:1,d:'medium'},
+    {topic:'Statistics',q:'Mean of: 8, 12, 6, 14, 10 = ?',opts:['8','9','10','12'],ans:2,d:'medium'},
+    {topic:'Percentage',q:'Increase $45 by 20%.',opts:['$50','$52','$54','$58'],ans:2,d:'medium'},
+    {topic:'Geometry',q:'Sum of interior angles of a pentagon?',opts:['360°','450°','540°','630°'],ans:2,d:'medium'},
+    {topic:'Algebra',q:'y = 3x − 4, x = 5. y = ?',opts:['9','10','11','12'],ans:2,d:'medium'},
+    {topic:'Fractions',q:'(2/3)² = ?',opts:['2/3','4/6','4/9','4/3'],ans:2,d:'medium'},
+    {topic:'Statistics',q:'Range of: 15, 3, 8, 22, 11',opts:['17','18','19','20'],ans:2,d:'medium'},
+    {topic:'Ratio',q:'Map scale 1:50000. 3 cm on map = ? km',opts:['1 km','1.5 km','2 km','2.5 km'],ans:1,d:'medium'},
+    {topic:'Algebra',q:'2x + 3 = 4x − 5. x = ?',opts:['3','4','5','6'],ans:1,d:'medium'},
+    {topic:'Percentage',q:'After 10% GST, price is $88. Original price?',opts:['$78','$80','$82','$84'],ans:1,d:'medium'},
+    {topic:'Geometry',q:'Circumference of circle, diameter 20 cm? (π≈3.14)',opts:['56.2 cm','62.8 cm','68.4 cm','72.6 cm'],ans:1,d:'medium'},
+    {topic:'Statistics',q:'Median of: 4, 7, 11, 15, 3, 9',opts:['8','9','10','11'],ans:0,d:'medium'},
+    {topic:'Number',q:'0.001 × 1000 = ?',opts:['0.1','1','10','100'],ans:1,d:'medium'},
+    {topic:'Geometry',q:'Interior angle of regular hexagon?',opts:['100°','110°','120°','130°'],ans:2,d:'medium'},
+    // hard (10)
+    {topic:'Algebra',q:'3(x+2) = 2(x+5). x = ?',opts:['2','3','4','5'],ans:2,d:'hard'},
+    {topic:'Statistics',q:'Data: 2,4,6,8,10. Variance = ?',opts:['6','7','8','9'],ans:2,d:'hard'},
+    {topic:'Percentage',q:'Population grows from 2000 to 2500. % increase?',opts:['20%','22%','25%','30%'],ans:2,d:'hard'},
+    {topic:'Geometry',q:'Sector: angle 120°, radius 9 cm. Arc length? (π≈3.14)',opts:['18.84 cm','19.84 cm','20.84 cm','21.84 cm'],ans:0,d:'hard'},
+    {topic:'Algebra',q:'x/3 + x/4 = 7. x = ?',opts:['10','11','12','13'],ans:2,d:'hard'},
+    {topic:'Ratio',q:'A:B=3:5, B:C=4:7. A:C = ?',opts:['12:35','3:7','15:28','12:28'],ans:0,d:'hard'},
+    {topic:'Number',q:'How many primes between 20 and 40?',opts:['3','4','5','6'],ans:1,d:'hard'},
+    {topic:'Fractions',q:'(3/4 × 8/9) ÷ (2/3) = ?',opts:['1','1/2','2','3'],ans:0,d:'hard'},
+    {topic:'Measurement',q:'Cone: radius 6, height 8. Volume? (π≈3.14)',opts:['301.44 cm³','311.44 cm³','321.44 cm³','331.44 cm³'],ans:0,d:'hard'},
+    {topic:'Algebra',q:'Sum of 3 consecutive integers is 36. Smallest?',opts:['9','11','12','13'],ans:1,d:'hard'},
   ],
   7: [
-    { topic:'Algebra', q:'If x² - 9 = 0, then x = ?', opts:['±2','±3','±4','±5'], ans:1 },
-    { topic:'Indices', q:'2³ × 2⁴ = ?', opts:['2⁶','2⁷','2⁸','2¹²'], ans:1 },
-    { topic:'Geometry', q:'In a right triangle, hypotenuse = 13 and one side = 5. What is the other side?', opts:['10','11','12','13'], ans:2 },
-    { topic:'Algebra', q:'If 3(2x - 1) = 15, then x = ?', opts:['2','3','4','5'], ans:1 },
-    { topic:'Percentage', q:'Simple interest on $500 at 10% p.a. for 2 years is?', opts:['$50','$75','$100','$110'], ans:2 },
-    { topic:'Statistics', q:'What is the mean of: 6, 8, 5, 9, 7?', opts:['6','7','8','9'], ans:1 },
-    { topic:'Indices', q:'5⁰ = ?', opts:['0','1','5','25'], ans:1 },
-    { topic:'Algebra', q:'If y = 2x + 3 and x = 4, then y = ?', opts:['9','10','11','12'], ans:2 },
-    { topic:'Geometry', q:'What is each interior angle of an equilateral triangle?', opts:['45°','60°','70°','90°'], ans:1 },
-    { topic:'Number', q:'√144 = ?', opts:['11','12','13','14'], ans:1 },
-    { topic:'Probability', q:'What is the probability of getting heads when tossing a coin?', opts:['1/4','1/3','1/2','2/3'], ans:2 },
-    { topic:'Algebra', q:'If 2x + y = 7 and x = 2, then y = ?', opts:['1','2','3','4'], ans:2 },
-    { topic:'Indices', q:'3⁻² = ?', opts:['1/9','1/6','1/3','9'], ans:0 },
-    { topic:'Geometry', q:'The value of π (pi) is approximately?', opts:['2.14','3.14','4.14','5.14'], ans:1 },
-    { topic:'Statistics', q:'What is the variance of: 1, 3, 5, 7, 9?', opts:['4','6','8','10'], ans:2 },
+    // easy (15)
+    {topic:'Algebra',q:'x² − 9 = 0. x = ?',opts:['±2','±3','±4','±5'],ans:1,d:'easy'},
+    {topic:'Indices',q:'2³ × 2⁴ = ?',opts:['2⁶','2⁷','2⁸','2¹²'],ans:1,d:'easy'},
+    {topic:'Algebra',q:'3(2x − 1) = 15. x = ?',opts:['2','3','4','5'],ans:1,d:'easy'},
+    {topic:'Statistics',q:'Mean of: 6, 8, 5, 9, 7 = ?',opts:['6','7','8','9'],ans:1,d:'easy'},
+    {topic:'Indices',q:'5⁰ = ?',opts:['0','1','5','25'],ans:1,d:'easy'},
+    {topic:'Algebra',q:'y = 2x + 3, x = 4. y = ?',opts:['9','10','11','12'],ans:2,d:'easy'},
+    {topic:'Geometry',q:'Each interior angle of equilateral triangle?',opts:['45°','60°','70°','90°'],ans:1,d:'easy'},
+    {topic:'Number',q:'√144 = ?',opts:['11','12','13','14'],ans:1,d:'easy'},
+    {topic:'Probability',q:'P(heads when tossing a coin)?',opts:['1/4','1/3','1/2','2/3'],ans:2,d:'easy'},
+    {topic:'Algebra',q:'2x + y = 7, x = 2. y = ?',opts:['1','2','3','4'],ans:2,d:'easy'},
+    {topic:'Indices',q:'3⁻² = ?',opts:['1/9','1/6','1/3','9'],ans:0,d:'easy'},
+    {topic:'Geometry',q:'Value of π approximately?',opts:['2.14','3.14','4.14','5.14'],ans:1,d:'easy'},
+    {topic:'Percentage',q:'Simple interest: $500, 10% p.a., 2 years?',opts:['$50','$75','$100','$110'],ans:2,d:'easy'},
+    {topic:'Algebra',q:'Expand: 3(x + 5) = ?',opts:['3x+5','3x+8','3x+15','3x+53'],ans:2,d:'easy'},
+    {topic:'Number',q:'Which is largest? √16, √25, √9, √36',opts:['√16','√25','√9','√36'],ans:3,d:'easy'},
+    // medium (15)
+    {topic:'Algebra',q:'Factorise: x² − 5x + 6',opts:['(x−2)(x−3)','(x+2)(x+3)','(x−1)(x−6)','(x+1)(x−6)'],ans:0,d:'medium'},
+    {topic:'Indices',q:'(3²)³ = ?',opts:['3⁵','3⁶','3⁸','3⁹'],ans:1,d:'medium'},
+    {topic:'Geometry',q:'Hypotenuse=13, one side=5. Other side?',opts:['10','11','12','13'],ans:2,d:'medium'},
+    {topic:'Statistics',q:'Variance of: 1, 3, 5, 7, 9',opts:['4','6','8','10'],ans:2,d:'medium'},
+    {topic:'Probability',q:'P(red card from 52-card deck)?',opts:['1/4','1/3','1/2','2/3'],ans:2,d:'medium'},
+    {topic:'Algebra',q:'x/3 + 5 = 8. x = ?',opts:['6','7','8','9'],ans:3,d:'medium'},
+    {topic:'Geometry',q:'Area of trapezium: parallel sides 8 and 12, height 5?',opts:['40 cm²','45 cm²','50 cm²','55 cm²'],ans:2,d:'medium'},
+    {topic:'Indices',q:'4² × 4³ ÷ 4⁴ = ?',opts:['4','4²','4³','4⁴'],ans:0,d:'medium'},
+    {topic:'Statistics',q:'Median of: 3, 7, 2, 9, 5, 1',opts:['3','4','5','6'],ans:1,d:'medium'},
+    {topic:'Algebra',q:'Simplify: 5x − 2(x − 3)',opts:['3x−6','3x+6','7x−6','7x+6'],ans:1,d:'medium'},
+    {topic:'Probability',q:'P(sum of 7 with two dice)?',opts:['1/9','1/8','1/7','1/6'],ans:3,d:'medium'},
+    {topic:'Geometry',q:'Circle area = 49π cm². Radius?',opts:['5 cm','6 cm','7 cm','8 cm'],ans:2,d:'medium'},
+    {topic:'Algebra',q:'2x + 3y = 7, x = 2. y = ?',opts:['0','1','2','3'],ans:1,d:'medium'},
+    {topic:'Number',q:'2¹⁰ = ?',opts:['512','1000','1024','2048'],ans:2,d:'medium'},
+    {topic:'Statistics',q:'5 numbers have mean 8. Total sum?',opts:['32','36','40','44'],ans:2,d:'medium'},
+    // hard (10)
+    {topic:'Algebra',q:'x² − 7x + 10 = 0. Sum of roots?',opts:['5','6','7','10'],ans:2,d:'hard'},
+    {topic:'Probability',q:'P(A)=0.4, P(B)=0.5, independent. P(A∩B)?',opts:['0.1','0.15','0.2','0.25'],ans:2,d:'hard'},
+    {topic:'Geometry',q:'Cylinder: radius 5, height 4. Volume? (π≈3.14)',opts:['314 cm³','324 cm³','334 cm³','344 cm³'],ans:0,d:'hard'},
+    {topic:'Indices',q:'Simplify: (2x³)⁴',opts:['8x⁷','16x¹²','8x¹²','16x⁷'],ans:1,d:'hard'},
+    {topic:'Algebra',q:'Product of 2 consecutive odd integers is 143. Smaller?',opts:['9','11','13','15'],ans:1,d:'hard'},
+    {topic:'Statistics',q:'Mean 20, SD 4. Value 28 is how many SDs above mean?',opts:['1','1.5','2','2.5'],ans:2,d:'hard'},
+    {topic:'Geometry',q:'Interior angle of regular hexagon?',opts:['100°','110°','120°','130°'],ans:2,d:'hard'},
+    {topic:'Probability',q:'Bag: 3 red, 5 blue, 2 green. P(not red)?',opts:['3/10','5/10','7/10','9/10'],ans:2,d:'hard'},
+    {topic:'Algebra',q:'Simplify: (x²−4)/(x+2)',opts:['x−2','x+2','x²−2','2x−4'],ans:0,d:'hard'},
+    {topic:'Number',q:'log₁₀(10000) = ?',opts:['2','3','4','5'],ans:2,d:'hard'},
   ],
   8: [
-    { topic:'Algebra', q:'What are the roots of x² + 5x + 6 = 0?', opts:['x=−2, x=−3','x=2, x=3','x=−1, x=−6','x=1, x=6'], ans:0 },
-    { topic:'Indices', q:'(2³)² = ?', opts:['2⁵','2⁶','2⁸','2⁹'], ans:1 },
-    { topic:'Geometry', q:'A line has gradient 2 and y-intercept −3. Its equation is?', opts:['y=2x+3','y=2x−3','y=−2x+3','y=3x−2'], ans:1 },
-    { topic:'Probability', q:'What is the probability of drawing an Ace from a 52-card deck?', opts:['1/13','1/12','1/11','1/10'], ans:0 },
-    { topic:'Algebra', q:'If 2x² - 8 = 0, then x = ?', opts:['±1','±2','±3','±4'], ans:1 },
-    { topic:'Statistics', q:'In a normal distribution with mean 50 and SD 10, approx. what % falls between 40 and 60?', opts:['50%','60%','68%','75%'], ans:2 },
-    { topic:'Geometry', q:'If the area of a circle is 36π cm², what is the radius?', opts:['4 cm','5 cm','6 cm','7 cm'], ans:2 },
-    { topic:'Indices', q:'√(4x²) = ?', opts:['2x','4x','x²','2x²'], ans:0 },
-    { topic:'Algebra', q:'Solve: x + y = 5, x − y = 1. Find x.', opts:['2','3','4','5'], ans:1 },
-    { topic:'Probability', q:'What is the probability of rolling a sum of 7 with two dice?', opts:['1/9','1/8','1/7','1/6'], ans:3 },
-    { topic:'Geometry', q:'A triangle has sides 3 and 4 with included angle 90°. What is its area?', opts:['4 cm²','5 cm²','6 cm²','7 cm²'], ans:2 },
-    { topic:'Algebra', q:'(x + 3)(x − 3) = ?', opts:['x²−6','x²−9','x²+9','x²+6x−9'], ans:1 },
-    { topic:'Statistics', q:'What is the mode of: 5, 8, 8, 6, 9, 8, 7?', opts:['6','7','8','9'], ans:2 },
-    { topic:'Indices', q:'log₂(8) = ?', opts:['2','3','4','8'], ans:1 },
-    { topic:'Geometry', q:'Area of a parallelogram = base × ?', opts:['base','height','diagonal','hypotenuse'], ans:1 },
+    // easy (15)
+    {topic:'Algebra',q:'Roots of x² + 5x + 6 = 0?',opts:['x=−2, x=−3','x=2, x=3','x=−1, x=−6','x=1, x=6'],ans:0,d:'easy'},
+    {topic:'Indices',q:'(2³)² = ?',opts:['2⁵','2⁶','2⁸','2⁹'],ans:1,d:'easy'},
+    {topic:'Geometry',q:'Line: gradient 2, y-intercept −3. Equation?',opts:['y=2x+3','y=2x−3','y=−2x+3','y=3x−2'],ans:1,d:'easy'},
+    {topic:'Probability',q:'P(Ace from 52-card deck)?',opts:['1/13','1/12','1/11','1/10'],ans:0,d:'easy'},
+    {topic:'Algebra',q:'2x² − 8 = 0. x = ?',opts:['±1','±2','±3','±4'],ans:1,d:'easy'},
+    {topic:'Geometry',q:'Circle area = 36π cm². Radius?',opts:['4 cm','5 cm','6 cm','7 cm'],ans:2,d:'easy'},
+    {topic:'Indices',q:'√(4x²) = ?',opts:['2x','4x','x²','2x²'],ans:0,d:'easy'},
+    {topic:'Algebra',q:'x+y=5, x−y=1. x = ?',opts:['2','3','4','5'],ans:1,d:'easy'},
+    {topic:'Probability',q:'P(sum=7 with two dice)?',opts:['1/9','1/8','1/7','1/6'],ans:3,d:'easy'},
+    {topic:'Geometry',q:'Triangle: sides 3 and 4, angle 90°. Area?',opts:['4 cm²','5 cm²','6 cm²','7 cm²'],ans:2,d:'easy'},
+    {topic:'Algebra',q:'(x+3)(x−3) = ?',opts:['x²−6','x²−9','x²+9','x²+6x−9'],ans:1,d:'easy'},
+    {topic:'Statistics',q:'Mode of: 5, 8, 8, 6, 9, 8, 7',opts:['6','7','8','9'],ans:2,d:'easy'},
+    {topic:'Indices',q:'log₂(8) = ?',opts:['2','3','4','8'],ans:1,d:'easy'},
+    {topic:'Geometry',q:'Area of parallelogram = base × ?',opts:['base','height','diagonal','hypotenuse'],ans:1,d:'easy'},
+    {topic:'Algebra',q:'Expand: (x + 4)² = ?',opts:['x²+8x+16','x²+4x+16','x²+8x+8','x²+16'],ans:0,d:'easy'},
+    // medium (15)
+    {topic:'Algebra',q:'x² + 2x − 15 = 0. Roots?',opts:['x=3, x=−5','x=−3, x=5','x=5, x=−3','x=3, x=5'],ans:0,d:'medium'},
+    {topic:'Geometry',q:'Co-interior angles (parallel lines) sum to?',opts:['90°','180°','270°','360°'],ans:1,d:'medium'},
+    {topic:'Statistics',q:'Normal distribution: mean 50, SD 10. % between 40 and 60?',opts:['50%','60%','68%','75%'],ans:2,d:'medium'},
+    {topic:'Probability',q:'3 coins tossed. P(exactly 2 heads)?',opts:['1/4','3/8','1/2','5/8'],ans:1,d:'medium'},
+    {topic:'Algebra',q:'Gradient through (2,3) and (6,11)?',opts:['1','1.5','2','2.5'],ans:2,d:'medium'},
+    {topic:'Indices',q:'x⁵ ÷ x² = ?',opts:['x²','x³','x⁵','x⁷'],ans:1,d:'medium'},
+    {topic:'Geometry',q:'Volume of cone: radius 6, height 10. (π≈3.14)',opts:['376.8 cm³','386.8 cm³','396.8 cm³','406.8 cm³'],ans:0,d:'medium'},
+    {topic:'Statistics',q:'Data: 10,14,18,22,26. Mean and median?',opts:['Both 18','Mean=17, Median=18','Mean=18, Median=17','Mean=19, Median=18'],ans:0,d:'medium'},
+    {topic:'Algebra',q:'3x − 4 = 2x + 7. x = ?',opts:['9','10','11','12'],ans:2,d:'medium'},
+    {topic:'Probability',q:'P(A)=0.6, P(B|A)=0.5. P(A∩B) = ?',opts:['0.2','0.3','0.4','0.5'],ans:1,d:'medium'},
+    {topic:'Geometry',q:'Right triangle legs 5 and 12. Hypotenuse?',opts:['11 cm','12 cm','13 cm','14 cm'],ans:2,d:'medium'},
+    {topic:'Algebra',q:'x+y=7, 2x−y=5. x = ?',opts:['3','4','5','6'],ans:1,d:'medium'},
+    {topic:'Indices',q:'8^(2/3) = ?',opts:['2','3','4','6'],ans:2,d:'medium'},
+    {topic:'Statistics',q:'20 values: median between which positions?',opts:['9th & 10th','10th & 11th','11th & 12th','9th & 11th'],ans:1,d:'medium'},
+    {topic:'Geometry',q:'Exterior angle of regular octagon?',opts:['30°','40°','45°','50°'],ans:2,d:'medium'},
+    // hard (10)
+    {topic:'Algebra',q:'Discriminant of 2x² − 5x + 3 = 0?',opts:['1','4','9','25'],ans:0,d:'hard'},
+    {topic:'Probability',q:'P(A∪B)=0.7, P(A)=0.4, P(B)=0.5. P(A∩B)?',opts:['0.1','0.2','0.3','0.4'],ans:1,d:'hard'},
+    {topic:'Geometry',q:'x² + y² = 25. Radius?',opts:['3','4','5','6'],ans:2,d:'hard'},
+    {topic:'Algebra',q:'x² − kx + 9 = 0 has equal roots. k = ?',opts:['3','6','9','12'],ans:1,d:'hard'},
+    {topic:'Indices',q:'2^x = 32. x = ?',opts:['3','4','5','6'],ans:2,d:'hard'},
+    {topic:'Statistics',q:'r = −0.9 indicates?',opts:['Strong positive','Weak positive','Weak negative','Strong negative'],ans:3,d:'hard'},
+    {topic:'Geometry',q:'Sector: angle 72°, radius 10. Area? (π≈3.14)',opts:['62.8 cm²','65.8 cm²','68.8 cm²','72 cm²'],ans:0,d:'hard'},
+    {topic:'Algebra',q:'Roots of x²−6x+8=0. α²+β² = ?',opts:['18','20','22','24'],ans:1,d:'hard'},
+    {topic:'Probability',q:'5 students arranged in a line. How many ways?',opts:['60','100','120','150'],ans:2,d:'hard'},
+    {topic:'Indices',q:'Simplify: (27x⁶)^(1/3)',opts:['3x²','3x³','9x²','9x³'],ans:0,d:'hard'},
   ],
   9: [
-    { topic:'Functions', q:'If f(x) = 3x − 2, find f(4).', opts:['8','9','10','11'], ans:2 },
-    { topic:'Trigonometry', q:'sin(30°) = ?', opts:['1/4','1/3','1/2','√3/2'], ans:2 },
-    { topic:'Algebra', q:'What is the sum of the roots of x² − 7x + 12 = 0?', opts:['5','6','7','8'], ans:2 },
-    { topic:'Statistics', q:'For 30 data values, the median is the average of which positions?', opts:['14th & 15th','15th & 16th','14th & 16th','13th & 14th'], ans:1 },
-    { topic:'Indices', q:'2^(3/2) = ?', opts:['√6','2√2','3√2','4'], ans:1 },
-    { topic:'Functions', q:'What is the axis of symmetry of y = x²?', opts:['x=1','x=0','y=0','y=1'], ans:1 },
-    { topic:'Trigonometry', q:'cos(60°) = ?', opts:['1/4','1/3','1/2','√3/2'], ans:2 },
-    { topic:'Algebra', q:'(x + 2)² = x² + 4x + ?', opts:['2','4','6','8'], ans:1 },
-    { topic:'Probability', q:'P(A)=0.3, P(B)=0.5, P(A∩B)=0.1. Find P(A∪B).', opts:['0.6','0.7','0.8','0.9'], ans:1 },
-    { topic:'Functions', q:'What is the gradient of the line y = −2x + 5?', opts:['−5','−2','2','5'], ans:1 },
-    { topic:'Trigonometry', q:'tan(45°) = ?', opts:['0','1/2','1','√3'], ans:2 },
-    { topic:'Indices', q:'log(100) = ?', opts:['1','2','10','100'], ans:1 },
-    { topic:'Algebra', q:'What is the discriminant of ax² + bx + c = 0?', opts:['b²−4ac','b²+4ac','4ac−b²','a²−4bc'], ans:0 },
-    { topic:'Statistics', q:'What does a correlation coefficient of r = −0.9 indicate?', opts:['Strong positive','Weak positive','Weak negative','Strong negative'], ans:3 },
-    { topic:'Functions', q:'What are the x-intercepts of f(x) = x² − 4?', opts:['x=±1','x=±2','x=±3','x=±4'], ans:1 },
+    // easy (15)
+    {topic:'Functions',q:'f(x) = 3x − 2. f(4) = ?',opts:['8','9','10','11'],ans:2,d:'easy'},
+    {topic:'Trigonometry',q:'sin(30°) = ?',opts:['1/4','1/3','1/2','√3/2'],ans:2,d:'easy'},
+    {topic:'Algebra',q:'Sum of roots of x² − 7x + 12 = 0?',opts:['5','6','7','8'],ans:2,d:'easy'},
+    {topic:'Indices',q:'2^(3/2) = ?',opts:['√6','2√2','3√2','4'],ans:1,d:'easy'},
+    {topic:'Functions',q:'Axis of symmetry of y = x²?',opts:['x=1','x=0','y=0','y=1'],ans:1,d:'easy'},
+    {topic:'Trigonometry',q:'cos(60°) = ?',opts:['1/4','1/3','1/2','√3/2'],ans:2,d:'easy'},
+    {topic:'Algebra',q:'(x + 2)² = x² + 4x + ?',opts:['2','4','6','8'],ans:1,d:'easy'},
+    {topic:'Probability',q:'P(A)=0.3, P(B)=0.5, P(A∩B)=0.1. P(A∪B)?',opts:['0.6','0.7','0.8','0.9'],ans:1,d:'easy'},
+    {topic:'Functions',q:'Gradient of y = −2x + 5?',opts:['−5','−2','2','5'],ans:1,d:'easy'},
+    {topic:'Trigonometry',q:'tan(45°) = ?',opts:['0','1/2','1','√3'],ans:2,d:'easy'},
+    {topic:'Indices',q:'log₁₀(100) = ?',opts:['1','2','10','100'],ans:1,d:'easy'},
+    {topic:'Algebra',q:'Discriminant of ax²+bx+c=0?',opts:['b²−4ac','b²+4ac','4ac−b²','a²−4bc'],ans:0,d:'easy'},
+    {topic:'Statistics',q:'r = −0.9 indicates?',opts:['Strong positive','Weak positive','Weak negative','Strong negative'],ans:3,d:'easy'},
+    {topic:'Functions',q:'x-intercepts of f(x) = x² − 4?',opts:['x=±1','x=±2','x=±3','x=±4'],ans:1,d:'easy'},
+    {topic:'Statistics',q:'30 values: median between which positions?',opts:['14th & 15th','15th & 16th','14th & 16th','13th & 14th'],ans:1,d:'easy'},
+    // medium (15)
+    {topic:'Trigonometry',q:'Right triangle: opposite=6, hypotenuse=10. sin(θ)?',opts:['0.5','0.6','0.7','0.8'],ans:1,d:'medium'},
+    {topic:'Functions',q:'Vertex of y = x² − 6x + 11?',opts:['(2,3)','(3,2)','(3,3)','(2,5)'],ans:1,d:'medium'},
+    {topic:'Algebra',q:'x² − 5x − 14 = 0. Roots?',opts:['x=7, x=−2','x=−7, x=2','x=7, x=2','x=−7, x=−2'],ans:0,d:'medium'},
+    {topic:'Indices',q:'Simplify: (2a³b²)³',opts:['6a⁶b⁵','8a⁶b⁵','6a⁹b⁶','8a⁹b⁶'],ans:3,d:'medium'},
+    {topic:'Statistics',q:'5 values in 0-10, 10 in 10-20, 3 in 20-30. Median class?',opts:['0-10','10-20','20-30','Cannot determine'],ans:1,d:'medium'},
+    {topic:'Trigonometry',q:'Area of triangle: sides 8,6, included angle 30°?',opts:['12 cm²','16 cm²','20 cm²','24 cm²'],ans:0,d:'medium'},
+    {topic:'Functions',q:'Inverse of f(x) = 2x + 6?',opts:['(x−6)/2','(x+6)/2','2x−6','x/2−3'],ans:0,d:'medium'},
+    {topic:'Probability',q:'P(A)=0.5, P(B)=0.4, independent. P(A∩B)?',opts:['0.1','0.15','0.2','0.25'],ans:2,d:'medium'},
+    {topic:'Algebra',q:'One root of x²+px+12=0 is 3. p = ?',opts:['−5','−7','−8','−9'],ans:1,d:'medium'},
+    {topic:'Indices',q:'log₂(32) + log₂(4) = ?',opts:['6','7','8','9'],ans:1,d:'medium'},
+    {topic:'Trigonometry',q:'sin²(θ) + cos²(θ) = ?',opts:['0','0.5','1','2'],ans:2,d:'medium'},
+    {topic:'Statistics',q:'Mean 50, SD 8. Most values (68% rule) lie between?',opts:['34 and 58','42 and 58','42 and 66','34 and 66'],ans:1,d:'medium'},
+    {topic:'Functions',q:'Domain of f(x) = √(x − 3)?',opts:['x > 3','x ≥ 3','x ≥ 0','All real'],ans:1,d:'medium'},
+    {topic:'Algebra',q:'|x − 3| = 7. x = ?',opts:['x=4 or x=−10','x=10 or x=−4','x=10 or x=4','x=−10 or x=−4'],ans:1,d:'medium'},
+    {topic:'Number',q:'5! (5 factorial) = ?',opts:['25','60','120','240'],ans:2,d:'medium'},
+    // hard (10)
+    {topic:'Trigonometry',q:'sin(A+B) = ?',opts:['sinA+sinB','sinA·cosB+cosA·sinB','sinA·cosB−cosA·sinB','cosA·cosB'],ans:1,d:'hard'},
+    {topic:'Functions',q:'f(x) = x²−4x+3. Where is f(x) < 0?',opts:['x < 1','1 < x < 3','x > 3','x < 1 or x > 3'],ans:1,d:'hard'},
+    {topic:'Algebra',q:'4^x = 8. x = ?',opts:['3/2','3/4','4/3','2/3'],ans:0,d:'hard'},
+    {topic:'Statistics',q:'B(n=10, p=0.4). Mean = ?',opts:['3','4','5','6'],ans:1,d:'hard'},
+    {topic:'Trigonometry',q:'cos(2θ) = ?',opts:['2cosθ','cos²θ−sin²θ','2sinθcosθ','sin²θ'],ans:1,d:'hard'},
+    {topic:'Indices',q:'log₃(x) + log₃(x−2) = 1. x = ?',opts:['1','2','3','4'],ans:2,d:'hard'},
+    {topic:'Functions',q:'f(x) = x³ − 3x. How many turning points?',opts:['0','1','2','3'],ans:2,d:'hard'},
+    {topic:'Probability',q:'Choose committee of 3 from 10 people. How many ways?',opts:['60','100','120','240'],ans:2,d:'hard'},
+    {topic:'Algebra',q:'Geometric series: first=3, ratio=2, 5 terms. Sum?',opts:['87','90','93','96'],ans:2,d:'hard'},
+    {topic:'Statistics',q:'95% confidence interval. z-value = ?',opts:['1.645','1.96','2.326','2.576'],ans:1,d:'hard'},
   ],
   10: [
-    { topic:'Calculus', q:'If f(x) = 3x², then f\'(x) = ?', opts:['3x','6x','3x²','6x²'], ans:1 },
-    { topic:'Trigonometry', q:'sin²θ + cos²θ = ?', opts:['0','1/2','1','2'], ans:2 },
-    { topic:'Algebra', q:'What are the roots of 2x² + 5x − 3 = 0?', opts:['x=1/2, x=−3','x=−1/2, x=3','x=1/2, x=3','x=−1/2, x=−3'], ans:0 },
-    { topic:'Functions', q:'What is the y-intercept of y = 2^x?', opts:['0','1','2','4'], ans:1 },
-    { topic:'Statistics', q:'As sample size increases, the standard error...?', opts:['increases','decreases','stays the same','becomes infinite'], ans:1 },
-    { topic:'Calculus', q:'∫2x dx = ?', opts:['x','x²','x² + C','2x + C'], ans:2 },
-    { topic:'Trigonometry', q:'cos(2θ) = ?', opts:['2cosθ','cos²θ − sin²θ','2sinθcosθ','sin²θ − cos²θ'], ans:1 },
-    { topic:'Algebra', q:'What is the inverse function of y = log₂x?', opts:['y = log_x(2)','y = 2x','y = 2^x','y = x²'], ans:2 },
-    { topic:'Functions', q:'What is the minimum value of f(x) = x² − 6x + 9?', opts:['0','3','6','9'], ans:0 },
-    { topic:'Statistics', q:'P(Z < 1.96) ≈ ? (Standard Normal Distribution)', opts:['0.025','0.05','0.95','0.975'], ans:3 },
-    { topic:'Calculus', q:'What is the derivative of f(x) = sin(x)?', opts:['−sin(x)','−cos(x)','cos(x)','tan(x)'], ans:2 },
-    { topic:'Trigonometry', q:'In a 30-60-90 triangle, what is the ratio of hypotenuse to shortest side?', opts:['1:1','1:2','2:1','√3:1'], ans:2 },
-    { topic:'Algebra', q:'log₃(27) = ?', opts:['2','3','9','27'], ans:1 },
-    { topic:'Calculus', q:'What is the derivative of y = 5?', opts:['0','1','5','x'], ans:0 },
-    { topic:'Functions', q:'What is the vertex of y = |x − 3|?', opts:['(0,3)','(3,0)','(−3,0)','(0,−3)'], ans:1 },
-  ],
-  11: [
-    { topic:'Calculus', q:'For f(x) = x³ − 3x² + 2, the stationary points occur at x = ?', opts:['x=0, x=1','x=0, x=2','x=1, x=2','x=2, x=3'], ans:1 },
-    { topic:'Probability', q:'What is the mean of Binomial Distribution B(10, 0.5)?', opts:['4','5','6','7'], ans:1 },
-    { topic:'Trigonometry', q:'sin(A + B) = ?', opts:['sinA + sinB','sinA·cosB + cosA·sinB','sinA·cosB − cosA·sinB','cosA·cosB − sinA·sinB'], ans:1 },
-    { topic:'Calculus', q:'∫₀² x² dx = ?', opts:['4/3','8/3','4','8'], ans:1 },
-    { topic:'Algebra', q:'What is the real part of (2 + 3i)(1 − i)?', opts:['2','3','5','6'], ans:2 },
-    { topic:'Statistics', q:'For a 95% confidence interval, what is the critical z-value?', opts:['1.645','1.96','2.326','2.576'], ans:1 },
-    { topic:'Calculus', q:'What is the derivative of y = e^x?', opts:['e^(x−1)','xe^(x−1)','e^x','xe^x'], ans:2 },
-    { topic:'Trigonometry', q:'cos(A − B) = ?', opts:['cosA − cosB','cosA·cosB − sinA·sinB','cosA·cosB + sinA·sinB','sinA·sinB'], ans:2 },
-    { topic:'Algebra', q:'What is the solution to |2x − 3| < 5?', opts:['−1 < x < 4','x < −1 or x > 4','−2 < x < 4','x < −2 or x > 4'], ans:0 },
-    { topic:'Probability', q:'For N(μ,σ²), what is P(μ−2σ < X < μ+2σ)?', opts:['68%','90%','95%','99%'], ans:2 },
-    { topic:'Calculus', q:'What is the derivative of y = ln(x)?', opts:['ln(x)','1/x','x·ln(x)','e^x'], ans:1 },
-    { topic:'Algebra', q:'An arithmetic sequence has first term 3 and common difference 4. What is the 10th term?', opts:['35','39','43','47'], ans:2 },
-    { topic:'Statistics', q:'A correlation coefficient close to 0 indicates?', opts:['Strong positive','Strong negative','No correlation','Perfect correlation'], ans:2 },
-    { topic:'Calculus', q:'If f\'(x) = 3x² − 6x, when does f\'(x) = 0?', opts:['x=0 only','x=2 only','x=0, x=2','x=0, x=−2'], ans:2 },
-    { topic:'Trigonometry', q:'cosec(θ) = ?', opts:['1/sinθ','1/cosθ','sinθ/cosθ','cosθ/sinθ'], ans:0 },
-  ],
-  12: [
-    { topic:'Calculus', q:'lim(x→0) sin(x)/x = ?', opts:['0','1','∞','undefined'], ans:1 },
-    { topic:'Statistics', q:'Rejecting a true null hypothesis is a?', opts:['Type I error','Type II error','Sampling error','Measurement error'], ans:0 },
-    { topic:'Algebra', q:'A geometric sequence has first term 2 and common ratio 3. Find S₄.', opts:['78','80','82','84'], ans:1 },
-    { topic:'Calculus', q:'∬ xy dA, 0≤x≤1, 0≤y≤1 = ?', opts:['1/8','1/4','1/2','1'], ans:1 },
-    { topic:'Probability', q:'The Poisson distribution formula P(X=k) = ?', opts:['e^(−λ)λ^k/k!','λ^k/k!','e^λλ^k/k!','e^(−λ)/k!'], ans:0 },
-    { topic:'Calculus', q:'What is the derivative of y = x·ln(x)?', opts:['ln(x)','1 + ln(x)','1/x + ln(x)','x/ln(x)'], ans:1 },
-    { topic:'Algebra', q:'What is the determinant of the matrix [[1,2],[3,4]]?', opts:['−4','−2','2','4'], ans:1 },
-    { topic:'Statistics', q:'In the regression line y = a + bx, what does b represent?', opts:['y-intercept','gradient','correlation coefficient','standard error'], ans:1 },
-    { topic:'Calculus', q:'What is the derivative of f(x) = e^(2x)?', opts:['e^(2x)','2e^(2x)','2xe^(2x)','e^x'], ans:1 },
-    { topic:'Algebra', q:'e^(iπ) + 1 = ?', opts:['0','1','i','2'], ans:0 },
-    { topic:'Probability', q:'If events A and B are independent, then P(A∩B) = ?', opts:['P(A)+P(B)','P(A)×P(B)','P(A)/P(B)','P(A)−P(B)'], ans:1 },
-    { topic:'Calculus', q:'∫ 1/x dx = ?', opts:['x','1/x²','ln|x| + C','e^x + C'], ans:2 },
-    { topic:'Statistics', q:'According to the Central Limit Theorem, as n increases, the sample mean approaches?', opts:['Binomial distribution','Poisson distribution','Normal distribution','Uniform distribution'], ans:2 },
-    { topic:'Algebra', q:'What is the magnitude of vector (3, 4)?', opts:['5','6','7','8'], ans:0 },
-    { topic:'Calculus', q:'What is the derivative of y = sin²(x)?', opts:['2sin(x)','cos²(x)','sin(2x)','2cos(x)'], ans:2 },
+    // easy (15)
+    {topic:'Surds',q:'Simplify: √75',opts:['3√5','5√3','5√5','3√3'],ans:1,d:'easy'},
+    {topic:'Algebra',q:'x² − x − 6 = 0. Roots?',opts:['x=−2, x=3','x=2, x=−3','x=2, x=3','x=−2, x=−3'],ans:0,d:'easy'},
+    {topic:'Trigonometry',q:'sin(θ) = 0.5. θ = ? (0° to 90°)',opts:['30°','45°','60°','90°'],ans:0,d:'easy'},
+    {topic:'Statistics',q:'Box plot: Q1=5, Q3=12. IQR = ?',opts:['5','6','7','8'],ans:2,d:'easy'},
+    {topic:'Algebra',q:'Gradient of 3x + 2y = 12?',opts:['−3/2','2/3','3/2','−2/3'],ans:0,d:'easy'},
+    {topic:'Surds',q:'(√3)² = ?',opts:['√6','√9','3','9'],ans:2,d:'easy'},
+    {topic:'Probability',q:'P(A)=0.3, P(B)=0.4, independent. P(A∩B)?',opts:['0.07','0.10','0.12','0.70'],ans:2,d:'easy'},
+    {topic:'Algebra',q:'Vertex of y = (x−3)² + 5?',opts:['(−3, 5)','(3, −5)','(3, 5)','(−3, −5)'],ans:2,d:'easy'},
+    {topic:'Trigonometry',q:'Adjacent=8, hypotenuse=10. cos(θ)?',opts:['0.6','0.7','0.8','0.9'],ans:2,d:'easy'},
+    {topic:'Statistics',q:'Pearson r close to +1 indicates?',opts:['No correlation','Weak positive','Strong positive','Perfect negative'],ans:2,d:'easy'},
+    {topic:'Algebra',q:'y = 2x and x + y = 9. x = ?',opts:['2','3','4','5'],ans:1,d:'easy'},
+    {topic:'Surds',q:'√12 × √3 = ?',opts:['3','6','9','12'],ans:1,d:'easy'},
+    {topic:'Algebra',q:'x-intercepts of y = x² − 9?',opts:['x=±3','x=±4','x=3 only','x=9 only'],ans:0,d:'easy'},
+    {topic:'Trigonometry',q:'tan(θ)=1. θ = ?',opts:['30°','45°','60°','90°'],ans:1,d:'easy'},
+    {topic:'Statistics',q:'Mean of 4, 8, 12, 16, 20 = ?',opts:['10','11','12','13'],ans:2,d:'easy'},
+    // medium (15)
+    {topic:'Surds',q:'Rationalise: 6/√3 = ?',opts:['2√3','3√2','√18','6√3'],ans:0,d:'medium'},
+    {topic:'Algebra',q:'Discriminant of x² − 6x + 9 = 0?',opts:['0','9','18','36'],ans:0,d:'medium'},
+    {topic:'Trigonometry',q:'Sine rule: a=8, A=30°, B=45°. b = ?',opts:['8√2','8√3','4√2','4√3'],ans:0,d:'medium'},
+    {topic:'Probability',q:'P(heart or king) from 52 cards?',opts:['4/13','15/52','16/52','17/52'],ans:2,d:'medium'},
+    {topic:'Statistics',q:'Data: 5,8,12,15,7. SD ≈ ?',opts:['3.0','3.6','4.1','4.6'],ans:1,d:'medium'},
+    {topic:'Algebra',q:'x² + 8x + ? = (x + 4)². ? = ?',opts:['4','8','12','16'],ans:3,d:'medium'},
+    {topic:'Surds',q:'(2+√3)(2−√3) = ?',opts:['1','2','3','4'],ans:0,d:'medium'},
+    {topic:'Geometry',q:'Angle between tangent and radius at point of contact?',opts:['45°','60°','90°','180°'],ans:2,d:'medium'},
+    {topic:'Functions',q:'Range of f(x) = x² + 3?',opts:['y ≥ 0','y ≥ 3','y > 3','All real'],ans:1,d:'medium'},
+    {topic:'Probability',q:'4 books arranged on shelf. How many ways?',opts:['12','16','24','32'],ans:2,d:'medium'},
+    {topic:'Trigonometry',q:'Cosine rule: a=5, b=7, C=60°. c² = ?',opts:['19','29','39','49'],ans:2,d:'medium'},
+    {topic:'Algebra',q:'f(x) = x²−4. f(f(2)) = ?',opts:['−4','0','4','8'],ans:0,d:'medium'},
+    {topic:'Statistics',q:'n=100, mean=50, SD=10. Standard error?',opts:['0.1','0.5','1','10'],ans:2,d:'medium'},
+    {topic:'Surds',q:'(√5 + √2)² = ?',opts:['7','7+2√10','7+√10','9'],ans:1,d:'medium'},
+    {topic:'Algebra',q:'f(x) = x³−4x. One value where f(x) = 0?',opts:['0','1','3','4'],ans:0,d:'medium'},
+    // hard (10)
+    {topic:'Surds',q:'√(2x+1) = 5. x = ?',opts:['10','11','12','13'],ans:2,d:'hard'},
+    {topic:'Algebra',q:'x + 1/x = 3. x² + 1/x² = ?',opts:['5','6','7','8'],ans:2,d:'hard'},
+    {topic:'Trigonometry',q:'Angle of elevation to 50m tower = 30°. Distance from base?',opts:['50√3 m','50/√3 m','25√3 m','100/√3 m'],ans:0,d:'hard'},
+    {topic:'Probability',q:'P(at least one head in 3 coin tosses)?',opts:['3/8','5/8','7/8','1/2'],ans:2,d:'hard'},
+    {topic:'Statistics',q:'Normal: mean=70, SD=12. P(X > 82) ≈ ?',opts:['16%','32%','50%','84%'],ans:0,d:'hard'},
+    {topic:'Algebra',q:'3x² − 11x + 6 = 0. Roots?',opts:['x=3, x=2/3','x=−3, x=−2/3','x=3, x=−2/3','x=−3, x=2/3'],ans:0,d:'hard'},
+    {topic:'Geometry',q:'Angle in a semicircle is always?',opts:['45°','60°','90°','120°'],ans:2,d:'hard'},
+    {topic:'Functions',q:'g(x) = 2x²−8, g(x)=10. x = ?',opts:['x=±2','x=±3','x=±4','x=±5'],ans:1,d:'hard'},
+    {topic:'Statistics',q:'y = 2x + 5. If x increases by 1, y increases by?',opts:['1','2','5','7'],ans:1,d:'hard'},
+    {topic:'Algebra',q:'Sum of infinite geometric series: first=6, ratio=1/3?',opts:['6','8','9','12'],ans:2,d:'hard'},
   ],
 };
 
-/* ══════════════════════════════════════════
-   상태
-══════════════════════════════════════════ */
+/* ── STATE ── */
 let state = {
-  name: '', phone: '', email: '', year: null,
-  questions: [], current: 0, answers: [],
-  score: 0, timer: null, timeLeft: 900
+  name:'', phone:'', email:'', year:null,
+  questions:[], current:0, answers:[],
+  timer:null, timeLeft:1200
 };
 
-/* ══ Year 버튼 생성 ══ */
+/* ── YEAR GRID (1–10) ── */
 (function buildYearGrid() {
   const grid = document.getElementById('year-grid');
-  const grades = ['K','1','2','3','4','5','6','7','8','9','10','11','12'];
-  grades.forEach((g, i) => {
+  for (let y = 1; y <= 10; y++) {
     const btn = document.createElement('div');
     btn.className = 'year-btn';
-    btn.innerHTML = `Year ${g}`;
+    btn.textContent = 'Year ' + y;
     btn.onclick = () => {
       document.querySelectorAll('.year-btn').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
-      state.year = (g === 'K') ? 1 : parseInt(g);
+      state.year = y;
     };
     grid.appendChild(btn);
-  });
+  }
 })();
 
-/* ══ 블록 체크 ══ */
+/* ── BLOCK CHECK ── */
 function checkBlocked(phone) {
   try {
-    const key = 'sa_test_' + phone;
-    const t = localStorage.getItem(key);
-    if (!t) return false;
-    return (Date.now() - parseInt(t)) < 24 * 60 * 60 * 1000;
+    const t = localStorage.getItem('sa_lt_' + phone);
+    return t && (Date.now() - parseInt(t)) < 86400000;
   } catch(e) { return false; }
 }
 function setBlocked(phone) {
-  try { localStorage.setItem('sa_test_' + phone, Date.now()); } catch(e) {}
+  try { localStorage.setItem('sa_lt_' + phone, Date.now()); } catch(e) {}
 }
 
-/* ══ 테스트 시작 ══ */
+/* ── SELECT QUESTIONS: 12 easy + 12 medium + 6 hard ── */
+function selectQuestions(year) {
+  const bank = QB[year] || QB[1];
+  const easy   = shuffle(bank.filter(q => q.d === 'easy')).slice(0, 12);
+  const medium = shuffle(bank.filter(q => q.d === 'medium')).slice(0, 12);
+  const hard   = shuffle(bank.filter(q => q.d === 'hard')).slice(0, 6);
+  return shuffle([...easy, ...medium, ...hard]);
+}
+
+/* ── START TEST ── */
 function startTest() {
   const name  = document.getElementById('inp-name').value.trim();
   const phone = document.getElementById('inp-phone').value.trim();
@@ -660,7 +787,7 @@ function startTest() {
   document.getElementById('err-name').classList.toggle('show', !name);
   if (!name) ok = false;
 
-  const phoneClean = phone.replace(/\s/g, '');
+  const phoneClean = phone.replace(/\s/g,'');
   const phoneOk = phoneClean.length >= 8;
   document.getElementById('err-phone').classList.toggle('show', !phoneOk);
   if (!phoneOk) ok = false;
@@ -673,71 +800,56 @@ function startTest() {
   if (!consent) ok = false;
 
   if (!ok) return;
-
-  if (checkBlocked(phoneClean)) {
-    showScreen('screen-blocked');
-    return;
-  }
+  if (checkBlocked(phoneClean)) { showScreen('screen-blocked'); return; }
 
   state.name  = name;
   state.phone = phoneClean;
   state.email = document.getElementById('inp-email').value.trim();
-
-  // 문제 선택 (15문항, 랜덤)
-  const bank = QUESTION_BANK[state.year] || QUESTION_BANK[1];
-  state.questions = shuffle([...bank]).slice(0, 15);
+  state.questions = selectQuestions(state.year);
   state.current   = 0;
   state.answers   = new Array(state.questions.length).fill(-1);
-  state.score     = 0;
-  state.timeLeft  = 900;
+  state.timeLeft  = 1200;
 
   showScreen('screen-quiz');
   renderQuestion();
   startTimer();
 }
 
-/* ══ 문제 렌더 ══ */
+/* ── RENDER QUESTION ── */
 function renderQuestion() {
   const q   = state.questions[state.current];
   const tot = state.questions.length;
   const idx = state.current;
 
-  document.getElementById('quiz-label').textContent = `Question ${idx + 1} / ${tot}`;
-  document.getElementById('q-number').textContent   = `Q${idx + 1}. [${q.topic}]`;
+  document.getElementById('quiz-label').textContent = `Question ${idx+1} / ${tot}`;
+  document.getElementById('q-number').textContent   = `Q${idx+1}. [${q.topic}]`;
   document.getElementById('q-text').textContent     = q.q;
-  document.getElementById('progress-fill').style.width = ((idx / tot) * 100) + '%';
+  document.getElementById('progress-fill').style.width = ((idx/tot)*100)+'%';
 
   const letters = ['A','B','C','D'];
-  document.getElementById('options').innerHTML = q.opts.map((o, i) => `
-    <div class="option ${state.answers[idx] === i ? 'selected' : ''}"
-         onclick="selectOption(${i})" id="opt-${i}">
-      <div class="option-letter">${letters[i]}</div>
-      ${o}
-    </div>
-  `).join('');
+  document.getElementById('options').innerHTML = q.opts.map((o,i) => `
+    <div class="option ${state.answers[idx]===i?'selected':''}" onclick="selectOption(${i})">
+      <div class="option-letter">${letters[i]}</div>${o}
+    </div>`).join('');
 
-  document.getElementById('btn-next').disabled = (state.answers[idx] === -1);
-  document.getElementById('btn-next').textContent =
-    (idx === tot - 1) ? 'See Results →' : 'Next →';
+  const btn = document.getElementById('btn-next');
+  btn.disabled = state.answers[idx] === -1;
+  btn.textContent = idx === tot-1 ? 'See Results →' : 'Next →';
 }
 
-/* ══ 선택지 선택 ══ */
+/* ── SELECT OPTION ── */
 function selectOption(i) {
   state.answers[state.current] = i;
-  document.querySelectorAll('.option').forEach((el, idx) => {
-    el.classList.toggle('selected', idx === i);
-  });
+  document.querySelectorAll('.option').forEach((el,idx) => el.classList.toggle('selected', idx===i));
   document.getElementById('btn-next').disabled = false;
 }
 
-/* ══ 다음 문제 ══ */
+/* ── NEXT QUESTION ── */
 function nextQuestion() {
-  const idx = state.current;
-  const q   = state.questions[idx];
-  const ans = state.answers[idx];
+  const q   = state.questions[state.current];
+  const ans = state.answers[state.current];
 
-  // 정오 표시
-  document.querySelectorAll('.option').forEach((el, i) => {
+  document.querySelectorAll('.option').forEach((el,i) => {
     if (i === q.ans) el.classList.add('correct');
     else if (i === ans && i !== q.ans) el.classList.add('wrong');
     el.onclick = null;
@@ -746,103 +858,90 @@ function nextQuestion() {
 
   setTimeout(() => {
     state.current++;
-    if (state.current >= state.questions.length) {
-      finishTest();
-    } else {
-      renderQuestion();
-    }
+    if (state.current >= state.questions.length) finishTest();
+    else renderQuestion();
   }, 600);
 }
 
-/* ══ 타이머 ══ */
+/* ── TIMER ── */
 function startTimer() {
   clearInterval(state.timer);
-  updateTimerDisplay();
+  updateTimer();
   state.timer = setInterval(() => {
     state.timeLeft--;
-    updateTimerDisplay();
-    if (state.timeLeft <= 0) {
-      clearInterval(state.timer);
-      finishTest();
-    }
+    updateTimer();
+    if (state.timeLeft <= 0) { clearInterval(state.timer); finishTest(); }
   }, 1000);
 }
-
-function updateTimerDisplay() {
-  const m = Math.floor(state.timeLeft / 60).toString().padStart(2, '0');
-  const s = (state.timeLeft % 60).toString().padStart(2, '0');
+function updateTimer() {
+  const m = Math.floor(state.timeLeft/60).toString().padStart(2,'0');
+  const s = (state.timeLeft%60).toString().padStart(2,'0');
   const el = document.getElementById('timer-display');
   el.textContent = `${m}:${s}`;
   el.classList.toggle('warning', state.timeLeft < 60);
 }
 
-/* ══ 테스트 완료 ══ */
+/* ── FINISH TEST ── */
 function finishTest() {
   clearInterval(state.timer);
   setBlocked(state.phone);
 
   const total   = state.questions.length;
-  const correct = state.answers.filter((a, i) => a === state.questions[i].ans).length;
-  const pct     = Math.round((correct / total) * 100);
+  const correct = state.answers.filter((a,i) => a === state.questions[i].ans).length;
+  const pct     = Math.round((correct/total)*100);
 
-  // 점수 링
-  document.getElementById('score-num').textContent  = pct + '%';
+  // Score ring
+  document.getElementById('score-num').textContent  = pct+'%';
   document.getElementById('score-label').textContent = `${correct} / ${total}`;
-  const arc = document.getElementById('score-arc');
   setTimeout(() => {
-    arc.style.strokeDashoffset = 352 - (352 * pct / 100);
+    document.getElementById('score-arc').style.strokeDashoffset = 352 - (352*pct/100);
   }, 300);
 
-  // 등급
+  // Grade
   let grade, title, sub;
-  if (pct >= 85) {
-    grade = 'A'; title = 'Excellent'; sub = 'Your ability is well above your current year level!';
-  } else if (pct >= 70) {
-    grade = 'B'; title = 'Good'; sub = 'You are performing at or above your year level.';
-  } else if (pct >= 50) {
-    grade = 'C'; title = 'Developing'; sub = 'There are some weak areas that need focused attention.';
-  } else {
-    grade = 'D'; title = 'Foundation Needed'; sub = 'Core concepts need to be rebuilt from the ground up.';
-  }
+  if (pct >= 85)      { grade='A'; title='Excellent';         sub='Your ability is well above year level!'; }
+  else if (pct >= 70) { grade='B'; title='Good';              sub='Performing at or above year level.'; }
+  else if (pct >= 50) { grade='C'; title='Developing';        sub='Some weak areas need focused attention.'; }
+  else                { grade='D'; title='Needs Foundation';  sub='Core concepts need to be rebuilt step by step.'; }
 
-  document.getElementById('grade-badge').className = `grade-badge grade-${grade}`;
-  document.getElementById('grade-badge').textContent = `Grade ${grade}`;
+  const badge = document.getElementById('grade-badge');
+  badge.className = `grade-badge grade-${grade}`;
+  badge.textContent = `Grade ${grade}`;
   document.getElementById('result-title').textContent = title;
   document.getElementById('result-sub').textContent   = sub;
 
-  // 추천
-  const recs = getRecommendations(grade, state.year, pct);
-  document.getElementById('recommend-content').innerHTML =
-    recs.map(r => `<div class="recommend-item"><div class="dot"></div><div>${r}</div></div>`).join('');
-
-  // 영역별 분석
+  // Topic breakdown
   const topics = {};
-  state.questions.forEach((q, i) => {
-    if (!topics[q.topic]) topics[q.topic] = { total: 0, correct: 0 };
+  state.questions.forEach((q,i) => {
+    if (!topics[q.topic]) topics[q.topic] = {total:0, correct:0};
     topics[q.topic].total++;
     if (state.answers[i] === q.ans) topics[q.topic].correct++;
   });
 
-  const colors = { 100: '#4caf7d', 75: '#c9a84c', 50: '#5b8dee', 0: '#e05252' };
-  function getColor(p) {
-    if (p >= 100) return colors[100];
-    if (p >= 75)  return colors[75];
-    if (p >= 50)  return colors[50];
-    return colors[0];
+  function barColor(p) {
+    if (p >= 80) return '#4caf7d';
+    if (p >= 60) return '#c9a84c';
+    if (p >= 40) return '#f59e0b';
+    return '#e05252';
+  }
+  function pctColor(p) {
+    if (p >= 80) return '#7ee8a8';
+    if (p >= 60) return '#f0d080';
+    if (p >= 40) return '#fbbf24';
+    return '#f08080';
   }
 
   document.getElementById('breakdown-content').innerHTML =
-    Object.entries(topics).map(([topic, data]) => {
-      const p = Math.round((data.correct / data.total) * 100);
-      return `
-        <div class="breakdown-item">
+    Object.entries(topics)
+      .sort((a,b) => (b[1].correct/b[1].total) - (a[1].correct/a[1].total))
+      .map(([topic,data]) => {
+        const p = Math.round((data.correct/data.total)*100);
+        return `<div class="breakdown-item">
           <div class="breakdown-topic">${topic}</div>
-          <div class="breakdown-bar">
-            <div class="breakdown-fill" style="width:0%;background:${getColor(p)}" data-pct="${p}"></div>
-          </div>
-          <div class="breakdown-pct">${p}%</div>
+          <div class="breakdown-bar"><div class="breakdown-fill" style="width:0%;background:${barColor(p)}" data-pct="${p}"></div></div>
+          <div class="breakdown-pct" style="color:${pctColor(p)}">${p}%</div>
         </div>`;
-    }).join('');
+      }).join('');
 
   setTimeout(() => {
     document.querySelectorAll('.breakdown-fill').forEach(el => {
@@ -850,45 +949,115 @@ function finishTest() {
     });
   }, 400);
 
-  showScreen('screen-result');
-}
+  // Weak area analysis
+  const weakAreas = Object.entries(topics)
+    .filter(([,d]) => Math.round((d.correct/d.total)*100) < 70)
+    .sort((a,b) => (a[1].correct/a[1].total) - (b[1].correct/b[1].total));
 
-/* ══ 추천 메시지 ══ */
-function getRecommendations(grade, year, pct) {
-  const base = [
-    `We recommend our Year ${year} ${grade === 'A' ? 'Advanced' : grade === 'B' ? 'Standard' : 'Foundation'} class.`,
-  ];
-  if (grade === 'A') {
-    base.push('Consider our Selective School / OC preparation advanced program.');
-    base.push('Our NAPLAN high-score strategy classes can take you to the next level.');
-  } else if (grade === 'B') {
-    base.push('Targeted work on weak topics can help you achieve an A grade.');
-    base.push('Regular practice exams will sharpen your exam technique.');
-  } else if (grade === 'C') {
-    base.push('You need to consolidate core concepts through focused revision.');
-    base.push('A small-group intensive class can produce rapid improvement.');
+  const weakBox     = document.getElementById('weak-area-box');
+  const weakContent = document.getElementById('weak-area-content');
+  if (weakAreas.length > 0) {
+    weakBox.style.display = 'block';
+    weakContent.innerHTML = weakAreas.map(([topic,data]) => {
+      const p = Math.round((data.correct/data.total)*100);
+      return `<div class="weak-item">
+        <div class="weak-topic">${topic} <span class="weak-pct-badge">${p}%</span></div>
+        <div class="weak-desc">${getWeakDesc(topic, state.year)}</div>
+      </div>`;
+    }).join('');
   } else {
-    base.push('We recommend rebuilding foundational maths concepts step by step.');
-    base.push('A 1-on-1 tutoring program will help establish a solid foundation.');
+    weakBox.style.display = 'none';
   }
-  return base;
+
+  // Recommendations
+  const recs = getRecommendations(grade, state.year, pct);
+  document.getElementById('recommend-content').innerHTML =
+    recs.map(r => `<div class="recommend-item"><div class="dot"></div><div>${r}</div></div>`).join('');
+
+  showScreen('screen-result');
+
+  // Save to Firebase
+  saveResult(pct, grade, correct, total, topics, weakAreas.map(([t]) => t));
 }
 
-/* ══ 화면 전환 ══ */
+/* ── WEAK AREA DESCRIPTIONS ── */
+function getWeakDesc(topic, year) {
+  const map = {
+    'Number':       'Review number operations, factors, multiples and place value. Practise mental arithmetic regularly.',
+    'Algebra':      'Focus on solving linear and quadratic equations, expanding brackets and factorising expressions.',
+    'Fractions':    'Practise adding, subtracting, multiplying and dividing fractions. Pay attention to mixed numbers.',
+    'Decimals':     'Work on decimal operations and converting between fractions, decimals and percentages.',
+    'Percentage':   'Practise finding percentages of quantities, percentage increase/decrease, and reverse percentage.',
+    'Geometry':     'Review area, perimeter, volume formulas, angle rules, and circle theorems.',
+    'Measurement':  'Focus on unit conversions and applying measurement formulas to real-world problems.',
+    'Statistics':   'Practise calculating mean, median, mode, range, variance and standard deviation.',
+    'Probability':  'Review basic probability, independent/dependent events, and counting techniques.',
+    'Trigonometry': 'Practise sin, cos, tan ratios, the sine rule, cosine rule and angle applications.',
+    'Functions':    'Review function notation, domain, range, inverse functions and graphing techniques.',
+    'Indices':      'Practise all index laws, negative and fractional indices, and logarithm rules.',
+    'Surds':        'Focus on simplifying surds, rationalising denominators and operations with surds.',
+    'Multiplication':'Drill multiplication tables and multi-digit multiplication strategies.',
+    'Division':     'Practise long division and dividing by fractions and decimals.',
+    'Ratio':        'Review ratio, proportion, scale problems and rate calculations.',
+  };
+  return map[topic] || 'Review core concepts in this topic area and practise with varied problem types.';
+}
+
+/* ── RECOMMENDATIONS ── */
+function getRecommendations(grade, year, pct) {
+  const level = grade==='A'?'Advanced':grade==='B'?'Standard':'Foundation';
+  const recs = [`We recommend our Year ${year} ${level} Maths class.`];
+  if (grade==='A') {
+    recs.push('You may benefit from our Selective School / OC advanced program.');
+    recs.push('Our NAPLAN high-score strategy sessions can further sharpen your skills.');
+  } else if (grade==='B') {
+    recs.push('Targeted revision on weak topics can help you reach the A grade level.');
+    recs.push('Regular practice tests will build exam confidence and technique.');
+  } else if (grade==='C') {
+    recs.push('Focused revision of core concepts is recommended before tackling harder problems.');
+    recs.push('Our small-group intensive classes can produce rapid improvement.');
+  } else {
+    recs.push('We recommend rebuilding foundational maths concepts from the ground up.');
+    recs.push('A personalised 1-on-1 tutoring program can establish a solid foundation quickly.');
+  }
+  return recs;
+}
+
+/* ── SAVE TO FIREBASE ── */
+function saveResult(pct, grade, correct, total, topics, weakAreas) {
+  if (!LT_REF) return;
+  const topicsFlat = {};
+  Object.entries(topics).forEach(([t,d]) => {
+    topicsFlat[t] = Math.round((d.correct/d.total)*100);
+  });
+  const record = {
+    name:      state.name,
+    phone:     state.phone,
+    email:     state.email || '',
+    year:      state.year,
+    score:     pct,
+    grade:     grade,
+    correct:   correct,
+    total:     total,
+    topics:    topicsFlat,
+    weakAreas: weakAreas,
+    timestamp: Date.now(),
+    date:      new Date().toLocaleDateString('en-AU')
+  };
+  try { LT_REF.push(record); } catch(e) {}
+}
+
+/* ── SCREEN SWITCH ── */
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  window.scrollTo(0, 0);
+  window.scrollTo(0,0);
 }
 
-/* ══ 리셋 ══ */
+/* ── RESET ── */
 function resetTest() {
   clearInterval(state.timer);
-  state = {
-    name: '', phone: '', email: '', year: null,
-    questions: [], current: 0, answers: [],
-    score: 0, timer: null, timeLeft: 900
-  };
+  state = { name:'', phone:'', email:'', year:null, questions:[], current:0, answers:[], timer:null, timeLeft:1200 };
   document.getElementById('inp-name').value  = '';
   document.getElementById('inp-phone').value = '';
   document.getElementById('inp-email').value = '';
@@ -897,11 +1066,11 @@ function resetTest() {
   showScreen('screen-intro');
 }
 
-/* ══ 유틸 ══ */
+/* ── SHUFFLE ── */
 function shuffle(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+  for (let i = arr.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
   }
   return arr;
 }

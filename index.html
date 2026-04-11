@@ -866,7 +866,7 @@ function doLogout() {
 let selectedYear    = null;    // currently selected year level
 let showTestAccounts = false;  // 테스트 계정 표시 토글
 let selectedCountry = 'AU';   // 'AU' | 'KR'
-let teacherTab      = 'homework';  // 'homework' | 'students' | 'settings'
+let teacherTab      = 'homework';  // 'homework' | 'students' | 'settings' | 'leveltest'
 let parsedQuestions = [];
 let editingSetIdx = null;      // -1=new set, 0+=editing existing set
 let editingCalcRanges = [];   // [{from, to, allowed}]
@@ -1152,6 +1152,7 @@ function renderTeacher() {
       <button class="btn-sm ${teacherTab==='homework'?'btn-navy':'btn-blue'}" onclick="teacherTab='homework';renderTeacher()">📋 숙제 관리</button>
       <button class="btn-sm ${teacherTab==='students'?'btn-navy':'btn-blue'}" onclick="teacherTab='students';renderTeacher()">👨‍🎓 학생 관리</button>
       <button class="btn-sm ${teacherTab==='settings'?'btn-navy':'btn-blue'}" onclick="teacherTab='settings';renderTeacher()">⚙️ 설정</button>
+      <button class="btn-sm ${teacherTab==='leveltest'?'btn-navy':'btn-blue'}" onclick="teacherTab='leveltest';renderTeacher()">📊 레벨테스트 결과</button>
       <button onclick="showTestAccounts=!showTestAccounts;renderTeacher()"
         style="font-size:12px;padding:4px 10px;border-radius:8px;border:1px solid #cbd5e1;background:#f1f5f9;color:#64748b;cursor:pointer;">
         🧪 테스트 계정 ${showTestAccounts ? '숨기기' : '보기'}
@@ -1176,6 +1177,9 @@ function renderTeacher() {
   } else if (teacherTab === 'settings') {
     document.getElementById('mainContent').innerHTML = tabBar + renderTeacherSettings(store);
     setTimeout(() => loadBackupList(), 300);
+  } else if (teacherTab === 'leveltest') {
+    document.getElementById('mainContent').innerHTML = tabBar + '<div id="ltResultsContainer"><div style="padding:40px;text-align:center;color:#64748b;">⏳ 레벨테스트 결과 불러오는 중...</div></div>';
+    loadLevelTestResults();
   }
   } catch(e) {
     console.error('renderTeacher error:', e);
@@ -1686,6 +1690,76 @@ function viewResults(yr) {
   document.getElementById('modalContent').innerHTML = html;
   document.getElementById('modal').classList.add('open');
   } catch(e) { console.error('viewResults error:', e); closeModal(); }
+}
+
+/* ── LEVEL TEST RESULTS ── */
+function loadLevelTestResults() {
+  const container = document.getElementById('ltResultsContainer');
+  if (!container) return;
+  try {
+    firebase.database().ref('lt_results').orderByChild('timestamp').limitToLast(200).once('value', snap => {
+      const results = [];
+      snap.forEach(child => results.push({key: child.key, ...child.val()}));
+      results.reverse();
+      if (results.length === 0) {
+        container.innerHTML = `<div style="padding:40px;text-align:center;color:#64748b;">아직 레벨테스트 응시 결과가 없습니다.</div>`;
+        return;
+      }
+      const gradeColor = {A:'#4caf7d', B:'#c9a84c', C:'#f59e0b', D:'#e05252'};
+      const rows = results.map(r => {
+        const topicBars = r.topics ? Object.entries(r.topics)
+          .sort((a,b) => a[1]-b[1])
+          .map(([t,p]) => {
+            const c = p>=80?'#4caf7d':p>=60?'#c9a84c':p>=40?'#f59e0b':'#e05252';
+            return `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;margin:2px 4px 2px 0;background:rgba(0,0,0,.04);border-radius:6px;padding:2px 7px;">
+              <span style="width:7px;height:7px;border-radius:50%;background:${c};display:inline-block;"></span>${t} ${p}%</span>`;
+          }).join('') : '-';
+        const weakList = (r.weakAreas && r.weakAreas.length > 0)
+          ? r.weakAreas.map(w => `<span style="color:#e05252;font-size:11px;">• ${w}</span>`).join(' ')
+          : '<span style="color:#4caf7d;font-size:11px;">없음</span>';
+        const grade = r.grade || '-';
+        const gc = gradeColor[grade] || '#64748b';
+        return `<tr style="border-bottom:1px solid #f1f5f9;">
+          <td style="padding:10px 8px;font-weight:700;">${r.date || '-'}</td>
+          <td style="padding:10px 8px;">${r.name || '-'}</td>
+          <td style="padding:10px 8px;">${r.phone || '-'}</td>
+          <td style="padding:10px 8px;">${r.email || '-'}</td>
+          <td style="padding:10px 8px;text-align:center;font-weight:700;">Year ${r.year || '-'}</td>
+          <td style="padding:10px 8px;text-align:center;">
+            <span style="display:inline-block;padding:3px 12px;border-radius:12px;background:${gc};color:#fff;font-weight:700;font-size:13px;">${grade}</span>
+          </td>
+          <td style="padding:10px 8px;text-align:center;font-weight:700;">${r.score || 0}%</td>
+          <td style="padding:10px 8px;font-size:12px;">${topicBars}</td>
+          <td style="padding:10px 8px;">${weakList}</td>
+        </tr>`;
+      }).join('');
+      container.innerHTML = `
+        <div style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <div style="font-size:15px;font-weight:700;color:var(--navy);">총 ${results.length}명 응시</div>
+          <div style="font-size:13px;color:#64748b;">최신순 · 최대 200건</div>
+        </div>
+        <div style="overflow-x:auto;border-radius:12px;border:1px solid var(--border);">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;font-family:'Noto Sans KR',sans-serif;">
+            <thead>
+              <tr style="background:#f8fafc;border-bottom:2px solid var(--border);">
+                <th style="padding:10px 8px;text-align:left;white-space:nowrap;">날짜</th>
+                <th style="padding:10px 8px;text-align:left;">이름</th>
+                <th style="padding:10px 8px;text-align:left;">연락처</th>
+                <th style="padding:10px 8px;text-align:left;">이메일</th>
+                <th style="padding:10px 8px;text-align:center;">학년</th>
+                <th style="padding:10px 8px;text-align:center;">등급</th>
+                <th style="padding:10px 8px;text-align:center;">점수</th>
+                <th style="padding:10px 8px;text-align:left;">영역별 점수</th>
+                <th style="padding:10px 8px;text-align:left;">약점 영역</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    });
+  } catch(e) {
+    if (container) container.innerHTML = `<div style="padding:40px;color:#dc2626;">Firebase 연결 오류: ${e.message}</div>`;
+  }
 }
 
 function renderTeacherSettings(store) {
