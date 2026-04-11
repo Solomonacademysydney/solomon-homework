@@ -1116,7 +1116,7 @@ function renderTeacher() {
           const sub = store.submissions[subKey(s.id, p, idx)];
           if (!sub?.submitted) return `<span style="color:var(--muted);font-size:12px;">Set${idx+1}:⏳</span>`;
           const autoQs = set.questions.filter(q=>q.type!=='written');
-          const correct = autoQs.filter(q=>sub.answers[q.id]===normAns(q.answer)).length;
+          const correct = autoQs.filter(q=>normAns(sub.answers[q.id])===normAns(q.answer)).length;
           const pct = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
           const cls = pct>=80?'pill-a':pct>=60?'pill-b':'pill-c';
           return `<span style="font-size:12px;">Set${idx+1}:</span><span class="score-pill ${cls}" style="font-size:11px;">${pct}%</span>`;
@@ -1659,7 +1659,7 @@ function viewResults(yr) {
         return;
       }
       const autoQs = set.questions.filter(q=>q.type!=='written');
-      const correct = autoQs.filter(q=>sub.answers[q.id]===normAns(q.answer)).length;
+      const correct = autoQs.filter(q=>normAns(sub.answers[q.id])===normAns(q.answer)).length;
       const pct = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
       const cls = pct>=80?'pill-a':pct>=60?'pill-b':'pill-c';
       html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
@@ -1670,7 +1670,7 @@ function viewResults(yr) {
         const ans = sub.answers[q.id];
         let cls2='res-none', status='No answer';
         if (ans!==undefined) {
-          const ok = ans===normAns(q.answer);
+          const ok = normAns(ans)===normAns(q.answer);
           cls2 = ok?'res-ok':'res-wrong';
           status = ok ? `✅ Correct` : `❌ Wrong (answered: ${ans} / correct: ${normAns(q.answer)})`;
         }
@@ -2183,7 +2183,7 @@ function renderStudent() {
   // submitted → show results + review screen
   if (sub.submitted) {
     const autoQs  = qs.filter(q=>q.type!=='written');
-    const correct = autoQs.filter(q=>sub.answers[q.id]===normAns(q.answer)).length;
+    const correct = autoQs.filter(q=>normAns(sub.answers[q.id])===normAns(q.answer)).length;
     const score   = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
     const scoreMsg = score>=90?'🎉 Outstanding!':score>=70?'👍 Well done!':score>=50?'💪 Keep going!':'📚 Study more!';
     const letters = ['A','B','C','D','E'];
@@ -2272,7 +2272,7 @@ function renderStudent() {
     // ── REMEDIATION FLOW ──────────────────────
     const wrongQs = qs.filter(q => {
       const ans = sub.answers[q.id];
-      return ans === undefined || ans !== normAns(q.answer);
+      return ans === undefined || normAns(ans) !== normAns(q.answer);
     });
     const hasApiKey = !!getAIKey();
     const rem = sub.remediation;
@@ -2292,7 +2292,7 @@ function renderStudent() {
           // Practice submitted, check for more wrong
           const _pqs = curRound.practiceQuestions || [];
           const _pas = curRound.practiceAnswers || {};
-          const practiceWrong = _pqs.filter(q => q && _pas[q.id] !== normAns(q.answer));
+          const practiceWrong = _pqs.filter(q => q && normAns(_pas[q.id]) !== normAns(q.answer));
           if (practiceWrong.length > 0) {
             html += `<div style="text-align:center;padding:16px;">
               <button class="btn-confirm-read" style="max-width:400px;margin:0 auto;background:var(--gold);color:var(--navy);" onclick="renderPracticeResults(${currentSetIdx},${rem.currentRound})">
@@ -2524,7 +2524,7 @@ function renderSetList(hw, store, p) {
       statusText='Complete the previous set to unlock';
     } else if (isSubmitted) {
       const autoQs = set.questions.filter(q=>q.type!=='written');
-      const correct = autoQs.filter(q=>sub.answers[q.id]===normAns(q.answer)).length;
+      const correct = autoQs.filter(q=>normAns(sub.answers[q.id])===normAns(q.answer)).length;
       const pct = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
       const cls = pct>=80?'pill-a':pct>=60?'pill-b':'pill-c';
       iconClass='set-icon-done'; iconEmoji='✅'; cardClass='done';
@@ -2630,9 +2630,9 @@ function doSubmit() {
   if (set) {
     const qs = set.questions;
     const autoQs = qs.filter(q=>q.type!=='written');
-    const correct = autoQs.filter(q=>sub.answers[q.id]===normAns(q.answer)).length;
+    const correct = autoQs.filter(q=>normAns(sub.answers[q.id])===normAns(q.answer)).length;
     const score = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
-    const wrongQs = autoQs.filter(q=>sub.answers[q.id]!==normAns(q.answer));
+    const wrongQs = autoQs.filter(q=>normAns(sub.answers[q.id])!==normAns(q.answer));
     const weakAreas = detectWeakAreas(wrongQs);
     sub.reportData = {
       studentId: currentUser.id,
@@ -2796,12 +2796,12 @@ function renderParent() {
       </div>`;
     } else {
       const autoQs = set.questions.filter(q=>q.type!=='written');
-      const correct = autoQs.filter(q=>sub.answers[q.id]===normAns(q.answer)).length;
+      const correct = autoQs.filter(q=>normAns(sub.answers[q.id])===normAns(q.answer)).length;
       const pct = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
       const cls = pct>=80?'pill-a':pct>=60?'pill-b':'pill-c';
       const scoreMsg = pct>=80?'🎉 Excellent!':pct>=60?'👍 Good job!':'💪 Keep it up!';
       const wrongCount = autoQs.length - correct;
-      const wrongQs = autoQs.filter(q=>sub.answers[q.id]!==normAns(q.answer));
+      const wrongQs = autoQs.filter(q=>normAns(sub.answers[q.id])!==normAns(q.answer));
       html += `<div style="background:#fff;border-radius:12px;padding:16px 18px;margin-bottom:14px;border:2px solid ${pct>=80?'var(--green)':pct>=60?'var(--gold)':'var(--red)'};box-shadow:0 2px 8px rgba(0,0,0,.05);">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:${wrongCount>0?'12px':'0'};">
           <div style="font-weight:800;color:var(--navy);font-size:15px;">${set.title}</div>
@@ -3032,7 +3032,7 @@ function renderParentHistory(child, store, currentPeriod) {
         const sub = store.submissions[subKey(child.id, p, idx)];
         if (sub?.submitted) {
           const autoQs = set.questions.filter(q=>q.type!=='written');
-          totalCorrect += autoQs.filter(q=>sub.answers[q.id]===normAns(q.answer)).length;
+          totalCorrect += autoQs.filter(q=>normAns(sub.answers[q.id])===normAns(q.answer)).length;
           totalQs += autoQs.length;
           totalSets++;
         }
@@ -3425,9 +3425,9 @@ async function generateParentReport(studentId, period, setIdx) {
       if (!round?.practiceSubmitted) return;
       const pqs = round.practiceQuestions || [];
       const pas = round.practiceAnswers || {};
-      const pc = pqs.filter(q=>q && pas[q.id]===normAns(q.answer)).length;
+      const pc = pqs.filter(q=>q && normAns(pas[q.id])===normAns(q.answer)).length;
       remSummary += `- Practice Round ${ri+1}: ${pc}/${pqs.length} correct (${pqs.length>0?Math.round(pc/pqs.length*100):0}%)\n`;
-      const stillWrong = pqs.filter(q=>q && pas[q.id]!==normAns(q.answer));
+      const stillWrong = pqs.filter(q=>q && normAns(pas[q.id])!==normAns(q.answer));
       if (stillWrong.length > 0) {
         remSummary += `  Still struggling with: ${stillWrong.map(q=>(q.text||'').substring(0,40)).join(', ')}\n`;
       }
@@ -3510,9 +3510,9 @@ function buildReportDataForStudent(studentId, period, store) {
     const sub = store.submissions[key];
     if (!sub?.submitted) return;
     const autoQs = set.questions.filter(q=>q.type!=='written');
-    const correct = autoQs.filter(q=>sub.answers[q.id]===normAns(q.answer)).length;
+    const correct = autoQs.filter(q=>normAns(sub.answers[q.id])===normAns(q.answer)).length;
     const score = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
-    const wrongQs = autoQs.filter(q=>sub.answers[q.id]!==normAns(q.answer));
+    const wrongQs = autoQs.filter(q=>normAns(sub.answers[q.id])!==normAns(q.answer));
 
     const remRounds = [];
     if (sub.remediation?.rounds) {
@@ -3520,7 +3520,7 @@ function buildReportDataForStudent(studentId, period, store) {
         if (!round?.practiceSubmitted) return;
         const pqs = round.practiceQuestions || [];
         const pas = round.practiceAnswers || {};
-        const pc = pqs.filter(q=>q && pas[q.id]===normAns(q.answer)).length;
+        const pc = pqs.filter(q=>q && normAns(pas[q.id])===normAns(q.answer)).length;
 
         // 원본 틀린 문제별로 유사문제 그룹화
         const wrongQMap = {};
@@ -3550,7 +3550,7 @@ function buildReportDataForStudent(studentId, period, store) {
           score: pqs.length>0 ? Math.round(pc/pqs.length*100) : 0,
           questions: pqs.map(q=>({
             text: (q.text||'').substring(0,50),
-            ok: q && pas[q.id]===normAns(q.answer)
+            ok: q && normAns(pas[q.id])===normAns(q.answer)
           })),
           questionGroups: Object.values(groups)
         });
@@ -3571,7 +3571,7 @@ function buildReportDataForStudent(studentId, period, store) {
         type: q.type,
         answer: q.answer,
         studentAnswer: sub.answers[q.id] || '(no answer)',
-        ok: sub.answers[q.id] === normAns(q.answer)
+        ok: normAns(sub.answers[q.id]) === normAns(q.answer)
       })),
       weakAreas: sub.reportData?.weakAreas || detectWeakAreas(wrongQs),
       remediation: remRounds,
@@ -4150,7 +4150,12 @@ function showVerificationResults(questions, verifications) {
 // Strip accidental "ANSWER: " prefix that AI verification sometimes returns
 function normAns(a) {
   if (!a) return a;
-  return String(a).replace(/^answer\s*[：:]\s*/i, '').trim().toUpperCase();
+  let s = String(a).trim();
+  // Strip "ANSWER: " prefix (AI verification artifact)
+  s = s.replace(/^answer\s*[：:]\s*/i, '').trim();
+  // Strip variable assignment prefix: "X = 7" → "7", "x=-8" → "-8"
+  s = s.replace(/^[a-zA-Z]\s*=\s*/, '').trim();
+  return s.toUpperCase();
 }
 
 function confirmAndSaveCorrections() {
@@ -4287,7 +4292,7 @@ function getRemediation(sub) {
 function getWrongQuestions(questions, answers) {
   if (!questions || !Array.isArray(questions)) return [];
   const ans = answers || {};
-  return questions.filter(q => q && q.id && (ans[q.id] === undefined || ans[q.id] !== normAns(q.answer)))
+  return questions.filter(q => q && q.id && (ans[q.id] === undefined || normAns(ans[q.id]) !== normAns(q.answer)))
     .map(q => ({
       ...q,
       studentAnswer: ans[q.id] || '(no answer)'
@@ -4889,7 +4894,7 @@ function submitPracticeSet(setIdx, roundIdx) {
   // ── 보충학습 결과를 리포트 데이터에 추가 ──
   const pqs = round.practiceQuestions || [];
   const pas = round.practiceAnswers || {};
-  const pCorrect = pqs.filter(q => q && pas[q.id] === normAns(q.answer)).length;
+  const pCorrect = pqs.filter(q => q && normAns(pas[q.id]) === normAns(q.answer)).length;
   const pScore = pqs.length > 0 ? Math.round(pCorrect/pqs.length*100) : 0;
   if (!sub.reportData) sub.reportData = {};
   if (!sub.reportData.remediation) sub.reportData.remediation = [];
@@ -4900,7 +4905,7 @@ function submitPracticeSet(setIdx, roundIdx) {
     score: pScore,
     questions: pqs.map(q => ({
       text: (q.text||'').substring(0,60),
-      correct: q && pas[q.id] === normAns(q.answer),
+      correct: q && normAns(pas[q.id]) === normAns(q.answer),
       studentAnswer: pas[q.id] || '(no answer)',
       correctAnswer: normAns(q.answer)
     }))
@@ -4925,8 +4930,8 @@ function renderPracticeResults(setIdx, roundIdx) {
   const pa = round.practiceAnswers || {};
   const letters = ['A','B','C','D','E'];
 
-  const correct = qs.filter(q => q && pa[q.id] === normAns(q.answer)).length;
-  const wrong = qs.filter(q => q && pa[q.id] !== normAns(q.answer));
+  const correct = qs.filter(q => q && normAns(pa[q.id]) === normAns(q.answer)).length;
+  const wrong = qs.filter(q => q && normAns(pa[q.id]) !== normAns(q.answer));
   const score = qs.length > 0 ? Math.round(correct/qs.length*100) : 0;
   const scoreMsg = score>=90?'🎉 Outstanding!':score>=70?'👍 Well done!':score>=50?'💪 Keep going!':'📚 Let\'s study more!';
 
@@ -4941,7 +4946,7 @@ function renderPracticeResults(setIdx, roundIdx) {
   qs.forEach((q,i) => {
     if (!q) return;
     const ans = pa[q.id];
-    const ok = ans === normAns(q.answer);
+    const ok = normAns(ans) === normAns(q.answer);
     const qLabel = q.sourceQNum ? `Q${q.sourceQNum}-${q.practiceIdx||1}` : `Q${i+1}`;
     html += `<div class="res-q ${ok?'res-ok':'res-wrong'}">
       <b style="min-width:50px;">${qLabel}.</b>
