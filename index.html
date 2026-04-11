@@ -2690,16 +2690,39 @@ function detectWeakAreas(wrongQs) {
   return Object.entries(areas).sort((a,b)=>b[1]-a[1]).map(([area,count])=>({area,count}));
 }
 
+const REPORT_COLORS = {
+  excellent: { main: '#22C55E', light: '#DCFCE7', dark: '#166534' },
+  good:      { main: '#F59E0B', light: '#FEF9C3', dark: '#854D0E' },
+  warning:   { main: '#EA580C', light: '#FED7AA', dark: '#9A3412' },
+  danger:    { main: '#DC2626', light: '#FEE2E2', dark: '#991B1B' }
+};
+function getScoreColor(pct) {
+  if (pct >= 80) return REPORT_COLORS.excellent;
+  if (pct >= 60) return REPORT_COLORS.good;
+  if (pct >= 40) return REPORT_COLORS.warning;
+  return REPORT_COLORS.danger;
+}
+function getBarColor(count) {
+  if (count >= 50) return '#DC2626';
+  if (count >= 20) return '#F59E0B';
+  if (count >= 10) return '#FBBF24';
+  return '#FDE047';
+}
+function getBarLabelColor(count) {
+  return count >= 20 ? '#FFFFFF' : '#374151';
+}
+
 function createDonutSVG(percent) {
   const radius = 70, stroke = 14;
   const circumference = 2 * Math.PI * radius;
   const dashArray = (percent / 100) * circumference;
+  const col = getScoreColor(percent).main;
   return `<svg viewBox="0 0 180 180" width="160" height="160">
-    <circle cx="90" cy="90" r="${radius}" fill="none" stroke="#E0E0E0" stroke-width="${stroke}" />
-    <circle cx="90" cy="90" r="${radius}" fill="none" stroke="#FF9800" stroke-width="${stroke}"
+    <circle cx="90" cy="90" r="${radius}" fill="none" stroke="#E5E7EB" stroke-width="${stroke}" />
+    <circle cx="90" cy="90" r="${radius}" fill="none" stroke="${col}" stroke-width="${stroke}"
             stroke-dasharray="${dashArray} ${circumference}" stroke-linecap="round"
             transform="rotate(-90 90 90)" />
-    <text x="90" y="85" text-anchor="middle" font-size="36" font-weight="bold" fill="#333">${percent}%</text>
+    <text x="90" y="85" text-anchor="middle" font-size="36" font-weight="bold" fill="${col}">${percent}%</text>
     <text x="90" y="108" text-anchor="middle" font-size="14" fill="#999">정답률</text>
   </svg>`;
 }
@@ -3805,34 +3828,34 @@ function showTeacherReport(studentId) {
 }
 
 function generateVisualReportHTML(data, comment) {
-  const gradeColors = {
-    'Excellent':      { bg: '#E8F5E9', text: '#2E7D32' },
-    'Good Progress':  { bg: '#E8F5E9', text: '#558B2F' },
-    'Needs Practice': { bg: '#FFF3E0', text: '#E65100' },
-    'Needs Attention':{ bg: '#FFEBEE', text: '#C62828' }
-  };
-  const gc = gradeColors[data.grade];
+  const sc = getScoreColor(data.scorePercent);
+  // 뱃지 텍스트
+  const gradeBadge = data.scorePercent >= 80 ? 'Excellent'
+    : data.scorePercent >= 60 ? 'Good'
+    : data.scorePercent >= 40 ? 'Needs Improvement'
+    : 'Needs Attention';
   const donutSVG = createDonutSVG(data.scorePercent);
 
   const weakBarsHTML = data.weakAreas.map(w => {
-    const barColor = w.count >= 4 ? '#F44336' : w.count >= 3 ? '#FF9800' : '#2196F3';
+    const barColor = getBarColor(w.count);
+    const labelColor = getBarLabelColor(w.count);
     const maxCount = data.weakAreas[0]?.count || 1;
     const widthPct = Math.max((w.count / maxCount) * 100, 15);
     return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
       <div style="width:130px;font-size:13px;font-weight:600;color:#333;text-align:right;">${w.area}</div>
       <div style="flex:1;background:#f0f0f0;border-radius:6px;height:28px;overflow:hidden;">
         <div style="width:${widthPct}%;background:${barColor};height:100%;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;">
-          <span style="color:#fff;font-size:12px;font-weight:700;">${w.count}문제</span>
+          <span style="color:${labelColor};font-size:12px;font-weight:700;">${w.count}문제</span>
         </div>
       </div>
     </div>`;
   }).join('');
 
   const setScoresHTML = data.setScores.map(s => {
-    const color = s.score >= 90 ? '#4CAF50' : s.score >= 70 ? '#FF9800' : '#F44336';
-    return `<div style="display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:10px 16px;margin:4px;">
+    const cc = getScoreColor(s.score);
+    return `<div style="display:inline-flex;align-items:center;gap:8px;background:${cc.light};border:2px solid ${cc.main};border-radius:10px;padding:10px 16px;margin:4px;">
       <span style="font-weight:700;font-size:13px;color:#333;">${s.title}</span>
-      <span style="font-weight:800;font-size:16px;color:${color};">${s.score}%</span>
+      <span style="font-weight:800;font-size:16px;color:${cc.main};">${s.score}%</span>
       <span style="font-size:12px;color:#999;">(${s.correct}/${s.total})</span>
     </div>`;
   }).join('');
@@ -3857,7 +3880,7 @@ function generateVisualReportHTML(data, comment) {
             <div><span style="font-size:24px;font-weight:800;color:#F44336;">${data.wrongCount}</span><div style="font-size:12px;color:#999;">오답</div></div>
             <div><span style="font-size:24px;font-weight:800;color:#1B2A4A;">${data.setCount}</span><div style="font-size:12px;color:#999;">세트 수</div></div>
           </div>
-          <div style="display:inline-block;background:${gc.bg};color:${gc.text};padding:6px 16px;border-radius:20px;font-size:13px;font-weight:700;">${data.grade}</div>
+          <div style="display:inline-block;background:${sc.light};color:${sc.dark};padding:6px 16px;border-radius:20px;font-size:13px;font-weight:700;">${gradeBadge}</div>
           <div style="margin-top:8px;font-size:13px;color:#666;">총 ${data.totalQuestions}문제 중 ${data.totalCorrect}문제 정답</div>
         </div>
       </div>
