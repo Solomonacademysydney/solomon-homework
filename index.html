@@ -4149,12 +4149,14 @@ function showVerificationResults(questions, verifications) {
 
 // Strip accidental "ANSWER: " prefix that AI verification sometimes returns
 function normAns(a) {
-  if (!a) return a;
+  if (a === null || a === undefined) return a;
   let s = String(a).trim();
-  // Strip "ANSWER: " prefix (AI verification artifact)
-  s = s.replace(/^answer\s*[：:]\s*/i, '').trim();
-  // Strip variable assignment prefix: "X = 7" → "7", "x=-8" → "-8"
-  s = s.replace(/^[a-zA-Z]\s*=\s*/, '').trim();
+  // Normalize unicode minus/dash variants to hyphen-minus (fixes "-8 vs −8" mismatch)
+  s = s.replace(/[\u2212\u2013\u2014\u2010\u2011]/g, '-');
+  // Strip "WORD: value" prefix — handles "ANSWER: B", "Answer: C", etc.
+  s = s.replace(/^[A-Za-z]+\s*[:：]\s*/, '').trim();
+  // Strip single-letter variable assignment — "X = 7" → "7", "x=-8" → "-8"
+  s = s.replace(/^[A-Za-z]\s*=\s*/, '').trim();
   return s.toUpperCase();
 }
 
