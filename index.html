@@ -1183,7 +1183,6 @@ function renderTeacher() {
   }
   } catch(e) {
     console.error('renderTeacher error:', e);
-    console.error('renderTeacher error:', e);
     document.getElementById('mainContent').innerHTML = '<div style="padding:40px;color:#dc2626;font-weight:800;">⚠️ 화면 렌더링 오류: ' + e.message + '<br><button onclick="renderTeacher()" style="margin-top:12px;padding:8px 16px;cursor:pointer;">다시 시도</button></div>';
   }
 }
@@ -1696,8 +1695,8 @@ function viewResults(yr) {
 function loadLevelTestResults() {
   const container = document.getElementById('ltResultsContainer');
   if (!container) return;
-  try {
-    firebase.database().ref('lt_results').orderByChild('timestamp').limitToLast(200).once('value', snap => {
+  firebase.database().ref('lt_results').orderByChild('timestamp').limitToLast(200).once('value')
+    .then(snap => {
       const results = [];
       snap.forEach(child => results.push({key: child.key, ...child.val()}));
       results.reverse();
@@ -1756,10 +1755,10 @@ function loadLevelTestResults() {
             <tbody>${rows}</tbody>
           </table>
         </div>`;
+    })
+    .catch(e => {
+      if (container) container.innerHTML = `<div style="padding:40px;color:#dc2626;">Firebase 연결 오류: ${e.message}</div>`;
     });
-  } catch(e) {
-    if (container) container.innerHTML = `<div style="padding:40px;color:#dc2626;">Firebase 연결 오류: ${e.message}</div>`;
-  }
 }
 
 function renderTeacherSettings(store) {
