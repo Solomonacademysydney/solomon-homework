@@ -4153,6 +4153,8 @@ function normAns(a) {
   let s = String(a).trim();
   // Normalize unicode minus/dash variants to hyphen-minus (fixes "-8 vs −8" mismatch)
   s = s.replace(/[\u2212\u2013\u2014\u2010\u2011]/g, '-');
+  // Normalize all whitespace variants (non-breaking space, thin space, etc.) to regular space
+  s = s.replace(/[\u00A0\u2009\u202F\u3000]/g, ' ').replace(/\s+/g, ' ').trim();
   // Strip leading checkmark/cross symbols (PDF answer keys: "✓ ANSWER: B" → "ANSWER: B")
   s = s.replace(/^[✓✔☑✅❌⭕]\s*/, '').trim();
   // Strip "WORD: value" prefix — handles "ANSWER: B", "Answer: C", etc.
