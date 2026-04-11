@@ -2904,17 +2904,58 @@ function renderParentReportSection(child, store, period) {
   if (!data || data.results.length === 0) return '';
 
   const savedReport = store.reports?.[reportPeriodKey(period)]?.[child.id]?.maths;
-  let html = `<div class="report-panel" style="margin-top:20px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;">
-      <div class="report-panel-title">📋 학습 리포트</div>
+  const detailId = `detailReport_${child.id}_${period.year}_${period.month}_${period.week}`;
+
+  let html = `<div class="report-panel" style="margin-top:20px;">`;
+
+  // ── 시각적 학습 리포트 (상단 메인) ──
+  if (savedReport) {
+    const rd = {
+      student: child,
+      scorePercent: savedReport.scorePercent,
+      totalCorrect: savedReport.totalCorrect,
+      totalQuestions: savedReport.totalQuestions,
+      wrongCount: savedReport.wrongCount,
+      setCount: savedReport.setCount,
+      grade: savedReport.grade,
+      setScores: savedReport.setScores,
+      weakAreas: savedReport.weakAreas,
+      periodLabel: periodLabel(period),
+      termLabel: termLabel(new Date())
+    };
+    html += generateVisualReportHTML(rd, savedReport.comment);
+    html += `<div style="padding:16px 20px 8px;display:flex;gap:10px;align-items:center;">
+      <button class="btn-sm btn-navy" onclick="
+        const d=document.getElementById('${detailId}');
+        const open=d.style.display!=='none';
+        d.style.display=open?'none':'block';
+        this.textContent=open?'📋 상세 리포트 보기':'📋 상세 리포트 닫기';
+      ">📋 상세 리포트 보기</button>
+      <button class="btn-sm btn-navy" onclick="downloadReportAsPNG(document.getElementById('visualReportContainer'),'${child.name}','${termLabel(new Date())}')">📥 PNG 저장</button>
+    </div>`;
+  } else {
+    html += `<div style="margin:20px;background:#f8f9ff;border:2px dashed #cbd5e1;border-radius:14px;padding:32px;text-align:center;">
+      <div style="font-size:32px;margin-bottom:10px;">📊</div>
+      <div style="font-weight:800;font-size:16px;color:var(--navy);margin-bottom:6px;">아직 리포트가 준비되지 않았습니다</div>
+      <div style="font-size:13px;color:var(--muted);">선생님이 리포트를 생성하면 여기에 표시됩니다.</div>
+    </div>
+    <div style="padding:0 20px 16px;">
+      <button class="btn-sm btn-navy" onclick="
+        const d=document.getElementById('${detailId}');
+        const open=d.style.display!=='none';
+        d.style.display=open?'none':'block';
+        this.textContent=open?'📋 상세 리포트 보기':'📋 상세 리포트 닫기';
+      ">📋 상세 리포트 보기</button>
+    </div>`;
+  }
+
+  // ── 상세 텍스트 리포트 (기본 숨김) ──
+  html += `<div id="${detailId}" style="display:none;border-top:2px solid var(--border);padding:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div class="report-panel-title">📋 상세 학습 리포트</div>
       <button class="btn-print-parent" onclick="printParentReport()" style="padding:8px 14px;background:var(--navy);color:#fff;border:none;border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">🖨️ 인쇄 / PDF</button>
     </div>
-    <div class="report-panel-sub">${child.name} · Year ${child.year} · ${periodLabel(period)}</div>
-    ${savedReport ? `<div style="margin-bottom:16px;">
-      <button class="btn-sm btn-navy" onclick="showSavedVisualReport('${child.id}', '${reportPeriodKey(period)}')">
-        📊 학습 리포트 이미지 보기
-      </button>
-    </div>` : ''}`;
+    <div class="report-panel-sub">${child.name} · Year ${child.year} · ${periodLabel(period)}</div>`;
 
   data.results.forEach((r, ri) => {
     const cls = r.score>=80?'pill-a':r.score>=60?'pill-b':'pill-c';
@@ -3016,7 +3057,8 @@ function renderParentReportSection(child, store, period) {
     html += `</div><hr style="border:none;border-top:2px solid var(--border);margin:20px 0;">`;
   });
 
-  html += `</div>`;
+  html += `</div>`; // 상세 리포트 닫기
+  html += `</div>`; // report-panel 닫기
   return html;
 }
 
