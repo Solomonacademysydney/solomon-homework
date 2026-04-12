@@ -213,6 +213,26 @@ function fbSetSubmissions(submissions) {
 
 function renderMath(text) {
   if (!text || typeof text !== 'string') return text || '';
+  // 중복 보정: "plain text\n$$same katex$$" → katex만 사용
+  if (text.includes('\n') && /\$\$/.test(text)) {
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+    // 줄 중 $$...$$ 블록이 있으면 plain text 줄과 내용 비교 후 중복 제거
+    const mathLines = lines.filter(l => /^\$\$.*\$\$$/.test(l));
+    if (mathLines.length > 0) {
+      const otherLines = lines.filter(l => !/^\$\$.*\$\$$/.test(l));
+      // plain text 줄이 math 줄과 내용이 비슷하면 제거
+      const kept = otherLines.filter(pl => {
+        const stripped = pl.replace(/[²³\.\?\!\s]/g, '').toLowerCase();
+        return !mathLines.some(ml => {
+          const mathContent = ml.replace(/\$\$/g, '').replace(/\\text\{([^}]*)\}/g, '$1').replace(/[\s\\{}^_]/g, '').toLowerCase();
+          // 핵심 단어가 70% 이상 겹치면 중복으로 판단
+          return stripped.length > 0 && mathContent.length > 0 &&
+            stripped.replace(/[^a-z0-9]/g, '').substring(0,10) === mathContent.replace(/[^a-z0-9]/g, '').substring(0,10);
+        });
+      });
+      text = [...kept, ...mathLines].join('\n');
+    }
+  }
   if (text.includes('\n')) {
     return text.split('\n').map(line => renderMath(line)).join('<br>');
   }
@@ -1029,6 +1049,25 @@ function renderTeacher() {
           </div>` : ''}
         </div>`;
     }
+
+    // ── JSON 임포트 섹션 ──────────────────────────────────
+    html += `
+      <div style="margin-top:16px;padding:16px;background:#f0fdf4;border-radius:14px;border:2px solid #86efac;">
+        <div style="font-size:15px;font-weight:900;color:#166534;margin-bottom:12px;">📂 JSON 파일로 문제 세트 가져오기</div>
+        <div style="font-size:13px;color:#15803d;margin-bottom:12px;">
+          문제+정답 통합 파일 1개, 또는 문제/정답 파일 2개를 함께 선택할 수 있습니다.
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <label style="background:#16a34a;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:700;font-size:13px;">
+            📁 JSON 파일 선택 (1~2개)
+            <input type="file" id="hwJsonFileInput_${selectedYear}" accept=".json" multiple
+              style="display:none;"
+              onchange="importHwJsonForYear(this, ${selectedYear})">
+          </label>
+          <span id="hwJsonFileName_${selectedYear}" style="font-size:13px;color:#166534;font-weight:600;"></span>
+        </div>
+        <div id="hwJsonPreview_${selectedYear}" style="margin-top:10px;"></div>
+      </div>`;
 
     // editor (new set or editing existing set)
     if (editingSetIdx !== null) {
@@ -5648,6 +5687,284 @@ function removeTSForYear(yr) {
     fbSetHomeworkSet(key, store.homeworkSets[key]);
     renderTeacher();
   }
+}
+
+// ── HW JSON Import ────────────────────────────────────────────────────────
+
+// 여러 JSON 형식을 자동 감지하여 통합 처리
+function importHwJsonForYear(input, yr) {
+  const files = Array.from(input.files);
+  if (!files.length) return;
+
+  const nameEl = document.getElementById(`hwJsonFileName_${yr}`);
+  if (nameEl) nameEl.textContent = files.map(f => f.name).join(', ');
+
+  // 모든 파일을 읽은 뒤 처리
+  const readPromises = files.map(f => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try { resolve({ name: f.name, data: JSON.parse(e.target.result) }); }
+      catch(err) { reject(new Error(`${f.name}: JSON 파싱 오류 — ${err.message}`)); }
+    };
+    reader.readAsText(f, 'utf-8');
+  }));
+
+  Promise.all(readPromises).then(results => {
+    const merged = _mergeHwJsonFiles(results);
+    if (!merged) return;
+    _showHwJsonPreview(yr, merged);
+  }).catch(err => {
+    alert(err.message);
+  });
+
+  input.value = '';
+}
+
+// 파일 구조 자동 감지 & 병합
+function _mergeHwJsonFiles(results) {
+  let questions = null;   // [{ set, number, question_text, choices?, ... }]
+  let answers   = null;   // [{ id/set+number, correct_choice, correct_text, explanation }]
+
+  for (const { name, data } of results) {
+    // 형식 1: 배열 최상위 — [{ set, question_text, answer, ... }] (통합 파일)
+    if (Array.isArray(data)) {
+      if (data[0]?.question_text || data[0]?.text) {
+        questions = data.map(q => ({
+          set: q.set || 'A',
+          number: q.num || q.number || 0,
+          question_text: q.question_text || q.text || '',
+          question_katex: q.question_katex || '',
+          set_title: q.set_title || '',
+          type: q.type || 'SA',
+          choices: q.choices || q.options || null,
+          answer: q.answer || '',
+          explanation: q.explanation || ''
+        }));
+      } else if (data[0]?.correct_choice || data[0]?.correct_text) {
+        answers = data;
+      }
+      continue;
+    }
+
+    // 형식 2: { questions: [...] } (문제 파일)
+    if (data.questions && Array.isArray(data.questions)) {
+      questions = data.questions.map(q => ({
+        set: q.set || 'A',
+        number: q.number || q.num || 0,
+        question_text: q.question_text || q.text || '',
+        question_katex: q.question_katex || '',
+        set_title: q.set_title || data.title || '',
+        type: q.type || 'SA',
+        choices: q.choices || q.options || null,
+        answer: q.answer || '',
+        explanation: q.explanation || ''
+      }));
+    }
+
+    // 형식 3: { answers: [...] } (정답 파일)
+    if (data.answers && Array.isArray(data.answers)) {
+      answers = data.answers;
+    }
+  }
+
+  if (!questions || !questions.length) {
+    alert('문제 데이터를 찾을 수 없습니다.\nquestion_text 또는 questions 배열이 있는 JSON 파일을 선택해주세요.');
+    return null;
+  }
+
+  // 정답 파일이 있으면 문제에 병합
+  if (answers && answers.length) {
+    const ansMap = {};
+    answers.forEach(a => {
+      const key = a.id || `${a.set}_${a.number}`;
+      ansMap[key] = a;
+    });
+    questions.forEach(q => {
+      const key1 = `${q.set}_${q.number}`;
+      // id 형식 매칭: T2W2_A_01 등
+      const key2 = Object.keys(ansMap).find(k =>
+        k === key1 || k.endsWith(`_${q.set}_${String(q.number).padStart(2,'0')}`)
+      );
+      const a = ansMap[key2] || ansMap[key1];
+      if (a) {
+        if (!q.answer) q.answer = a.correct_choice || a.correct_text || '';
+        if (!q.explanation) q.explanation = a.explanation || '';
+        // MCQ인 경우 correct_choice를 answer로
+        if (q.type === 'MCQ' && a.correct_choice) q.answer = a.correct_choice;
+      }
+    });
+  }
+
+  return questions;
+}
+
+// 미리보기 표시
+function _showHwJsonPreview(yr, questions) {
+  const setGroups = {};
+  questions.forEach(q => {
+    const s = q.set || 'A';
+    if (!setGroups[s]) setGroups[s] = { title: q.set_title || `Set ${s}`, questions: [] };
+    setGroups[s].questions.push(q);
+  });
+
+  const totalQ = questions.length;
+  const mcqCount = questions.filter(q => q.type === 'MCQ' || (q.choices && q.choices.length)).length;
+  const saCount = totalQ - mcqCount;
+  const hasAnswers = questions.filter(q => q.answer).length;
+
+  const previewEl = document.getElementById(`hwJsonPreview_${yr}`);
+  if (!previewEl) return;
+
+  let html = '<div style="background:#dcfce7;border-radius:8px;padding:12px;margin-top:8px;">';
+  html += '<div style="font-weight:800;color:#166534;margin-bottom:8px;">✅ 파일 확인 완료 — 아래 내용이 등록됩니다:</div>';
+  html += '<ul style="margin:0;padding-left:20px;">';
+  Object.entries(setGroups).forEach(([setKey, info]) => {
+    html += `<li style="color:#15803d;font-size:13px;font-weight:600;">Set ${setKey}: ${info.questions.length}문제 — ${info.title}</li>`;
+  });
+  html += '</ul>';
+  html += `<div style="font-size:12px;color:#166534;margin-top:6px;">📊 MCQ: ${mcqCount}문제 · SA: ${saCount}문제 · 정답: ${hasAnswers}/${totalQ}개</div>`;
+  if (hasAnswers < totalQ) {
+    html += `<div style="font-size:12px;color:#d97706;margin-top:4px;">⚠️ 정답이 없는 문제 ${totalQ - hasAnswers}개 — 정답 JSON 파일을 함께 선택하면 자동 매칭됩니다.</div>`;
+  }
+  html += `<button onclick="doImportHwJson(${yr})"
+    style="margin-top:12px;background:#16a34a;color:#fff;padding:10px 20px;border:none;border-radius:8px;font-weight:800;font-size:14px;cursor:pointer;">
+    🚀 등록하기 (${totalQ}문제)
+  </button>`;
+  html += '</div>';
+  previewEl.innerHTML = html;
+  previewEl.dataset.parsed = JSON.stringify(setGroups);
+}
+
+// \text{} 혼합 katex → "plain text $math$" 형태로 변환
+// 예: "\text{Solve } x^2+5x+6=0"       → "Solve $x^2+5x+6=0$"
+// 예: "\text{Solve } 3x > 14 \text{ or } 5x \leq 4" → "Solve $3x > 14$ or $5x \leq 4$"
+function _katexToMixed(katex) {
+  const parts = [];
+  let remaining = katex;
+  while (remaining.length > 0) {
+    const m = remaining.match(/\\text\{([^}]*)\}/);
+    if (!m) {
+      // 남은 부분은 전부 수식
+      const math = remaining.trim();
+      if (math) parts.push('$' + math + '$');
+      break;
+    }
+    // \text 앞에 수식이 있으면
+    const before = remaining.substring(0, m.index).trim();
+    if (before) parts.push('$' + before + '$');
+    // \text 내용은 plain text
+    const plainText = m[1].trim();
+    if (plainText) parts.push(plainText);
+    remaining = remaining.substring(m.index + m[0].length);
+  }
+  return parts.join(' ').replace(/\s+/g, ' ').trim();
+}
+
+function doImportHwJson(yr) {
+  const previewEl = document.getElementById(`hwJsonPreview_${yr}`);
+  if (!previewEl || !previewEl.dataset.parsed) {
+    alert('먼저 JSON 파일을 선택해주세요.');
+    return;
+  }
+
+  let setGroups;
+  try {
+    setGroups = JSON.parse(previewEl.dataset.parsed);
+  } catch(e) {
+    alert('데이터 오류: ' + e.message);
+    return;
+  }
+
+  const store = getStore();
+  const p     = store.currentPeriod;
+  const key   = hwKey(yr, selectedCountry, p);
+
+  const existingSets = store.homeworkSets[key]?.sets || [];
+  if (existingSets.length > 0) {
+    const ok = confirm(
+      `Year ${yr}에 이미 ${existingSets.length}개 세트가 있습니다.\n` +
+      `JSON 파일의 세트를 추가로 등록할까요?\n` +
+      `(기존 세트는 유지됩니다)`
+    );
+    if (!ok) return;
+  }
+
+  if (!store.homeworkSets[key]) {
+    store.homeworkSets[key] = {
+      year: yr,
+      country: selectedCountry,
+      period: p,
+      sets: []
+    };
+  }
+
+  const hw = store.homeworkSets[key];
+  const addedSets = [];
+
+  Object.entries(setGroups).forEach(([setKey, info]) => {
+    const questions = info.questions
+      .sort((a, b) => (a.number || a.num || 0) - (b.number || b.num || 0))
+      .map((q, i) => {
+        // question_katex → renderMath 호환 text 변환
+        let katex = q.question_katex ? q.question_katex.replace(/^\$+|\$+$/g, '').trim() : '';
+        let text = '';
+
+        if (!katex) {
+          // katex 없음 → question_text만 사용 (달러 기호 이스케이프)
+          text = (q.question_text || '').replace(/\$/g, '\\$');
+        } else if (/\\text\{/.test(katex)) {
+          // \text{} 포함 → \text 부분은 plain text, 나머지는 $inline math$로 변환
+          // 예: "\text{Solve } x^2+5x+6=0" → "Solve $x^2+5x+6=0$"
+          text = _katexToMixed(katex);
+        } else {
+          // 순수 수식 → question_text + inline math
+          const plain = (q.question_text || '').replace(/\$/g, '\\$');
+          text = plain ? `${plain}\n$$${katex}$$` : `$$${katex}$$`;
+        }
+
+        // MCQ: choices를 options 배열로 변환
+        const isMCQ = q.type === 'MCQ' || (q.choices && q.choices.length > 0);
+        let options = null;
+        if (isMCQ && q.choices) {
+          options = q.choices.map(c => c.text || c.katex || c);
+        }
+
+        return {
+          id: `q${i}`,
+          text,
+          type: isMCQ ? 'mc' : 'sa',
+          answer: q.answer || '',
+          hint1: '',
+          hint2: '',
+          explanation: q.explanation || '',
+          options
+        };
+      });
+
+    const setIdx   = hw.sets.length;
+    const setTitle = `Set ${setIdx + 1} (${info.title})`;
+
+    hw.sets.push({
+      setIdx,
+      title:            setTitle,
+      questions,
+      createdAt:        new Date().toLocaleDateString('en-US'),
+      calculatorRanges: []
+    });
+
+    addedSets.push(setTitle);
+  });
+
+  saveStore(store);
+  fbSetHomeworkSet(key, store.homeworkSets[key]);
+  renderTeacher();
+
+  const totalQ = Object.values(setGroups).reduce((s, g) => s + g.questions.length, 0);
+  const msg = document.createElement('div');
+  msg.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;padding:14px 28px;border-radius:12px;font-weight:800;font-size:15px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);';
+  msg.textContent = `✅ ${addedSets.length}개 세트 등록 완료! (${totalQ}문제)`;
+  document.body.appendChild(msg);
+  setTimeout(() => msg.remove(), 3000);
 }
 
 // ── TS Student Functions ────────────────────────────────────────────────────

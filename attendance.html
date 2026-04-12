@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>출석부</title>
+<style>
+  :root { --b:#e5e7eb; --bg:#f8fafc; --fg:#111827; --mut:#6b7280; --pri:#2563eb; --ok:#16a34a; --warn:#d97706; --bad:#dc2626; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--fg); }
+  header { background:#fff; border-bottom:1px solid var(--b); padding:14px 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  header h1 { font-size:18px; margin:0; }
+  header .sp { flex:1; }
+  main { max-width:1100px; margin:0 auto; padding:20px; }
+  .card { background:#fff; border:1px solid var(--b); border-radius:10px; padding:16px; margin-bottom:16px; }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  button { background:var(--pri); color:#fff; border:0; padding:8px 14px; border-radius:6px; cursor:pointer; font-size:14px; }
+  button.ghost { background:#fff; color:var(--fg); border:1px solid var(--b); }
+  button.danger { background:var(--bad); }
+  button.sm { padding:4px 10px; font-size:12px; }
+  input, select { padding:7px 10px; border:1px solid var(--b); border-radius:6px; font-size:14px; }
+  table { width:100%; border-collapse:collapse; }
+  th, td { padding:8px 10px; border-bottom:1px solid var(--b); text-align:left; font-size:14px; vertical-align:middle; }
+  th { background:#f3f4f6; font-weight:600; font-size:13px; color:var(--mut); }
+  .pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; font-weight:600; }
+  .pill.present { background:#dcfce7; color:var(--ok); }
+  .pill.late    { background:#fef3c7; color:var(--warn); }
+  .pill.absent  { background:#fee2e2; color:var(--bad); }
+  .pill.inactive{ background:#f3f4f6; color:var(--mut); }
+  .muted { color:var(--mut); font-size:13px; }
+  .grid-days { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+  .day { border:1px solid var(--b); border-radius:8px; padding:8px; min-height:70px; cursor:pointer; background:#fff; }
+  .day.today { border-color:var(--pri); }
+  .day.sel   { border-color:var(--pri); box-shadow:0 0 0 2px #dbeafe; }
+  .day.done  { background:#dcfce7; border-color:#86efac; }
+  .day.done .d::after { content:" ✓"; color:var(--ok); }
+  .day .d { font-weight:700; }
+  .day .wd { font-size:11px; color:var(--mut); }
+  .day .dot { font-size:10px; color:var(--mut); margin-top:4px; }
+  .seg { display:inline-flex; border:1px solid var(--b); border-radius:6px; overflow:hidden; }
+  .seg button { background:#fff; color:var(--fg); border:0; padding:6px 10px; font-size:13px; }
+  .seg button.on { background:var(--pri); color:#fff; }
+  h2 { font-size:16px; margin:0 0 12px; }
+  .nav { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .nav button { background:#fff; color:var(--fg); border:1px solid var(--b); padding:6px 12px; }
+  .nav .label { font-weight:600; min-width:200px; text-align:center; }
+  .tabs { display:flex; gap:4px; margin-bottom:16px; flex-wrap:wrap; }
+  .tabs button { background:#fff; color:var(--mut); border:1px solid var(--b); }
+  .tabs button.on { background:var(--pri); color:#fff; border-color:var(--pri); }
+  .tag { display:inline-block; padding:1px 6px; border-radius:4px; font-size:11px; background:#f3f4f6; color:var(--mut); margin-left:4px; }
+  .banner { background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:12px 16px; margin-bottom:16px; }
+  .banner b { color:var(--pri); }
+  .dayboxes { display:flex; gap:4px; flex-wrap:wrap; }
+  .dayboxes label { display:inline-flex; align-items:center; gap:3px; padding:4px 8px; border:1px solid var(--b); border-radius:6px; cursor:pointer; font-size:13px; background:#fff; }
+  .dayboxes input { margin:0; }
+  .inactive-row td { opacity:0.5; }
+  .mini { width:100%; border-collapse:separate; border-spacing:2px; }
+  .mini th { background:transparent; color:var(--mut); font-size:10px; font-weight:600; text-align:center; padding:2px 0; }
+  .mini td { padding:0; border:0; }
+  .mini .cell { height:20px; border:1px solid var(--b); border-radius:4px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:11px; background:#fff; line-height:1; }
+  .mini .cell.dim { color:#cbd5e1; background:#fafafa; font-size:9px; }
+  .mini .cell.done { background:#dcfce7; border-color:#86efac; font-weight:600; }
+  .mini .cell.today { border-color:var(--pri); }
+  .mini .cell.sel { box-shadow:0 0 0 2px #dbeafe; border-color:var(--pri); }
+  .mini .wkcol { font-size:10px; color:var(--pri); font-weight:600; text-align:center; padding-right:3px; }
+  #view .card.minicard { padding:10px 14px; margin-bottom:10px; }
+  .sync-status { font-size:12px; padding:3px 10px; border-radius:99px; font-weight:600; }
+  .sync-status.ok { background:#dcfce7; color:var(--ok); }
+  .sync-status.err { background:#fee2e2; color:var(--bad); }
+  .sync-status.loading { background:#fef3c7; color:var(--warn); }
+</style>
+</head>
+<body>
+<header>
+  <h1>📅 출석부</h1>
+  <div class="sp"></div>
+  <span id="syncStatus" class="sync-status loading">⏳ Firebase 연결 중...</span>
+  <div class="muted" id="termInfo"></div>
+  <button class="ghost sm" onclick="openSettings()">⚙ 설정</button>
+</header>
+
+<main>
+  <div id="banner"></div>
+  <div class="tabs">
+    <button id="tab-week"     class="on" onclick="setTab('week')">주별 출석</button>
+    <button id="tab-month"    onclick="setTab('month')">월별 요약</button>
+    <button id="tab-term"     onclick="setTab('term')">학기 요약</button>
+    <button id="tab-students" onclick="setTab('students')">👨‍🎓 학생 관리</button>
+  </div>
+  <div id="view"></div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+/* ───── Firebase 설정 (index.html과 동일) ───── */
+const firebaseConfig = {
+  apiKey:            "AIzaSyDvj7CDHZ7_Wci0palB9KpbjvCUkvcCRZY",
+  authDomain:        "solomon-76715.firebaseapp.com",
+  databaseURL:       "https://solomon-76715-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:         "solomon-76715",
+  storageBucket:     "solomon-76715.appspot.com",
+  messagingSenderId: "",
+  appId:             ""
+};
+
+firebase.initializeApp(firebaseConfig);
+const FB_HW   = firebase.database().ref('solomon_hw_v3');       // 학생 목록 읽기 전용
+const FB_ATT  = firebase.database().ref('solomon_hw_v3/attendance'); // 출석 데이터 읽기/쓰기
+
+/* ───── 저장소 ───── */
+const LS_KEY       = 'attendance_v2';
+const STU_KEY      = 'attendance_students_v1';
+const SETTINGS_KEY = 'attendance_settings_v2';
+const MIGRATED_KEY = 'attendance_migrated_to_fb';
+
+let store    = {};   // 출석 데이터 { 'YYYY-MM-DD': { studentId: 'present|late|absent' } }
+let students = [];   // 학생 목록 (Firebase에서 로드)
+let settings = loadSettings();
+let cursor   = new Date();
+let tab      = 'week';
+let fbReady  = false;
+
+function loadSettings(){
+  let s;
+  try { s = JSON.parse(localStorage.getItem(SETTINGS_KEY)); } catch {}
+  if (!s) return defaultSettings();
+  if (!s.terms && s.termStart) {
+    s.terms = [{ start: s.termStart, weeks: s.termWeeks || 10 }];
+    delete s.termStart; delete s.termWeeks;
+  }
+  if (!s.terms || !s.terms.length) return defaultSettings();
+  return s;
+}
+function defaultSettings(){
+  return { terms: [
+    { start: '2026-02-02', weeks: 10 },
+    { start: '2026-04-27', weeks: 11 },
+    { start: '2026-07-20', weeks: 10 },
+    { start: '2026-10-12', weeks: 10 },
+  ]};
+}
+function saveSettings(s){ localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
+
+/* ───── Firebase: 학생 목록 로드 (읽기 전용) ───── */
+function loadStudentsFromFirebase() {
+  return FB_HW.child('users').once('value').then(snap => {
+    const users = snap.val();
+    if (!Array.isArray(users) || !users.length) return [];
+    return users
+      .filter(u => u && u.role === 'student' && u.status !== 'inactive' && !u.isTest)
+      .map(u => ({
+        id:      u.id,
+        name:    u.name || u.id,
+        year:    u.year || 0,
+        country: u.country || 'AU',
+        days:    u.days || [0,1,2,3,4],
+        status:  'active'
+      }));
+  });
+}
+
+/* ───── Firebase: 출석 데이터 로드/저장 ───── */
+function loadAttendanceFromFirebase() {
+  return FB_ATT.once('value').then(snap => snap.val() || {});
+}
+
+function saveAttendanceToFirebase() {
+  FB_ATT.set(store).catch(err => {
+    console.error('[Firebase] 출석 저장 실패:', err);
+    setSyncStatus('err', '⚠️ 저장 실패');
+  });
+}
+
+/* ───── localStorage → Firebase 마이그레이션 ───── */
+function migrateLocalToFirebase() {
+  if (localStorage.getItem(MIGRATED_KEY)) return Promise.resolve(false);
+
+  const localData = (() => {
+    try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch { return {}; }
+  })();
+
+  const dates = Object.keys(localData);
+  if (!dates.length) {
+    localStorage.setItem(MIGRATED_KEY, 'done');
+    return Promise.resolve(false);
+  }
+
+  // 기존 Firebase 데이터와 병합 (로컬 데이터 우선)
+  return loadAttendanceFromFirebase().then(fbData => {
+    const merged = { ...fbData };
+    dates.forEach(date => {
+      if (!merged[date]) merged[date] = {};
+      Object.assign(merged[date], localData[date]);
+    });
+    return FB_ATT.set(merged).then(() => {
+      localStorage.setItem(MIGRATED_KEY, 'done');
+      console.log(`[마이그레이션] ${dates.length}일 출석 기록 Firebase로 이전 완료`);
+      return true;
+    });
+  });
+}
+
+/* ───── 출석 요일 저장 (Firebase attendance/student_days/{id}) ───── */
+const FB_DAYS = firebase.database().ref('solomon_hw_v3/attendance_days');
+
+function loadStudentDaysFromFirebase() {
+  return FB_DAYS.once('value').then(snap => snap.val() || {});
+}
+
+function saveStudentDayToFirebase(studentId, days) {
+  FB_DAYS.child(studentId).set(days);
+}
+
+/* ───── 동기화 상태 표시 ───── */
+function setSyncStatus(cls, text) {
+  const el = document.getElementById('syncStatus');
+  el.className = 'sync-status ' + cls;
+  el.textContent = text;
+}
+
+/* ───── 초기화 ───── */
+async function init() {
+  try {
+    // 1. 학생 목록 로드 (index.html Firebase에서)
+    students = await loadStudentsFromFirebase();
+    if (!students.length) {
+      setSyncStatus('err', '⚠️ 학생 데이터 없음');
+      return;
+    }
+
+    // 2. 출석 요일 로드 (attendance_days에서)
+    const savedDays = await loadStudentDaysFromFirebase();
+    students.forEach(s => {
+      if (savedDays[s.id]) s.days = savedDays[s.id];
+    });
+
+    // 3. localStorage 데이터 마이그레이션 (최초 1회)
+    await migrateLocalToFirebase();
+
+    // 4. 출석 데이터 로드 (Firebase에서)
+    store = await loadAttendanceFromFirebase();
+
+    // 5. 실시간 동기화 — 다른 기기에서 변경 시 반영
+    FB_ATT.on('value', snap => {
+      if (!fbReady) return;
+      const data = snap.val() || {};
+      store = data;
+      render();
+    });
+
+    fbReady = true;
+    setSyncStatus('ok', '✅ 연결됨 · ' + students.length + '명');
+    render();
+  } catch(err) {
+    console.error('[init]', err);
+    setSyncStatus('err', '❌ 연결 실패');
+  }
+}
+
+init();
+
+/* ───── 날짜 유틸 ───── */
+function ymd(d){ const x=new Date(d); return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); }
+function parseYmd(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+function startOfWeek(d){ const x=new Date(d); const wd=(x.getDay()+6)%7; x.setDate(x.getDate()-wd); x.setHours(0,0,0,0); return x; }
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function sameDay(a,b){ return ymd(a)===ymd(b); }
+function weekdayIdx(d){ return (new Date(d).getDay()+6)%7; }
+function termInfoOf(d){
+  const sw = startOfWeek(d);
+  for (let i=0; i<settings.terms.length; i++){
+    const t = settings.terms[i];
+    const ts = startOfWeek(parseYmd(t.start));
+    const wk = Math.round((sw - ts)/(7*24*3600*1000)) + 1;
+    if (wk >= 1 && wk <= t.weeks) return { term: i+1, week: wk, weeks: t.weeks };
+  }
+  return null;
+}
+function termRange(i){
+  const t = settings.terms[i];
+  const start = startOfWeek(parseYmd(t.start));
+  const end   = addDays(start, t.weeks*7 - 1);
+  return { start, end, weeks: t.weeks };
+}
+const WD = ['월','화','수','목','금','토','일'];
+const monthNames = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+const fmtKor = d => `${d.getMonth()+1}월 ${d.getDate()}일`;
+
+function activeStudents(){ return students.filter(s => s.status !== 'inactive'); }
+function studentsForWeekday(wIdx){ return activeStudents().filter(s => (s.days||[]).includes(wIdx)); }
+
+/* ───── 헤더/배너 ───── */
+function renderTermInfo(){
+  const ti = termInfoOf(cursor);
+  const txt = ti ? `Term ${ti.term} · ${ti.week}/${ti.weeks}주차` : '학기 외';
+  document.getElementById('termInfo').textContent = `📚 ${txt}`;
+}
+function renderBanner(){
+  const ti = termInfoOf(cursor);
+  const sel = ti
+    ? `<b>선택한 날짜</b>: ${fmtKor(cursor)} → <b style="color:var(--pri)">Term ${ti.term} · ${ti.week}/${ti.weeks}주차</b>`
+    : `<b>선택한 날짜</b>: ${fmtKor(cursor)} → 학기 외`;
+  document.getElementById('banner').innerHTML = `<div class="banner">📚 ${sel}</div>`;
+}
+
+function setTab(t){
+  tab = t;
+  ['week','month','term','students'].forEach(k => document.getElementById('tab-'+k).classList.toggle('on', k===t));
+  render();
+}
+
+/* ───── 미니 달력 ───── */
+function renderMiniCalendar(){
+  const y = cursor.getFullYear(), m = cursor.getMonth();
+  const first = new Date(y,m,1);
+  const gridStart = startOfWeek(first);
+  const today = new Date();
+  const selWS = ymd(startOfWeek(cursor));
+  const rows = [];
+  let d = new Date(gridStart);
+  for (let r=0; r<6; r++){
+    const cells = [];
+    const rowWS = new Date(d);
+    for (let c=0; c<7; c++){
+      const ds = ymd(d);
+      const has = !!store[ds];
+      const inMonth = d.getMonth()===m;
+      const cls = [
+        'cell',
+        inMonth?'':'dim',
+        has?'done':'',
+        sameDay(d,today)?'today':'',
+        sameDay(d,cursor)?'sel':''
+      ].join(' ');
+      const label = inMonth ? d.getDate() : `${d.getMonth()+1}/${d.getDate()}`;
+      cells.push(`<td><div class="${cls}" onclick="selectDay('${ds}')">${label}</div></td>`);
+      d = addDays(d,1);
+    }
+    const ti = termInfoOf(rowWS);
+    const wkLabel = ti ? `T${ti.term}W${ti.week}` : '·';
+    rows.push(`<tr><td class="wkcol">${wkLabel}</td>${cells.join('')}</tr>`);
+    if (d.getMonth() !== m && r>=4) break;
+  }
+  return `
+  <div class="card minicard">
+    <div class="row" style="justify-content:space-between; margin-bottom:4px;">
+      <div class="nav" style="gap:4px;">
+        <button class="sm" onclick="moveMonthCursor(-1)">‹</button>
+        <div class="label" style="min-width:auto; font-size:13px;">${y}년 ${monthNames[m]}</div>
+        <button class="sm" onclick="moveMonthCursor(1)">›</button>
+      </div>
+    </div>
+    <table class="mini">
+      <thead><tr><th></th>${WD.map(w=>`<th>${w}</th>`).join('')}</tr></thead>
+      <tbody>${rows.join('')}</tbody>
+    </table>
+  </div>`;
+}
+function moveMonthCursor(n){
+  const d = new Date(cursor.getFullYear(), cursor.getMonth()+n, 1);
+  cursor = d; render();
+}
+
+/* ───── 주별 ───── */
+function renderWeek(){
+  const ws = startOfWeek(cursor);
+  const we = addDays(ws,6);
+  const ti = termInfoOf(cursor);
+  const days = [...Array(7)].map((_,i)=>addDays(ws,i));
+  const today = new Date();
+
+  let html = renderMiniCalendar() + `
+  <div class="card">
+    <div class="row" style="justify-content:space-between;">
+      <div class="nav">
+        <button onclick="moveWeek(-1)">‹ 이전 주</button>
+        <div class="label">${fmtKor(ws)} ~ ${fmtKor(we)}</div>
+        <button onclick="moveWeek(1)">다음 주 ›</button>
+        <button class="sm" onclick="goToday()">오늘</button>
+      </div>
+      <div class="muted">
+        ${ti ? `<b style="color:var(--pri)">Term ${ti.term} · ${ti.week}/${ti.weeks}주차</b>` : '학기 외'}
+        ${ti ? `&nbsp;·&nbsp; 학기: ${(()=>{const r=termRange(ti.term-1);return fmtKor(r.start)+'~'+fmtKor(r.end);})()}` : ''}
+      </div>
+    </div>
+    <div class="grid-days" style="margin-top:14px;">
+      ${days.map((d,i)=>{
+        const ds = ymd(d);
+        const rec = store[ds] || {};
+        const expected = studentsForWeekday(i).length;
+        const cnt = Object.values(rec).filter(v=>v).length;
+        return `<div class="day ${cnt>0?'done':''} ${sameDay(d,today)?'today':''} ${sameDay(d,cursor)?'sel':''}" onclick="selectDay('${ds}')">
+          <div class="wd">${WD[i]}</div>
+          <div class="d">${d.getDate()}</div>
+          <div class="dot">${expected? `${cnt}/${expected}명`:'-'}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+
+  const sel = ymd(cursor);
+  const wIdx = weekdayIdx(cursor);
+  const list = studentsForWeekday(wIdx);
+  const rec = store[sel] || {};
+  html += `
+  <div class="card">
+    <div class="row" style="justify-content:space-between;">
+      <h2>${fmtKor(cursor)} (${WD[wIdx]}요일) — ${list.length}명</h2>
+      <div>
+        <button class="ghost sm" onclick="markAll('present')">전체 출석</button>
+        <button class="ghost sm" onclick="clearDay()">초기화</button>
+      </div>
+    </div>
+    ${list.length===0 ? `<div class="muted">이 요일에 등록된 학생이 없습니다. 학생 관리 탭에서 출석 요일을 지정하세요.</div>` : `
+    <table>
+      <thead><tr><th>학생</th><th>학년</th><th>상태</th></tr></thead>
+      <tbody>
+      ${list.map(s=>{
+        const v = rec[s.id] || '';
+        return `<tr>
+          <td>${s.name}${s.country==='KR'?'<span class="tag">KR</span>':''}</td><td>Y${s.year}</td>
+          <td>
+            <div class="seg">
+              <button class="${v==='present'?'on':''}" onclick="setMark('${s.id}','present')">✅ 출석</button>
+              <button class="${v==='late'?'on':''}"    onclick="setMark('${s.id}','late')">⚠️ 지각</button>
+              <button class="${v==='absent'?'on':''}"  onclick="setMark('${s.id}','absent')">❌ 결석</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+    </table>`}
+  </div>`;
+  return html;
+}
+function moveWeek(n){ cursor = addDays(startOfWeek(cursor), n*7); render(); }
+function goToday(){ cursor = new Date(); render(); }
+function selectDay(ds){ cursor = parseYmd(ds); render(); }
+function setMark(sid, val){
+  const ds = ymd(cursor);
+  if (!store[ds]) store[ds] = {};
+  if (val === '') delete store[ds][sid]; else store[ds][sid] = val;
+  if (Object.keys(store[ds]).length === 0) delete store[ds];
+  saveAttendanceToFirebase(); render();
+}
+function markAll(v){
+  const ds = ymd(cursor);
+  store[ds] = store[ds] || {};
+  studentsForWeekday(weekdayIdx(cursor)).forEach(s => store[ds][s.id] = v);
+  saveAttendanceToFirebase(); render();
+}
+function clearDay(){ delete store[ymd(cursor)]; saveAttendanceToFirebase(); render(); }
+
+/* ───── 월별 ───── */
+function renderMonth(){
+  const y = cursor.getFullYear(), m = cursor.getMonth();
+  const dates = Object.keys(store).filter(d => {
+    const dt = parseYmd(d);
+    return dt.getFullYear()===y && dt.getMonth()===m;
+  }).sort();
+  const tally = {};
+  activeStudents().forEach(s => tally[s.id] = { p:0, l:0, a:0 });
+  dates.forEach(d => {
+    Object.entries(store[d]).forEach(([sid,v])=>{
+      if (!tally[sid]) return;
+      if (v==='present') tally[sid].p++;
+      else if (v==='late') tally[sid].l++;
+      else if (v==='absent') tally[sid].a++;
+    });
+  });
+
+  let html = `
+  <div class="card">
+    <div class="nav">
+      <button onclick="moveMonth(-1)">‹ 이전 달</button>
+      <div class="label">${y}년 ${monthNames[m]}</div>
+      <button onclick="moveMonth(1)">다음 달 ›</button>
+    </div>
+    <div class="muted" style="margin-top:8px;">기록된 날짜: ${dates.length}일</div>
+  </div>
+  <div class="card">
+    <h2>학생별 요약</h2>
+    <table>
+      <thead><tr><th>학생</th><th>학년</th><th>출석</th><th>지각</th><th>결석</th><th>출석률</th></tr></thead>
+      <tbody>
+      ${activeStudents().map(s=>{
+        const t = tally[s.id]; const tot = t.p+t.l+t.a;
+        const rate = tot? Math.round(((t.p+t.l*0.5)/tot)*100)+'%' : '-';
+        return `<tr><td>${s.name}</td><td>Y${s.year}</td>
+          <td><span class="pill present">${t.p}</span></td>
+          <td><span class="pill late">${t.l}</span></td>
+          <td><span class="pill absent">${t.a}</span></td>
+          <td>${rate}</td></tr>`;
+      }).join('')}
+      </tbody>
+    </table>
+  </div>
+  ${dates.length? `
+  <div class="card">
+    <h2>📅 기록 — ${monthNames[m]}</h2>
+    <table>
+      <thead><tr><th>날짜</th><th>요일</th><th>기록</th><th></th></tr></thead>
+      <tbody>
+      ${dates.map(d=>{
+        const dt = parseYmd(d); const wd = WD[(dt.getDay()+6)%7];
+        const rec = store[d];
+        const summary = students.map(s=>{
+          const v = rec[s.id]; if(!v) return '';
+          const cls = v==='present'?'present':v==='late'?'late':'absent';
+          const ic = v==='present'?'✅':v==='late'?'⚠️':'❌';
+          return `<span class="pill ${cls}" style="margin-right:4px;">${ic}${s.name}</span>`;
+        }).join('');
+        return `<tr><td>${d}</td><td>${wd}</td><td>${summary||'<span class="muted">-</span>'}</td>
+          <td><button class="ghost sm" onclick="deleteDate('${d}')">삭제</button></td></tr>`;
+      }).join('')}
+      </tbody>
+    </table>
+  </div>`:''}`;
+  return html;
+}
+function moveMonth(n){ cursor = new Date(cursor.getFullYear(), cursor.getMonth()+n, 1); render(); }
+function deleteDate(d){ if(confirm(d+' 기록을 삭제할까요?')){ delete store[d]; saveAttendanceToFirebase(); render(); } }
+
+/* ───── 학기 요약 ───── */
+function renderTerm(){
+  const ti = termInfoOf(cursor);
+  const idx = ti ? ti.term-1 : 0;
+  const { start:ts, end:te, weeks } = termRange(idx);
+  const tally = {};
+  activeStudents().forEach(s => tally[s.id] = { p:0, l:0, a:0 });
+  const weekRows = [];
+  for (let w=0; w<weeks; w++){
+    const ws = addDays(ts, w*7), we = addDays(ws,6);
+    const wTally = { p:0, l:0, a:0 };
+    for (let i=0;i<7;i++){
+      const ds = ymd(addDays(ws,i));
+      const rec = store[ds]; if(!rec) continue;
+      Object.entries(rec).forEach(([sid,v])=>{
+        if(!tally[sid]) return;
+        if(v==='present'){ tally[sid].p++; wTally.p++; }
+        else if(v==='late'){ tally[sid].l++; wTally.l++; }
+        else if(v==='absent'){ tally[sid].a++; wTally.a++; }
+      });
+    }
+    weekRows.push({ w:w+1, ws, we, t:wTally });
+  }
+  return `
+  <div class="card">
+    <h2>📚 Term ${idx+1} 요약</h2>
+    <div class="muted">기간: ${fmtKor(ts)} ~ ${fmtKor(te)} · 총 ${weeks}주</div>
+    <div class="row" style="margin-top:8px;">
+      ${settings.terms.map((_,i)=>`<button class="sm ${i===idx?'':'ghost'}" onclick="cursor=parseYmd(settings.terms[${i}].start);render();">Term ${i+1}</button>`).join('')}
+    </div>
+  </div>
+  <div class="card">
+    <h2>학생별</h2>
+    <table>
+      <thead><tr><th>학생</th><th>학년</th><th>출석</th><th>지각</th><th>결석</th><th>출석률</th></tr></thead>
+      <tbody>
+      ${activeStudents().map(s=>{
+        const t = tally[s.id]; const tot=t.p+t.l+t.a;
+        const rate = tot? Math.round(((t.p+t.l*0.5)/tot)*100)+'%':'-';
+        return `<tr><td>${s.name}</td><td>Y${s.year}</td>
+          <td><span class="pill present">${t.p}</span></td>
+          <td><span class="pill late">${t.l}</span></td>
+          <td><span class="pill absent">${t.a}</span></td>
+          <td>${rate}</td></tr>`;
+      }).join('')}
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h2>주차별</h2>
+    <table>
+      <thead><tr><th>주차</th><th>기간</th><th>출석</th><th>지각</th><th>결석</th></tr></thead>
+      <tbody>
+      ${weekRows.map(r=>`<tr>
+        <td>${r.w}주차</td>
+        <td>${fmtKor(r.ws)} ~ ${fmtKor(r.we)}</td>
+        <td><span class="pill present">${r.t.p}</span></td>
+        <td><span class="pill late">${r.t.l}</span></td>
+        <td><span class="pill absent">${r.t.a}</span></td>
+      </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+/* ───── 학생 관리 (읽기 전용 + 출석 요일 설정) ───── */
+function renderStudents(){
+  return `
+  <div class="card">
+    <h2>👨‍🎓 학생 관리</h2>
+    <div class="muted">학생 목록은 홈페이지(index.html)에서 관리됩니다. 여기서는 출석 요일만 설정할 수 있습니다.</div>
+  </div>
+  <div class="card">
+    <h2>학생 목록 (${students.length}명)</h2>
+    <table>
+      <thead><tr><th>이름</th><th>학년</th><th>출석 요일</th></tr></thead>
+      <tbody>
+      ${students.map((s,i)=>`
+        <tr>
+          <td>${s.name}${s.country==='KR'?'<span class="tag">KR</span>':''}</td>
+          <td>Y${s.year}</td>
+          <td>
+            <div class="dayboxes">
+              ${WD.map((w,wi)=>`<label><input type="checkbox" ${(s.days||[]).includes(wi)?'checked':''} onchange="toggleDay(${i},${wi},this.checked)">${w}</label>`).join('')}
+            </div>
+          </td>
+        </tr>
+      `).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+function toggleDay(i, wi, on){
+  const s = students[i];
+  s.days = s.days || [];
+  if (on && !s.days.includes(wi)) s.days.push(wi);
+  if (!on) s.days = s.days.filter(x => x !== wi);
+  s.days.sort();
+  saveStudentDayToFirebase(s.id, s.days);
+}
+
+/* ───── 설정 ───── */
+function openSettings(){
+  const cnt = prompt('Term 개수', settings.terms.length);
+  if (cnt === null) return;
+  const n = parseInt(cnt,10);
+  if (!n || n<1) { alert('숫자 오류'); return; }
+  const newTerms = [];
+  for (let i=0;i<n;i++){
+    const cur = settings.terms[i] || { start: ymd(new Date()), weeks: 10 };
+    const ts = prompt(`Term ${i+1} 시작일 (YYYY-MM-DD)\n해당 주의 월요일이 자동 적용됩니다.`, cur.start);
+    if (ts === null) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ts)) { alert('형식 오류'); return; }
+    const wk = prompt(`Term ${i+1} 주 수`, cur.weeks);
+    if (wk === null) return;
+    const w = parseInt(wk,10);
+    if (!w || w<1) { alert('숫자 오류'); return; }
+    newTerms.push({ start: ts, weeks: w });
+  }
+  settings.terms = newTerms;
+  saveSettings(settings); render();
+}
+
+function render(){
+  if (!fbReady) return;
+  renderTermInfo();
+  renderBanner();
+  const v = document.getElementById('view');
+  if (tab==='week')          v.innerHTML = renderWeek();
+  else if (tab==='month')    v.innerHTML = renderMonth();
+  else if (tab==='term')     v.innerHTML = renderTerm();
+  else                       v.innerHTML = renderStudents();
+}
+</script>
+</body>
+</html>
