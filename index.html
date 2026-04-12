@@ -5911,14 +5911,14 @@ function doImportHwJson(yr) {
 
         if (!katex) {
           // katex 없음 → question_text만 사용 (달러 기호 이스케이프)
-          text = (q.question_text || '').replace(/\$/g, '\\$');
+          text = (q.question_text || '');
         } else if (/\\text\{/.test(katex)) {
           // \text{} 포함 → \text 부분은 plain text, 나머지는 $inline math$로 변환
           // 예: "\text{Solve } x^2+5x+6=0" → "Solve $x^2+5x+6=0$"
           text = _katexToMixed(katex);
         } else {
           // 순수 수식 → question_text + inline math
-          const plain = (q.question_text || '').replace(/\$/g, '\\$');
+          const plain = (q.question_text || '');
           text = plain ? `${plain}\n$$${katex}$$` : `$$${katex}$$`;
         }
 
