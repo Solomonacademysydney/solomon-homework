@@ -4261,6 +4261,12 @@ function extractJSON(text) {
 // ── ANSWER VERIFICATION ─────────────────
 async function verifyAnswersWithAI(questions) {
   const letters = ['A','B','C','D','E'];
+  // MCQ인데 선택지(options)가 없으면 검증 불가 → 정답으로 처리하고 제외
+  const unverifiable = questions.filter(q => q.type === 'mc' && (!q.options || !q.options.length));
+  const verifiable   = questions.filter(q => !(q.type === 'mc' && (!q.options || !q.options.length)));
+  if (!verifiable.length) {
+    return unverifiable.map(q => ({ num: q.num, isCorrect: true, correctAnswer: q.answer, explanation: 'MCQ without options — skipped', missingData: false }));
+  }
   let prompt = `You are a math teacher. Review these math questions and their provided answers. For each question, determine if the provided answer is CORRECT. If incorrect, provide the correct answer.
 
 IMPORTANT: Return ONLY a JSON array, no other text. Format:
@@ -4269,9 +4275,9 @@ IMPORTANT: Return ONLY a JSON array, no other text. Format:
 ALSO: If a question appears to be missing context (e.g. references a timetable, table, diagram, or data that is not present in the question text itself), set "missingData": true in that question's JSON object.
 
 Questions:\n`;
-  questions.forEach(q => {
+  verifiable.forEach(q => {
     let qStr = `${q.num}. ${q.text}`;
-    if (q.type==='mc' && q.options) {
+    if (q.type==='mc' && q.options && q.options.length) {
       qStr += ' (' + q.options.map((o,i)=>`${letters[i]}) ${o}`).join(', ') + ')';
     }
     qStr += ` → Answer: ${q.answer || '(none)'}`;
@@ -4282,7 +4288,9 @@ Questions:\n`;
   const raw = await callAI(prompt);
   const result = extractJSON(raw);
   if (!result || !Array.isArray(result)) throw new Error('Could not parse AI response.');
-  return result;
+  // unverifiable(options 없는 MCQ)를 정답으로 병합해서 반환
+  const skipped = unverifiable.map(q => ({ num: q.num, isCorrect: true, correctAnswer: q.answer, explanation: 'MCQ without options — skipped', missingData: false }));
+  return [...result, ...skipped];
 }
 
 function showVerificationResults(questions, verifications) {
