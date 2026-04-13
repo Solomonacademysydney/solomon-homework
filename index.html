@@ -5835,25 +5835,27 @@ function _showHwJsonPreview(yr, questions) {
   previewEl.dataset.parsed = JSON.stringify(setGroups);
 }
 
-// \text{} 혼합 katex → "plain text $math$" 형태로 변환
-// 예: "\text{Solve } x^2+5x+6=0"       → "Solve $x^2+5x+6=0$"
-// 예: "\text{Solve } 3x > 14 \text{ or } 5x \leq 4" → "Solve $3x > 14$ or $5x \leq 4$"
+// \text{} 혼합 katex → "plain text \(math\)" 형태로 변환
+// $...$ 대신 \(...\) 를 사용해 통화 기호 $와의 충돌을 방지
+// 예: "\text{Solve } x^2+5x+6=0"       → "Solve \(x^2+5x+6=0\)"
+// 예: "\text{Solve } 3x > 14 \text{ or } 5x \leq 4" → "Solve \(3x > 14\) or \(5x \leq 4\)"
+// 예: "\text{coins worth \$8.00} \quad 10f+50(40-f)=800" → "coins worth $8.00 \(10f+50(40-f)=800\)"
 function _katexToMixed(katex) {
   const parts = [];
   let remaining = katex;
   while (remaining.length > 0) {
     const m = remaining.match(/\\text\{([^}]*)\}/);
     if (!m) {
-      // 남은 부분은 전부 수식
+      // 남은 부분은 전부 수식 → \(...\) 로 감쌈
       const math = remaining.trim();
-      if (math) parts.push('$' + math + '$');
+      if (math) parts.push('\\(' + math + '\\)');
       break;
     }
-    // \text 앞에 수식이 있으면
+    // \text 앞에 수식이 있으면 → \(...\) 로 감쌈
     const before = remaining.substring(0, m.index).trim();
-    if (before) parts.push('$' + before + '$');
-    // \text 내용은 plain text
-    const plainText = m[1].trim();
+    if (before) parts.push('\\(' + before + '\\)');
+    // \text 내용은 plain text, \$ → $ 로 변환
+    const plainText = m[1].trim().replace(/\\\$/g, '$');
     if (plainText) parts.push(plainText);
     remaining = remaining.substring(m.index + m[0].length);
   }
