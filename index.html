@@ -1012,18 +1012,23 @@ function renderTeacher() {
 
     // existing set list
     if (sets.length > 0) {
+      const currentHwKey = hwKey(selectedYear, selectedCountry, p);
       html += `<div style="margin-bottom:20px;">
         <div style="font-weight:800;color:var(--navy);font-size:14px;margin-bottom:10px;">📋 Registered Sets</div>`;
       sets.forEach((set, idx) => {
         const isEditing = editingSetIdx === idx;
-        html += `<div style="display:flex;align-items:center;gap:10px;background:${isEditing?'#eef2ff':'#f8f6ef'};border-radius:10px;padding:12px 16px;margin-bottom:8px;${isEditing?'border:2px solid var(--navy);':''}">
-          <div style="font-weight:800;color:var(--navy);flex:1;">
-            ${isEditing?'✏️ ':''}${set.title}
-            <span style="color:var(--muted);font-weight:600;font-size:13px;"> (${set.questions.length} questions)</span>
+        html += `<div style="margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:10px;background:${isEditing?'#eef2ff':'#f8f6ef'};border-radius:10px;padding:12px 16px;${isEditing?'border:2px solid var(--navy);':''}">
+            <div style="font-weight:800;color:var(--navy);flex:1;">
+              ${isEditing?'✏️ ':''}${set.title}
+              <span style="color:var(--muted);font-weight:600;font-size:13px;"> (${set.questions.length} questions)</span>
+            </div>
+            <button class="btn-sm btn-gold" onclick="editSet(${idx})">✏️ Edit</button>
+            <button class="btn-sm" style="background:#7c3aed;color:#fff;" onclick="openMoveSetModal(${idx})">📦 이동</button>
+            <button class="btn-sm" style="background:#f59e0b;color:#fff;" onclick="verifySetAnswers('${currentHwKey}',${idx})">🤖 AI 검증</button>
+            <button class="btn-sm btn-red" onclick="deleteSet(${idx})">🗑 Delete</button>
           </div>
-          <button class="btn-sm btn-gold" onclick="editSet(${idx})">✏️ Edit</button>
-          <button class="btn-sm" style="background:#7c3aed;color:#fff;" onclick="openMoveSetModal(${idx})">📦 이동</button>
-          <button class="btn-sm btn-red" onclick="deleteSet(${idx})">🗑 Delete</button>
+          <div id="setVerify_${currentHwKey}_${idx}" style="margin-top:4px;"></div>
         </div>`;
       });
       html += `</div>`;
@@ -5848,13 +5853,243 @@ function _showHwJsonPreview(yr, questions) {
   if (hasAnswers < totalQ) {
     html += `<div style="font-size:12px;color:#d97706;margin-top:4px;">⚠️ 정답이 없는 문제 ${totalQ - hasAnswers}개 — 정답 JSON 파일을 함께 선택하면 자동 매칭됩니다.</div>`;
   }
-  html += `<button onclick="doImportHwJson(${yr})"
-    style="margin-top:12px;background:#16a34a;color:#fff;padding:10px 20px;border:none;border-radius:8px;font-weight:800;font-size:14px;cursor:pointer;">
-    🚀 등록하기 (${totalQ}문제)
-  </button>`;
+  html += `<div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;">
+    <button onclick="validateHwJsonKatex(${yr})"
+      style="background:#6366f1;color:#fff;padding:10px 20px;border:none;border-radius:8px;font-weight:800;font-size:14px;cursor:pointer;">
+      🔍 KaTeX 구조 검수
+    </button>
+    <button onclick="verifyHwJsonAnswers(${yr})"
+      style="background:#f59e0b;color:#fff;padding:10px 20px;border:none;border-radius:8px;font-weight:800;font-size:14px;cursor:pointer;">
+      🤖 AI 오답 검증
+    </button>
+    <button onclick="doImportHwJson(${yr})"
+      style="background:#16a34a;color:#fff;padding:10px 20px;border:none;border-radius:8px;font-weight:800;font-size:14px;cursor:pointer;">
+      🚀 등록하기 (${totalQ}문제)
+    </button>
+  </div>`;
+  html += `<div id="hwJsonValidation_${yr}" style="margin-top:10px;"></div>`;
   html += '</div>';
   previewEl.innerHTML = html;
   previewEl.dataset.parsed = JSON.stringify(setGroups);
+}
+
+// JSON import 미리보기 — KaTeX 구조 검수
+function validateHwJsonKatex(yr) {
+  const previewEl = document.getElementById(`hwJsonPreview_${yr}`);
+  if (!previewEl || !previewEl.dataset.parsed) return;
+  const setGroups = JSON.parse(previewEl.dataset.parsed);
+  const resultEl = document.getElementById(`hwJsonValidation_${yr}`);
+  if (!resultEl) return;
+
+  const issues = [];
+  const safeWords = new Set(['dfrac','frac','text','leq','geq','neq','sqrt','times','div','quad','left','right','alpha','beta','cdot','log','sin','cos','tan']);
+
+  Object.entries(setGroups).forEach(([setKey, info]) => {
+    info.questions.forEach(q => {
+      const k = q.question_katex || '';
+      const id = `Set ${setKey} Q${q.number || 0}`;
+
+      // 1) \text{} 안에 수식 명령어 확인
+      let searchFrom = 0;
+      while (true) {
+        const idx = k.indexOf('\\text{', searchFrom);
+        if (idx < 0) break;
+        let depth = 1, pos = idx + 6;
+        while (pos < k.length && depth > 0) {
+          if (k[pos] === '{') depth++;
+          else if (k[pos] === '}') depth--;
+          pos++;
+        }
+        const content = k.substring(idx + 6, pos - 1);
+        if (/\^\{/.test(content)) issues.push({ id, type: 'katex_in_text', detail: '\\text{} 안에 ^{} 발견', snippet: content.substring(0, 50) });
+        if (/\\dfrac|\\frac/.test(content)) issues.push({ id, type: 'katex_in_text', detail: '\\text{} 안에 \\dfrac 발견', snippet: content.substring(0, 50) });
+        if (/\\leq|\\geq|\\neq|\\sqrt/.test(content)) issues.push({ id, type: 'katex_in_text', detail: '\\text{} 안에 수식 명령어 발견', snippet: content.substring(0, 50) });
+        searchFrom = pos;
+      }
+
+      // 2) \text{} 밖에 영단어 노출 확인
+      const stripped = k.replace(/\\text\{[^}]*\}/g, '§');
+      const words = (stripped.match(/(?<!\\)\b([a-zA-Z]{3,})\b/g) || []).filter(w => !safeWords.has(w.toLowerCase()));
+      if (words.length > 0) issues.push({ id, type: 'words_in_math', detail: `수식모드 영단어: ${words.join(', ')}`, snippet: stripped.substring(0, 60) });
+
+      // 3) 중괄호 균형
+      let depth = 0;
+      for (const ch of k) {
+        if (ch === '{') depth++;
+        else if (ch === '}') depth--;
+        if (depth < 0) break;
+      }
+      if (depth !== 0) issues.push({ id, type: 'brace_mismatch', detail: `중괄호 불균형 (depth: ${depth})`, snippet: k.substring(0, 50) });
+
+      // 4) 정답 누락
+      if (!q.answer) issues.push({ id, type: 'no_answer', detail: '정답 없음' });
+
+      // 5) MCQ 정답 범위
+      if ((q.type === 'MCQ' || (q.choices && q.choices.length)) && q.answer) {
+        if (!/^[A-E]$/i.test(q.answer.trim())) issues.push({ id, type: 'invalid_mcq_answer', detail: `MCQ 정답 "${q.answer}" — A~E가 아님` });
+      }
+    });
+
+    // 번호 중복/누락
+    const nums = info.questions.map(q => q.number || 0);
+    const dupes = nums.filter((n, i) => nums.indexOf(n) !== i);
+    if (dupes.length) issues.push({ id: `Set ${setKey}`, type: 'duplicate_num', detail: `번호 중복: Q${[...new Set(dupes)].join(', Q')}` });
+    const sorted = [...nums].sort((a, b) => a - b);
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i] - sorted[i - 1] > 1) issues.push({ id: `Set ${setKey}`, type: 'missing_num', detail: `번호 누락: Q${sorted[i-1]+1}~Q${sorted[i]-1}` });
+    }
+  });
+
+  const typeLabels = { katex_in_text:'🔴 \\text{} 안 수식 충돌', words_in_math:'🟠 수식모드 영단어 노출', brace_mismatch:'🔴 중괄호 불균형', no_answer:'🟡 정답 누락', invalid_mcq_answer:'🟡 MCQ 정답 형식', duplicate_num:'🟠 번호 중복', missing_num:'🟡 번호 누락' };
+
+  let html = '';
+  if (issues.length === 0) {
+    html = `<div style="background:#dcfce7;border-radius:8px;padding:12px;font-weight:700;color:#166534;font-size:14px;">✅ KaTeX 구조 검수 통과! 문제 없음.</div>`;
+  } else {
+    const grouped = {};
+    issues.forEach(iss => { if (!grouped[iss.type]) grouped[iss.type] = []; grouped[iss.type].push(iss); });
+    html = `<div style="background:#fef2f2;border:2px solid #ef4444;border-radius:8px;padding:12px;">
+      <div style="font-weight:800;color:#991b1b;font-size:14px;margin-bottom:8px;">⚠️ ${issues.length}개 문제 발견</div>`;
+    Object.entries(grouped).forEach(([type, items]) => {
+      html += `<div style="margin-top:8px;font-weight:700;font-size:13px;color:#991b1b;">${typeLabels[type]||type} (${items.length}개)</div>`;
+      items.forEach(iss => {
+        html += `<div style="font-size:12px;color:#7f1d1d;padding-left:16px;">${iss.id}: ${iss.detail}${iss.snippet?` — <code style="font-size:11px;background:#fee2e2;padding:1px 4px;border-radius:3px;">${iss.snippet}</code>`:''}</div>`;
+      });
+    });
+    html += '</div>';
+  }
+  resultEl.innerHTML = html;
+}
+
+// JSON import 미리보기 — AI 오답 검증
+async function verifyHwJsonAnswers(yr) {
+  const previewEl = document.getElementById(`hwJsonPreview_${yr}`);
+  if (!previewEl || !previewEl.dataset.parsed) return;
+  const setGroups = JSON.parse(previewEl.dataset.parsed);
+  const resultEl = document.getElementById(`hwJsonValidation_${yr}`);
+  if (!resultEl) return;
+
+  const allQuestions = [];
+  Object.entries(setGroups).forEach(([setKey, info]) => {
+    info.questions.forEach(q => {
+      allQuestions.push({
+        setKey,
+        num: q.number || 0,
+        text: q.question_text || '',
+        type: (q.type === 'MCQ' || (q.choices && q.choices.length)) ? 'mc' : 'sa',
+        options: q.choices ? q.choices.map(c => c.text || c) : null,
+        answer: q.answer || ''
+      });
+    });
+  });
+
+  const withAnswers = allQuestions.filter(q => q.answer);
+  if (!withAnswers.length) {
+    resultEl.innerHTML = '<div style="color:#d97706;font-weight:700;padding:8px;">정답이 있는 문제가 없어 검증을 건너뜁니다.</div>';
+    return;
+  }
+
+  const setKeys = Object.keys(setGroups);
+  resultEl.innerHTML = `<div style="padding:12px;background:#eff6ff;border-radius:8px;">
+    <div style="font-weight:700;color:#1e40af;">🤖 AI 오답 검증 중... (${setKeys.length}개 세트, ${withAnswers.length}문제)</div>
+    <div id="hwJsonVerifyProgress_${yr}" style="margin-top:6px;font-size:12px;color:#3b82f6;"></div>
+  </div>`;
+
+  try {
+    const allResults = [];
+    const progressEl = document.getElementById(`hwJsonVerifyProgress_${yr}`);
+    for (let si = 0; si < setKeys.length; si++) {
+      const setKey = setKeys[si];
+      const setQs = allQuestions.filter(q => q.setKey === setKey && q.answer);
+      if (!setQs.length) continue;
+      if (progressEl) progressEl.textContent = `Set ${setKey} 검증 중... (${si+1}/${setKeys.length})`;
+      const results = await verifyAnswersWithAI(setQs);
+      results.forEach(r => { r.setKey = setKey; allResults.push(r); });
+    }
+
+    const wrong = allResults.filter(r => !r.isCorrect);
+    let html = '';
+    if (wrong.length === 0) {
+      html = `<div style="background:#dcfce7;border-radius:8px;padding:12px;font-weight:800;color:#166534;font-size:14px;">🎉 AI 검증 완료 — 전체 ${allResults.length}문제 정답 확인!</div>`;
+    } else {
+      html = `<div style="background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;padding:12px;">
+        <div style="font-weight:800;color:#92400e;font-size:14px;margin-bottom:8px;">⚠️ 오답 의심 ${wrong.length}문제 / 정답 확인 ${allResults.length - wrong.length}문제</div>`;
+      wrong.forEach(r => {
+        const q = allQuestions.find(q => q.setKey === r.setKey && q.num === r.num);
+        html += `<div style="background:#fff;border:1px solid #f59e0b;border-radius:6px;padding:8px 12px;margin-top:6px;">
+          <span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:4px;font-weight:800;font-size:12px;">Set ${r.setKey} Q${r.num}</span>
+          <span style="font-size:13px;font-weight:600;color:var(--navy);margin-left:8px;">${q?q.text.substring(0,80):''}</span>
+          <div style="font-size:12px;margin-top:4px;">
+            <span style="color:#ef4444;font-weight:700;">현재: ${q?q.answer:''}</span>
+            <span style="margin:0 8px;">→</span>
+            <span style="color:#16a34a;font-weight:700;">AI 제안: ${r.correctAnswer||'?'}</span>
+            ${r.explanation?`<span style="color:var(--muted);"> — ${r.explanation}</span>`:''}
+          </div>
+        </div>`;
+      });
+      html += `<div style="font-size:12px;color:#92400e;margin-top:8px;">⚠️ AI 검증은 참고용입니다. 직접 확인 후 등록하세요.</div></div>`;
+    }
+    resultEl.innerHTML = html;
+  } catch(e) {
+    resultEl.innerHTML = `<div style="color:#991b1b;font-weight:700;padding:8px;">⚠️ AI 검증 오류: ${e.message}</div>`;
+  }
+}
+
+// 저장된 세트 — AI 오답 검증
+async function verifySetAnswers(hwKey, idx) {
+  const store = getStore();
+  const hw = store.homeworkSets[hwKey];
+  const set = hw?.sets[idx];
+  if (!set) { alert('세트를 찾을 수 없습니다.'); return; }
+
+  const resultEl = document.getElementById(`setVerify_${hwKey}_${idx}`);
+  if (!resultEl) return;
+
+  const questions = set.questions
+    .map((q, i) => ({
+      num: i + 1,
+      text: q.text || '',
+      type: q.type || 'sa',
+      options: q.options || null,
+      answer: q.answer || ''
+    }))
+    .filter(q => q.answer);
+
+  if (!questions.length) {
+    resultEl.innerHTML = '<div style="color:#d97706;font-size:13px;padding:6px;">정답이 있는 문제가 없습니다.</div>';
+    return;
+  }
+
+  resultEl.innerHTML = `<div style="padding:8px;background:#eff6ff;border-radius:6px;font-size:13px;font-weight:700;color:#1e40af;">
+    🤖 AI 검증 중... (${questions.length}문제)
+  </div>`;
+
+  try {
+    const results = await verifyAnswersWithAI(questions);
+    const wrong = results.filter(r => !r.isCorrect);
+
+    let html = '';
+    if (wrong.length === 0) {
+      html = `<div style="background:#dcfce7;border-radius:6px;padding:8px;font-size:13px;font-weight:700;color:#166534;">
+        ✅ AI 검증 완료 — ${results.length}문제 정답 확인
+      </div>`;
+    } else {
+      html = `<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:8px;">
+        <div style="font-weight:800;color:#92400e;font-size:13px;margin-bottom:4px;">⚠️ 오답 의심 ${wrong.length}문제</div>`;
+      wrong.forEach(r => {
+        const q = questions.find(q => q.num === r.num);
+        html += `<div style="font-size:12px;color:#7f1d1d;padding:3px 0;">
+          Q${r.num}: <span style="color:#ef4444;font-weight:700;">현재 ${q?.answer||''}</span>
+          → <span style="color:#16a34a;font-weight:700;">AI 제안 ${r.correctAnswer||'?'}</span>
+          ${r.explanation?`<span style="color:var(--muted);"> — ${r.explanation}</span>`:''}
+        </div>`;
+      });
+      html += `<div style="font-size:11px;color:#92400e;margin-top:4px;">⚠️ AI 검증은 참고용입니다.</div></div>`;
+    }
+    resultEl.innerHTML = html;
+  } catch(e) {
+    resultEl.innerHTML = `<div style="color:#991b1b;font-size:13px;padding:6px;">⚠️ AI 검증 오류: ${e.message}</div>`;
+  }
 }
 
 // KaTeX 수식에서 채점용 plain text 추출
