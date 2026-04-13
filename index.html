@@ -6007,10 +6007,12 @@ async function verifyHwJsonAnswers(yr) {
       results.forEach(r => { r.setKey = setKey; allResults.push(r); });
     }
 
-    const wrong = allResults.filter(r => !r.isCorrect);
+    // 세트별 중복 num 제거
+    const dedupedAll = Object.values(allResults.reduce((acc, r) => { acc[`${r.setKey}_${r.num}`] = r; return acc; }, {}));
+    const wrong = dedupedAll.filter(r => !r.isCorrect);
     let html = '';
     if (wrong.length === 0) {
-      html = `<div style="background:#dcfce7;border-radius:8px;padding:12px;font-weight:800;color:#166534;font-size:14px;">🎉 AI 검증 완료 — 전체 ${allResults.length}문제 정답 확인!</div>`;
+      html = `<div style="background:#dcfce7;border-radius:8px;padding:12px;font-weight:800;color:#166534;font-size:14px;">🎉 AI 검증 완료 — 전체 ${dedupedAll.length}문제 정답 확인!</div>`;
     } else {
       html = `<div style="background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;padding:12px;">
         <div style="font-weight:800;color:#92400e;font-size:14px;margin-bottom:8px;">⚠️ 오답 의심 ${wrong.length}문제 / 정답 확인 ${allResults.length - wrong.length}문제</div>`;
@@ -6066,7 +6068,9 @@ async function verifySetAnswers(hwKey, idx) {
 
   try {
     const results = await verifyAnswersWithAI(questions);
-    const wrong = results.filter(r => !r.isCorrect);
+    // 같은 num이 중복 반환될 경우 마지막 항목만 유지
+    const deduped = Object.values(results.reduce((acc, r) => { acc[r.num] = r; return acc; }, {}));
+    const wrong = deduped.filter(r => !r.isCorrect);
 
     let html = '';
     if (wrong.length === 0) {
