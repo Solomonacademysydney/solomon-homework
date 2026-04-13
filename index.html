@@ -6074,22 +6074,70 @@ async function verifySetAnswers(hwKey, idx) {
         ✅ AI 검증 완료 — ${results.length}문제 정답 확인
       </div>`;
     } else {
-      html = `<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:8px;">
-        <div style="font-weight:800;color:#92400e;font-size:13px;margin-bottom:4px;">⚠️ 오답 의심 ${wrong.length}문제</div>`;
+      html = `<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:10px;">
+        <div style="font-weight:800;color:#92400e;font-size:13px;margin-bottom:8px;">⚠️ 오답 의심 ${wrong.length}문제 — 확인 후 직접 선택해서 적용하세요</div>`;
       wrong.forEach(r => {
         const q = questions.find(q => q.num === r.num);
-        html += `<div style="font-size:12px;color:#7f1d1d;padding:3px 0;">
-          Q${r.num}: <span style="color:#ef4444;font-weight:700;">현재 ${q?.answer||''}</span>
-          → <span style="color:#16a34a;font-weight:700;">AI 제안 ${r.correctAnswer||'?'}</span>
-          ${r.explanation?`<span style="color:var(--muted);"> — ${r.explanation}</span>`:''}
+        const isMC = q?.type === 'mc';
+        const curAns = q?.answer || '';
+        const selectId = `setFix_${hwKey}_${idx}_${r.num}`;
+        const opts = ['A','B','C','D','E'];
+
+        let inputHtml = isMC
+          ? `<select id="${selectId}" style="border:2px solid #f59e0b;border-radius:6px;padding:4px 8px;font-size:13px;font-weight:700;cursor:pointer;">
+              ${opts.map(o => `<option value="${o}"${curAns.toUpperCase()===o?' selected':''}>${o}</option>`).join('')}
+            </select>`
+          : `<input id="${selectId}" type="text" value="${curAns}"
+              style="border:2px solid #f59e0b;border-radius:6px;padding:4px 8px;font-size:13px;font-weight:700;width:80px;">`;
+
+        html += `<div style="background:#fff;border:1px solid #f59e0b;border-radius:6px;padding:8px 10px;margin-bottom:6px;">
+          <div style="font-size:12px;color:#7f1d1d;margin-bottom:4px;">
+            <b>Q${r.num}</b>
+            <span style="color:#ef4444;font-weight:700;margin:0 4px;">현재 ${curAns}</span>→
+            <span style="color:#16a34a;font-weight:700;margin:0 4px;">AI 제안 ${r.correctAnswer||'?'}</span>
+          </div>
+          ${r.explanation ? `<div style="font-size:11px;color:#78350f;margin-bottom:6px;">${r.explanation}</div>` : ''}
+          <div style="display:flex;align-items:center;gap:8px;">
+            ${inputHtml}
+            <button onclick="applySetAnswerFix('${hwKey}',${idx},${r.num},'${selectId}')"
+              style="background:#16a34a;color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:13px;font-weight:800;cursor:pointer;">
+              적용
+            </button>
+            <span id="${selectId}_result" style="font-size:12px;font-weight:700;"></span>
+          </div>
         </div>`;
       });
-      html += `<div style="font-size:11px;color:#92400e;margin-top:4px;">⚠️ AI 검증은 참고용입니다.</div></div>`;
+      html += `<div style="font-size:11px;color:#92400e;margin-top:4px;">⚠️ AI 검증은 참고용 — 드롭다운 기본값은 현재 정답입니다.</div></div>`;
     }
     resultEl.innerHTML = html;
   } catch(e) {
     resultEl.innerHTML = `<div style="color:#991b1b;font-size:13px;padding:6px;">⚠️ AI 검증 오류: ${e.message}</div>`;
   }
+}
+
+// 저장된 세트 정답 수정 적용
+function applySetAnswerFix(hwKey, setIdx, questionNum, selectId) {
+  const el = document.getElementById(selectId);
+  if (!el) return;
+  const newAnswer = el.value.trim().toUpperCase();
+  if (!newAnswer) return;
+
+  const store = getStore();
+  const hw = store.homeworkSets[hwKey];
+  const set = hw?.sets[setIdx];
+  if (!set) return;
+
+  // questionNum = 원본 배열 index + 1
+  const q = set.questions[questionNum - 1];
+  if (!q) return;
+
+  q.answer = newAnswer;
+  saveStore(store);
+  fbSetHomeworkSet(hwKey, store.homeworkSets[hwKey]);
+
+  el.style.borderColor = '#16a34a';
+  const resultSpan = document.getElementById(`${selectId}_result`);
+  if (resultSpan) resultSpan.textContent = `✅ ${newAnswer} 저장됨`;
 }
 
 // KaTeX 수식에서 채점용 plain text 추출
