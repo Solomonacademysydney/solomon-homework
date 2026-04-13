@@ -8,6 +8,17 @@
 <title>Solomon Math Academy</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<style>
+  /* KaTeX \text{} 글꼴을 본문(Noto Sans KR)과 통일 */
+  .katex .text,
+  .katex .mord.text {
+    font-family: 'Noto Sans KR', sans-serif !important;
+  }
+  /* KaTeX 전체 크기를 본문에 맞춤 */
+  .katex { font-size: 1em !important; }
+  /* KaTeX display mode 블록 여백 조정 */
+  .katex-display { margin: 0.3em 0 !important; }
+</style>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -4328,6 +4339,13 @@ function showVerificationResults(questions, verifications) {
 function normAns(a) {
   if (a === null || a === undefined) return a;
   let s = String(a).trim();
+  // $...$ 제거 (KaTeX 마크업이 남아있을 경우)
+  s = s.replace(/^\$+|\$+$/g, '').trim();
+  // 분수 정규화: \dfrac{3}{5} → 3/5, 4\dfrac{2}{3} → 4 2/3
+  s = s.replace(/(\d+)\s*\\d?frac\{(\d+)\}\{(\d+)\}/g, '$1 $2/$3');
+  s = s.replace(/\\d?frac\{([^}]+)\}\{([^}]+)\}/g, '$1/$2');
+  // LaTeX 명령어·중괄호 제거
+  s = s.replace(/\\[a-zA-Z]+/g, '').replace(/[{}]/g, '');
   // Normalize unicode minus/dash variants to hyphen-minus (fixes "-8 vs −8" mismatch)
   s = s.replace(/[\u2212\u2013\u2014\u2010\u2011]/g, '-');
   // Normalize all whitespace variants (non-breaking space, thin space, etc.) to regular space
@@ -5791,6 +5809,10 @@ function _mergeHwJsonFiles(results) {
         if (!q.explanation) q.explanation = a.explanation || '';
         // MCQ인 경우 correct_choice를 answer로
         if (q.type === 'MCQ' && a.correct_choice) q.answer = a.correct_choice;
+        // SA인 경우 answer에서 KaTeX 마크업 제거 (채점용)
+        if (q.type !== 'MCQ' && q.answer) {
+          q.answer = _stripKatexForAnswer(q.answer);
+        }
       }
     });
   }
@@ -5833,6 +5855,21 @@ function _showHwJsonPreview(yr, questions) {
   html += '</div>';
   previewEl.innerHTML = html;
   previewEl.dataset.parsed = JSON.stringify(setGroups);
+}
+
+// KaTeX 수식에서 채점용 plain text 추출
+// "$\dfrac{3}{5}$" → "3/5", "$4\dfrac{2}{3}$" → "4 2/3", "$6$" → "6"
+function _stripKatexForAnswer(ans) {
+  let s = ans.trim();
+  s = s.replace(/^\$+|\$+$/g, '').trim();
+  s = s.replace(/(\d+)\s*\\d?frac\{(\d+)\}\{(\d+)\}/g, '$1 $2/$3');
+  s = s.replace(/\\d?frac\{([^}]+)\}\{([^}]+)\}/g, '$1/$2');
+  s = s.replace(/\\times/g, '×').replace(/\\div/g, '÷');
+  s = s.replace(/\\text\{([^}]*)\}/g, '$1');
+  s = s.replace(/\\[a-zA-Z]+/g, '');
+  s = s.replace(/[{}]/g, '');
+  s = s.replace(/\s+/g, ' ').trim();
+  return s;
 }
 
 // \text{} 혼합 katex → "plain text \(math\)" 형태로 변환
@@ -5912,16 +5949,19 @@ function doImportHwJson(yr) {
         let text = '';
 
         if (!katex) {
-          // katex 없음 → question_text만 사용 (달러 기호 이스케이프)
+          // katex 없음 → question_text만 사용
           text = (q.question_text || '');
         } else if (/\\text\{/.test(katex)) {
-          // \text{} 포함 → \text 부분은 plain text, 나머지는 $inline math$로 변환
-          // 예: "\text{Solve } x^2+5x+6=0" → "Solve $x^2+5x+6=0$"
+          // \text{} 포함 → \text 부분은 plain text, 나머지는 \(math\)로 변환
           text = _katexToMixed(katex);
         } else {
-          // 순수 수식 → question_text + inline math
+          // 순수 수식 → question_text에 이미 $가 있으면 중복 방지, 없으면 $$katex$$ 추가
           const plain = (q.question_text || '');
-          text = plain ? `${plain}\n$$${katex}$$` : `$$${katex}$$`;
+          if (/\$/.test(plain)) {
+            text = plain;
+          } else {
+            text = plain ? `${plain}\n$$${katex}$$` : `$$${katex}$$`;
+          }
         }
 
         // MCQ: choices를 options 배열로 변환
