@@ -5974,7 +5974,7 @@ async function verifyHwJsonAnswers(yr) {
       allQuestions.push({
         setKey,
         num: q.number || 0,
-        text: q.question_text || '',
+        text: q.question_text || q.question_katex || '',
         type: (q.type === 'MCQ' || (q.choices && q.choices.length)) ? 'mc' : 'sa',
         options: q.choices ? q.choices.map(c => c.text || c) : null,
         answer: q.answer || ''
@@ -6016,32 +6016,76 @@ async function verifyHwJsonAnswers(yr) {
       html = `<div style="background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;padding:12px;">
         <div style="font-weight:800;color:#92400e;font-size:14px;margin-bottom:8px;">⚠️ 오답 의심 ${wrong.length}문제 / 정답 확인 ${allResults.length - wrong.length}문제</div>`;
       const letters = ['A','B','C','D','E'];
+      if (!window._hwJsonFixes) window._hwJsonFixes = {};
+      if (!window._hwJsonFixes[yr]) window._hwJsonFixes[yr] = {};
       wrong.forEach(r => {
-        const q = allQuestions.find(q => q.setKey === r.setKey && q.num === r.num);
+        const q = allQuestions.find(q => q.setKey === r.setKey && String(q.num) === String(r.num));
         const choicesHtml = (q?.options && q.options.length)
           ? `<div style="font-size:12px;color:#374151;margin-top:4px;padding-left:8px;">
               ${q.options.map((o,i) => `<span style="margin-right:12px;"><b>${letters[i]})</b> ${o}</span>`).join('')}
              </div>`
           : '';
-        html += `<div style="background:#fff;border:1px solid #f59e0b;border-radius:6px;padding:10px 12px;margin-top:6px;">
+        const cardId = `hwfix_${yr}_${r.setKey}_${r.num}`;
+        const safeAnswer = (r.correctAnswer||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        html += `<div id="${cardId}" style="background:#fff;border:1px solid #f59e0b;border-radius:6px;padding:10px 12px;margin-top:6px;">
           <div style="margin-bottom:6px;">
             <span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:4px;font-weight:800;font-size:12px;">Set ${r.setKey} Q${r.num}</span>
           </div>
-          <div style="font-size:13px;font-weight:600;color:var(--navy);line-height:1.5;">${q?q.text:''}</div>
+          ${q?.text ? `<div style="font-size:13px;font-weight:600;color:var(--navy);line-height:1.5;margin-bottom:4px;">${q.text}</div>` : ''}
           ${choicesHtml}
           <div style="font-size:12px;margin-top:8px;padding-top:6px;border-top:1px solid #fde68a;">
-            <span style="color:#ef4444;font-weight:700;">현재: ${q?q.answer:''}</span>
+            <span style="color:#ef4444;font-weight:700;">현재: ${q?.answer||'(없음)'}</span>
             <span style="margin:0 8px;">→</span>
             <span style="color:#16a34a;font-weight:700;">AI 제안: ${r.correctAnswer||'?'}</span>
             ${r.explanation?`<div style="color:#78350f;font-size:11px;margin-top:4px;">${r.explanation}</div>`:''}
           </div>
+          <div style="margin-top:8px;display:flex;gap:8px;">
+            <button onclick="applyHwJsonFix(${yr},'${r.setKey}',${r.num},'${safeAnswer}','${cardId}')"
+              style="background:#16a34a;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:13px;font-weight:800;cursor:pointer;">
+              ✅ AI 제안 적용
+            </button>
+            <button onclick="keepHwJsonAnswer('${cardId}')"
+              style="background:#6b7280;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;">
+              ❌ 현재 유지
+            </button>
+          </div>
         </div>`;
       });
-      html += `<div style="font-size:12px;color:#92400e;margin-top:8px;">⚠️ AI 검증은 참고용입니다. 직접 확인 후 등록하세요.</div></div>`;
+      html += `<div style="font-size:12px;color:#92400e;margin-top:8px;">⚠️ AI 검증은 참고용입니다. 각 문제별로 적용 여부를 선택 후 등록하세요.</div></div>`;
     }
     resultEl.innerHTML = html;
   } catch(e) {
     resultEl.innerHTML = `<div style="color:#991b1b;font-weight:700;padding:8px;">⚠️ AI 검증 오류: ${e.message}</div>`;
+  }
+}
+
+// AI 검증 수락/거부 버튼 핸들러
+function applyHwJsonFix(yr, setKey, num, correctAnswer, cardId) {
+  if (!window._hwJsonFixes) window._hwJsonFixes = {};
+  if (!window._hwJsonFixes[yr]) window._hwJsonFixes[yr] = {};
+  window._hwJsonFixes[yr][`${setKey}_${num}`] = correctAnswer;
+  const card = document.getElementById(cardId);
+  if (card) {
+    card.style.background = '#dcfce7';
+    card.style.borderColor = '#16a34a';
+    card.querySelectorAll('button').forEach(b => b.style.display = 'none');
+    const mark = document.createElement('div');
+    mark.style.cssText = 'font-size:12px;font-weight:700;color:#166534;margin-top:6px;';
+    mark.textContent = `✅ AI 제안 적용 예정: ${correctAnswer}`;
+    card.appendChild(mark);
+  }
+}
+
+function keepHwJsonAnswer(cardId) {
+  const card = document.getElementById(cardId);
+  if (card) {
+    card.style.background = '#f3f4f6';
+    card.style.borderColor = '#9ca3af';
+    card.querySelectorAll('button').forEach(b => b.style.display = 'none');
+    const mark = document.createElement('div');
+    mark.style.cssText = 'font-size:12px;font-weight:700;color:#6b7280;margin-top:6px;';
+    mark.textContent = '❌ 현재 정답 유지';
+    card.appendChild(mark);
   }
 }
 
@@ -6207,6 +6251,17 @@ function doImportHwJson(yr) {
   } catch(e) {
     alert('데이터 오류: ' + e.message);
     return;
+  }
+
+  // AI 검증에서 수락된 수정사항 반영
+  const _fixes = (window._hwJsonFixes && window._hwJsonFixes[yr]) || {};
+  if (Object.keys(_fixes).length > 0) {
+    Object.entries(setGroups).forEach(([setKey, info]) => {
+      info.questions.forEach(q => {
+        const fixKey = `${setKey}_${q.number || 0}`;
+        if (_fixes[fixKey] !== undefined) q.answer = _fixes[fixKey];
+      });
+    });
   }
 
   const store = getStore();
