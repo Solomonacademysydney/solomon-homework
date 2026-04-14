@@ -5980,10 +5980,17 @@ function validateHwJsonKatex(yr) {
 // JSON import 미리보기 — AI 오답 검증
 async function verifyHwJsonAnswers(yr) {
   const previewEl = document.getElementById(`hwJsonPreview_${yr}`);
-  if (!previewEl || !previewEl.dataset.parsed) return;
+  if (!previewEl || !previewEl.dataset.parsed) {
+    alert('먼저 JSON 파일을 선택해주세요.');
+    return;
+  }
   const setGroups = JSON.parse(previewEl.dataset.parsed);
   const resultEl = document.getElementById(`hwJsonValidation_${yr}`);
   if (!resultEl) return;
+
+  // 버튼 로딩 상태로 변경
+  const verifyBtn = previewEl.querySelector('button[onclick*="verifyHwJsonAnswers"]');
+  if (verifyBtn) { verifyBtn.disabled = true; verifyBtn.textContent = '⏳ AI 검증 중...'; }
 
   const allQuestions = [];
   Object.entries(setGroups).forEach(([setKey, info]) => {
@@ -6073,6 +6080,10 @@ async function verifyHwJsonAnswers(yr) {
     resultEl.innerHTML = html;
   } catch(e) {
     resultEl.innerHTML = `<div style="color:#991b1b;font-weight:700;padding:8px;">⚠️ AI 검증 오류: ${e.message}</div>`;
+  } finally {
+    // 버튼 복원 및 결과로 스크롤
+    if (verifyBtn) { verifyBtn.disabled = false; verifyBtn.textContent = '🤖 AI 오답 검증'; }
+    resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 }
 
