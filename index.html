@@ -4288,6 +4288,15 @@ Questions:\n`;
   const raw = await callAI(prompt);
   const result = extractJSON(raw);
   if (!result || !Array.isArray(result)) throw new Error('Could not parse AI response.');
+  // AI 할루시네이션 보정: isCorrect:false인데 correctAnswer가 현재 정답과 같으면 → 정답으로 처리
+  result.forEach(r => {
+    if (!r.isCorrect && r.correctAnswer) {
+      const q = verifiable.find(q => String(q.num) === String(r.num));
+      if (q && normAns(r.correctAnswer) === normAns(q.answer)) {
+        r.isCorrect = true;
+      }
+    }
+  });
   // unverifiable(options 없는 MCQ)를 정답으로 병합해서 반환
   const skipped = unverifiable.map(q => ({ num: q.num, isCorrect: true, correctAnswer: q.answer, explanation: 'MCQ without options — skipped', missingData: false }));
   return [...result, ...skipped];
