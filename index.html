@@ -6163,12 +6163,20 @@ async function verifySetAnswers(hwKey, idx) {
           : `<input id="${selectId}" type="text" value="${curAns}"
               style="border:2px solid #f59e0b;border-radius:6px;padding:4px 8px;font-size:13px;font-weight:700;width:80px;">`;
 
+        const letters2 = ['A','B','C','D','E'];
+        const choicesHtml2 = (isMC && q?.options && q.options.length)
+          ? `<div style="font-size:12px;color:#374151;margin:4px 0 6px 0;">
+              ${q.options.map((o,i) => `<span style="margin-right:12px;"><b>${letters2[i]})</b> ${o}</span>`).join('')}
+             </div>`
+          : '';
         html += `<div style="background:#fff;border:1px solid #f59e0b;border-radius:6px;padding:8px 10px;margin-bottom:6px;">
           <div style="font-size:12px;color:#7f1d1d;margin-bottom:4px;">
             <b>Q${r.num}</b>
             <span style="color:#ef4444;font-weight:700;margin:0 4px;">현재 ${curAns}</span>→
             <span style="color:#16a34a;font-weight:700;margin:0 4px;">AI 제안 ${r.correctAnswer||'?'}</span>
           </div>
+          ${q?.text ? `<div style="font-size:13px;font-weight:600;color:var(--navy);line-height:1.5;margin-bottom:4px;">${q.text}</div>` : ''}
+          ${choicesHtml2}
           ${r.explanation ? `<div style="font-size:11px;color:#78350f;margin-bottom:6px;">${r.explanation}</div>` : ''}
           <div style="display:flex;align-items:center;gap:8px;">
             ${inputHtml}
