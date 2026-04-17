@@ -385,6 +385,8 @@ function navigateStudentPeriod(dir) {
     studentPeriod = periodGte(nxt, today) ? today : nxt;
   }
   currentSetIdx = null;
+  currentTSDay = null;
+  studentView = null;
   qIdx = 0;
   renderStudent();
 }
@@ -659,7 +661,7 @@ function getStore() {
   });
   // migrate v3 submissions (no _s0 suffix) → v4 (with _s0)
   Object.keys(d.submissions||{}).forEach(key => {
-    if (!/_s\d+$/.test(key)) {
+    if (!/_s\d+$/.test(key) && !key.startsWith('ts_')) {
       d.submissions[key + '_s0'] = d.submissions[key];
       delete d.submissions[key];
       migrated = true;
@@ -854,7 +856,7 @@ async function doLogin() {
     else if (user.role==='parent') renderParent();
     else {
       document.getElementById('btnBackupDownload').style.display = 'none';
-      qIdx=0; currentSetIdx=null; studentPeriod=getTodayPeriod(); renderStudent();
+      qIdx=0; currentSetIdx=null; currentTSDay=null; studentView=null; studentPeriod=getStore().currentPeriod || getTodayPeriod(); renderStudent();
     }
   } catch(e) {
     const errDiv = document.createElement('div');
@@ -880,6 +882,8 @@ function doLogout() {
   currentUser = null;
   selectedStudentId = null;
   currentSetIdx = null;
+  currentTSDay = null;
+  studentView = null;
   editingSetIdx = null;
   currentParentChildId = null;
   studentPeriod = null;
@@ -2260,15 +2264,19 @@ let qIdx = 0;
 let currentSetIdx = null;      // null=set list screen, 0+=active set index
 let currentTSDay = null;       // null=not in TS day view, 1+=active TS day
 let tsQIdx = 0;                // current question index within a TS day
+let _cachedStudentPeriod = null;
+let studentView = null;        // null=home choice, 'mr'=math reasoning, 'ts'=thinking skills
 
 function renderStudent() {
   const store = getStore();
   const p     = studentPeriod || store.currentPeriod;
+  _cachedStudentPeriod = p;
   const hw    = store.homeworkSets[hwKey(currentUser.year, currentUser.country||'AU', p)];
 
   const hasSets = hw && hw.sets && hw.sets.length > 0;
+  const hasTS   = !!(hw?.ts?.enabled && hw?.ts?.questions?.length > 0);
 
-  if (!hasSets) {
+  if (!hasSets && !hasTS) {
     const isCurrentP = periodGte(p, store.currentPeriod) && periodGte(store.currentPeriod, p);
     document.getElementById('mainContent').innerHTML = `
       <div class="exam-wrap">
@@ -2286,8 +2294,23 @@ function renderStudent() {
   // TS Day가 열려있으면 TS 화면 렌더링
   if (currentTSDay !== null) { renderTSDay(); return; }
 
-  // no set selected → show set list
-  if (currentSetIdx === null) { renderSetList(hw || { sets: [] }, store, p); return; }
+  // set 선택됨 → 문제 화면
+  if (currentSetIdx !== null) {
+    // (아래 기존 코드로 fall-through)
+  } else {
+    // home choice screen: 둘 다 있으면 선택, 하나만 있으면 바로 이동
+    if (hasSets && hasTS && studentView === null) {
+      renderStudentHome(hw, store, p);
+      return;
+    }
+    if (studentView === 'ts' || (!hasSets && hasTS)) {
+      renderTSView(hw.ts, store, p);
+      return;
+    }
+    // 'mr' 또는 TS 없는 경우
+    renderSetList(hw || { sets: [] }, store, p);
+    return;
+  }
 
   const set = (hw?.sets || [])[currentSetIdx];
   if (!set) { currentSetIdx = null; renderStudent(); return; }
@@ -2616,17 +2639,79 @@ function renderPeriodNav(p, currentP) {
     </div>`;
 }
 
+function renderStudentHome(hw, store, p) {
+  const sets = hw.sets || [];
+  const tsData = hw.ts;
+  const tsKey = tsSubKey(currentUser.id, p);
+  const tsProgress = store.submissions[tsKey] || {};
+  const totalDays = tsData.day_config?.total_days || 0;
+  let tsCompleted = 0;
+  for (let d = 1; d <= totalDays; d++) { if (tsProgress[`day${d}`]?.completed) tsCompleted++; }
+  const tsPct = totalDays > 0 ? Math.round(tsCompleted / totalDays * 100) : 0;
+
+  let mrCompleted = 0;
+  sets.forEach((set, idx) => {
+    if (store.submissions[subKey(currentUser.id, p, idx)]?.submitted) mrCompleted++;
+  });
+  const mrPct = sets.length > 0 ? Math.round(mrCompleted / sets.length * 100) : 0;
+
+  const html = `<div class="exam-wrap">
+    ${renderPeriodNav(p, store.currentPeriod)}
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="font-size:22px;font-weight:900;color:var(--navy);" translate="no">${englishName(currentUser.id)}</div>
+      <div style="font-size:13px;color:var(--muted);">Year ${currentUser.year} · ${periodLabel(p)}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:560px;margin:0 auto;">
+      <div onclick="studentView='mr';renderStudent()" style="background:#fff;border-radius:20px;padding:28px 20px;text-align:center;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.08);border:2px solid transparent;transition:transform .15s,border-color .15s;"
+           onmouseover="this.style.transform='translateY(-3px)';this.style.borderColor='var(--navy)';"
+           onmouseout="this.style.transform='none';this.style.borderColor='transparent';">
+        <div style="font-size:40px;margin-bottom:12px;">📚</div>
+        <div style="font-size:16px;font-weight:900;color:var(--navy);margin-bottom:6px;">Math Reasoning</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">${sets.length} set${sets.length>1?'s':''}</div>
+        <div style="background:#f1f5f9;border-radius:99px;height:6px;overflow:hidden;">
+          <div style="background:var(--navy);height:100%;border-radius:99px;width:${mrPct}%;transition:width .5s;"></div>
+        </div>
+        <div style="font-size:12px;font-weight:700;color:var(--navy);margin-top:6px;">${mrPct}% complete</div>
+      </div>
+      <div onclick="studentView='ts';renderStudent()" style="background:linear-gradient(135deg,#1e1b4b,#4c1d95);border-radius:20px;padding:28px 20px;text-align:center;cursor:pointer;box-shadow:0 4px 20px rgba(79,70,229,.3);border:2px solid transparent;transition:transform .15s,border-color .15s;"
+           onmouseover="this.style.transform='translateY(-3px)';this.style.borderColor='#a5b4fc';"
+           onmouseout="this.style.transform='none';this.style.borderColor='transparent';">
+        <div style="font-size:40px;margin-bottom:12px;">🧠</div>
+        <div style="font-size:16px;font-weight:900;color:#e0e7ff;margin-bottom:6px;">Thinking Skills</div>
+        <div style="font-size:12px;color:#a5b4fc;margin-bottom:14px;">${totalDays} days</div>
+        <div style="background:rgba(255,255,255,.15);border-radius:99px;height:6px;overflow:hidden;">
+          <div style="background:linear-gradient(90deg,#fbbf24,#f59e0b);height:100%;border-radius:99px;width:${tsPct}%;transition:width .5s;"></div>
+        </div>
+        <div style="font-size:12px;font-weight:700;color:#fbbf24;margin-top:6px;">${tsPct}% complete</div>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById('mainContent').innerHTML = html + renderMyAccountCard();
+}
+
+function renderTSView(tsData, store, p) {
+  const backBtn = `<button class="btn-nav" style="margin-bottom:16px;" onclick="studentView=null;renderStudent()">← Back</button>`;
+  let html = `<div class="exam-wrap">
+    ${renderPeriodNav(p, store.currentPeriod)}
+    ${backBtn}
+    ${renderTSBlock(tsData, store, p)}
+  </div>`;
+  document.getElementById('mainContent').innerHTML = html + renderMyAccountCard();
+}
+
 function renderSetList(hw, store, p) {
   const sets = hw.sets || [];
   const tsData = hw?.ts;
   const hasTS = tsData?.enabled && tsData?.questions?.length > 0;
+  const backBtn = hasTS ? `<button class="btn-nav" style="margin-bottom:16px;" onclick="studentView=null;renderStudent()">← Back</button>` : '';
   let html = `<div class="exam-wrap">
     ${renderPeriodNav(p, store.currentPeriod)}
+    ${backBtn}
     <div class="exam-header-card" style="margin-bottom:20px;">
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <div>
           <div class="exam-title">📚 ${periodLabel(p)} Homework</div>
-          <div class="exam-sub">${sets.length} set${sets.length>1?'s':''}${hasTS ? ' + Thinking Skills' : ''} assigned</div>
+          <div class="exam-sub">${sets.length} set${sets.length>1?'s':''} assigned</div>
         </div>
         <div style="text-align:right;">
           <div style="font-size:20px;font-weight:900;color:var(--gold);" translate="no">${englishName(currentUser.id)}</div>
@@ -2674,16 +2759,8 @@ function renderSetList(hw, store, p) {
       </div>`;
   });
 
-  html += `</div>`;
-
-  // ── TS 블록 (MR 아래) ──
-  if (hasTS) {
-    html += renderTSBlock(tsData, store, p);
-  }
-
-  html += `</div>`;
-  document.getElementById('mainContent').innerHTML = html;
-  document.getElementById('mainContent').innerHTML += renderMyAccountCard();
+  html += `</div></div>`;
+  document.getElementById('mainContent').innerHTML = html + renderMyAccountCard();
 }
 
 function startSet(idx) {
@@ -6481,10 +6558,10 @@ function openTSDay(day) {
 
 function renderTSDay() {
   const store = getStore();
-  const p = studentPeriod || store.currentPeriod;
+  const p = studentPeriod || _cachedStudentPeriod || store.currentPeriod;
   const hw = store.homeworkSets[hwKey(currentUser.year, currentUser.country || 'AU', p)];
   const ts = hw?.ts;
-  if (!ts) return;
+  if (!ts) { console.warn('[TS] hw.ts not found', { key: hwKey(currentUser.year, currentUser.country||'AU', p), p }); return; }
 
   const { questions_per_day: qPerDay } = ts.day_config;
   const startIdx = (currentTSDay - 1) * qPerDay;
@@ -6522,7 +6599,7 @@ function renderTSDay() {
 
   let html = `<div class="ts-day-view" style="min-height:100vh;background:linear-gradient(180deg,#0f0a2e 0%,#1e1b4b 40%,#312e81 100%);padding:16px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-      <button onclick="currentTSDay=null;currentSetIdx=null;renderStudent();"
+      <button onclick="currentTSDay=null;currentSetIdx=null;studentView='ts';renderStudent();"
               style="background:rgba(255,255,255,.1);border:none;color:#c4b5fd;padding:8px 16px;border-radius:10px;font-weight:700;cursor:pointer;font-size:13px;min-height:44px;">
         ← Back
       </button>
@@ -6691,6 +6768,7 @@ function completeTSDay() {
   currentSetIdx = null;
   renderStudent();
 }
+
 
 </script>
 </body>
