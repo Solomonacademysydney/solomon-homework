@@ -4307,21 +4307,32 @@ function setAIKey(k) {
 async function callAI(prompt) {
   const apiKey = getAIKey();
   if (!apiKey) throw new Error('Claude API key is not set.\nPlease set it in Teacher Settings.');
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 8000,
-      temperature: 0.15,
-      messages: [{ role: 'user', content: prompt }]
-    })
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000);
+  let res;
+  try {
+    res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 8000,
+        temperature: 0.15,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') throw new Error('AI request timed out. Please try again.');
+    throw err;
+  }
+  clearTimeout(timeoutId);
   if (!res.ok) { const e = await res.text(); throw new Error(`Claude API Error: ${res.status}\n${e}`); }
   const data = await res.json();
   return data.content?.[0]?.text || '';
@@ -4329,7 +4340,7 @@ async function callAI(prompt) {
 
 function extractJSON(text) {
   // extract JSON from markdown code blocks or raw text
-  const m = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/(\[[\s\S]*\])/);
+  const m = text.match(/```(?:json)?\s*([\s\S]*?)```/) || text.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
   if (m) try { return JSON.parse(m[1].trim()); } catch(e) {}
   try { return JSON.parse(text.trim()); } catch(e) {}
   return null;
@@ -4344,7 +4355,17 @@ async function verifyAnswersWithAI(questions) {
   if (!verifiable.length) {
     return unverifiable.map(q => ({ num: q.num, isCorrect: true, correctAnswer: q.answer, explanation: 'MCQ without options — skipped', missingData: false }));
   }
-  let prompt = `You are a math teacher. Review these math questions and their provided answers. For each question, determine if the provided answer is CORRECT. If incorrect, provide the correct answer.
+  let prompt = `You are a math teacher. Review these math questions and their provided answers. For each question, determine if the provided answer is mathematically CORRECT.
+
+CRITICAL JUDGMENT RULES:
+- Treat answers as CORRECT if they are mathematically equivalent, even if formatted differently:
+  * "1/2" = "0.5" = "\\frac{1}{2}"  → all CORRECT
+  * "3π" = "3*π" = "9.42" (≈) → all CORRECT
+  * "12" = "12 cm" = "12 cm²" → all CORRECT (do NOT mark wrong for missing units)
+  * "(2,3)" = "(2, 3)" → CORRECT
+  * "B" = "(B)" = "Answer: B" → CORRECT
+- Only mark "isCorrect": false if the answer is mathematically WRONG, not if it's just formatted differently.
+- When marking false, you MUST provide the actual correct mathematical value in "correctAnswer". Never write "same", "n/a", or leave it empty.
 
 IMPORTANT: Return ONLY a JSON array, no other text. Format:
 [{"num":1,"isCorrect":true,"correctAnswer":"B","explanation":"brief reason","missingData":false},...]
@@ -4365,13 +4386,33 @@ Questions:\n`;
   const raw = await callAI(prompt);
   const result = extractJSON(raw);
   if (!result || !Array.isArray(result)) throw new Error('Could not parse AI response.');
-  // AI 할루시네이션 보정: isCorrect:false인데 correctAnswer가 현재 정답과 같으면 → 정답으로 처리
+  // AI 할루시네이션 보정 (강화 버전)
   result.forEach(r => {
-    if (!r.isCorrect && r.correctAnswer) {
-      const q = verifiable.find(q => String(q.num) === String(r.num));
-      if (q && normAns(r.correctAnswer) === normAns(q.answer)) {
-        r.isCorrect = true;
-      }
+    if (r.isCorrect) return;
+    const q = verifiable.find(q => String(q.num) === String(r.num));
+    if (!q) return;
+
+    // (1) correctAnswer가 비어있거나 의미 없는 텍스트인 경우 → 정답으로 처리
+    const ca = r.correctAnswer == null ? '' : String(r.correctAnswer).trim();
+    const meaningless = !ca || /^(same|same as provided|same as given|no change|correct|n\/a|none|null|-)$/i.test(ca);
+    if (meaningless) {
+      r.isCorrect = true;
+      r.correctAnswer = q.answer;
+      return;
+    }
+
+    // (2) 정규화 비교
+    if (normAns(ca) === normAns(q.answer)) {
+      r.isCorrect = true;
+      return;
+    }
+
+    // (3) 숫자 동등성 비교 (분수/소수/π 등 표기 차이 흡수)
+    const numA = toNumeric(ca);
+    const numB = toNumeric(q.answer);
+    if (numA !== null && numB !== null && Math.abs(numA - numB) < 0.01) {
+      r.isCorrect = true;
+      return;
     }
   });
   // unverifiable(options 없는 MCQ)를 정답으로 병합해서 반환
@@ -4387,7 +4428,17 @@ function showVerificationResults(questions, verifications) {
   questions.forEach(q => {
     const v = verifications.find(v => v.num === q.num);
     if (!v) return;
-    const isChanged = !v.isCorrect && v.correctAnswer && v.correctAnswer !== q.answer;
+    // 정규화 + 숫자 비교까지 거친 후에도 다른 경우만 변경으로 간주
+    let isChanged = false;
+    if (!v.isCorrect && v.correctAnswer) {
+      if (normAns(v.correctAnswer) !== normAns(q.answer)) {
+        const a = toNumeric(v.correctAnswer);
+        const b = toNumeric(q.answer);
+        if (a === null || b === null || Math.abs(a - b) >= 0.01) {
+          isChanged = true;
+        }
+      }
+    }
     if (isChanged) changes.push({ num: q.num, old: q.answer, new: v.correctAnswer, explanation: v.explanation });
   });
 
@@ -4431,6 +4482,35 @@ function showVerificationResults(questions, verifications) {
   }
 
   container.innerHTML = html;
+}
+
+// 답을 숫자로 변환 시도 (분수, π, 단위 무시)
+function toNumeric(s) {
+  if (s == null) return null;
+  let str = String(s).trim();
+  str = str.replace(/(cm|mm|km|kg|m|g|s|h|min|°|°C|°F|\$|￦|원)\^?[²³2-9]?/gi, '').trim();
+  if (/π|\\?pi/i.test(str)) {
+    str = str.replace(/π|\\?pi/gi, '*' + Math.PI);
+    str = str.replace(/^\s*\*/, '');
+  }
+  const mixed = str.match(/^(-?\d+)\s+(\d+)\s*\/\s*(\d+)$/);
+  if (mixed) {
+    const w = parseFloat(mixed[1]), n = parseFloat(mixed[2]), d = parseFloat(mixed[3]);
+    if (d !== 0) return w >= 0 ? w + n/d : w - n/d;
+  }
+  const frac = str.match(/^(-?\d+(?:\.\d+)?)\s*\/\s*(-?\d+(?:\.\d+)?)$/);
+  if (frac) {
+    const n = parseFloat(frac[1]), d = parseFloat(frac[2]);
+    if (d !== 0) return n/d;
+  }
+  try {
+    if (/^[-+\d.\s*/()]+$/.test(str)) {
+      const v = Function('"use strict";return (' + str + ')')();
+      if (typeof v === 'number' && isFinite(v)) return v;
+    }
+  } catch(e) {}
+  const n = parseFloat(str);
+  return isNaN(n) ? null : n;
 }
 
 // Strip accidental "ANSWER: " prefix that AI verification sometimes returns
@@ -4546,7 +4626,9 @@ ${effectiveWrongQs.map((q, i) => {
   const practiceQs = [];
   let idx = 0;
   result.forEach(group => {
-    const srcQ = effectiveWrongQs.find(q => q.id === group.sourceQId);
+    const srcQ = effectiveWrongQs.find(q => q.id === group.sourceQId)
+             || effectiveWrongQs.find(q => String(q.num) === String(group.sourceQId))
+             || effectiveWrongQs[0];
     // sourceQNum = original homework question number (carry through rounds)
     const srcNum = srcQ?.sourceQNum || srcQ?.num || 0;
     let pIdx = 1;
