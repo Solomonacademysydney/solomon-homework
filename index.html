@@ -2443,8 +2443,8 @@ function renderStudent() {
         if (rem.finalDone) {
           // Final report exists
           html += `<div style="text-align:center;padding:16px;">
-            <button class="btn-confirm-read" style="max-width:400px;margin:0 auto;background:#991b1b;" onclick="renderFinalReport(${currentSetIdx})">
-              📋 View Final Study Report
+            <button class="btn-confirm-read" style="max-width:400px;margin:0 auto;background:var(--navy);" onclick="renderFinalReport(${currentSetIdx})">
+              📊 학습 리포트 보기
             </button>
           </div>`;
         } else if (curRound.practiceSubmitted) {
@@ -3120,22 +3120,7 @@ function renderParent() {
           }
         });
 
-        // Final report for parent
-        if (rem.finalDone && rem.finalWrongQuestions && rem.finalWrongQuestions.length > 0) {
-          html += `<div style="margin-top:8px;background:#fef2f2;border-radius:10px;padding:12px 16px;border:1px solid #fca5a5;">
-            <div style="font-size:13px;font-weight:800;color:#991b1b;margin-bottom:8px;">⚠️ Unresolved Questions (${rem.finalWrongQuestions.length})</div>`;
-          rem.finalWrongQuestions.forEach(q => {
-            const expl = (rem.finalExplanations||{})[q.id] || '';
-            html += `<div style="background:#fff;border-radius:8px;padding:10px 14px;margin-bottom:6px;border:1px solid #fecaca;">
-              <div style="font-size:13px;font-weight:700;color:var(--navy);">Q. ${renderMath(q.text)}</div>
-              <div style="font-size:12px;color:var(--muted);margin-top:2px;">
-                Answer: <span style="color:var(--red);">${renderMath(q.studentAnswer)}</span> → Correct: <span style="color:var(--green);">${renderMath(q.answer)}</span>
-              </div>
-              ${expl ? `<div style="font-size:12px;color:var(--text);margin-top:6px;line-height:1.6;white-space:pre-wrap;">${expl}</div>` : ''}
-            </div>`;
-          });
-          html += `</div>`;
-        }
+        // Phase B: unresolved questions moved to 학습 리포트 "오답 해설" section
       }
       html += `</div>`;  // close set card
     }
@@ -3175,6 +3160,7 @@ function renderParentReportSection(child, store, period) {
       grade: savedReport.grade,
       setScores: savedReport.setScores,
       weakAreas: savedReport.weakAreas,
+      finalReports: savedReport.finalReports || [],
       periodLabel: periodLabel(period),
       termLabel: termLabel(new Date())
     };
@@ -3860,6 +3846,11 @@ function buildReportDataForStudent(studentId, period, store) {
       });
     }
 
+    const finalData = sub.remediation?.finalDone ? {
+      finalWrongQuestions: sub.remediation.finalWrongQuestions || [],
+      finalExplanations: sub.remediation.finalExplanations || {}
+    } : null;
+
     results.push({
       setIdx: idx,
       setTitle: set.title,
@@ -3868,6 +3859,7 @@ function buildReportDataForStudent(studentId, period, store) {
       total: autoQs.length,
       attempted,
       completionRate,
+      finalData,
       wrongCount: wrongQs.length,
       wrongQs: wrongQs.map((q,i)=>({num:i+1, text:q.text.substring(0,60)})),
       allQuestions: autoQs.map(q => ({
@@ -3895,6 +3887,7 @@ function buildVisualReportData(studentId, period) {
   let totalCorrect = 0, totalQuestions = 0, totalAttempted = 0;
   const allWeakAreas = {};
   const setScores = [];
+  const finalReports = [];
 
   raw.results.forEach(r => {
     totalCorrect += r.correct;
@@ -3904,6 +3897,18 @@ function buildVisualReportData(studentId, period) {
     (r.weakAreas || []).forEach(w => {
       allWeakAreas[w.area] = (allWeakAreas[w.area] || 0) + w.count;
     });
+    if (r.finalData && (r.finalData.finalWrongQuestions || []).length > 0) {
+      finalReports.push({
+        setIdx: r.setIdx,
+        setTitle: r.setTitle,
+        questions: r.finalData.finalWrongQuestions.map(q => ({
+          text: q.text,
+          studentAnswer: q.studentAnswer,
+          answer: q.answer,
+          explanation: r.finalData.finalExplanations[q.id] || ''
+        }))
+      });
+    }
   });
 
   const scorePercent = totalQuestions > 0 ? Math.round(totalCorrect / totalQuestions * 100) : 0;
@@ -3927,6 +3932,7 @@ function buildVisualReportData(studentId, period) {
            scorePercent >= 60 ? 'Needs Practice' : 'Needs Attention',
     setScores,
     weakAreas: weakAreasSorted,
+    finalReports,
     periodLabel: periodLabel(period),
     termLabel: termLabel(new Date())
   };
@@ -4175,6 +4181,26 @@ function generateVisualReportHTML(data, comment) {
           ${comment}
         </div>
       </div>
+      ${(data.finalReports && data.finalReports.some(fr => fr.questions.length > 0)) ? `
+      <div style="margin:0 20px 20px;background:#fff;border-radius:14px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.06);">
+        <div style="font-size:16px;font-weight:800;color:#1B2A4A;margin-bottom:8px;">📝 오답 해설</div>
+        <div style="font-size:12px;color:#64748b;margin-bottom:16px;">2라운드 연습 후에도 막혔던 문제들입니다. 해설을 꼼꼼히 읽어보세요.</div>
+        ${data.finalReports.filter(fr => fr.questions.length > 0).map(fr => `
+          <div style="margin-bottom:20px;">
+            <div style="font-size:14px;font-weight:700;color:#1B2A4A;margin-bottom:10px;">📝 ${fr.setTitle}</div>
+            ${fr.questions.map(q => `
+              <div style="background:#fff5f5;border-left:4px solid #DC2626;border-radius:8px;padding:14px 16px;margin-bottom:12px;">
+                <div style="font-weight:700;color:#1B2A4A;margin-bottom:6px;">Q. ${renderMath(q.text)}</div>
+                <div style="font-size:12px;color:#64748b;margin-bottom:8px;">
+                  학생 답안: <span style="color:#DC2626;font-weight:800;">${renderMath(q.studentAnswer ?? '(no answer)')}</span>
+                  → 정답: <span style="color:#16A34A;font-weight:800;">${renderMath(q.answer)}</span>
+                </div>
+                <div style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">${q.explanation}</div>
+              </div>
+            `).join('')}
+          </div>
+        `).join('')}
+      </div>` : ''}
       <div style="background:#1B2A4A;padding:16px 40px;color:#fff;text-align:center;">
         <div style="font-size:14px;font-weight:700;">Solomon Math Academy</div>
         <div style="font-size:12px;opacity:0.7;margin-top:4px;">West Ryde, Sydney | solomonacademy.com.au</div>
@@ -4246,6 +4272,7 @@ async function generateVisualReport(studentId) {
       grade: reportData.grade,
       setScores: reportData.setScores,
       weakAreas: reportData.weakAreas,
+      finalReports: reportData.finalReports || [],
       comment: comment,
       generatedAt: Date.now()
     };
@@ -5442,40 +5469,48 @@ function renderPracticeResults(setIdx, roundIdx) {
 }
 
 // ── FINAL REPORT ────────────────────────
-function renderFinalReport(setIdx) {
+function renderStudentVisualReport(setIdx) {
   const store = getStore();
   const p = studentPeriod || store.currentPeriod;
-  const key = subKey(currentUser.id, p, setIdx);
-  const sub = store.submissions[key];
-  const rem = sub.remediation;
+  const pKey = reportPeriodKey(p);
+  const studentId = currentUser.id;
 
-  let html = `<div class="exam-wrap">
-    <div class="final-report">
-      <div class="final-report-title">📋 Final Study Report</div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">
-        After 2 rounds of practice, these questions are still incorrect. Please study the solutions carefully.
-        <br>This report is also visible to your parents.
-      </div>`;
+  const fresh = buildVisualReportData(studentId, p);
+  if (!fresh) {
+    currentSetIdx = null;
+    renderStudent();
+    return;
+  }
 
-  (rem.finalWrongQuestions || []).forEach(q => {
-    const expl = (rem.finalExplanations || {})[q.id] || 'No explanation available';
-    html += `<div class="explanation-card" style="border-left-color:var(--red);">
-      <div class="explanation-q-title">Q. ${renderMath(q.text)}</div>
-      <div class="explanation-q-meta">
-        Your answer: <span style="color:var(--red);font-weight:800;">${q.studentAnswer}</span>
-        → Correct: <span style="color:var(--green);font-weight:800;">${q.answer}</span>
+  const saved = store.reports?.[pKey]?.[studentId]?.maths;
+  const student = store.users.find(u => u.id === studentId) || currentUser;
+
+  let reportData, comment;
+  if (saved) {
+    reportData = {
+      ...saved,
+      student,
+      periodLabel: periodLabel(p),
+      finalReports: fresh.finalReports
+    };
+    comment = saved.comment;
+  } else {
+    reportData = fresh;
+    comment = fallbackComment(reportData);
+  }
+
+  const reportHTML = generateVisualReportHTML(reportData, comment);
+  document.getElementById('mainContent').innerHTML = `
+    <div class="exam-wrap">
+      <div style="margin-bottom:16px;text-align:center;">
+        <button class="btn-nav" onclick="currentSetIdx=null;renderStudent()">← Back to Set List</button>
       </div>
-      <div class="explanation-body">${expl}</div>
+      ${reportHTML}
     </div>`;
-  });
+}
 
-  html += `</div>
-    <div style="text-align:center;margin-top:16px;">
-      <button class="btn-nav" onclick="currentSetIdx=null;renderStudent()">← Back to Set List</button>
-    </div>
-  </div>`;
-
-  document.getElementById('mainContent').innerHTML = html;
+function renderFinalReport(setIdx) {
+  renderStudentVisualReport(setIdx);
 }
 
 // ═══════════════════════════════════════
