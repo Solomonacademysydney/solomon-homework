@@ -168,7 +168,16 @@ const APP_VERSION = {
 };
 let _originalTeacher = null;
 let _lastFbWriteTs = 0;   // fbWrite 직후 on('value') 중복 쓰기 방지 (타임스탬프 기반)
+let _saFbWriteTimer = null;  // SA input Firebase 쓰기 디바운스
 window.isPreviewMode = false;
+
+function escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
 
 function saveStore(d) {
   if (window.isPreviewMode) return;
@@ -2563,7 +2572,7 @@ function renderStudent() {
     </div>`;
   } else {
     html += `<input class="sa-input" id="sa_${q.id}" type="text"
-      placeholder="Enter your answer..." value="${userAns||''}"
+      placeholder="Enter your answer..." value="${escHtml(userAns)}"
       oninput="answerSA('${q.id}',this.value)">`;
   }
 
@@ -2814,7 +2823,18 @@ function answerOX(qid, val) {
   setTimeout(()=>{ qIdx++; renderStudent(); }, 300);
 }
 function answerSA(qid, val) {
-  saveAnswer(qid, val.trim());
+  const store=getStore();
+  const key=subKey(currentUser.id,studentPeriod||store.currentPeriod,currentSetIdx??0);
+  if(!store.submissions[key]) store.submissions[key]={answers:{},submitted:false,submitTime:null};
+  if(!store.submissions[key].answers) store.submissions[key].answers={};
+  if(store.submissions[key].submitted) return;
+  store.submissions[key].answers[qid]=val.trim();
+  saveStore(store);
+  clearTimeout(_saFbWriteTimer);
+  _saFbWriteTimer = setTimeout(() => {
+    const s=getStore();
+    if (s.submissions[key]) fbSetSubmission(key, s.submissions[key]);
+  }, 400);
 }
 
 function doSubmit() {
@@ -3466,7 +3486,8 @@ function parseAnswers(raw) {
     if (!a) return null;
     if (/^(o|true|yes|t|맞|참|○|〇)$/i.test(a)) return 'O';
     if (/^(x|false|no|f|틀|거짓|×)$/i.test(a)) return 'X';
-    return a.toUpperCase();
+    if (/^[a-eA-E]$/.test(a)) return a.toUpperCase();
+    return a;
   };
 
   const text = raw.replace(/\r\n/g,'\n').replace(/\r/g,'\n')
@@ -4534,6 +4555,14 @@ function normAns(a) {
   s = s.replace(/^[A-Za-z]+\s*[:：]\s*/, '').trim();
   // Strip single-letter variable assignment — "X = 7" → "7", "x=-8" → "-8"
   s = s.replace(/^[A-Za-z]\s*=\s*/, '').trim();
+  // Strip trailing % for percent answers ("50%" → "50")
+  const pct = /^-?\d+(\.\d+)?\s*%$/.test(s);
+  if (pct) s = s.replace(/\s*%$/, '');
+  // Numeric normalization: "3.0" → "3", "05" → "5", "+7" → "7" (strict decimal only)
+  if (/^[+-]?\d+(\.\d+)?$/.test(s)) {
+    const n = parseFloat(s);
+    if (Number.isFinite(n)) s = String(n);
+  }
   return s.toUpperCase();
 }
 
