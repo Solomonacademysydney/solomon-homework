@@ -5092,7 +5092,20 @@ async function verifyAnswersWithAI(questions) {
   }
   let prompt = `You are a math teacher. Review these math questions and their provided answers. For each question, determine if the provided answer is mathematically CORRECT.
 
-CRITICAL JUDGMENT RULES:
+CRITICAL RULES FOR MULTIPLE-CHOICE QUESTIONS (MCQ):
+- Options are listed as "[A] value1, [B] value2, [C] value3, [D] value4". The provided Answer for MCQ is the OPTION LETTER (A/B/C/D/E).
+- You MUST follow these steps for every MCQ:
+  1. Solve the problem to get the mathematical value.
+  2. Find which option letter contains that value.
+  3. Compare THAT letter to the provided answer letter.
+  4. Set "correctAnswer" to a SINGLE OPTION LETTER (A/B/C/D/E) — NEVER the numerical value itself.
+- Worked example: Question "Find 1/4 of 20. [A] 4, [B] 25, [C] 16, [D] 5" → Answer: D
+  * Calculation: 1/4 of 20 = 5
+  * Option [D] has value 5, so D is correct.
+  * Provided "D" matches → {"isCorrect":true,"correctAnswer":"D"}
+- DOUBLE-CHECK: before finalizing, re-verify that the letter you chose actually points to the value you calculated. Many errors come from naming the wrong letter.
+
+GENERAL JUDGMENT RULES (non-MCQ and formatting):
 - Treat answers as CORRECT if they are mathematically equivalent, even if formatted differently:
   * "1/2" = "0.5" = "\\frac{1}{2}"  → all CORRECT
   * "3π" = "3*π" = "9.42" (≈) → all CORRECT
@@ -5100,7 +5113,7 @@ CRITICAL JUDGMENT RULES:
   * "(2,3)" = "(2, 3)" → CORRECT
   * "B" = "(B)" = "Answer: B" → CORRECT
 - Only mark "isCorrect": false if the answer is mathematically WRONG, not if it's just formatted differently.
-- When marking false, you MUST provide the actual correct mathematical value in "correctAnswer". Never write "same", "n/a", or leave it empty.
+- When marking false: for MCQ, "correctAnswer" MUST be a single option letter; for non-MCQ, provide the actual correct value. Never write "same", "n/a", or leave it empty.
 
 IMPORTANT: Return ONLY a JSON array, no other text. Format:
 [{"num":1,"isCorrect":true,"correctAnswer":"B","explanation":"brief reason","missingData":false},...]
@@ -5111,7 +5124,7 @@ Questions:\n`;
   verifiable.forEach(q => {
     let qStr = `${q.num}. ${q.text}`;
     if (q.type==='mc' && q.options && q.options.length) {
-      qStr += ' (' + q.options.map((o,i)=>`${letters[i]}) ${o}`).join(', ') + ')';
+      qStr += ' ' + q.options.map((o,i)=>`[${letters[i]}] ${o}`).join(', ');
     }
     qStr += ` → Answer: ${q.answer || '(none)'}`;
     if (q.type==='ox') qStr += ' [O=True, X=False]';
@@ -5148,6 +5161,21 @@ Questions:\n`;
     if (numA !== null && numB !== null && Math.abs(numA - numB) < 0.01) {
       r.isCorrect = true;
       return;
+    }
+
+    // (4) MCQ 문자↔값 교차 매칭: AI가 값("5")을 반환하든 문자("D")를 반환하든
+    //     결국 같은 보기를 가리키면 정답 처리. (AI가 엉뚱한 letter를 골랐을 때는
+    //     여기서 보정되지 않고 교사에게 제안으로 남겨 — 거짓음성 방지)
+    if (q.type === 'mc' && q.options && q.options.length) {
+      const stored    = resolveMCQOption(q.answer, q.options, letters);
+      const suggested = resolveMCQOption(ca,        q.options, letters);
+      if (stored.idx !== -1 && suggested.idx !== -1 && stored.idx === suggested.idx) {
+        r.isCorrect = true;
+        r.correctAnswer = stored.letter;
+        return;
+      }
+      // AI 제안을 문자로 정규화해 두어 UI 표기가 통일되도록 함
+      if (suggested.idx !== -1) r.correctAnswer = suggested.letter;
     }
   });
   // unverifiable(options 없는 MCQ)를 정답으로 병합해서 반환
@@ -5217,6 +5245,40 @@ function showVerificationResults(questions, verifications) {
   }
 
   container.innerHTML = html;
+}
+
+// MCQ 답(문자 "D" / 값 "5" / "(D)" / "Answer: D" 등)을 보기 인덱스로 해석
+// returns { idx: number, letter: string, value: string }  (idx === -1 이면 미해석)
+function resolveMCQOption(answer, options, letters) {
+  const L = letters || ['A','B','C','D','E','F'];
+  const fail = { idx: -1, letter: null, value: answer == null ? '' : String(answer) };
+  if (answer == null || !options || !options.length) return fail;
+  let s = String(answer).trim();
+  // "Answer: D", "(D)", "✓ D" 등에서 문자만 추출 시도
+  s = s.replace(/^[✓✔☑✅❌⭕]\s*/, '')
+       .replace(/^[A-Za-z]+\s*[:：]\s*/, '')
+       .replace(/^[\(\[]\s*/, '').replace(/\s*[\)\]]$/, '')
+       .trim();
+  // 단일 문자 A~F이면 바로 매핑
+  const lm = s.match(/^([A-Fa-f])$/);
+  if (lm) {
+    const i = L.indexOf(lm[1].toUpperCase());
+    if (i >= 0 && i < options.length) {
+      return { idx: i, letter: L[i], value: String(options[i]).trim() };
+    }
+  }
+  // 값으로 들어왔으면 — 각 보기와 정규화/숫자 비교
+  for (let i = 0; i < options.length; i++) {
+    const opt = String(options[i]).trim();
+    if (normAns(opt) === normAns(s)) {
+      return { idx: i, letter: L[i], value: opt };
+    }
+    const a = toNumeric(opt), b = toNumeric(s);
+    if (a !== null && b !== null && Math.abs(a - b) < 0.01) {
+      return { idx: i, letter: L[i], value: opt };
+    }
+  }
+  return fail;
 }
 
 // 답을 숫자로 변환 시도 (분수, π, 단위 무시)
