@@ -230,6 +230,86 @@ function fbSetSubmissions(submissions) {
   fbWrite({ submissions: submissions });
 }
 
+// ── Taxonomy (Phase C) ──
+window.TAXONOMY_MR = null;
+
+async function loadTaxonomy() {
+  if (!window.FB_REF) return;
+  try {
+    const snap = await window.FB_REF.child('taxonomy_mr').once('value');
+    window.TAXONOMY_MR = snap.val() || null;
+    if (window.TAXONOMY_MR) {
+      const yc = Object.keys(window.TAXONOMY_MR.years || {}).length;
+      console.log('[Taxonomy] Loaded:', yc, 'years');
+    } else {
+      console.log('[Taxonomy] Not uploaded yet');
+    }
+  } catch (e) {
+    console.warn('[Taxonomy] Load failed:', e);
+    window.TAXONOMY_MR = null;
+  }
+}
+
+async function onTaxonomyFileSelected(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    if (!parsed.meta || !parsed.years) {
+      alert('❌ 잘못된 taxonomy 형식입니다. meta, years 필드가 필요합니다.');
+      event.target.value = '';
+      return;
+    }
+    const yearKeys = Object.keys(parsed.years);
+    if (yearKeys.length === 0) {
+      alert('❌ years 필드가 비어 있습니다.');
+      event.target.value = '';
+      return;
+    }
+    if (window.TAXONOMY_MR) {
+      const ok = confirm('기존 taxonomy를 새 버전으로 교체하시겠습니까?\nweakness/feedback 데이터는 유지됩니다.');
+      if (!ok) { event.target.value = ''; return; }
+    }
+    if (!window.FB_REF) {
+      alert('❌ Firebase가 연결되지 않았습니다.');
+      return;
+    }
+    await window.FB_REF.child('taxonomy_mr').set(parsed);
+    window.TAXONOMY_MR = parsed;
+    const skillCount = Object.values(parsed.years).reduce((sum, y) =>
+      sum + Object.values(y.topics || {}).reduce((s, t) =>
+        s + Object.values(t).reduce((ss, tt) =>
+          ss + Object.keys(tt.subskills || {}).length, 0), 0), 0);
+    showBackupToast(`✅ Taxonomy 업로드 완료 (${skillCount} skills)`);
+    renderTeacher();
+  } catch (e) {
+    alert('❌ 업로드 실패: ' + e.message);
+  } finally {
+    event.target.value = '';
+  }
+}
+
+function flattenTaxonomySubskills(year) {
+  if (!window.TAXONOMY_MR) return [];
+  const yearTax = window.TAXONOMY_MR.years?.[String(year)];
+  if (!yearTax) return [];
+  const out = [];
+  for (const [strandCode, topics] of Object.entries(yearTax.topics || {})) {
+    for (const [topicCode, topic] of Object.entries(topics)) {
+      for (const [sk, skData] of Object.entries(topic.subskills || {})) {
+        out.push({
+          id: `MR.Y${year}.${strandCode}.${topicCode}.${sk}`,
+          name: skData.name,
+          strand: strandCode,
+          topic: topicCode
+        });
+      }
+    }
+  }
+  return out;
+}
+
 function renderMath(text) {
   if (!text || typeof text !== 'string') return text || '';
   // 중복 보정: "plain text\n$$same katex$$" → katex만 사용
@@ -1004,7 +1084,7 @@ function renderTeacher() {
             ${hw&&totalSets>0?'✏️ Manage Sets':'➕ Add Homework'}
           </button>
           ${hw&&totalSets>0 ? `<button class="btn-sm btn-blue" onclick="event.stopPropagation();previewHomework(${yr})">👁 Preview</button>` : ''}
-          ${anyStarted>0 ? `<button class="btn-sm btn-navy" onclick="event.stopPropagation();viewResults(${yr})">📊 Results</button>` : ''}
+          ${anyStarted>0 ? `<button class="btn-sm btn-navy" onclick="event.stopPropagation();viewYearResults(${yr})">📊 결과</button>` : ''}
         </div>
       </div>`;
   });
@@ -1197,7 +1277,7 @@ function renderTeacher() {
         }
         scoreHtml = `<div style="display:flex;gap:6px;flex-wrap:wrap;">${setResults.join('')}</div>`;
       }
-      const reportBtn = anySubmitted ? `<button class="btn-report" onclick="showTeacherReport('${s.id}')">📝 상세 분석</button>` : '-';
+      const reportBtn = anySubmitted ? `<button class="btn-report" onclick="showTeacherReport('${s.id}')">📊 결과 리포트</button>` : '-';
       const resetBtns = sets.map((_,idx) => {
         const sk = subKey(s.id, p, idx);
         const hasSub = store.submissions[sk] && (store.submissions[sk].submitted || Object.keys(store.submissions[sk].answers||{}).length > 0);
@@ -1214,6 +1294,14 @@ function renderTeacher() {
   const previewOpts = previewStudents.map(s =>
     `<option value="${s.id}">${s.name}${s.isTest?' [TEST]':''} (Y${s.year})</option>`
   ).join('');
+  const reportStudents = previewStudents.filter(s => {
+    const hwR = store.homeworkSets[hwKey(s.year, s.country||'AU', p)];
+    const setsR = hwR?.sets || [];
+    return setsR.some((_, idx) => store.submissions[subKey(s.id, p, idx)]?.submitted);
+  });
+  const reportOpts = reportStudents.map(s =>
+    `<option value="${s.id}">${s.name}${s.isTest?' [TEST]':''} (Y${s.year})</option>`
+  ).join('');
   const tabBar = `
     <div style="display:flex;gap:8px;margin-bottom:20px;padding:12px 0;border-bottom:2px solid var(--border);flex-wrap:wrap;align-items:center;">
       <button class="btn-sm ${teacherTab==='homework'?'btn-navy':'btn-blue'}" onclick="teacherTab='homework';renderTeacher()">📋 숙제 관리</button>
@@ -1225,7 +1313,13 @@ function renderTeacher() {
         🧪 테스트 계정 ${showTestAccounts ? '숨기기' : '보기'}
       </button>
       <div style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap;">
-        <span style="font-size:13px;font-weight:700;color:var(--navy);">👁 학생 화면 보기:</span>
+        <span style="font-size:13px;font-weight:700;color:var(--navy);">📊 결과 리포트:</span>
+        <select id="reportStudentSel" style="padding:6px 10px;border:2px solid var(--border);border-radius:8px;font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;">
+          <option value="">-- 학생 선택 --</option>
+          ${reportOpts}
+        </select>
+        <button class="btn-sm btn-navy" onclick="openReportFromShortcut()">열기 ▶</button>
+        <span style="font-size:13px;font-weight:700;color:var(--navy);margin-left:8px;">👁 학생 화면 보기:</span>
         <select id="previewStudentSel" style="padding:6px 10px;border:2px solid var(--border);border-radius:8px;font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;">
           <option value="">-- 학생 선택 --</option>
           ${previewOpts}
@@ -1629,13 +1723,20 @@ async function doVerifyAnswers() {
   }
 }
 
-function doSave() {
+async function doSave() {
   if (!parsedQuestions.length) { alert('Please parse the questions first.'); return; }
   const store = getStore();
   const p     = store.currentPeriod;
   const key   = hwKey(selectedYear, selectedCountry, p);
   const yrStudents = store.users.filter(u=>u.role==='student' && u.status!=='inactive' && !u.isTest && u.year===selectedYear && (u.country||'AU')===selectedCountry);
   const qs = parsedQuestions.map((q,i) => ({ ...q, id:`q${i}` }));
+
+  // Phase C: auto-tag questions before save
+  let tagResult = { skipped: true };
+  if (window.TAXONOMY_MR && getAIKey()) {
+    showBackupToast('🏷️ 태깅 중...');
+    tagResult = await tagQuestions(qs, selectedYear);
+  }
 
   if (!store.homeworkSets[key]) {
     store.homeworkSets[key] = { year: selectedYear, country: selectedCountry, period: p, sets: [] };
@@ -1670,6 +1771,14 @@ function doSave() {
   msg.textContent = `✅ ${setTitle} saved! (${qs.length} questions) — ${yrStudents.length} student${yrStudents.length!==1?'s':''}`;
   document.body.appendChild(msg);
   setTimeout(() => msg.remove(), 3000);
+
+  // Phase C: show sampling review modal if tagging succeeded
+  if (!tagResult.skipped) {
+    const tagged = qs.filter(q => q.taxonomy_id);
+    if (tagged.length > 0) {
+      showTaggingReviewModal(qs, key, actualIdx, selectedYear);
+    }
+  }
 }
 
 // ─── TEACHER PREVIEW ───────────────────
@@ -1702,60 +1811,6 @@ function previewHomework(yr) {
   document.getElementById('modalContent').innerHTML = html;
   document.getElementById('modal').classList.add('open');
   } catch(e) { console.error('previewHomework error:', e); closeModal(); }
-}
-
-function viewResults(yr) {
-  try {
-  const store    = getStore();
-  const p        = store.currentPeriod;
-  const hw       = store.homeworkSets[hwKey(yr, selectedCountry, p)];
-  if (!hw?.sets?.length) return;
-  const yrStudents = store.users.filter(u=>u.role==='student' && u.status!=='inactive' && !u.isTest && u.year===yr && (u.country||'AU')===selectedCountry);
-
-  let html = `<h2 style="font-family:'Noto Serif KR',serif;color:var(--navy);margin-bottom:16px;">📊 Year ${yr} – ${periodLabel(p)} Results</h2>`;
-
-  yrStudents.forEach(s => {
-    const anySubmitted = hw.sets.some((_,idx) => store.submissions[subKey(s.id,p,idx)]?.submitted);
-    html += `<div style="background:#f8f6ef;border-radius:12px;padding:16px 20px;margin-bottom:14px;">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-        <div style="font-size:20px;font-weight:900;color:var(--navy);flex:1;">${s.name}${s.isTest?' <span style="background:#dbeafe;color:#1d4ed8;font-size:11px;font-weight:800;padding:2px 8px;border-radius:99px;">TEST</span>':''}</div>
-        ${anySubmitted ? `<button class="btn-report" onclick="closeModal();setTimeout(()=>showTeacherReport('${s.id}'),200)">📝 학생 상세 분석</button>` : ''}
-      </div>`;
-    hw.sets.forEach((set, setIdx) => {
-      const sub = store.submissions[subKey(s.id, p, setIdx)];
-      html += `<div style="font-weight:800;color:var(--navy);margin:10px 0 6px;">${set.title}</div>`;
-      if (!sub?.submitted) {
-        html += `<div class="res-q res-none" style="font-size:13px;"><span>Not submitted</span></div>`;
-        return;
-      }
-      const autoQs = set.questions.filter(q=>q.type!=='written');
-      const correct = autoQs.filter(q=>normAns(sub.answers[q.id])===normAns(q.answer)).length;
-      const pct = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
-      const cls = pct>=80?'pill-a':pct>=60?'pill-b':'pill-c';
-      html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-        <span class="score-pill ${cls}">${pct}%</span>
-        <span style="font-size:13px;color:var(--muted);">${correct}/${autoQs.length} correct</span>
-      </div>`;
-      set.questions.forEach((q,i) => {
-        const ans = sub.answers[q.id];
-        let cls2='res-none', status='No answer';
-        if (ans!==undefined) {
-          const ok = normAns(ans)===normAns(q.answer);
-          cls2 = ok?'res-ok':'res-wrong';
-          status = ok ? `✅ Correct` : `❌ Wrong (answered: ${ans} / correct: ${normAns(q.answer)})`;
-        }
-        html += `<div class="res-q ${cls2}" style="font-size:13px;">
-          <b>Q${i+1}.</b>
-          <span style="flex:1;">${renderMath(q.text.substring(0,60))}${q.text.length>60?'...':''} — ${status}</span>
-        </div>`;
-      });
-    });
-    html += `</div>`;
-  });
-
-  document.getElementById('modalContent').innerHTML = html;
-  document.getElementById('modal').classList.add('open');
-  } catch(e) { console.error('viewResults error:', e); closeModal(); }
 }
 
 /* ── LEVEL TEST RESULTS ── */
@@ -1862,6 +1917,19 @@ function renderTeacherSettings(store) {
           <div style="color:var(--muted);font-size:13px;">로딩 중...</div>
         </div>
         <button class="btn-sm btn-navy" onclick="loadBackupList()" style="margin-top:10px;">🔄 백업 목록 새로고침</button>
+      </div>
+      <div style="margin-top:16px;padding-top:16px;border-top:2px solid var(--border);">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">🏷️ Taxonomy 시스템 (Phase C)</div>
+        <div id="taxonomyStatus" style="font-size:13px;margin-bottom:10px;">
+          ${window.TAXONOMY_MR
+            ? `<span style="color:var(--green);font-weight:700;">✅ 로드됨</span> <span style="color:var(--muted);">(${window.TAXONOMY_MR.meta?.version || '?'}, ${Object.values(window.TAXONOMY_MR.years || {}).reduce((sum, y) => sum + Object.values(y.topics || {}).reduce((s, t) => s + Object.values(t).reduce((ss, tt) => ss + Object.keys(tt.subskills || {}).length, 0), 0), 0)} skills)</span>`
+            : `<span style="color:var(--red);font-weight:700;">⚠️ 업로드 필요</span>`}
+        </div>
+        <input type="file" id="taxonomyFileInput" accept=".json" style="display:none;" onchange="onTaxonomyFileSelected(event)">
+        <button class="btn-sm btn-navy" onclick="document.getElementById('taxonomyFileInput').click()">
+          ${window.TAXONOMY_MR ? '🔄 Taxonomy 재업로드' : '📤 Taxonomy 업로드'}
+        </button>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px;">기존 weakness/feedback 데이터는 재업로드 시에도 유지됩니다.</div>
       </div>
     </div>
     <div style="margin-top:24px;padding:12px 16px;background:#f8f6ef;border-radius:10px;border:1px solid var(--border);font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:space-between;">
@@ -2877,11 +2945,44 @@ function doSubmit() {
       weakAreas: weakAreas,
       submittedAt: sub.submitTime
     };
+
+    // Phase C: taxonomy weakness accumulation (async, non-blocking)
+    if (window.TAXONOMY_MR) {
+      applyWeaknessUpdates(autoQs, sub.answers, currentUser.id).catch(e => {
+        console.warn('[Weakness] Update failed:', e);
+      });
+    }
   }
   saveStore(store);
   fbSetSubmission(key, store.submissions[key]);
   qIdx=0;
   renderStudent();
+}
+
+async function applyWeaknessUpdates(questions, answers, studentId) {
+  if (!window.fbReady || !window.FB_REF) return;
+  const now = new Date().toISOString();
+  for (const q of questions) {
+    if (!q.taxonomy_id) continue;
+    const isCorrect = normAns(answers[q.id]) === normAns(q.answer);
+    const path = `weakness/${studentId}/skills/${q.taxonomy_id}`;
+    try {
+      await window.FB_REF.child(path).transaction(current => {
+        const base = current || { attempts: 0, correct: 0, wrong: 0, history: [] };
+        const newHistory = [...(base.history || []), { ts: now, correct: isCorrect }].slice(-50);
+        return {
+          attempts: (base.attempts || 0) + 1,
+          correct: (base.correct || 0) + (isCorrect ? 1 : 0),
+          wrong: (base.wrong || 0) + (isCorrect ? 0 : 1),
+          last_seen: now,
+          last_correct: isCorrect ? now : (base.last_correct || null),
+          history: newHistory
+        };
+      });
+    } catch (e) {
+      console.warn('[Weakness] Update failed for', path, e);
+    }
+  }
 }
 
 function detectWeakAreas(wrongQs) {
@@ -3885,6 +3986,7 @@ function buildVisualReportData(studentId, period) {
   if (!raw || raw.results.length === 0) return null;
 
   let totalCorrect = 0, totalQuestions = 0, totalAttempted = 0;
+  let firstTry = 0, afterHint = 0, revealed = 0, stillWrong = 0;
   const allWeakAreas = {};
   const setScores = [];
   const finalReports = [];
@@ -3893,6 +3995,18 @@ function buildVisualReportData(studentId, period) {
     totalCorrect += r.correct;
     totalQuestions += r.total;
     totalAttempted += (r.attempted || 0);
+    firstTry += r.correct;
+    stillWrong += r.wrongCount;
+    (r.remediation || []).forEach(round => {
+      (round.questionGroups || []).forEach(g => {
+        (g.items || []).forEach(it => {
+          if (it.showedAnswer) revealed++;
+          else if (it.answeredAfterHint) afterHint++;
+          else if (it.ok) firstTry++;
+          else stillWrong++;
+        });
+      });
+    });
     setScores.push({ title: r.setTitle, score: r.score, correct: r.correct, total: r.total });
     (r.weakAreas || []).forEach(w => {
       allWeakAreas[w.area] = (allWeakAreas[w.area] || 0) + w.count;
@@ -3910,6 +4024,11 @@ function buildVisualReportData(studentId, period) {
       });
     }
   });
+
+  const bestSet = setScores.length > 0
+    ? setScores.reduce((a, b) => (a.score >= b.score ? a : b))
+    : null;
+  const attemptStats = { firstTry, afterHint, revealed, stillWrong };
 
   const scorePercent = totalQuestions > 0 ? Math.round(totalCorrect / totalQuestions * 100) : 0;
   const completionPercent = totalQuestions > 0 ? Math.round(totalAttempted / totalQuestions * 100) : 0;
@@ -3933,6 +4052,8 @@ function buildVisualReportData(studentId, period) {
     setScores,
     weakAreas: weakAreasSorted,
     finalReports,
+    attemptStats,
+    bestSet,
     periodLabel: periodLabel(period),
     termLabel: termLabel(new Date())
   };
@@ -3940,57 +4061,157 @@ function buildVisualReportData(studentId, period) {
 
 function showTeacherReport(studentId) {
   try {
-  const store = getStore();
-  const p = store.currentPeriod;
-  const data = buildReportDataForStudent(studentId, p, store);
-  if (!data || data.results.length === 0) {
-    alert('No submitted homework found for this student.');
-    return;
-  }
-  const s = data.student;
+    const store = getStore();
+    const p = store.currentPeriod;
+    const data = buildReportDataForStudent(studentId, p, store);
+    if (!data || data.results.length === 0) {
+      alert('No submitted homework found for this student.');
+      return;
+    }
+    const s = data.student;
 
-  let html = `
-    <div class="print-header">
-      <div class="print-header-logo">Solomon <span>Math</span> Academy</div>
-      <div class="print-header-date">Report printed: ${new Date().toLocaleDateString('en-AU')}</div>
-    </div>
-    <div style="margin-bottom:16px;">
-      <button id="visualReportBtn" class="btn-sm btn-navy" onclick="generateVisualReport('${studentId}')">
-        📊 학습 리포트 (이미지)
-      </button>
-    </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-      <div class="report-panel-title">📝 학생 상세 분석 — ${s.name}</div>
-      <button class="btn-print-report" onclick="printReport()" style="padding:8px 16px;background:var(--navy);color:#fff;border:none;border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">🖨️ 인쇄 / PDF 저장</button>
-    </div>
-    <div class="report-panel-sub">${periodLabel(p)} · Year ${s.year}</div>
-    <div class="report-student-header">
-      <div class="report-student-avatar">${s.name.charAt(0)}</div>
-      <div>
-        <div class="report-student-name">${s.name}</div>
-        <div class="report-student-meta">Year ${s.year} · ${periodLabel(p)}</div>
+    window._trpState = {
+      studentId,
+      period: p,
+      tab: 'summary',
+      detailData: data,
+      visualData: null,
+      comment: null,
+      commentStatus: 'idle'
+    };
+
+    document.getElementById('modalContent').innerHTML = `
+      <div class="print-header">
+        <div class="print-header-logo">Solomon <span>Math</span> Academy</div>
+        <div class="print-header-date">Report printed: ${new Date().toLocaleDateString('en-AU')}</div>
       </div>
-    </div>`;
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
+        <div>
+          <div class="report-panel-title">📝 학생 리포트 — ${s.name}</div>
+          <div class="report-panel-sub">${periodLabel(p)} · Year ${s.year}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button id="trpActionPNG" class="btn-sm btn-navy" onclick="downloadTeacherReportPNG()" style="display:none;padding:8px 14px;">📥 PNG 저장</button>
+          <button class="btn-sm btn-navy" onclick="printReport()" style="padding:8px 14px;">🖨️ 인쇄 / PDF</button>
+        </div>
+      </div>
+      <div class="report-student-header">
+        <div class="report-student-avatar">${s.name.charAt(0)}</div>
+        <div>
+          <div class="report-student-name">${s.name}</div>
+          <div class="report-student-meta">Year ${s.year} · ${periodLabel(p)}</div>
+        </div>
+      </div>
+      <div id="trpTabs" style="display:flex;gap:4px;margin:16px 0 14px;border-bottom:2px solid var(--border);flex-wrap:wrap;">
+        <button class="trp-tab" data-trp-tab="summary" onclick="switchTeacherReportTab('summary')">📊 요약 리포트</button>
+        <button class="trp-tab" data-trp-tab="detail" onclick="switchTeacherReportTab('detail')">📝 상세 분석</button>
+        <button class="trp-tab" data-trp-tab="kakao" onclick="switchTeacherReportTab('kakao')">💬 학부모 메시지</button>
+      </div>
+      <div id="trpBody"></div>
+    `;
+    document.getElementById('modal').classList.add('open');
+    renderTeacherReportBody();
+  } catch(e) { console.error('showTeacherReport error:', e); closeModal(); }
+}
 
-  data.results.forEach((r, ri) => {
-    const cls = r.score>=80?'pill-a':r.score>=60?'pill-b':'pill-c';
-    html += `
-      <div style="margin-bottom:20px;">
-        <div style="font-weight:800;color:var(--navy);font-size:15px;margin-bottom:10px;">📝 ${r.setTitle}</div>
-        <div class="report-score-row">
-          <div class="report-score-card">
-            <div class="big" style="color:${r.score>=80?'var(--green)':r.score>=60?'var(--gold2)':'var(--red)'};">${r.score}%</div>
-            <div class="lbl">Score</div>
-          </div>
-          <div class="report-score-card">
-            <div class="big" style="color:var(--navy);">${r.correct}/${r.total}</div>
-            <div class="lbl">Correct</div>
-          </div>
-          <div class="report-score-card">
-            <div class="big" style="color:var(--red);">${r.wrongCount}</div>
-            <div class="lbl">Wrong</div>
-          </div>
-        </div>`;
+function switchTeacherReportTab(tab) {
+  if (!window._trpState) return;
+  window._trpState.tab = tab;
+  renderTeacherReportBody();
+}
+
+function renderTeacherReportBody() {
+  const st = window._trpState;
+  if (!st) return;
+
+  document.querySelectorAll('#trpTabs .trp-tab').forEach(b => {
+    const active = b.dataset.trpTab === st.tab;
+    b.style.cssText = 'padding:9px 16px;border:none;border-radius:10px 10px 0 0;font-family:\'Noto Sans KR\',sans-serif;font-size:13px;font-weight:800;cursor:pointer;margin-bottom:-2px;background:' + (active ? 'var(--navy)' : '#f1f5f9') + ';color:' + (active ? '#fff' : '#64748b') + ';';
+  });
+
+  const pngBtn = document.getElementById('trpActionPNG');
+  if (pngBtn) pngBtn.style.display = st.tab === 'summary' ? '' : 'none';
+
+  const body = document.getElementById('trpBody');
+  if (!body) return;
+
+  if (st.tab === 'summary')      body.innerHTML = renderTrpSummary();
+  else if (st.tab === 'detail')  body.innerHTML = renderTrpDetail();
+  else if (st.tab === 'kakao')   body.innerHTML = renderTrpKakao();
+}
+
+function renderTrpSummary() {
+  const st = window._trpState;
+  if (!st.visualData) st.visualData = buildVisualReportData(st.studentId, st.period);
+  const data = st.visualData;
+  if (!data) return '<div style="padding:40px;text-align:center;color:var(--muted);">제출된 숙제가 없습니다.</div>';
+
+  if (st.commentStatus === 'idle') {
+    st.commentStatus = 'loading';
+    (async () => {
+      let c;
+      try { c = await generateReportComment(data); }
+      catch (e) { console.warn('AI 코멘트 실패, 템플릿 사용:', e); c = fallbackComment(data); }
+      if (!window._trpState || window._trpState.studentId !== st.studentId) return;
+      window._trpState.comment = c;
+      window._trpState.commentStatus = 'done';
+      try {
+        const store = getStore();
+        const pKey = reportPeriodKey(st.period);
+        const saveData = {
+          scorePercent: data.scorePercent,
+          completionPercent: data.completionPercent,
+          attemptedCount: data.attemptedCount,
+          totalCorrect: data.totalCorrect,
+          totalQuestions: data.totalQuestions,
+          wrongCount: data.wrongCount,
+          setCount: data.setCount,
+          grade: data.grade,
+          setScores: data.setScores,
+          weakAreas: data.weakAreas,
+          finalReports: data.finalReports || [],
+          comment: c,
+          generatedAt: Date.now()
+        };
+        if (!store.reports) store.reports = {};
+        if (!store.reports[pKey]) store.reports[pKey] = {};
+        if (!store.reports[pKey][st.studentId]) store.reports[pKey][st.studentId] = {};
+        store.reports[pKey][st.studentId].maths = saveData;
+        saveStore(store);
+        fbSetReport(pKey, st.studentId, 'maths', saveData);
+      } catch (e) { console.warn('report save failed:', e); }
+      if (window._trpState.tab === 'summary') renderTeacherReportBody();
+    })();
+  }
+
+  const commentHTML = st.commentStatus === 'done'
+    ? st.comment
+    : '<div style="display:flex;align-items:center;gap:8px;color:#666;font-size:13px;padding:8px 0;"><div class="ai-spinner" style="width:16px;height:16px;border-width:2px;"></div> AI 코멘트 생성 중...</div>';
+
+  return generateVisualReportHTML(data, commentHTML, true);
+}
+
+function renderTrpDetail() {
+  const st = window._trpState;
+  const data = st.detailData;
+  let html = '';
+  data.results.forEach((r) => {
+    html += `<div style="margin-bottom:20px;">
+      <div style="font-weight:800;color:var(--navy);font-size:15px;margin-bottom:10px;">📝 ${r.setTitle}</div>
+      <div class="report-score-row">
+        <div class="report-score-card">
+          <div class="big" style="color:${r.score>=80?'var(--green)':r.score>=60?'var(--gold2)':'var(--red)'};">${r.score}%</div>
+          <div class="lbl">Score</div>
+        </div>
+        <div class="report-score-card">
+          <div class="big" style="color:var(--navy);">${r.correct}/${r.total}</div>
+          <div class="lbl">Correct</div>
+        </div>
+        <div class="report-score-card">
+          <div class="big" style="color:var(--red);">${r.wrongCount}</div>
+          <div class="lbl">Wrong</div>
+        </div>
+      </div>`;
 
     if (r.weakAreas?.length > 0) {
       html += `<div style="margin-bottom:12px;">
@@ -4061,27 +4282,207 @@ function showTeacherReport(studentId) {
       });
     }
 
-    // ── 카톡 메시지 생성 버튼 ──
-    html += `
-      <div id="kakaoArea_${ri}" style="margin-top:12px;">
-        <button class="btn-copy-kakao" onclick="generateAndShowKakao('${studentId}',${ri},${r.setIdx})" id="kakaoBtn_${ri}">
-          💬 카톡 메시지 생성 (AI)
-        </button>
-      </div>`;
-
     html += `</div><hr style="border:none;border-top:2px solid var(--border);margin:20px 0;">`;
   });
-
-  document.getElementById('modalContent').innerHTML = html;
-  document.getElementById('modal').classList.add('open');
-  } catch(e) { console.error('showTeacherReport error:', e); closeModal(); }
+  return html;
 }
 
-function generateVisualReportHTML(data, comment) {
+function renderTrpKakao() {
+  const st = window._trpState;
+  const data = st.detailData;
+  const store = getStore();
+  let html = '<div style="color:var(--muted);font-size:13px;margin-bottom:16px;">Set별로 학부모에게 보낼 AI 카톡 메시지를 생성할 수 있어요.</div>';
+  data.results.forEach((r, ri) => {
+    const key = subKey(st.studentId, st.period, r.setIdx);
+    const cached = store.submissions[key]?.reportData?.kakaoMsg;
+    const cls = r.score>=80?'pill-a':r.score>=60?'pill-b':'pill-c';
+    html += `
+      <div style="border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:12px;background:#fff;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div style="font-weight:800;color:var(--navy);font-size:14px;">${r.setTitle}</div>
+          <span class="score-pill ${cls}" style="font-size:11px;">${r.score}% (${r.correct}/${r.total})</span>
+        </div>
+        <div id="kakaoArea_${ri}">`;
+    if (cached) {
+      html += `
+          <div class="report-msg-box" id="kakaoMsg_${ri}">${cached}</div>
+          <button class="btn-copy-kakao" onclick="copyKakaoMsg(${ri})" id="copyBtn_${ri}">📋 메시지 복사하기</button>
+          <button class="btn-copy-kakao" style="margin-top:8px;background:linear-gradient(135deg,#dbeafe,#bfdbfe);color:#1d4ed8;box-shadow:0 4px 16px rgba(59,130,246,.2);" onclick="generateAndShowKakao('${st.studentId}',${ri},${r.setIdx})">🔄 다시 생성</button>`;
+    } else {
+      html += `
+          <button class="btn-copy-kakao" onclick="generateAndShowKakao('${st.studentId}',${ri},${r.setIdx})" id="kakaoBtn_${ri}">💬 카톡 메시지 생성 (AI)</button>`;
+    }
+    html += `
+        </div>
+      </div>`;
+  });
+  return html;
+}
+
+function downloadTeacherReportPNG() {
+  const st = window._trpState;
+  if (!st) return;
+  const el = document.getElementById('visualReportContainer');
+  if (!el) return;
+  downloadReportAsPNG(el, st.detailData.student.name, termLabel(new Date()));
+}
+
+function beginEditTrpComment() {
+  const st = window._trpState;
+  if (!st) return;
+  const view = document.getElementById('trpCommentView');
+  if (!view) return;
+  const plain = String(st.comment || '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+  view.innerHTML = `
+    <textarea id="trpCommentEditor" style="width:100%;min-height:140px;padding:12px;border:2px solid #FF9800;border-radius:8px;font-family:'Noto Sans KR',sans-serif;font-size:14px;line-height:1.7;color:#333;resize:vertical;box-sizing:border-box;"></textarea>
+    <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end;">
+      <button class="btn-sm" style="padding:8px 16px;background:#e2e8f0;color:#334155;border:none;border-radius:8px;font-weight:700;cursor:pointer;" onclick="cancelEditTrpComment()">취소</button>
+      <button class="btn-sm btn-navy" style="padding:8px 16px;" onclick="saveTrpComment()">저장</button>
+    </div>`;
+  const ta = document.getElementById('trpCommentEditor');
+  if (ta) { ta.value = plain; ta.focus(); }
+}
+
+function cancelEditTrpComment() {
+  renderTeacherReportBody();
+}
+
+function saveTrpComment() {
+  const st = window._trpState;
+  if (!st) return;
+  const ta = document.getElementById('trpCommentEditor');
+  if (!ta) return;
+  const newComment = ta.value.replace(/\n/g, '<br>');
+  st.comment = newComment;
+  try {
+    const store = getStore();
+    const pKey = reportPeriodKey(st.period);
+    if (store.reports?.[pKey]?.[st.studentId]?.maths) {
+      store.reports[pKey][st.studentId].maths.comment = newComment;
+      saveStore(store);
+      fbSetReport(pKey, st.studentId, 'maths', store.reports[pKey][st.studentId].maths);
+    }
+    showBackupToast('✅ 코멘트가 저장되었습니다.');
+  } catch(e) { console.warn('Save comment failed:', e); }
+  renderTeacherReportBody();
+}
+
+function openReportFromShortcut() {
+  const sel = document.getElementById('reportStudentSel');
+  const id = sel?.value;
+  if (!id) { alert('학생을 선택해주세요.'); return; }
+  showTeacherReport(id);
+}
+
+function viewYearResults(yr) {
+  try {
+    const store = getStore();
+    const p = store.currentPeriod;
+    const hw = store.homeworkSets[hwKey(yr, selectedCountry, p)];
+    if (!hw?.sets?.length) return;
+    const yrStudents = store.users.filter(u =>
+      u.role === 'student' && u.status !== 'inactive' &&
+      (showTestAccounts || !u.isTest) &&
+      u.year === yr && (u.country || 'AU') === selectedCountry
+    );
+
+    let html = `<h2 style="font-family:'Noto Serif KR',serif;color:var(--navy);margin-bottom:16px;">📊 Year ${yr} – ${periodLabel(p)}</h2>`;
+
+    const submittedStudents = yrStudents.filter(s =>
+      hw.sets.some((_, idx) => store.submissions[subKey(s.id, p, idx)]?.submitted)
+    );
+
+    if (submittedStudents.length === 0) {
+      html += '<div style="padding:40px;text-align:center;color:var(--muted);">이번 주 제출한 학생이 없습니다.</div>';
+    } else {
+      submittedStudents.forEach(s => {
+        let correctTotal = 0, totalTotal = 0;
+        const setChips = hw.sets.map((set, setIdx) => {
+          const sub = store.submissions[subKey(s.id, p, setIdx)];
+          if (!sub?.submitted) return `<span style="font-size:11px;color:var(--muted);">Set${setIdx+1}:⏳</span>`;
+          const autoQs = set.questions.filter(q => q.type !== 'written');
+          const correct = autoQs.filter(q => normAns(sub.answers[q.id]) === normAns(q.answer)).length;
+          correctTotal += correct;
+          totalTotal += autoQs.length;
+          const pct = autoQs.length > 0 ? Math.round(correct / autoQs.length * 100) : 0;
+          const cls = pct >= 80 ? 'pill-a' : pct >= 60 ? 'pill-b' : 'pill-c';
+          return `<span style="font-size:11px;color:#64748b;">Set${setIdx+1}:</span><span class="score-pill ${cls}" style="font-size:11px;">${pct}%</span>`;
+        }).join(' ');
+
+        const avg = totalTotal > 0 ? Math.round(correctTotal / totalTotal * 100) : 0;
+        const avgCls = avg >= 80 ? 'pill-a' : avg >= 60 ? 'pill-b' : 'pill-c';
+
+        html += `<div style="background:#f8f6ef;border-radius:12px;padding:14px 18px;margin-bottom:12px;">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <div style="font-size:17px;font-weight:900;color:var(--navy);flex:1;min-width:120px;">${s.name}${s.isTest ? ' <span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;">TEST</span>' : ''}</div>
+            <span class="score-pill ${avgCls}" style="font-size:12px;">평균 ${avg}%</span>
+            <button class="btn-report" onclick="closeModal();setTimeout(()=>showTeacherReport('${s.id}'),200)">📊 결과 리포트</button>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">${setChips}</div>
+        </div>`;
+      });
+    }
+
+    document.getElementById('modalContent').innerHTML = html;
+    document.getElementById('modal').classList.add('open');
+  } catch (e) { console.error('viewYearResults error:', e); closeModal(); }
+}
+
+function generateVisualReportHTML(data, comment, editable = false) {
   const sc = getScoreColor(data.scorePercent);
   const completionPercent = data.completionPercent ?? 100;
   const attemptedCount = data.attemptedCount ?? data.totalQuestions;
   const cc = getCompletionColor(completionPercent);
+  const at = data.attemptStats || { firstTry: data.totalCorrect||0, afterHint:0, revealed:0, stillWrong: data.wrongCount||0 };
+  const attTotal = (at.firstTry + at.afterHint + at.revealed + at.stillWrong) || 1;
+  const pct = (v) => Math.round(v / attTotal * 1000) / 10;
+  const bestSetLabel = data.bestSet ? `${data.bestSet.title} <span style="color:#16A34A;font-weight:800;">${data.bestSet.score}%</span>` : '—';
+  const weakestLabel = (data.weakAreas && data.weakAreas.length > 0) ? data.weakAreas[0].area : '—';
+  const statCards = `
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(140px,1fr));gap:10px;">
+      <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:12px 14px;">
+        <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:4px;">📝 세트</div>
+        <div style="font-size:20px;font-weight:900;color:#1B2A4A;">${data.setCount}<span style="font-size:12px;color:#64748b;font-weight:600;margin-left:2px;">개</span></div>
+      </div>
+      <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:12px 14px;">
+        <div style="font-size:11px;color:#991b1b;font-weight:700;margin-bottom:4px;">❌ 오답</div>
+        <div style="font-size:20px;font-weight:900;color:#DC2626;">${data.wrongCount}<span style="font-size:12px;color:#991b1b;font-weight:600;margin-left:2px;">개</span></div>
+      </div>
+      <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:12px 14px;">
+        <div style="font-size:11px;color:#15803d;font-weight:700;margin-bottom:4px;">🏆 최고 세트</div>
+        <div style="font-size:13px;font-weight:800;color:#1B2A4A;line-height:1.3;">${bestSetLabel}</div>
+      </div>
+      <div style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:10px;padding:12px 14px;">
+        <div style="font-size:11px;color:#c2410c;font-weight:700;margin-bottom:4px;">🎯 약한 영역</div>
+        <div style="font-size:13px;font-weight:800;color:#1B2A4A;line-height:1.3;">${weakestLabel}</div>
+      </div>
+    </div>`;
+
+  const attemptSegments = [
+    { label: '첫 시도 정답', value: at.firstTry, color: '#16A34A' },
+    { label: '힌트 후 정답', value: at.afterHint, color: '#F59E0B' },
+    { label: '정답 공개',    value: at.revealed,  color: '#F97316' },
+    { label: '오답',         value: at.stillWrong, color: '#DC2626' }
+  ];
+  const stackedBarHTML = `
+    <div style="display:flex;height:28px;border-radius:6px;overflow:hidden;background:#f0f0f0;">
+      ${attemptSegments.map(seg => {
+        const w = pct(seg.value);
+        if (w <= 0) return '';
+        return `<div title="${seg.label}: ${seg.value}개 (${w}%)" style="width:${w}%;background:${seg.color};display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;">${w >= 8 ? seg.value : ''}</div>`;
+      }).join('')}
+    </div>
+    <div style="display:flex;gap:14px;margin-top:10px;flex-wrap:wrap;font-size:12px;">
+      ${attemptSegments.map(seg => `
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${seg.color};"></span>
+          <span style="color:#334155;font-weight:600;">${seg.label}</span>
+          <b style="color:#1B2A4A;">${seg.value}</b>
+        </div>`).join('')}
+    </div>`;
   // 뱃지 텍스트
   const gradeBadge = data.scorePercent >= 80 ? 'Excellent'
     : data.scorePercent >= 60 ? 'Good'
@@ -4145,22 +4546,29 @@ function generateVisualReportHTML(data, comment) {
         </div>
       </div>
       <div style="margin:20px;background:#fff;border-radius:14px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.06);">
-        <div style="display:flex;justify-content:center;align-items:center;gap:30px;flex-wrap:wrap;">
-          <div style="text-align:center;">
-            <div>${completionDonutSVG}</div>
-            <div style="font-size:12px;color:#666;margin-top:4px;">${attemptedCount}/${data.totalQuestions} 제출</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;justify-content:center;flex:1;min-width:260px;">
+            <div style="text-align:center;">
+              <div>${completionDonutSVG}</div>
+              <div style="font-size:12px;color:#666;margin-top:4px;">${attemptedCount}/${data.totalQuestions} 제출</div>
+            </div>
+            <div style="text-align:center;">
+              <div>${scoreDonutSVG}</div>
+              <div style="font-size:12px;color:#666;margin-top:4px;">${data.totalCorrect}/${data.totalQuestions} 정답</div>
+            </div>
           </div>
-          <div style="text-align:center;">
-            <div>${scoreDonutSVG}</div>
-            <div style="font-size:12px;color:#666;margin-top:4px;">${data.totalCorrect}/${data.totalQuestions} 정답</div>
+          <div style="flex:1;min-width:300px;">
+            ${statCards}
           </div>
         </div>
-        <div style="margin-top:16px;text-align:center;">
+        <div style="margin-top:18px;text-align:center;">
           <span style="display:inline-block;background:${sc.light};color:${sc.dark};padding:6px 16px;border-radius:20px;font-size:13px;font-weight:700;">${gradeBadge}</span>
         </div>
-        <div style="margin-top:8px;text-align:center;font-size:13px;color:#666;">
-          세트 ${data.setCount}개 · 오답 ${data.wrongCount}개
-        </div>
+      </div>
+      <div style="margin:0 20px 20px;background:#fff;border-radius:14px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.06);">
+        <div style="font-size:16px;font-weight:800;color:#1B2A4A;margin-bottom:16px;">📊 시도 분석</div>
+        <div style="font-size:12px;color:#64748b;margin-bottom:12px;">원본 문제와 보충학습의 전체 시도 결과 분포입니다.</div>
+        ${stackedBarHTML}
       </div>
       <div style="margin:0 20px 20px;background:#fff;border-radius:14px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.06);">
         <div style="font-size:16px;font-weight:800;color:#1B2A4A;margin-bottom:16px;">📊 학습 활동</div>
@@ -4176,8 +4584,11 @@ function generateVisualReportHTML(data, comment) {
         <div style="display:flex;flex-wrap:wrap;gap:8px;">${setScoresHTML}</div>
       </div>
       <div style="margin:0 20px 20px;background:#fff;border-radius:14px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.06);">
-        <div style="font-size:16px;font-weight:800;color:#1B2A4A;margin-bottom:12px;">💬 선생님 한마디</div>
-        <div style="border-left:4px solid #FF9800;background:#F5F5F5;padding:16px 20px;border-radius:0 10px 10px 0;font-size:14px;line-height:1.7;color:#333;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div style="font-size:16px;font-weight:800;color:#1B2A4A;">💬 선생님 한마디</div>
+          ${editable ? `<button class="btn-sm" style="padding:6px 12px;background:#fff;color:#1B2A4A;border:1.5px solid #1B2A4A;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;" onclick="beginEditTrpComment()">✏️ 수정</button>` : ''}
+        </div>
+        <div id="trpCommentView" style="border-left:4px solid #FF9800;background:#F5F5F5;padding:16px 20px;border-radius:0 10px 10px 0;font-size:14px;line-height:1.7;color:#333;">
           ${comment}
         </div>
       </div>
@@ -4445,6 +4856,229 @@ function extractJSON(text) {
   if (m) try { return JSON.parse(m[1].trim()); } catch(e) {}
   try { return JSON.parse(text.trim()); } catch(e) {}
   return null;
+}
+
+// ── Taxonomy auto-tagging (Phase C) ──
+function buildTaggingPrompt(questions, subskillList, year) {
+  const subskillText = subskillList.map(s => `${s.id}: ${s.name}`).join('\n');
+  const questionsText = questions.map(q => `Q${q.num}: ${q.text}`).join('\n\n');
+  return `You are classifying mathematics questions according to the Solomon Math Academy taxonomy for Year ${year}.
+
+AVAILABLE TAXONOMY IDS (choose from these only):
+${subskillText}
+
+QUESTIONS TO CLASSIFY:
+${questionsText}
+
+RULES:
+1. For each question, choose EXACTLY ONE taxonomy_id from the list above
+2. Match the mathematical concept being tested, not surface features (e.g., a word problem about sharing pizza might be Fractions, not Word Problems)
+3. If a question tests multiple concepts, choose the MOST CENTRAL one
+4. Output ONLY valid JSON in this exact format, no explanation:
+
+{"1": "MR.Y${year}.NA.FR.fracAddUnlike", "2": "MR.Y${year}.ME.AR.areaTriangle"}
+
+Return ONLY the JSON object.`;
+}
+
+function parseTaggingResponse(raw) {
+  const parsed = extractJSON(raw);
+  if (!parsed || typeof parsed !== 'object') return {};
+  const out = {};
+  for (const [k, v] of Object.entries(parsed)) {
+    const num = parseInt(k);
+    if (!isNaN(num) && typeof v === 'string' && v.startsWith('MR.')) {
+      out[num] = v;
+    }
+  }
+  return out;
+}
+
+function selectTagSamples(questions, n = 3) {
+  const tagged = questions.filter(q => q.taxonomy_id);
+  if (tagged.length <= n) return tagged;
+  return [...tagged].sort(() => Math.random() - 0.5).slice(0, n);
+}
+
+function showTaggingReviewModal(questions, hwKey, setIdx, year) {
+  const samples = selectTagSamples(questions, 3);
+  if (samples.length === 0) return;
+  const subskillList = flattenTaxonomySubskills(year);
+  const skillById = Object.fromEntries(subskillList.map(s => [s.id, s]));
+  const strandName = (window.TAXONOMY_MR?.strands_primary?.[samples[0]?.taxonomy_id?.split('.')[2]]?.name) || '';
+
+  window._tagReviewState = {
+    questions, hwKey, setIdx, year,
+    reviewed: {},
+    sampleIds: samples.map(s => s.id)
+  };
+
+  const datalistOptions = subskillList.map(s =>
+    `<option value="${s.id}">${s.strand}/${s.topic} · ${s.name}</option>`
+  ).join('');
+
+  let html = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h2 style="margin:0;">🏷️ 태깅 결과 확인 (${samples.length}개 샘플)</h2>
+      <button class="btn-sm" onclick="closeModal()" style="background:#e2e8f0;">⏭️ 나중에 검토</button>
+    </div>
+    <div style="font-size:13px;color:#64748b;margin-bottom:16px;">자동 태깅된 ${questions.filter(q=>q.taxonomy_id).length}개 문제 중 ${samples.length}개를 확인해주세요. 샘플링 검증 후 전체 확정됩니다.</div>
+    <datalist id="taxonomyDatalist">${datalistOptions}</datalist>`;
+
+  samples.forEach((q, i) => {
+    const skill = skillById[q.taxonomy_id];
+    const skillName = skill?.name || '(unknown)';
+    html += `
+      <div id="tagReview_${i}" style="border:2px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px;background:#fafbfc;">
+        <div style="font-weight:700;margin-bottom:8px;">Q${q.num}. ${renderMath(q.text)}</div>
+        <div style="font-size:12px;color:#64748b;margin-bottom:4px;">자동 태깅:</div>
+        <div id="tagReviewId_${i}" style="font-family:monospace;font-size:12px;color:var(--navy);background:#eef2ff;padding:6px 10px;border-radius:6px;margin-bottom:4px;">${q.taxonomy_id}</div>
+        <div id="tagReviewName_${i}" style="font-size:13px;margin-bottom:10px;">"${skillName}"</div>
+        <div id="tagReviewActions_${i}" style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn-sm btn-green" onclick="handleTagReview(${i}, 'confirmed')">✅ 맞음</button>
+          <button class="btn-sm btn-gold" onclick="toggleTagCorrect(${i})">✏️ 수정</button>
+          <button class="btn-sm" style="background:#dc2626;color:#fff;" onclick="handleTagReview(${i}, 'rejected')">❌ 거부</button>
+        </div>
+        <div id="tagReviewCorrect_${i}" style="display:none;margin-top:10px;">
+          <input list="taxonomyDatalist" id="tagReviewInput_${i}" placeholder="subskill 검색/선택..." style="width:100%;padding:8px 12px;border:2px solid var(--navy);border-radius:8px;font-family:monospace;font-size:12px;">
+          <button class="btn-sm btn-navy" onclick="submitTagCorrect(${i})" style="margin-top:6px;">저장</button>
+        </div>
+        <div id="tagReviewResult_${i}" style="margin-top:8px;font-weight:700;font-size:13px;"></div>
+      </div>`;
+  });
+
+  html += `
+    <div style="text-align:center;margin-top:16px;">
+      <button id="tagReviewFinalize" class="btn-sm btn-navy" onclick="finalizeTagReview()" disabled style="opacity:0.5;cursor:not-allowed;">✅ 전체 확정 (0/${samples.length})</button>
+    </div>`;
+
+  document.getElementById('modalContent').innerHTML = html;
+  document.getElementById('modal').classList.add('open');
+}
+
+function toggleTagCorrect(i) {
+  const el = document.getElementById(`tagReviewCorrect_${i}`);
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function submitTagCorrect(i) {
+  const input = document.getElementById(`tagReviewInput_${i}`);
+  const newId = (input.value || '').trim();
+  const state = window._tagReviewState;
+  const validIds = new Set(flattenTaxonomySubskills(state.year).map(s => s.id));
+  if (!validIds.has(newId)) {
+    alert('❌ 올바른 taxonomy_id를 선택해주세요.');
+    return;
+  }
+  handleTagReview(i, 'corrected', newId);
+}
+
+function handleTagReview(i, result, newId) {
+  const state = window._tagReviewState;
+  if (!state) return;
+  const qId = state.sampleIds[i];
+  const q = state.questions.find(qq => qq.id === qId);
+  if (!q) return;
+  const fromId = q.taxonomy_id;
+
+  const feedback = {
+    result,
+    reviewer_id: currentUser?.id || 'unknown',
+    ts: new Date().toISOString()
+  };
+
+  if (result === 'confirmed') {
+    feedback.taxonomy_id = fromId;
+  } else if (result === 'corrected') {
+    feedback.from = fromId;
+    feedback.to = newId;
+    q.taxonomy_id = newId;
+    const skill = flattenTaxonomySubskills(state.year).find(s => s.id === newId);
+    document.getElementById(`tagReviewId_${i}`).textContent = newId;
+    document.getElementById(`tagReviewName_${i}`).textContent = `"${skill?.name || ''}"`;
+  } else if (result === 'rejected') {
+    feedback.original = fromId;
+    q.taxonomy_id = null;
+  }
+
+  if (window.FB_REF) {
+    const ts = Date.now();
+    window.FB_REF.child(`taxonomy_feedback/${state.hwKey}_${state.setIdx}_q${q.num}/${ts}`).set(feedback)
+      .catch(e => console.warn('[Tag] Feedback save failed:', e));
+  }
+
+  state.reviewed[i] = result;
+  const actions = document.getElementById(`tagReviewActions_${i}`);
+  if (actions) actions.style.display = 'none';
+  const correct = document.getElementById(`tagReviewCorrect_${i}`);
+  if (correct) correct.style.display = 'none';
+  const resEl = document.getElementById(`tagReviewResult_${i}`);
+  if (resEl) {
+    const label = { confirmed: '✅ 맞음으로 확인됨', corrected: `✏️ 수정됨 → ${newId}`, rejected: '❌ 거부됨 (taxonomy_id 제거)' }[result];
+    const color = { confirmed: 'var(--green)', corrected: 'var(--gold2)', rejected: '#dc2626' }[result];
+    resEl.style.color = color;
+    resEl.textContent = label;
+  }
+
+  const total = state.sampleIds.length;
+  const done = Object.keys(state.reviewed).length;
+  const btn = document.getElementById('tagReviewFinalize');
+  if (btn) {
+    btn.textContent = `✅ 전체 확정 (${done}/${total})`;
+    if (done >= total) {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+    }
+  }
+}
+
+function finalizeTagReview() {
+  const state = window._tagReviewState;
+  if (!state) { closeModal(); return; }
+  const store = getStore();
+  if (store.homeworkSets[state.hwKey]) {
+    saveStore(store);
+    fbSetHomeworkSet(state.hwKey, store.homeworkSets[state.hwKey]);
+  }
+  window._tagReviewState = null;
+  closeModal();
+  showBackupToast('✅ 태깅 확정 완료');
+}
+
+async function tagQuestions(questions, year) {
+  if (!window.TAXONOMY_MR) {
+    console.warn('[Tag] Taxonomy not loaded, skipping');
+    return { questions, skipped: true, reason: 'no_taxonomy' };
+  }
+  if (!getAIKey()) {
+    console.warn('[Tag] API key not set, skipping');
+    return { questions, skipped: true, reason: 'no_api_key' };
+  }
+  const subskillList = flattenTaxonomySubskills(year);
+  if (subskillList.length === 0) {
+    console.warn('[Tag] No taxonomy data for year', year);
+    return { questions, skipped: true, reason: 'no_year_data' };
+  }
+  const validIds = new Set(subskillList.map(s => s.id));
+
+  const BATCH_SIZE = 20;
+  for (let i = 0; i < questions.length; i += BATCH_SIZE) {
+    const batch = questions.slice(i, i + BATCH_SIZE);
+    try {
+      const prompt = buildTaggingPrompt(batch, subskillList, year);
+      const response = await callAI(prompt);
+      const tagMap = parseTaggingResponse(response);
+      batch.forEach(q => {
+        const tid = tagMap[q.num];
+        q.taxonomy_id = (tid && validIds.has(tid)) ? tid : null;
+      });
+    } catch (e) {
+      console.warn('[Tag] Batch failed:', e);
+      batch.forEach(q => { if (q.taxonomy_id === undefined) q.taxonomy_id = null; });
+    }
+  }
+  return { questions, skipped: false };
 }
 
 // ── ANSWER VERIFICATION ─────────────────
@@ -5630,6 +6264,7 @@ const firebaseConfig = {
       // 둘 다 없으면 ensureStore()에서 initStore() 처리
 
       window.fbReady = true;
+      loadTaxonomy();
       ensureStore().then(() => {
         document.getElementById('loadingOverlay').style.display = 'none';
       });
@@ -6550,7 +7185,7 @@ function _katexToMixed(katex) {
   return parts.join(' ').replace(/\s+/g, ' ').trim();
 }
 
-function doImportHwJson(yr) {
+async function doImportHwJson(yr) {
   const previewEl = document.getElementById(`hwJsonPreview_${yr}`);
   if (!previewEl || !previewEl.dataset.parsed) {
     alert('먼저 JSON 파일을 선택해주세요.');
@@ -6601,8 +7236,10 @@ function doImportHwJson(yr) {
 
   const hw = store.homeworkSets[key];
   const addedSets = [];
+  const addedIdxs = [];
 
-  Object.entries(setGroups).forEach(([setKey, info]) => {
+  const setEntries = Object.entries(setGroups);
+  for (const [setKey, info] of setEntries) {
     const questions = info.questions
       .sort((a, b) => (a.number || a.num || 0) - (b.number || b.num || 0))
       .map((q, i) => {
@@ -6648,6 +7285,12 @@ function doImportHwJson(yr) {
     const setIdx   = hw.sets.length;
     const setTitle = `Set ${setIdx + 1} (${info.title})`;
 
+    // Phase C: auto-tag imported questions
+    if (window.TAXONOMY_MR && getAIKey()) {
+      showBackupToast(`🏷️ 태깅 중... (${setTitle})`);
+      await tagQuestions(questions, yr);
+    }
+
     hw.sets.push({
       setIdx,
       title:            setTitle,
@@ -6657,7 +7300,8 @@ function doImportHwJson(yr) {
     });
 
     addedSets.push(setTitle);
-  });
+    addedIdxs.push(setIdx);
+  }
 
   saveStore(store);
   fbSetHomeworkSet(key, store.homeworkSets[key]);
@@ -6669,6 +7313,15 @@ function doImportHwJson(yr) {
   msg.textContent = `✅ ${addedSets.length}개 세트 등록 완료! (${totalQ}문제)`;
   document.body.appendChild(msg);
   setTimeout(() => msg.remove(), 3000);
+
+  // Phase C: show review modal for first set with tagged questions
+  if (window.TAXONOMY_MR && addedIdxs.length > 0) {
+    const firstIdx = addedIdxs[0];
+    const firstSet = hw.sets[firstIdx];
+    if (firstSet?.questions?.some(q => q.taxonomy_id)) {
+      showTaggingReviewModal(firstSet.questions, key, firstIdx, yr);
+    }
+  }
 }
 
 // ── TS Student Functions ────────────────────────────────────────────────────
