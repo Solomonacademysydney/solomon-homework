@@ -5082,28 +5082,29 @@ async function tagQuestions(questions, year) {
 }
 
 // ── ANSWER VERIFICATION ─────────────────
-async function verifyAnswersWithAI(questions) {
+async function verifyAnswersWithAI(questions, isRetry = false) {
   const letters = ['A','B','C','D','E'];
-  // MCQ인데 선택지(options)가 없으면 검증 불가 → 정답으로 처리하고 제외
   const unverifiable = questions.filter(q => q.type === 'mc' && (!q.options || !q.options.length));
   const verifiable   = questions.filter(q => !(q.type === 'mc' && (!q.options || !q.options.length)));
   if (!verifiable.length) {
     return unverifiable.map(q => ({ num: q.num, isCorrect: true, correctAnswer: q.answer, explanation: 'MCQ without options — skipped', missingData: false }));
   }
+
+  // [방법 3] 구조화된 사고를 JSON 필드로 강제 — calcResult·correctOption·providedAnswer 추가
   let prompt = `You are a math teacher. Review these math questions and their provided answers. For each question, determine if the provided answer is mathematically CORRECT.
 
 CRITICAL RULES FOR MULTIPLE-CHOICE QUESTIONS (MCQ):
 - Options are listed as "[A] value1, [B] value2, [C] value3, [D] value4". The provided Answer for MCQ is the OPTION LETTER (A/B/C/D/E).
-- You MUST follow these steps for every MCQ:
-  1. Solve the problem to get the mathematical value.
-  2. Find which option letter contains that value.
-  3. Compare THAT letter to the provided answer letter.
-  4. Set "correctAnswer" to a SINGLE OPTION LETTER (A/B/C/D/E) — NEVER the numerical value itself.
-- Worked example: Question "Find 1/4 of 20. [A] 4, [B] 25, [C] 16, [D] 5" → Answer: D
-  * Calculation: 1/4 of 20 = 5
-  * Option [D] has value 5, so D is correct.
-  * Provided "D" matches → {"isCorrect":true,"correctAnswer":"D"}
-- DOUBLE-CHECK: before finalizing, re-verify that the letter you chose actually points to the value you calculated. Many errors come from naming the wrong letter.
+- You MUST follow these steps for every MCQ and record each step in the JSON:
+  1. Solve the problem → record result in "calcResult" (e.g. "3(1)-1=2, 4≠2")
+  2. Find which option letter matches that result → record in "correctOption" (e.g. "C")
+  3. Copy the letter from "Answer: X" → record in "providedAnswer" (e.g. "C")
+  4. Set "isCorrect": true ONLY IF correctOption === providedAnswer (exact letter match)
+  5. Set "correctAnswer" to the same value as correctOption
+- Worked example: "Find 1/4 of 20. [A] 4, [B] 25, [C] 16, [D] 5 → Answer: D"
+  * calcResult: "1/4×20=5, option [D]=5"
+  * correctOption: "D", providedAnswer: "D" → isCorrect: true
+- DOUBLE-CHECK: re-read correctOption and providedAnswer side by side before finalizing isCorrect.
 
 GENERAL JUDGMENT RULES (non-MCQ and formatting):
 - Treat answers as CORRECT if they are mathematically equivalent, even if formatted differently:
@@ -5116,11 +5117,12 @@ GENERAL JUDGMENT RULES (non-MCQ and formatting):
 - When marking false: for MCQ, "correctAnswer" MUST be a single option letter; for non-MCQ, provide the actual correct value. Never write "same", "n/a", or leave it empty.
 
 IMPORTANT: Return ONLY a JSON array, no other text. Format:
-[{"num":1,"isCorrect":true,"correctAnswer":"B","explanation":"brief reason","missingData":false},...]
+[{"num":1,"calcResult":"1/4×20=5, [D]=5","correctOption":"D","providedAnswer":"D","isCorrect":true,"correctAnswer":"D","explanation":"brief reason","missingData":false},...]
 
 ALSO: If a question appears to be missing context (e.g. references a timetable, table, diagram, or data that is not present in the question text itself), set "missingData": true in that question's JSON object.
 
 Questions:\n`;
+
   verifiable.forEach(q => {
     let qStr = `${q.num}. ${q.text}`;
     if (q.type==='mc' && q.options && q.options.length) {
@@ -5134,51 +5136,85 @@ Questions:\n`;
   const raw = await callAI(prompt);
   const result = extractJSON(raw);
   if (!result || !Array.isArray(result)) throw new Error('Could not parse AI response.');
-  // AI 할루시네이션 보정 (강화 버전)
+
+  // AI 할루시네이션 보정
   result.forEach(r => {
-    if (r.isCorrect) return;
     const q = verifiable.find(q => String(q.num) === String(r.num));
     if (!q) return;
 
-    // (1) correctAnswer가 비어있거나 의미 없는 텍스트인 경우 → 정답으로 처리
-    const ca = r.correctAnswer == null ? '' : String(r.correctAnswer).trim();
-    const meaningless = !ca || /^(same|same as provided|same as given|no change|correct|n\/a|none|null|-)$/i.test(ca);
-    if (meaningless) {
-      r.isCorrect = true;
-      r.correctAnswer = q.answer;
-      return;
+    // [방법 3] 구조화 필드 교차검증
+    if (r.correctOption && r.providedAnswer) {
+      const co = normAns(String(r.correctOption));
+      const pa = normAns(String(r.providedAnswer));
+      // correctOption === providedAnswer인데 isCorrect:false로 출력한 모순 → 정답으로 보정
+      if (co === pa && !r.isCorrect) {
+        r.isCorrect = true;
+        r.correctAnswer = q.answer;
+      }
+      // isCorrect:true인데 correctOption ≠ providedAnswer → suspicious 플래그 [방법 1]
+      if (co !== pa && r.isCorrect) {
+        r.suspicious = true;
+      }
     }
+
+    if (r.isCorrect) return;
+
+    const ca = r.correctAnswer == null ? '' : String(r.correctAnswer).trim();
+
+    // (1) correctAnswer가 비어있거나 의미 없는 텍스트
+    const meaningless = !ca || /^(same|same as provided|same as given|no change|correct|n\/a|none|null|-)$/i.test(ca);
+    if (meaningless) { r.isCorrect = true; r.correctAnswer = q.answer; return; }
 
     // (2) 정규화 비교
-    if (normAns(ca) === normAns(q.answer)) {
-      r.isCorrect = true;
-      return;
-    }
+    if (normAns(ca) === normAns(q.answer)) { r.isCorrect = true; return; }
 
     // (3) 숫자 동등성 비교 (분수/소수/π 등 표기 차이 흡수)
-    const numA = toNumeric(ca);
-    const numB = toNumeric(q.answer);
-    if (numA !== null && numB !== null && Math.abs(numA - numB) < 0.01) {
-      r.isCorrect = true;
-      return;
-    }
+    const numA = toNumeric(ca), numB = toNumeric(q.answer);
+    if (numA !== null && numB !== null && Math.abs(numA - numB) < 0.01) { r.isCorrect = true; return; }
 
-    // (4) MCQ 문자↔값 교차 매칭: AI가 값("5")을 반환하든 문자("D")를 반환하든
-    //     결국 같은 보기를 가리키면 정답 처리. (AI가 엉뚱한 letter를 골랐을 때는
-    //     여기서 보정되지 않고 교사에게 제안으로 남겨 — 거짓음성 방지)
+    // (4) MCQ 문자↔값 교차 매칭
     if (q.type === 'mc' && q.options && q.options.length) {
       const stored    = resolveMCQOption(q.answer, q.options, letters);
       const suggested = resolveMCQOption(ca,        q.options, letters);
       if (stored.idx !== -1 && suggested.idx !== -1 && stored.idx === suggested.idx) {
-        r.isCorrect = true;
-        r.correctAnswer = stored.letter;
-        return;
+        r.isCorrect = true; r.correctAnswer = stored.letter; return;
       }
-      // AI 제안을 문자로 정규화해 두어 UI 표기가 통일되도록 함
       if (suggested.idx !== -1) r.correctAnswer = suggested.letter;
     }
+
+    // (5) Explanation 교차검증: "matches" 키워드 + 저장된 답 언급 + 부정어 없음
+    //     ("correct"처럼 광범위한 단어 제외 — "The correct answer is D, not C" 오탐 방지)
+    if (r.explanation) {
+      const exp = r.explanation;
+      const storedLetter = String(q.answer).trim().toUpperCase();
+      const hasMatch = /\bmatche?s?\b/i.test(exp);
+      const hasStoredLetter = new RegExp(`\\b${storedLetter}\\b`).test(exp.toUpperCase());
+      const hasNegation = new RegExp(`(\\bnot\\b|\\bwrong\\b|\\bincorrect\\b|≠|does not)\\s*\\b${storedLetter}\\b`, 'i').test(exp);
+      if (hasMatch && hasStoredLetter && !hasNegation) {
+        r.isCorrect = true; r.correctAnswer = q.answer;
+      }
+    }
   });
-  // unverifiable(options 없는 MCQ)를 정답으로 병합해서 반환
+
+  // [방법 2] 오답 의심 문항 2차 재검증 (최대 5개, 1차 호출일 때만)
+  if (!isRetry) {
+    const flagged = result.filter(r => !r.isCorrect);
+    if (flagged.length > 0 && flagged.length <= 5) {
+      const flaggedQs = verifiable.filter(q => flagged.some(r => String(r.num) === String(q.num)));
+      try {
+        const recheck = await verifyAnswersWithAI(flaggedQs, true);
+        recheck.forEach(r2 => {
+          const r1 = result.find(r => String(r.num) === String(r2.num));
+          // 2차에서 정답으로 나오면 → 1차 오답 판정이 hallucination일 가능성 높음 → 뒤집기
+          if (r1 && !r1.isCorrect && r2.isCorrect) {
+            r1.isCorrect = true;
+            r1.explanation = (r1.explanation || '') + ' [2차 검증: 정답 확인됨]';
+          }
+        });
+      } catch(e) { /* 2차 검증 실패 시 1차 결과 유지 */ }
+    }
+  }
+
   const skipped = unverifiable.map(q => ({ num: q.num, isCorrect: true, correctAnswer: q.answer, explanation: 'MCQ without options — skipped', missingData: false }));
   return [...result, ...skipped];
 }
@@ -5207,6 +5243,15 @@ function showVerificationResults(questions, verifications) {
 
   // Show changes for review, wait for confirmation
   let html = '';
+
+  // [방법 1] suspicious 플래그: AI 풀이결과 vs 정답판정 불일치 경고
+  const suspiciousQs = verifications.filter(v => v.suspicious && v.isCorrect);
+  if (suspiciousQs.length > 0) {
+    html += `<div style="background:#fce7f3;border:2px solid #db2777;border-radius:10px;padding:12px 16px;margin-bottom:12px;">
+      <div style="font-weight:800;color:#9d174d;font-size:14px;">🔍 AI 검증 신뢰도 낮음 — 수동 확인 권장: Q${suspiciousQs.map(v=>v.num).join(', Q')}</div>
+      <div style="font-size:12px;color:#be185d;margin-top:4px;">AI의 계산 결과와 정답 판정이 일치하지 않습니다. 원본 답안을 직접 확인하세요.</div>
+    </div>`;
+  }
 
   const missingDataQs = verifications.filter(v => v.missingData);
   if (missingDataQs.length > 0) {
