@@ -9,6 +9,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <style>
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
   /* KaTeX \text{} 글꼴을 본문(Noto Sans KR)과 통일 */
   .katex .text,
   .katex .mord.text {
@@ -669,14 +673,20 @@ function saveStore(d) {
 }
 
 // ── Firebase Granular Write Helpers ──
-function fbWrite(updates) {
-  if (!window.fbReady || !window.FB_REF) return;
+function fbWrite(updates, onSuccess) {
+  if (!window.fbReady || !window.FB_REF) {
+    if (onSuccess) onSuccess(false);
+    return;
+  }
   const ts = Date.now();
   _lastFbWriteTs = ts;
   updates.lastModified = ts;
-  window.FB_REF.update(updates).catch(err => {
+  window.FB_REF.update(updates).then(() => {
+    if (onSuccess) onSuccess(true);
+  }).catch(err => {
     console.error('[Firebase] 업데이트 실패:', err);
     showBackupToast('⚠️ Firebase 저장 실패 — 로컬에만 저장됨');
+    if (onSuccess) onSuccess(false);
   });
 }
 
@@ -688,8 +698,8 @@ function fbDeleteHomeworkSet(key) {
   fbWrite({ ['homeworkSets/' + key]: null });
 }
 
-function fbSetSubmission(key, data) {
-  fbWrite({ ['submissions/' + key]: data });
+function fbSetSubmission(key, data, onSuccess) {
+  fbWrite({ ['submissions/' + key]: data }, onSuccess);
 }
 
 function fbDeleteSubmission(key) {
@@ -2128,7 +2138,7 @@ function renderTeacher() {
     html += `<div style="margin-bottom:16px;">
       <div style="font-weight:800;color:var(--navy);font-size:14px;margin-bottom:6px;">Year ${yr}</div>
       <table class="results-table">
-        <thead><tr><th>Name</th><th>ID</th><th>Status</th><th>Score per Set</th><th>Report</th><th>Reset</th></tr></thead><tbody>`;
+        <thead><tr><th>Name</th><th>ID</th><th>Status</th><th>Score per Set</th><th>Report</th><th>Reset</th><th>수동 완료</th></tr></thead><tbody>`;
     yrStudentsAll.forEach(s => {
       let status = sets.length > 0 ? 'Not submitted' : 'No homework';
       let scoreHtml = '-';
@@ -2158,7 +2168,17 @@ function renderTeacher() {
         const hasSub = store.submissions[sk] && (store.submissions[sk].submitted || Object.keys(store.submissions[sk].answers||{}).length > 0);
         return hasSub ? `<button class="btn-sm btn-red" style="padding:2px 7px;font-size:11px;" onclick="resetSubmission('${s.id}',${idx})">↺ Set ${idx+1}</button>` : '';
       }).join('');
-      html += `<tr><td><b>${s.name}</b>${s.isTest?' <span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;">TEST</span>':''}</td><td>${s.id}</td><td>${status}</td><td>${scoreHtml}</td><td>${reportBtn}</td><td style="white-space:nowrap;">${resetBtns||'-'}</td></tr>`;
+      const manualBtns = sets.map((_,idx) => {
+        const sk = subKey(s.id, p, idx);
+        const sub = store.submissions[sk];
+        const alreadyDone = sub?.submitted && !sub?.manuallyMarked;
+        if (alreadyDone) return '';
+        const isManual = sub?.manuallyMarked;
+        const btnLabel = isManual ? `🔄 Set ${idx+1}` : `✓ Set ${idx+1}`;
+        const btnTitle = isManual ? '수동 처리됨 (다시 처리 가능)' : '수동 완료 처리';
+        return `<button class="btn-sm" style="padding:2px 7px;font-size:11px;background:${isManual?'#a78bfa':'#7c3aed'};color:#fff;" onclick="manualMarkSubmission('${s.id}',${idx})" title="${btnTitle}">${btnLabel}</button>`;
+      }).join('');
+      html += `<tr><td><b>${s.name}</b>${s.isTest?' <span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;">TEST</span>':''}</td><td>${s.id}</td><td>${status}</td><td>${scoreHtml}</td><td>${reportBtn}</td><td style="white-space:nowrap;">${resetBtns||'-'}</td><td style="white-space:nowrap;">${manualBtns||'-'}</td></tr>`;
     });
     html += `</tbody></table></div>`;
   });
@@ -2444,6 +2464,96 @@ function resetSubmission(sid, setIdx) {
   saveStore(store);
   fbDeleteSubmission(sk);
   renderTeacher();
+}
+
+function manualMarkSubmission(sid, setIdx) {
+  const store = getStore();
+  const p = store.currentPeriod;
+  const student = store.users.find(u=>u.id===sid);
+
+  if (!student) {
+    alert('학생 정보를 찾을 수 없습니다.');
+    return;
+  }
+
+  const setLabel = `Set ${setIdx+1}`;
+  const sk = subKey(sid, p, setIdx);
+  const existing = store.submissions[sk];
+
+  if (existing?.submitted && !existing?.manuallyMarked) {
+    alert(`${student.name || sid} 학생은 ${setLabel}을 이미 정상 제출했습니다.`);
+    return;
+  }
+
+  if (existing?.submitted && existing?.manuallyMarked) {
+    if (!confirm(
+      `${student.name || sid} 학생의 ${setLabel}은 이미 수동 처리되었습니다.\n\n` +
+      `기존 사유: ${existing.markedReason || '(없음)'}\n` +
+      `처리 시각: ${existing.markedAt || '(없음)'}\n\n` +
+      `덮어쓰시겠습니까?`
+    )) return;
+  }
+
+  const reason = prompt(
+    `${student.name || sid} 학생의 ${setLabel}을 수동 완료 처리합니다.\n\n` +
+    `사유를 입력해주세요 (예: 학생이 풀었다고 보고함, 시스템 미저장):`,
+    '학생이 풀었다고 보고함'
+  );
+  if (reason === null) return;
+  if (!reason.trim()) {
+    alert('사유는 비워둘 수 없습니다.');
+    return;
+  }
+
+  if (!confirm(
+    `다음 내용으로 완료 처리하시겠습니까?\n\n` +
+    `학생: ${student.name || sid}\n` +
+    `세트: ${setLabel}\n` +
+    `사유: ${reason}\n\n` +
+    `※ 점수는 0점으로 기록되며, 데이터에 '수동 완료' 표시가 남습니다.\n` +
+    `※ 다음 세트 진행이 가능해집니다.`
+  )) return;
+
+  const hw = store.homeworkSets[hwKey(student.year, student.country||'AU', p)];
+  const set = hw?.sets?.[setIdx];
+  const totalQs = set?.questions?.length || 0;
+  const now = new Date().toISOString();
+
+  store.submissions[sk] = {
+    answers: existing?.answers || {},
+    submitted: true,
+    submitTime: now,
+    manuallyMarked: true,
+    markedBy: currentUser?.id || 'unknown',
+    markedAt: now,
+    markedReason: reason.trim(),
+    reportData: {
+      studentId: sid,
+      studentName: student.name || sid,
+      year: student.year,
+      setTitle: set?.title || setLabel,
+      period: p,
+      manuallyMarked: true,
+      markedReason: reason.trim(),
+      submittedAt: now,
+      score: 0,
+      correctCount: 0,
+      totalQuestions: totalQs,
+      wrongQuestions: [],
+      weakAreas: []
+    }
+  };
+
+  saveStore(store);
+
+  fbSetSubmission(sk, store.submissions[sk], (success) => {
+    if (success) {
+      showBackupToast(`✅ ${student.name || sid} ${setLabel} 완료 처리됨`);
+    } else {
+      showBackupToast(`⚠️ Firebase 저장 실패 — 로컬에만 저장됨. 인터넷 확인 후 재시도하세요.`);
+    }
+    renderTeacher();
+  });
 }
 
 // Convert saved questions back to text for editing
@@ -3772,6 +3882,28 @@ function renderSetList(hw, store, p) {
     const prevKey = idx > 0 ? subKey(currentUser.id, p, idx-1) : null;
     const prevOk  = idx === 0 || store.submissions[prevKey]?.submitted;
     const isSubmitted = !!sub?.submitted;
+    const _answered = sub?.answers ? Object.keys(sub.answers).length : 0;
+    const _total = set.questions.filter(q=>q.type!=='written').length;
+
+    let statusBadge = '';
+    if (_total === 0) {
+      if (isSubmitted) {
+        statusBadge = `<div style="background:#dcfce7;color:#166534;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;margin-bottom:8px;">✅ 제출 완료</div>`;
+      } else if (_answered > 0) {
+        statusBadge = `<div style="background:#fef3c7;color:#b45309;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;margin-bottom:8px;">✏️ 풀이 중</div>`;
+      } else {
+        statusBadge = `<div style="background:#f1f5f9;color:#64748b;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;margin-bottom:8px;">⏳ 시작 전</div>`;
+      }
+    } else if (isSubmitted) {
+      statusBadge = `<div style="background:#dcfce7;color:#166534;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;margin-bottom:8px;">✅ 제출 완료</div>`;
+    } else if (_answered === 0) {
+      statusBadge = `<div style="background:#f1f5f9;color:#64748b;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;margin-bottom:8px;">⏳ 시작 전</div>`;
+    } else if (_answered < _total) {
+      statusBadge = `<div style="background:#fef3c7;color:#b45309;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;margin-bottom:8px;">✏️ 풀이 중 (${_answered}/${_total})</div>`;
+    } else {
+      statusBadge = `<div style="background:#fee2e2;color:#b91c1c;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:800;display:inline-block;margin-bottom:8px;animation:pulse 2s infinite;">⚠️ 답 다 썼어요! 제출하세요</div>`;
+    }
+
     const isLocked    = !prevOk && !isSubmitted;
     const answered    = sub ? Object.keys(sub.answers||{}).length : 0;
 
@@ -3796,6 +3928,7 @@ function renderSetList(hw, store, p) {
       <div class="set-card ${cardClass}" ${!isLocked ? `onclick="startSet(${idx})"` : ''}>
         <div class="set-icon ${iconClass}" style="color:${isLocked?'#94a3b8':isSubmitted?'#fff':'var(--gold)'};">${iconEmoji}</div>
         <div class="set-info">
+          ${!isLocked ? statusBadge : ''}
           <div class="set-name">${set.title}</div>
           <div class="set-meta">${statusText}${scoreHtml}</div>
         </div>
@@ -3838,6 +3971,36 @@ function goQ(i) {
   renderStudent();
 }
 
+let _beforeUnloadHandler = null;
+
+function enableUnloadWarning() {
+  if (_beforeUnloadHandler) return;
+  _beforeUnloadHandler = (e) => {
+    if (!currentUser || currentUser.role !== 'student') return;
+    if (currentSetIdx === null || currentSetIdx === undefined) return;
+
+    const store = getStore();
+    const p = studentPeriod || store.currentPeriod;
+    const key = subKey(currentUser.id, p, currentSetIdx);
+    const sub = store.submissions[key];
+
+    if (sub && !sub.submitted && sub.answers && Object.keys(sub.answers).length > 0) {
+      e.preventDefault();
+      e.returnValue = '아직 제출하지 않은 답이 있습니다. 정말 나가시겠습니까?';
+      return e.returnValue;
+    }
+  };
+  window.addEventListener('beforeunload', _beforeUnloadHandler);
+}
+
+if (typeof window !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', enableUnloadWarning);
+  } else {
+    enableUnloadWarning();
+  }
+}
+
 function saveAnswer(qid, val) {
   const store=getStore();
   const key=subKey(currentUser.id,studentPeriod||store.currentPeriod,currentSetIdx??0);
@@ -3871,6 +4034,37 @@ function answerSA(qid, val) {
     const s=getStore();
     if (s.submissions[key]) fbSetSubmission(key, s.submissions[key]);
   }, 400);
+}
+
+function showSubmitConfirmModal(state) {
+  const existing = document.getElementById('submitConfirmModal');
+  if (existing) existing.remove();
+
+  const colors = {
+    saving:  { bg: '#3b82f6', icon: '⏳', title: '저장 중...',     msg: '잠시만 기다려주세요.' },
+    success: { bg: '#10b981', icon: '✅', title: '제출 완료!',     msg: '숙제가 정상적으로 저장되었습니다.' },
+    warning: { bg: '#f59e0b', icon: '⚠️', title: '저장 확인 중',    msg: '답은 안전하게 저장되었습니다. 인터넷이 연결되면 자동으로 선생님께 전달됩니다. 다시 풀 필요는 없습니다.' }
+  };
+  const c = colors[state];
+
+  const modal = document.createElement('div');
+  modal.id = 'submitConfirmModal';
+  modal.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:99999;display:flex;align-items:center;justify-content:center;`;
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:16px;padding:32px 40px;max-width:400px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+      <div style="font-size:64px;margin-bottom:16px;">${c.icon}</div>
+      <div style="font-size:24px;font-weight:800;color:${c.bg};margin-bottom:12px;">${c.title}</div>
+      <div style="font-size:15px;color:#475569;margin-bottom:24px;line-height:1.5;">${c.msg}</div>
+      ${state !== 'saving' ? `<button onclick="document.getElementById('submitConfirmModal').remove()" style="background:${c.bg};color:#fff;border:none;padding:12px 32px;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;">확인</button>` : ''}
+    </div>`;
+  document.body.appendChild(modal);
+
+  if (state === 'success') {
+    setTimeout(() => {
+      const m = document.getElementById('submitConfirmModal');
+      if (m) m.remove();
+    }, 5000);
+  }
 }
 
 function doSubmit() {
@@ -3922,7 +4116,28 @@ function doSubmit() {
     }
   }
   saveStore(store);
-  fbSetSubmission(key, store.submissions[key]);
+
+  // 제출 완료 모달 + 10초 타임아웃 (응답 없으면 안전 메시지로 전환)
+  showSubmitConfirmModal('saving');
+  let _submitResolved = false;
+  const _submitTimeoutId = setTimeout(() => {
+    if (!_submitResolved) {
+      _submitResolved = true;
+      showSubmitConfirmModal('warning');
+    }
+  }, 10000);
+
+  fbSetSubmission(key, store.submissions[key], (success) => {
+    if (_submitResolved) return;
+    _submitResolved = true;
+    clearTimeout(_submitTimeoutId);
+    if (success) {
+      showSubmitConfirmModal('success');
+    } else {
+      showSubmitConfirmModal('warning');
+    }
+  });
+
   qIdx=0;
   renderStudent();
 }
