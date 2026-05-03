@@ -14,20 +14,29 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--navy);color:var(--wh
 header{background:linear-gradient(135deg,var(--navy2) 0%,#0d1f3c 100%);border-bottom:2px solid var(--gold);padding:18px 24px;display:flex;align-items:center;gap:14px;}
 header .title{font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--gold2);}
 header .sub{font-size:.75rem;color:var(--gray);margin-top:2px;}
+header .sub-kr{font-size:.72rem;color:var(--gold2);margin-top:3px;font-weight:500;}
 .container{max-width:680px;margin:0 auto;padding:32px 20px 60px;}
 .screen{display:none;}
 .screen.active{display:block;animation:fadeUp .4s ease;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 .card{background:var(--navy2);border:1px solid rgba(201,168,76,.25);border-radius:16px;padding:32px 28px;margin-bottom:20px;}
 .hero-badge{display:inline-block;background:linear-gradient(90deg,var(--gold),var(--gold2));color:var(--navy);font-size:.72rem;font-weight:700;padding:5px 14px;border-radius:20px;margin-bottom:18px;letter-spacing:.5px;}
-h1.hero-title{font-family:'Playfair Display',serif;font-size:2.1rem;line-height:1.25;color:var(--white);margin-bottom:10px;}
-h1.hero-title span{color:var(--gold);}
-.hero-desc{color:var(--gray);font-size:.92rem;line-height:1.65;margin-bottom:24px;}
+h1.hero-title-kr{font-family:'Noto Sans KR',sans-serif;font-size:1.85rem;line-height:1.3;color:var(--white);margin-bottom:6px;font-weight:700;}
+h1.hero-title-kr span{color:var(--gold);}
+.hero-subtitle-en{font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--gold2);margin-bottom:14px;font-style:italic;}
+.hero-desc{color:var(--white);font-size:.92rem;line-height:1.65;margin-bottom:6px;}
+.hero-desc strong{color:var(--gold2);font-weight:700;}
+.hero-desc-en{color:var(--gray);font-size:.78rem;line-height:1.55;margin-bottom:24px;font-style:italic;}
 .features{display:flex;flex-direction:column;gap:10px;margin-bottom:28px;}
-.feature{display:flex;align-items:center;gap:10px;font-size:.88rem;color:var(--white);}
-.feature .icon{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:.75rem;color:var(--navy);flex-shrink:0;}
+.feature{display:flex;align-items:flex-start;gap:10px;font-size:.88rem;color:var(--white);}
+.feature .icon{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:.75rem;color:var(--navy);flex-shrink:0;margin-top:1px;}
+.feature-text{flex:1;line-height:1.45;}
+.feature-text-en{color:var(--gray);font-size:.72rem;font-style:italic;margin-top:2px;}
+.free-badge{display:inline-block;background:linear-gradient(90deg,var(--gold),var(--gold2));color:var(--navy);font-size:.68rem;font-weight:800;padding:2px 8px;border-radius:10px;margin-left:4px;letter-spacing:.5px;vertical-align:middle;}
 .form-group{margin-bottom:18px;}
 label{display:block;font-size:.82rem;color:var(--gold2);margin-bottom:7px;font-weight:500;}
+label .label-kr{color:var(--white);font-weight:500;margin-left:4px;font-size:.78rem;}
+.form-hint{font-size:.73rem;color:var(--gold2);margin-top:6px;line-height:1.5;opacity:.85;}
 input[type="text"],input[type="tel"],input[type="email"]{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(201,168,76,.3);border-radius:10px;padding:13px 16px;color:var(--white);font-size:.95rem;font-family:'Noto Sans KR',sans-serif;transition:border-color .2s;}
 input:focus{outline:none;border-color:var(--gold);background:rgba(255,255,255,.09);}
 input::placeholder{color:var(--gray);}
@@ -39,6 +48,11 @@ input::placeholder{color:var(--gray);}
 .consent-box input[type="checkbox"]{width:18px;height:18px;flex-shrink:0;margin-top:2px;accent-color:var(--gold);cursor:pointer;}
 .consent-text{font-size:.78rem;color:var(--gray);line-height:1.6;}
 .consent-text strong{color:var(--gold2);}
+.consent-text-en{color:var(--gray);font-size:.7rem;font-style:italic;display:block;margin-top:4px;}
+.parent-promise{background:linear-gradient(135deg,rgba(76,175,125,.12),rgba(126,232,168,.06));border:1px solid rgba(126,232,168,.3);border-radius:12px;padding:14px 16px;margin-bottom:18px;display:flex;gap:12px;align-items:flex-start;}
+.parent-promise-icon{font-size:1.4rem;flex-shrink:0;margin-top:2px;}
+.parent-promise-text{font-size:.8rem;color:#dde2e8;line-height:1.65;}
+.parent-promise-text strong{color:#7ee8a8;font-weight:700;font-size:.85rem;display:block;margin-bottom:4px;}
 .error-msg{color:var(--red);font-size:.8rem;margin-top:6px;display:none;}
 .error-msg.show{display:block;}
 .btn-primary{width:100%;padding:16px;background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 100%);color:var(--navy);border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:opacity .2s,transform .1s;letter-spacing:.3px;}
@@ -82,17 +96,50 @@ input::placeholder{color:var(--gray);}
 .breakdown-bar{flex:1;height:10px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden;}
 .breakdown-fill{height:100%;border-radius:5px;transition:width .8s ease;}
 .breakdown-pct{font-size:.78rem;width:38px;text-align:right;font-weight:600;}
-.weak-area-box{background:rgba(224,82,82,.08);border:1px solid rgba(224,82,82,.3);border-radius:14px;padding:20px;margin-bottom:20px;}
-.weak-area-box h3{color:#f08080;font-size:.95rem;margin-bottom:14px;}
-.weak-item{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,.06);}
-.weak-item:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none;}
-.weak-topic{font-size:.85rem;font-weight:700;color:var(--white);margin-bottom:4px;display:flex;align-items:center;gap:8px;}
-.weak-pct-badge{font-size:.7rem;padding:2px 8px;border-radius:10px;background:rgba(224,82,82,.3);color:#f08080;}
-.weak-desc{font-size:.8rem;color:var(--gray);line-height:1.6;}
-.recommend-box{background:linear-gradient(135deg,rgba(201,168,76,.12),rgba(201,168,76,.05));border:1px solid rgba(201,168,76,.35);border-radius:14px;padding:20px;margin-bottom:20px;}
-.recommend-box h3{color:var(--gold2);font-size:.95rem;margin-bottom:12px;}
-.recommend-item{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;font-size:.88rem;}
-.recommend-item .dot{width:7px;height:7px;background:var(--gold);border-radius:50%;flex-shrink:0;margin-top:6px;}
+/* ── 한국어 병기 인라인 ── */
+.kr-inline{color:var(--white);font-weight:500;font-size:.78rem;margin-left:6px;}
+/* ── result-grade 확장 ── */
+.grade-row{display:inline-flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;justify-content:center;}
+.result-title-kr{font-size:.92rem;color:var(--gold2);font-weight:700;margin-bottom:6px;}
+.result-sub-kr{color:#cfd5dc;font-size:.85rem;line-height:1.55;margin-top:2px;}
+/* ── Growth Areas ── */
+.growth-box{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);border-radius:14px;padding:20px;margin-bottom:20px;}
+.growth-box h3{color:var(--orange);font-size:.95rem;margin-bottom:4px;font-weight:700;}
+.growth-box .h3-kr{color:#fbbf24;font-size:.82rem;margin-bottom:14px;font-weight:500;}
+.growth-item{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,.06);}
+.growth-item:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none;}
+.growth-topic{font-size:.92rem;font-weight:700;color:var(--white);margin-bottom:2px;display:flex;align-items:center;gap:8px;}
+.growth-topic-kr{font-size:.78rem;color:var(--gold2);font-weight:500;margin-bottom:8px;}
+.growth-pct-badge{font-size:.7rem;padding:2px 8px;border-radius:10px;background:rgba(245,158,11,.25);color:#fbbf24;font-weight:700;}
+.growth-desc{font-size:.85rem;color:#dde2e8;line-height:1.7;margin-bottom:6px;}
+.growth-desc-en{font-size:.75rem;color:var(--gray);line-height:1.6;font-style:italic;}
+/* ── Recommend Box 신규 ── */
+.recommend-box{background:linear-gradient(135deg,rgba(201,168,76,.14),rgba(201,168,76,.05));border:1px solid rgba(201,168,76,.4);border-radius:14px;padding:24px;margin-bottom:20px;}
+.recommend-box h3{color:var(--gold2);font-size:1.05rem;margin-bottom:4px;font-weight:700;font-family:'Playfair Display',serif;}
+.recommend-box .h3-kr{color:var(--white);font-size:.88rem;margin-bottom:18px;font-weight:700;}
+.class-card{background:rgba(0,0,0,.18);border:1px solid rgba(201,168,76,.3);border-radius:12px;padding:16px;margin-bottom:18px;}
+.class-name{font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--gold);font-weight:700;margin-bottom:4px;}
+.class-name-kr{font-size:.85rem;color:var(--white);font-weight:700;margin-bottom:8px;}
+.class-meta{font-size:.78rem;color:var(--gray);}
+.recommend-section{margin-bottom:14px;}
+.recommend-section:last-child{margin-bottom:0;}
+.recommend-section-title{font-size:.78rem;color:var(--gold2);font-weight:700;margin-bottom:8px;letter-spacing:.5px;text-transform:uppercase;}
+.recommend-item{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;font-size:.85rem;color:var(--white);line-height:1.55;}
+.recommend-item .check{color:#7ee8a8;font-weight:700;flex-shrink:0;margin-top:1px;}
+.recommend-item-en{font-size:.72rem;color:var(--gray);font-style:italic;}
+.growth-path{background:rgba(76,175,125,.1);border-left:3px solid #7ee8a8;padding:10px 14px;border-radius:6px;margin-top:10px;}
+.growth-path-label{font-size:.7rem;color:#7ee8a8;font-weight:700;margin-bottom:4px;letter-spacing:.5px;}
+.growth-path-text{font-size:.85rem;color:var(--white);line-height:1.5;}
+.growth-path-text strong{color:var(--gold2);}
+/* ── CTA 확장 ── */
+.cta-box .h3-kr{font-size:.95rem;color:var(--white);margin-bottom:14px;font-weight:700;}
+.cta-desc{color:var(--gray);font-size:.85rem;margin-bottom:18px;line-height:1.6;}
+.cta-steps{text-align:left;background:rgba(0,0,0,.2);border-radius:10px;padding:14px 16px;margin-bottom:18px;}
+.cta-step{display:flex;align-items:flex-start;gap:10px;font-size:.85rem;color:var(--white);line-height:1.5;margin-bottom:8px;}
+.cta-step:last-child{margin-bottom:0;}
+.cta-step-num{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:var(--gold);color:var(--navy);font-size:.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;}
+.cta-step-time{color:var(--gold2);font-weight:700;}
+.cta-hours{font-size:.72rem;color:var(--gray);margin-top:14px;line-height:1.5;}
 .cta-box{background:linear-gradient(135deg,var(--navy2),#0d1f3c);border:2px solid var(--gold);border-radius:16px;padding:24px;text-align:center;}
 .cta-box h3{font-family:'Playfair Display',serif;font-size:1.3rem;color:var(--gold2);margin-bottom:8px;}
 .cta-box p{color:var(--gray);font-size:.85rem;margin-bottom:18px;}
@@ -106,7 +153,7 @@ input::placeholder{color:var(--gray);}
 .blocked-icon{font-size:3rem;margin-bottom:16px;}
 .blocked-card h2{color:var(--gold);font-family:'Playfair Display',serif;margin-bottom:10px;}
 .blocked-card p{color:var(--gray);font-size:.88rem;line-height:1.6;}
-@media(max-width:480px){.year-grid{grid-template-columns:repeat(4,1fr);}h1.hero-title{font-size:1.65rem;}.card{padding:22px 18px;}}
+@media(max-width:480px){.year-grid{grid-template-columns:repeat(4,1fr);}h1.hero-title-kr{font-size:1.5rem;}.hero-subtitle-en{font-size:.9rem;}.card{padding:22px 18px;}.feature-text-en{display:none;}.hero-desc-en{display:none;}header .title{font-size:1.15rem;}header .sub{font-size:.7rem;}header .sub-kr{font-size:.68rem;}}
 </style>
 </head>
 <body>
@@ -115,6 +162,7 @@ input::placeholder{color:var(--gray);}
   <div>
     <div class="title">Solomon Academy</div>
     <div class="sub">West Ryde · NSW Selective / OC / NAPLAN</div>
+    <div class="sub-kr">솔로몬 수학학원 · 원장 직접 운영 · West Ryde</div>
   </div>
 </header>
 <div class="container">
@@ -122,45 +170,80 @@ input::placeholder{color:var(--gray);}
   <!-- SCREEN 1: INTRO -->
   <div class="screen active" id="screen-intro">
     <div class="card">
-      <div class="hero-badge">🎓 Free Level Test</div>
-      <h1 class="hero-title">Find your child's<br><span>Maths level today</span></h1>
-      <p class="hero-desc">A 30-question diagnostic test covering Year 1–10 NSW curriculum. Get instant results, topic breakdown and personalised recommendations — completely free.</p>
+      <div class="hero-badge">🎓 Free Level Test · 무료 레벨 테스트</div>
+      <h1 class="hero-title-kr">자녀의 수학 실력,<br><span>지금 바로 진단해 보세요</span></h1>
+      <div class="hero-subtitle-en">Find your child's Maths level today</div>
+      <p class="hero-desc">NSW 커리큘럼 Year 1~10 기준 30문항 진단 테스트입니다. 결과 즉시 확인 · 영역별 강약점 분석 · 맞춤 학습 경로 제안 — <strong>완전 무료</strong>입니다.</p>
+      <p class="hero-desc-en">A 30-question diagnostic test covering Year 1–10 NSW curriculum. Instant results, topic breakdown and personalised recommendations — completely free.</p>
       <div class="features">
-        <div class="feature"><div class="icon">✓</div> NSW curriculum-aligned · 3 difficulty levels</div>
-        <div class="feature"><div class="icon">✓</div> Instant marking + weak area analysis</div>
-        <div class="feature"><div class="icon">✓</div> Personalised class recommendation</div>
-        <div class="feature"><div class="icon">✓</div> 30 questions · 20 minutes · Free</div>
+        <div class="feature">
+          <div class="icon">✓</div>
+          <div class="feature-text">
+            <div>NSW 커리큘럼 기반 · 3단계 난이도 자동 조절</div>
+            <div class="feature-text-en">NSW curriculum-aligned · 3 difficulty levels</div>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="icon">✓</div>
+          <div class="feature-text">
+            <div>응시 직후 결과 확인 · 영역별 강약점 자동 분석</div>
+            <div class="feature-text-en">Instant marking + weak area analysis</div>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="icon">✓</div>
+          <div class="feature-text">
+            <div>학생 맞춤형 학습 경로 제안</div>
+            <div class="feature-text-en">Personalised class recommendation</div>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="icon">✓</div>
+          <div class="feature-text">
+            <div>30문항 · 약 20분 소요 · <span class="free-badge">무료 FREE</span></div>
+            <div class="feature-text-en">30 questions · ~20 minutes · Free for all</div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="card">
       <div class="form-group">
-        <label>Student Name *</label>
-        <input type="text" id="inp-name" placeholder="e.g. James Smith" />
-        <div class="error-msg" id="err-name">Please enter the student's name.</div>
+        <label>Student Name <span class="label-kr">학생 이름</span> *</label>
+        <input type="text" id="inp-name" placeholder="e.g. James Smith / 예: 김민수" />
+        <div class="error-msg" id="err-name">학생 이름을 입력해 주세요. · Please enter the student's name.</div>
       </div>
       <div class="form-group">
-        <label>Parent Contact (Australian mobile) *</label>
+        <label>Parent Contact (Australian mobile) <span class="label-kr">학부모 연락처</span> *</label>
         <input type="tel" id="inp-phone" placeholder="e.g. 0424 743 564" />
-        <div class="error-msg" id="err-phone">Please enter a valid contact number.</div>
+        <div class="form-hint">📞 결과 발송 및 무료 상담 안내 외 다른 용도로 사용되지 않습니다. 영업 전화 없음.</div>
+        <div class="error-msg" id="err-phone">올바른 연락처를 입력해 주세요. · Please enter a valid contact number.</div>
       </div>
       <div class="form-group">
-        <label>Email (optional)</label>
+        <label>Email <span class="label-kr">이메일</span> (선택 · optional)</label>
         <input type="email" id="inp-email" placeholder="e.g. parent@email.com" />
       </div>
       <div class="form-group">
-        <label>Select Year Group *</label>
+        <label>Select Year Group <span class="label-kr">학년 선택</span> *</label>
         <div class="year-grid" id="year-grid"></div>
-        <div class="error-msg" id="err-year">Please select a year group.</div>
+        <div class="error-msg" id="err-year">학년을 선택해 주세요. · Please select a year group.</div>
+      </div>
+      <div class="parent-promise">
+        <div class="parent-promise-icon">💌</div>
+        <div class="parent-promise-text">
+          <strong>학부모님께 약속드립니다</strong>
+          결과는 응시 직후 화면에 즉시 표시되며, 학부모 연락처로 결과 링크 발송이 가능합니다. 응시 후 영업 전화는 절대 드리지 않습니다 — 원하실 때만 무료 상담 신청해 주세요.
+        </div>
       </div>
       <div class="consent-box">
         <input type="checkbox" id="inp-consent" />
         <div class="consent-text">
-          <strong>Privacy Consent *</strong><br>
-          Your information will only be used for test results and class consultation. It will not be shared with third parties.
+          <strong>개인정보 동의 · Privacy Consent *</strong><br>
+          입력하신 정보는 레벨테스트 결과 발송 및 학습 상담 목적으로만 사용되며, 제3자에게 제공되지 않습니다.
+          <span class="consent-text-en">Your information will only be used for test results and class consultation. It will not be shared with third parties.</span>
         </div>
       </div>
-      <div class="error-msg" id="err-consent">Please agree to the privacy consent.</div>
-      <button class="btn-primary" onclick="startTest()">Start Test →</button>
+      <div class="error-msg" id="err-consent">개인정보 동의가 필요합니다. · Please agree to the privacy consent.</div>
+      <button class="btn-primary" onclick="startTest()">시험 시작 · Start Test →</button>
     </div>
   </div>
 
@@ -185,6 +268,8 @@ input::placeholder{color:var(--gray);}
 
   <!-- SCREEN 3: RESULTS -->
   <div class="screen" id="screen-result">
+
+    <!-- ① 점수 카드 + 등급 -->
     <div class="card">
       <div class="score-ring">
         <svg width="130" height="130" viewBox="0 0 130 130">
@@ -192,42 +277,97 @@ input::placeholder{color:var(--gray);}
           <circle cx="65" cy="65" r="56" fill="none" stroke="url(#scoreGrad)" stroke-width="10" stroke-linecap="round" stroke-dasharray="352" id="score-arc" stroke-dashoffset="352"/>
           <defs><linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#c9a84c"/><stop offset="100%" stop-color="#f0d080"/></linearGradient></defs>
         </svg>
-        <div><div class="score-num" id="score-num">0%</div><div class="score-label" id="score-label">0 / 30</div></div>
+        <div>
+          <div class="score-num" id="score-num">0%</div>
+          <div class="score-label" id="score-label">0 / 30</div>
+        </div>
       </div>
+
       <div class="result-grade">
-        <div class="grade-badge" id="grade-badge"></div>
+        <div class="grade-row">
+          <span class="grade-badge" id="grade-badge"></span>
+        </div>
         <div class="result-title" id="result-title"></div>
+        <div class="result-title-kr" id="result-title-kr"></div>
         <div class="result-sub" id="result-sub"></div>
+        <div class="result-sub-kr" id="result-sub-kr"></div>
       </div>
     </div>
 
+    <!-- ② Topic Breakdown -->
     <div class="card breakdown">
-      <h3>📊 Topic Breakdown</h3>
+      <h3>📊 Topic Breakdown <span class="kr-inline">· 영역별 정답률</span></h3>
       <div id="breakdown-content" style="margin-top:4px;"></div>
     </div>
 
-    <div class="weak-area-box" id="weak-area-box" style="display:none;">
-      <h3>⚠️ Areas Needing Attention</h3>
-      <div id="weak-area-content"></div>
+    <!-- ③ Growth Areas (긍정 프레임) -->
+    <div class="growth-box" id="growth-box" style="display:none;">
+      <h3>🌱 Growth Areas</h3>
+      <div class="h3-kr">성장 가능 영역 — 이 영역만 보강하면 안정권 진입이 가능합니다</div>
+      <div id="growth-content"></div>
     </div>
 
+    <!-- ④ Learning Pathway -->
     <div class="recommend-box">
-      <h3>📚 Recommended Class &amp; Learning Path</h3>
-      <div id="recommend-content"></div>
-    </div>
+      <h3>📚 <span id="rec-student-name">Student</span>'s Learning Pathway</h3>
+      <div class="h3-kr"><span id="rec-student-name-kr">학생</span>를 위한 학습 경로 · 개별 설계</div>
 
-    <div class="cta-box">
-      <h3>Book a Free Consultation</h3>
-      <p>We'll recommend the perfect class based on your results.<br>Contact us now!</p>
-      <div class="contact-methods">
-        <a id="cta-kakao" href="#" class="contact-btn contact-kakao" target="_blank">💬 KakaoTalk Chat</a>
-        <a id="cta-phone" href="#" class="contact-btn contact-phone">📞 Call Us</a>
+      <div class="class-card">
+        <div class="class-name" id="rec-class-name">--</div>
+        <div class="class-name-kr" id="rec-class-name-kr">--</div>
+        <div class="class-meta">📅 주 2회 · 학습 일정은 상담 시 협의 · West Ryde 본관</div>
+      </div>
+
+      <div class="recommend-section">
+        <div class="recommend-section-title">✓ 제공되는 학습 환경</div>
+        <div class="recommend-item"><span class="check">✓</span><div>원장 직접 지도 — 모든 수업을 원장이 직접 가르칩니다</div></div>
+        <div class="recommend-item"><span class="check">✓</span><div>학년별 맞춤 운영 — 학생 수에 맞춰 개별 또는 소그룹 형태로 진행<br><span class="recommend-item-en">Tailored to each student — delivered as individual or small-group sessions depending on cohort size.</span></div></div>
+        <div class="recommend-item"><span class="check">✓</span><div>개별 학습 설계 — 약점 영역에 맞춘 보강 커리큘럼</div></div>
+        <div class="recommend-item"><span class="check">✓</span><div>NSW 모의고사 월 1회 + 원장 첨삭 해설</div></div>
+        <div class="recommend-item"><span class="check">✓</span><div>매주 학부모 리포트 (한·영 병기, 카카오톡 발송)</div></div>
+      </div>
+
+      <div class="growth-path">
+        <div class="growth-path-label" id="growth-path-label">📈 EXPECTED GROWTH PATH · 예상 성장 경로</div>
+        <div class="growth-path-text">
+          <span id="growth-path-month3">--</span><br>
+          <span id="growth-path-month6">--</span>
+        </div>
       </div>
     </div>
 
+    <!-- ⑤ CTA -->
+    <div class="cta-box">
+      <h3>Book a Free Consultation</h3>
+      <div class="h3-kr">무료 상담 30분 예약하기</div>
+      <p class="cta-desc">결과를 바탕으로 원장이 직접 설명드립니다.</p>
+
+      <div class="cta-steps">
+        <div class="cta-step">
+          <div class="cta-step-num">1</div>
+          <div>약점 영역 상세 분석 <span class="cta-step-time">(10분)</span></div>
+        </div>
+        <div class="cta-step">
+          <div class="cta-step-num">2</div>
+          <div>맞춤 커리큘럼 제안 + 교재 샘플 시연 <span class="cta-step-time">(10분)</span></div>
+        </div>
+        <div class="cta-step">
+          <div class="cta-step-num">3</div>
+          <div>무료 체험 수업 일정 조율 <span class="cta-step-time">(10분)</span></div>
+        </div>
+      </div>
+
+      <div class="contact-methods">
+        <a id="cta-kakao" href="#" class="contact-btn contact-kakao" target="_blank">💬 카카오톡 상담</a>
+        <a id="cta-phone" href="#" class="contact-btn contact-phone">📞 0424 743 564</a>
+      </div>
+      <div class="cta-hours">수업시간: 평일 16:00–18:00 · 2 Station St, West Ryde NSW</div>
+    </div>
+
+    <!-- ⑥ Disclaimer + Reset -->
     <div class="disclaimer">
       This test is a diagnostic assessment based on the NSW curriculum.<br>
-      Results are indicative only. Final class placement is determined through consultation.
+      NSW 커리큘럼 기반 진단 테스트입니다. 결과는 참고용이며, 최종 반 배정은 상담을 통해 결정됩니다.
     </div>
     <div style="text-align:center;margin-top:24px;">
       <button class="btn-secondary" onclick="resetTest()">↺ Start Again</button>
@@ -270,6 +410,22 @@ const firebaseConfig = {
 try { firebase.initializeApp(firebaseConfig); } catch(e) {}
 let LT_REF = null;
 try { LT_REF = firebase.database().ref('lt_results'); } catch(e) {}
+
+let LT_TEMPLATES = null;
+
+async function loadTemplates() {
+  try {
+    const res = await fetch('./level-test-templates.json');
+    if (!res.ok) throw new Error('Template fetch failed: ' + res.status);
+    LT_TEMPLATES = await res.json();
+    console.log('[Level Test] Templates loaded successfully');
+  } catch (e) {
+    console.error('[Level Test] 템플릿 로드 실패:', e);
+    LT_TEMPLATES = { growthAreas: {}, growthPath: {}, gradeMapping: {} };
+  }
+}
+
+loadTemplates();
 
 /* ── CTA LINKS ── */
 document.getElementById('cta-kakao').href     = KAKAO_LINK;
@@ -882,7 +1038,8 @@ function updateTimer() {
 }
 
 /* ── FINISH TEST ── */
-function finishTest() {
+async function finishTest() {
+  if (!LT_TEMPLATES) await loadTemplates();
   clearInterval(state.timer);
   setBlocked(state.phone);
 
@@ -890,27 +1047,7 @@ function finishTest() {
   const correct = state.answers.filter((a,i) => a === state.questions[i].ans).length;
   const pct     = Math.round((correct/total)*100);
 
-  // Score ring
-  document.getElementById('score-num').textContent  = pct+'%';
-  document.getElementById('score-label').textContent = `${correct} / ${total}`;
-  setTimeout(() => {
-    document.getElementById('score-arc').style.strokeDashoffset = 352 - (352*pct/100);
-  }, 300);
-
-  // Grade
-  let grade, title, sub;
-  if (pct >= 85)      { grade='A'; title='Excellent';         sub='Your ability is well above year level!'; }
-  else if (pct >= 70) { grade='B'; title='Good';              sub='Performing at or above year level.'; }
-  else if (pct >= 50) { grade='C'; title='Developing';        sub='Some weak areas need focused attention.'; }
-  else                { grade='D'; title='Needs Foundation';  sub='Core concepts need to be rebuilt step by step.'; }
-
-  const badge = document.getElementById('grade-badge');
-  badge.className = `grade-badge grade-${grade}`;
-  badge.textContent = `Grade ${grade}`;
-  document.getElementById('result-title').textContent = title;
-  document.getElementById('result-sub').textContent   = sub;
-
-  // Topic breakdown
+  // Topic breakdown 데이터 계산
   const topics = {};
   state.questions.forEach((q,i) => {
     if (!topics[q.topic]) topics[q.topic] = {total:0, correct:0};
@@ -918,6 +1055,47 @@ function finishTest() {
     if (state.answers[i] === q.ans) topics[q.topic].correct++;
   });
 
+  // Grade 결정
+  let grade;
+  if (pct >= 85)      grade = 'A';
+  else if (pct >= 70) grade = 'B';
+  else if (pct >= 50) grade = 'C';
+  else                grade = 'D';
+
+  // weakAreas (Firebase 저장용 — 호환성 유지)
+  const weakAreas = Object.entries(topics)
+    .filter(([,d]) => Math.round((d.correct/d.total)*100) < 70)
+    .sort((a,b) => (a[1].correct/a[1].total) - (b[1].correct/b[1].total));
+
+  // 결과 화면 렌더링 (신규)
+  renderResult(pct, grade, correct, total, topics);
+
+  showScreen('screen-result');
+
+  // Firebase 저장 (기존 그대로)
+  saveResult(pct, grade, correct, total, topics, weakAreas.map(([t]) => t));
+}
+
+/* ── 결과 화면 렌더링 ── */
+function renderResult(pct, grade, correct, total, topics) {
+  // ① 점수 카드
+  document.getElementById('score-num').textContent = pct + '%';
+  document.getElementById('score-label').textContent = correct + ' / ' + total;
+  setTimeout(() => {
+    document.getElementById('score-arc').style.strokeDashoffset = 352 - (352 * pct / 100);
+  }, 300);
+
+  // ② 등급
+  const gm = getGradeMapping(grade);
+  const badge = document.getElementById('grade-badge');
+  badge.className = 'grade-badge ' + gm.css;
+  badge.textContent = gm.badge;
+  document.getElementById('result-title').textContent = gm.badge;
+  document.getElementById('result-title-kr').textContent = gm.kr;
+  document.getElementById('result-sub').textContent = gm.en_sub;
+  document.getElementById('result-sub-kr').textContent = gm.kr_sub;
+
+  // ③ Topic Breakdown
   function barColor(p) {
     if (p >= 80) return '#4caf7d';
     if (p >= 60) return '#c9a84c';
@@ -935,9 +1113,10 @@ function finishTest() {
     Object.entries(topics)
       .sort((a,b) => (b[1].correct/b[1].total) - (a[1].correct/a[1].total))
       .map(([topic,data]) => {
-        const p = Math.round((data.correct/data.total)*100);
+        const p = Math.round((data.correct/data.total) * 100);
+        const krName = TOPIC_KR_MAP[topic] || '';
         return `<div class="breakdown-item">
-          <div class="breakdown-topic">${topic}</div>
+          <div class="breakdown-topic">${topic}<span class="kr-inline">${krName}</span></div>
           <div class="breakdown-bar"><div class="breakdown-fill" style="width:0%;background:${barColor(p)}" data-pct="${p}"></div></div>
           <div class="breakdown-pct" style="color:${pctColor(p)}">${p}%</div>
         </div>`;
@@ -949,79 +1128,110 @@ function finishTest() {
     });
   }, 400);
 
-  // Weak area analysis
-  const weakAreas = Object.entries(topics)
-    .filter(([,d]) => Math.round((d.correct/d.total)*100) < 70)
-    .sort((a,b) => (a[1].correct/a[1].total) - (b[1].correct/b[1].total));
-
-  const weakBox     = document.getElementById('weak-area-box');
-  const weakContent = document.getElementById('weak-area-content');
-  if (weakAreas.length > 0) {
-    weakBox.style.display = 'block';
-    weakContent.innerHTML = weakAreas.map(([topic,data]) => {
-      const p = Math.round((data.correct/data.total)*100);
-      return `<div class="weak-item">
-        <div class="weak-topic">${topic} <span class="weak-pct-badge">${p}%</span></div>
-        <div class="weak-desc">${getWeakDesc(topic, state.year)}</div>
+  // ④ Growth Areas (90% 미만 중 점수 낮은 3개)
+  const growthAreas = selectGrowthAreas(topics);
+  const growthBox = document.getElementById('growth-box');
+  if (growthAreas.length === 0) {
+    growthBox.style.display = 'none';
+  } else {
+    growthBox.style.display = 'block';
+    document.getElementById('growth-content').innerHTML = growthAreas.map(item => {
+      const tpl = getGrowthAreaTemplate(item.name, item.pct);
+      return `<div class="growth-item">
+        <div class="growth-topic">${item.name} <span class="growth-pct-badge">${item.pct}%</span></div>
+        <div class="growth-topic-kr">${tpl.kr_title}</div>
+        <div class="growth-desc">${tpl.kr_desc}</div>
+        <div class="growth-desc-en">${tpl.en_desc}</div>
       </div>`;
     }).join('');
-  } else {
-    weakBox.style.display = 'none';
   }
 
-  // Recommendations
-  const recs = getRecommendations(grade, state.year, pct);
-  document.getElementById('recommend-content').innerHTML =
-    recs.map(r => `<div class="recommend-item"><div class="dot"></div><div>${r}</div></div>`).join('');
+  // ⑤ Learning Pathway
+  document.getElementById('rec-student-name').textContent = state.name;
+  document.getElementById('rec-student-name-kr').textContent = state.name;
 
-  showScreen('screen-result');
+  const isAGrade = grade === 'A';
+  document.getElementById('rec-class-name').textContent =
+    `Year ${state.year} · ${isAGrade ? 'Selective Preparation' : 'Tailored Program'}`;
+  document.getElementById('rec-class-name-kr').textContent =
+    `Year ${state.year} · ${isAGrade ? 'Selective 준비 과정' : '맞춤 학습 과정'}`;
 
-  // Save to Firebase
-  saveResult(pct, grade, correct, total, topics, weakAreas.map(([t]) => t));
+  // ⑥ Growth Path
+  const path = getGrowthPathTemplate(state.year, grade);
+  const pathLabel = LT_TEMPLATES?.growthPath?._label || '📈 EXPECTED GROWTH PATH · 예상 성장 경로';
+  document.getElementById('growth-path-label').innerHTML = pathLabel;
+  document.getElementById('growth-path-month3').innerHTML = path.month3;
+  document.getElementById('growth-path-month6').innerHTML = path.month6;
 }
 
-/* ── WEAK AREA DESCRIPTIONS ── */
-function getWeakDesc(topic, year) {
-  const map = {
-    'Number':       'Review number operations, factors, multiples and place value. Practise mental arithmetic regularly.',
-    'Algebra':      'Focus on solving linear and quadratic equations, expanding brackets and factorising expressions.',
-    'Fractions':    'Practise adding, subtracting, multiplying and dividing fractions. Pay attention to mixed numbers.',
-    'Decimals':     'Work on decimal operations and converting between fractions, decimals and percentages.',
-    'Percentage':   'Practise finding percentages of quantities, percentage increase/decrease, and reverse percentage.',
-    'Geometry':     'Review area, perimeter, volume formulas, angle rules, and circle theorems.',
-    'Measurement':  'Focus on unit conversions and applying measurement formulas to real-world problems.',
-    'Statistics':   'Practise calculating mean, median, mode, range, variance and standard deviation.',
-    'Probability':  'Review basic probability, independent/dependent events, and counting techniques.',
-    'Trigonometry': 'Practise sin, cos, tan ratios, the sine rule, cosine rule and angle applications.',
-    'Functions':    'Review function notation, domain, range, inverse functions and graphing techniques.',
-    'Indices':      'Practise all index laws, negative and fractional indices, and logarithm rules.',
-    'Surds':        'Focus on simplifying surds, rationalising denominators and operations with surds.',
-    'Multiplication':'Drill multiplication tables and multi-digit multiplication strategies.',
-    'Division':     'Practise long division and dividing by fractions and decimals.',
-    'Ratio':        'Review ratio, proportion, scale problems and rate calculations.',
-  };
-  return map[topic] || 'Review core concepts in this topic area and practise with varied problem types.';
+/* ── 헬퍼: 점수 밴드 분류 ── */
+function scoreBandFromPercent(pct) {
+  if (pct < 50) return 'low';
+  if (pct < 70) return 'mid';
+  if (pct < 80) return 'high';
+  return 'top'; // 80~89% (90%+는 selectGrowthAreas에서 사전 필터링)
 }
 
-/* ── RECOMMENDATIONS ── */
-function getRecommendations(grade, year, pct) {
-  const level = grade==='A'?'Advanced':grade==='B'?'Standard':'Foundation';
-  const recs = [`We recommend our Year ${year} ${level} Maths class.`];
-  if (grade==='A') {
-    recs.push('You may benefit from our Selective School / OC advanced program.');
-    recs.push('Our NAPLAN high-score strategy sessions can further sharpen your skills.');
-  } else if (grade==='B') {
-    recs.push('Targeted revision on weak topics can help you reach the A grade level.');
-    recs.push('Regular practice tests will build exam confidence and technique.');
-  } else if (grade==='C') {
-    recs.push('Focused revision of core concepts is recommended before tackling harder problems.');
-    recs.push('Our small-group intensive classes can produce rapid improvement.');
-  } else {
-    recs.push('We recommend rebuilding foundational maths concepts from the ground up.');
-    recs.push('A personalised 1-on-1 tutoring program can establish a solid foundation quickly.');
+function gradeBandFromYear(year) {
+  const y = parseInt(year, 10);
+  if (y <= 2) return 'lower';
+  if (y <= 4) return 'primary';
+  if (y <= 6) return 'selective';
+  return 'secondary'; // Y7-Y10
+}
+
+/* ── 헬퍼: Growth Areas 선별 (90% 미만 중 점수 낮은 3개) ── */
+function selectGrowthAreas(topics) {
+  return Object.entries(topics)
+    .map(([name, data]) => ({
+      name,
+      pct: Math.round((data.correct / data.total) * 100),
+      correct: data.correct,
+      total: data.total
+    }))
+    .filter(item => item.pct < 90)
+    .sort((a, b) => a.pct - b.pct)
+    .slice(0, 3);
+}
+
+/* ── 헬퍼: 템플릿 매칭 ── */
+function getGrowthAreaTemplate(topicName, pct) {
+  if (!LT_TEMPLATES?.growthAreas?.[topicName]) {
+    return {
+      kr_title: `${topicName} — 보강 필요 영역`,
+      kr_desc: '이 영역의 추가 학습이 권장됩니다.',
+      en_desc: 'Additional practice recommended in this area.'
+    };
   }
-  return recs;
+  const band = scoreBandFromPercent(pct);
+  return LT_TEMPLATES.growthAreas[topicName][band];
 }
+
+function getGrowthPathTemplate(year, grade) {
+  const band = gradeBandFromYear(year);
+  const path = LT_TEMPLATES?.growthPath?.[band]?.[grade];
+  if (!path) {
+    return {
+      month3: '<strong>3개월 후</strong> 학년 안정권 진입 목표',
+      month6: '<strong>6개월 후</strong> 약점 영역 보강 완료'
+    };
+  }
+  return path;
+}
+
+function getGradeMapping(grade) {
+  const m = LT_TEMPLATES?.gradeMapping?.[grade];
+  if (!m) return { badge: 'Result', kr: '결과', en_sub: '', kr_sub: '', css: 'grade-B' };
+  return m;
+}
+
+/* ── 한국어 토픽명 매핑 ── */
+const TOPIC_KR_MAP = {
+  Number: '수와 연산', Algebra: '대수', Geometry: '기하', Statistics: '통계',
+  Fractions: '분수', Measurement: '측정', Probability: '확률', Indices: '지수',
+  Trigonometry: '삼각비', Percentage: '백분율', Functions: '함수', Decimals: '소수',
+  Surds: '무리수', Multiplication: '곱셈', Division: '나눗셈', Ratio: '비와 비율'
+};
 
 /* ── SAVE TO FIREBASE ── */
 function saveResult(pct, grade, correct, total, topics, weakAreas) {
