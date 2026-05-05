@@ -675,6 +675,216 @@ body {
   .olp-form-intro-h2 { font-size: 28px; }
 }
 
+/* === PRICING V2 — Option C (Phase 6) === */
+.olp-pricing-cards-v2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.olp-price-card {
+  background: white;
+  border: 0.5px solid var(--olp-border);
+  border-radius: 4px;
+  padding: 28px 24px;
+  position: relative;
+}
+.olp-price-card-recommended {
+  border: 1.5px solid var(--olp-burnt);
+}
+.olp-price-card-badge {
+  position: absolute;
+  top: -10px;
+  right: 20px;
+  background: var(--olp-burnt);
+  color: white;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  padding: 4px 10px;
+  border-radius: 2px;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+}
+.olp-price-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 0.5px solid var(--olp-border);
+}
+.olp-price-card-tier {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--olp-muted);
+  letter-spacing: 0.2em;
+  margin-bottom: 4px;
+}
+.olp-price-card-tier-desc {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 12px;
+  color: var(--olp-muted);
+  margin-top: 2px;
+}
+.olp-price-savings {
+  background: var(--olp-cream);
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-family: 'Fraunces', serif;
+  font-size: 14px;
+  color: var(--olp-burnt);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.olp-price-savings-emphasis {
+  background: rgba(184, 65, 44, 0.1);
+}
+.olp-price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 0.5px solid rgba(14, 31, 58, 0.06);
+}
+.olp-price-row:last-of-type {
+  border-bottom: none;
+}
+.olp-price-row-track {
+  flex: 1;
+}
+.olp-price-row-name {
+  font-family: 'Fraunces', serif;
+  font-size: 18px;
+  color: var(--olp-navy);
+  font-weight: 400;
+}
+.olp-price-row-year {
+  font-size: 11px;
+  color: var(--olp-muted);
+  margin-top: 2px;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.05em;
+}
+.olp-price-row-amount {
+  text-align: right;
+}
+.olp-price-row-original {
+  font-family: 'Fraunces', serif;
+  font-size: 13px;
+  color: var(--olp-muted);
+  text-decoration: line-through;
+  margin-bottom: 2px;
+}
+.olp-price-row-discounted {
+  font-family: 'Fraunces', serif;
+  font-size: 28px;
+  color: var(--olp-navy);
+  font-weight: 300;
+  line-height: 1;
+}
+.olp-price-row-discounted em {
+  font-style: italic;
+  color: var(--olp-burnt);
+}
+.olp-price-row-period {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--olp-muted);
+  font-style: normal;
+  margin-left: 4px;
+  letter-spacing: 0.05em;
+}
+.olp-price-card-includes {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 0.5px solid var(--olp-border);
+}
+.olp-price-card-includes-title {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 12px;
+  color: var(--olp-muted);
+  margin-bottom: 10px;
+}
+.olp-price-card-includes ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.olp-price-card-includes li {
+  font-size: 13px;
+  color: var(--olp-navy-light);
+  padding: 4px 0 4px 14px;
+  position: relative;
+  line-height: 1.5;
+}
+.olp-price-card-includes li::before {
+  content: '\B7';
+  color: var(--olp-burnt);
+  position: absolute;
+  left: 0;
+  font-size: 18px;
+  line-height: 1.2;
+}
+.olp-pricing-coming {
+  background: var(--olp-cream-light);
+  border: 0.5px dashed var(--olp-gold);
+  border-radius: 4px;
+  padding: 20px 24px;
+  margin-top: 16px;
+}
+.olp-pricing-coming-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--olp-gold);
+  letter-spacing: 0.15em;
+  margin-bottom: 6px;
+}
+.olp-pricing-coming-text {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+  color: var(--olp-navy-light);
+  line-height: 1.6;
+}
+.olp-pricing-coming-text strong {
+  color: var(--olp-navy);
+}
+
+/* === FAQ details/summary (Phase 6) === */
+details.olp-faq-item summary {
+  cursor: pointer;
+  list-style: none;
+  position: relative;
+  padding-right: 30px;
+}
+details.olp-faq-item summary::after {
+  content: '+';
+  position: absolute;
+  right: 0;
+  top: 0;
+  font-family: 'Fraunces', serif;
+  font-size: 24px;
+  color: var(--olp-burnt);
+  transition: transform 0.2s;
+}
+details.olp-faq-item[open] summary::after {
+  content: '\2212';
+}
+details.olp-faq-item summary::-webkit-details-marker {
+  display: none;
+}
+details.olp-faq-item p {
+  margin-top: 12px;
+}
+
+@media (max-width: 900px) {
+  .olp-pricing-cards-v2 {
+    grid-template-columns: 1fr;
+  }
+  .olp-price-row-discounted {
+    font-size: 24px;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -692,15 +902,15 @@ body {
 <section class="olp-hero">
   <div class="olp-hero-tag">SOLOMON ACADEMY &middot; ONLINE PROGRAM</div>
 
-  <h1 class="olp-hero-h1">From West Ryde,<br>for students <em>across Australia</em>.</h1>
+  <h1 class="olp-hero-h1">West Ryde에서<br>호주 <em>전국으로</em>.</h1>
 
   <p class="olp-hero-sub">
-    NSW의 OC, Selective, NAPLAN을 원장이 직접 설계한 매일 학습으로 준비합니다.
+    NSW <em style="color: var(--olp-burnt); font-style: italic;">OC &middot; Selective</em> 시험을 매일 학습으로 준비하는 온라인 프로그램.
     West Ryde 오프라인 학원에서 검증된 커리큘럼을 호주 전국 어디서나.
   </p>
 
   <p class="olp-hero-sub-kr">
-    A daily learning program for NSW Years 3&ndash;9, designed by the principal of Solomon Math Academy. Now open to students anywhere in Australia.
+    A daily learning program for NSW Years 3-9, designed by the principal. Now open to students anywhere in Australia.
   </p>
 
   <div class="olp-hero-status">
@@ -714,9 +924,122 @@ body {
   <a href="#enrol" class="olp-hero-cta">사전 신청하기 / Apply now</a>
 </section>
 
+<!-- PRICING -->
+<section class="olp-section">
+  <div class="olp-section-label">01 &mdash; PRICING</div>
+  <h2 class="olp-section-title"><em>Founding Member</em><br>30석 한정.</h2>
+
+  <p style="font-family: 'Noto Sans KR', sans-serif; font-size: 14px; color: var(--olp-muted); margin: 0 0 40px 0; max-width: 640px;">
+    12개월 가격 고정 &middot; Term 3 이전 등록자 한정 &middot; 정상가 대비 $50 절약<br>
+    <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.05em;">
+      Locked-in pricing for 12 months. Save $50/month vs regular pricing.
+    </span>
+  </p>
+
+  <!-- Pricing Cards Grid: Lite + Full -->
+  <div class="olp-pricing-cards-v2">
+
+    <!-- LITE CARD -->
+    <div class="olp-price-card">
+      <div class="olp-price-card-header">
+        <div>
+          <div class="olp-price-card-tier">LITE</div>
+          <div class="olp-price-card-tier-desc">매일 문제만 / Daily content only</div>
+        </div>
+        <div class="olp-price-savings">$50<span style="font-family: 'Noto Sans KR', sans-serif; font-size: 10px; margin-left: 4px;">절약</span></div>
+      </div>
+
+      <div class="olp-price-row">
+        <div class="olp-price-row-track">
+          <div class="olp-price-row-name">OC</div>
+          <div class="olp-price-row-year">Year 3 &mdash; 4</div>
+        </div>
+        <div class="olp-price-row-amount">
+          <div class="olp-price-row-original">$179</div>
+          <div class="olp-price-row-discounted">$<em>129</em><span class="olp-price-row-period">/월</span></div>
+        </div>
+      </div>
+
+      <div class="olp-price-row">
+        <div class="olp-price-row-track">
+          <div class="olp-price-row-name">Selective</div>
+          <div class="olp-price-row-year">Year 5 &mdash; 6</div>
+        </div>
+        <div class="olp-price-row-amount">
+          <div class="olp-price-row-original">$199</div>
+          <div class="olp-price-row-discounted">$<em>149</em><span class="olp-price-row-period">/월</span></div>
+        </div>
+      </div>
+
+      <div class="olp-price-card-includes">
+        <div class="olp-price-card-includes-title">포함 내역 / Includes</div>
+        <ul>
+          <li>매일 학습 콘텐츠 / Daily learning content</li>
+          <li>전용 학습 플랫폼 / Platform access</li>
+          <li>3단계 힌트 &middot; 자동 채점 / 3-tier hints, auto-marking</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- FULL CARD (RECOMMENDED) -->
+    <div class="olp-price-card olp-price-card-recommended">
+      <div class="olp-price-card-badge">RECOMMENDED</div>
+
+      <div class="olp-price-card-header">
+        <div>
+          <div class="olp-price-card-tier" style="color: var(--olp-burnt);">FULL &#9733;</div>
+          <div class="olp-price-card-tier-desc">+ 라이브 + 리포트 / + Live + Reports</div>
+        </div>
+        <div class="olp-price-savings olp-price-savings-emphasis">$50<span style="font-family: 'Noto Sans KR', sans-serif; font-size: 10px; margin-left: 4px;">절약</span></div>
+      </div>
+
+      <div class="olp-price-row">
+        <div class="olp-price-row-track">
+          <div class="olp-price-row-name">OC</div>
+          <div class="olp-price-row-year">Year 3 &mdash; 4</div>
+        </div>
+        <div class="olp-price-row-amount">
+          <div class="olp-price-row-original">$249</div>
+          <div class="olp-price-row-discounted">$<em>199</em><span class="olp-price-row-period">/월</span></div>
+        </div>
+      </div>
+
+      <div class="olp-price-row">
+        <div class="olp-price-row-track">
+          <div class="olp-price-row-name">Selective</div>
+          <div class="olp-price-row-year">Year 5 &mdash; 6</div>
+        </div>
+        <div class="olp-price-row-amount">
+          <div class="olp-price-row-original">$279</div>
+          <div class="olp-price-row-discounted">$<em>229</em><span class="olp-price-row-period">/월</span></div>
+        </div>
+      </div>
+
+      <div class="olp-price-card-includes">
+        <div class="olp-price-card-includes-title"><strong style="color: var(--olp-navy);">Lite의 모든 항목 +</strong> / All Lite features +</div>
+        <ul>
+          <li>주 1회 원장 라이브 코칭 (60분) / Weekly live coaching</li>
+          <li>매월 학부모 리포트 (한/영) / Monthly parent reports</li>
+          <li>카카오톡 1:1 학부모 상담 / KakaoTalk 1-on-1 support</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Stage 4-5 Coming Soon Box -->
+  <div class="olp-pricing-coming">
+    <div class="olp-pricing-coming-label">COMING TERM 4 &middot; 2026</div>
+    <div class="olp-pricing-coming-text">
+      <strong>Stage 4-5 Track (Y7-Y9):</strong> NAPLAN + 학교 내신 대비 트랙은 2026 Term 4에 출시됩니다.
+      사전 알림 신청은 아래 폼에서 가능합니다.
+    </div>
+  </div>
+</section>
+
 <!-- WHY -->
 <section class="olp-section">
-  <div class="olp-section-label">01 &mdash; WHY SOLOMON ONLINE</div>
+  <div class="olp-section-label">02 &mdash; WHY SOLOMON ONLINE</div>
   <h2 class="olp-section-title">Daily structure.<br><em>Live</em> coaching. Bilingual support.</h2>
 
   <div class="olp-why-grid">
@@ -773,216 +1096,12 @@ body {
   </div>
 </section>
 
-<!-- TRACKS -->
-<section class="olp-section">
-  <div class="olp-section-label">02 &mdash; TRACKS</div>
-  <h2 class="olp-section-title">Three programs.<br>One <em>obsession</em>: depth.</h2>
-
-  <div class="olp-tracks-grid">
-
-    <div class="olp-track">
-      <div class="olp-track-num">I.</div>
-      <h3 class="olp-track-h3">Opportunity <em>Class</em></h3>
-      <div class="olp-track-meta">YEAR 3&ndash;4 &middot; OC TEST PREP</div>
-      <p class="olp-track-desc">
-        Structured preparation for the Year 4 Opportunity Class Placement Test.
-        Daily practice in Mathematical Reasoning, Thinking Skills, and Reading.
-      </p>
-      <p class="olp-track-desc-kr">
-        Year 3-4 학생을 위한 OC 시험 대비 트랙. 매일 수학 사고력, 추론, 독해 학습.
-      </p>
-      <div class="olp-track-tags">MATH &middot; THINKING &middot; READING</div>
-    </div>
-
-    <div class="olp-track">
-      <div class="olp-track-num">II.</div>
-      <h3 class="olp-track-h3"><em>Selective</em> High School</h3>
-      <div class="olp-track-meta">YEAR 5&ndash;6 &middot; SELECTIVE TEST PREP</div>
-      <p class="olp-track-desc">
-        A multi-year program for Year 5&ndash;6 students preparing for the Selective High School
-        Placement Test. Deep work on algebra, thinking skills, and writing.
-      </p>
-      <p class="olp-track-desc-kr">
-        Year 5-6 학생을 위한 Selective 시험 대비 트랙. 대수, 추론, 작문 심화 훈련.
-      </p>
-      <div class="olp-track-tags">MATH &middot; THINKING &middot; WRITING</div>
-    </div>
-
-    <div class="olp-track olp-track-coming">
-      <div class="olp-track-coming-badge">COMING</div>
-      <div class="olp-track-num">III.</div>
-      <h3 class="olp-track-h3">Stage 4&ndash;5 <em>Mathematics</em></h3>
-      <div class="olp-track-meta">YEAR 7&ndash;9 &middot; NAPLAN + SCHOOL</div>
-      <p class="olp-track-desc">
-        NSW Stage 4 and early Stage 5 mathematics, structured around half-yearly and
-        yearly exam cycles. Launching 2026 Term 4.
-      </p>
-      <p class="olp-track-desc-kr">
-        Year 7-9 NSW 중등수학 트랙 &mdash; 학기말 시험 + NAPLAN 대비. 2026 Term 4 출시 예정.
-      </p>
-      <div class="olp-track-tags">ALGEBRA &middot; GEOMETRY &middot; NAPLAN</div>
-    </div>
-
-  </div>
-</section>
-
-<!-- PRICING -->
-<section class="olp-section">
-  <div class="olp-section-label">03 &mdash; PRICING</div>
-  <h2 class="olp-section-title"><em>Founding</em> Member pricing.<br>For the first 30 students.</h2>
-
-  <div class="olp-pricing-intro">
-    <div>
-      <div class="olp-pricing-intro-label">FOUNDING MEMBER</div>
-      <h3 class="olp-pricing-intro-h3">First <em>30 students</em> &mdash; locked-in pricing for 12 months.</h3>
-      <p class="olp-pricing-intro-desc">
-        Founding Member 30명 한정 특별가 &mdash; 12개월 동안 인상 없이 동일 가격 유지.
-        2026 Term 3 이후엔 정상가로 전환됩니다.
-      </p>
-    </div>
-    <div style="text-align: center;">
-      <div class="olp-pricing-intro-stat-num">30</div>
-      <div class="olp-pricing-intro-stat-label">SPOTS &middot; 자리 한정</div>
-    </div>
-  </div>
-
-  <div class="olp-pricing-grid">
-
-    <div class="olp-pricing-card">
-      <div class="olp-pricing-card-track">OC TRACK &middot; Y3&ndash;Y4</div>
-      <div class="olp-pricing-card-original">$249</div>
-      <div class="olp-pricing-card-price">$<em>199</em></div>
-      <div class="olp-pricing-card-period">PER MONTH &middot; 월</div>
-      <div class="olp-pricing-card-note">12개월 가격 고정</div>
-    </div>
-
-    <div class="olp-pricing-card">
-      <div class="olp-pricing-card-track">SELECTIVE &middot; Y5&ndash;Y6</div>
-      <div class="olp-pricing-card-original">$279</div>
-      <div class="olp-pricing-card-price">$<em>229</em></div>
-      <div class="olp-pricing-card-period">PER MONTH &middot; 월</div>
-      <div class="olp-pricing-card-note">12개월 가격 고정</div>
-    </div>
-
-    <div class="olp-pricing-card olp-track-coming">
-      <div class="olp-pricing-card-track">STAGE 4&ndash;5 &middot; Y7&ndash;Y9</div>
-      <div class="olp-pricing-card-price" style="font-size: 28px; color: var(--olp-muted);">Coming<br><em>Term 4</em></div>
-      <div class="olp-pricing-card-period" style="margin-top: 16px;">2026 TERM 4</div>
-      <div class="olp-pricing-card-note">출시 시 알림 안내</div>
-    </div>
-
-  </div>
-
-  <div class="olp-pricing-includes">
-    <h4 class="olp-pricing-includes-h4">Every track includes / 모든 트랙 공통 포함</h4>
-    <ul class="olp-pricing-includes-list">
-      <li>Daily learning content (5 days/week)</li>
-      <li>Weekly live coaching (60 minutes)</li>
-      <li>Solomon HW 학습 플랫폼 접근</li>
-      <li>3-tier hint system &middot; 3단계 힌트</li>
-      <li>Automatic marking &middot; 자동 채점</li>
-      <li>Monthly parent report (KR/EN)</li>
-      <li>KakaoTalk 1:1 학부모 상담</li>
-      <li>Term-end progress review</li>
-    </ul>
-  </div>
-</section>
-
-<!-- FAQ -->
-<section class="olp-section">
-  <div class="olp-section-label">04 &mdash; FAQ</div>
-  <h2 class="olp-section-title">Common <em>questions</em>.</h2>
-
-  <div class="olp-faq-list">
-
-    <div class="olp-faq-item">
-      <h3 class="olp-faq-q">How does it <em>work</em>? / 어떻게 진행되나요?</h3>
-      <p class="olp-faq-a">
-        Every day from Monday to Friday, your child receives a learning set
-        (about 30&ndash;40 minutes) on the Solomon platform. Once a week, the principal
-        runs a live coaching session reviewing the week's content.
-        Parents receive a monthly report summarising progress.
-      </p>
-      <p class="olp-faq-a-kr">
-        평일(월~금) 매일 약 30-40분 분량의 학습 세트가 Solomon 플랫폼에 제공됩니다.
-        주 1회 원장이 직접 진행하는 라이브 수업에서 한 주 내용을 정리합니다.
-        매월 학부모 리포트로 진도와 약점을 공유드립니다.
-      </p>
-    </div>
-
-    <div class="olp-faq-item">
-      <h3 class="olp-faq-q">What's the <em>refund</em> policy? / 환불 정책은?</h3>
-      <p class="olp-faq-a">
-        First 14 days: full refund, no questions asked. After that, we run on monthly
-        cycles &mdash; you can stop at the end of any month with no further charge.
-      </p>
-      <p class="olp-faq-a-kr">
-        첫 14일: 무조건 전액 환불. 이후엔 월 단위로 운영되며, 어느 달이든 월말 종료 가능합니다.
-        장기 계약 강요 없습니다.
-      </p>
-    </div>
-
-    <div class="olp-faq-item">
-      <h3 class="olp-faq-q">How is this <em>different</em> from in-person? / 오프라인이랑 차이가 뭔가요?</h3>
-      <p class="olp-faq-a">
-        Same curriculum, same principal, same depth &mdash; but daily instead of once a week.
-        Live coaching replaces the in-person classroom. Best for families outside Sydney
-        or those preferring flexible scheduling.
-      </p>
-      <p class="olp-faq-a-kr">
-        커리큘럼, 원장, 깊이는 동일합니다. 다만 주 1회 오프라인 수업 대신 매일 학습 + 주 1회 라이브로 진행됩니다.
-        시드니 외 지역 거주자나 시간 유연성이 필요한 가정에 적합합니다.
-      </p>
-    </div>
-
-    <div class="olp-faq-item">
-      <h3 class="olp-faq-q">What if my child <em>falls behind</em>? / 혼자 따라가지 못하면?</h3>
-      <p class="olp-faq-a">
-        Three-tier hint system on every question (nudge &rarr; method &rarr; full solution).
-        Wrong answers trigger targeted follow-up practice on the same concept.
-        Parents can message the principal directly via KakaoTalk for any concern.
-      </p>
-      <p class="olp-faq-a-kr">
-        모든 문제에 3단계 힌트 시스템이 있습니다 (살짝 &rarr; 방법 &rarr; 풀이).
-        오답이 발생하면 같은 개념의 보강 문제가 자동으로 제공됩니다.
-        걱정되시면 카카오톡으로 원장에게 직접 문의 가능합니다.
-      </p>
-    </div>
-
-    <div class="olp-faq-item">
-      <h3 class="olp-faq-q">Are textbooks <em>included</em>? / 교재는 별도 구매인가요?</h3>
-      <p class="olp-faq-a">
-        Everything is included in the monthly fee &mdash; daily content, live sessions,
-        platform access, and reports. No additional textbook purchases required.
-      </p>
-      <p class="olp-faq-a-kr">
-        매월 수강료에 모든 것이 포함됩니다 &mdash; 매일 학습 콘텐츠, 라이브 수업, 플랫폼 접근, 리포트.
-        별도 교재 구매 필요 없습니다.
-      </p>
-    </div>
-
-    <div class="olp-faq-item">
-      <h3 class="olp-faq-q">Can students in <em>Korea</em> join? / 한국 거주 학생도 가능한가요?</h3>
-      <p class="olp-faq-a">
-        Yes &mdash; as long as the family can join the weekly live session
-        (Australian Eastern time). Daily content can be done at any time.
-        We'll confirm the live time after enrolment to fit your timezone.
-      </p>
-      <p class="olp-faq-a-kr">
-        가능합니다 &mdash; 단, 주 1회 라이브 수업 시간(호주 동부 시간 기준)에 참여할 수 있어야 합니다.
-        매일 학습은 시간 자유. 등록 후 정호님과 시간대 협의합니다.
-      </p>
-    </div>
-
-  </div>
-</section>
-
 <!-- FORM -->
 <section class="olp-section" id="enrol">
   <div class="olp-form-wrap">
 
     <div class="olp-form-intro">
-      <div class="olp-form-intro-label">05 &mdash; APPLY NOW</div>
+      <div class="olp-form-intro-label">03 &mdash; APPLY NOW</div>
       <h2 class="olp-form-intro-h2"><em>사전 신청</em> / Pre-register</h2>
       <p class="olp-form-intro-desc">
         Founding Member 자리 한정 &mdash; 신청 후 2-3일 안에 카카오톡 또는 이메일로 연락드립니다.
@@ -1042,19 +1161,37 @@ body {
       </div>
 
       <div class="olp-form-row">
-        <label class="olp-form-label">관심 트랙 / Interested tracks</label>
+        <label class="olp-form-label">관심 트랙 / Track of interest</label>
         <div class="olp-form-checkbox-group">
           <label class="olp-form-checkbox-label">
-            <input type="checkbox" name="track_oc" value="OC Track">
-            <span>OC Track (Y3&ndash;Y4)</span>
+            <input type="checkbox" name="track_oc" value="OC">
+            <span>OC (Y3-Y4)</span>
           </label>
           <label class="olp-form-checkbox-label">
-            <input type="checkbox" name="track_selective" value="Selective Track">
-            <span>Selective (Y5&ndash;Y6)</span>
+            <input type="checkbox" name="track_selective" value="Selective">
+            <span>Selective (Y5-Y6)</span>
           </label>
           <label class="olp-form-checkbox-label">
-            <input type="checkbox" name="track_stage45" value="Stage 4-5 Track">
-            <span>Stage 4&ndash;5 (Y7&ndash;Y9)</span>
+            <input type="checkbox" name="track_stage45" value="Stage 4-5 (Coming)">
+            <span>Stage 4-5 (Y7-Y9, Coming)</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="olp-form-row">
+        <label class="olp-form-label">관심 옵션 / Plan</label>
+        <div class="olp-form-checkbox-group">
+          <label class="olp-form-checkbox-label">
+            <input type="checkbox" name="plan_lite" value="Lite">
+            <span>Lite (매일 문제)</span>
+          </label>
+          <label class="olp-form-checkbox-label">
+            <input type="checkbox" name="plan_full" value="Full">
+            <span>Full (라이브 포함)</span>
+          </label>
+          <label class="olp-form-checkbox-label">
+            <input type="checkbox" name="plan_undecided" value="Considering both">
+            <span>둘 다 검토 중</span>
           </label>
         </div>
       </div>
@@ -1091,11 +1228,100 @@ body {
       <button type="submit" class="olp-form-submit">사전 신청 제출 / Submit application</button>
 
       <p class="olp-form-disclaimer">
-        제출하시면 정호 원장이 직접 검토 후 2-3일 안에 연락드립니다.
+        제출하시면 원장님이 직접 검토 후 2-3일 안에 연락드립니다.
         입력하신 정보는 Solomon Academy의 신규 학생 안내 외 다른 용도로 사용되지 않습니다.
       </p>
 
     </form>
+
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="olp-section">
+  <div class="olp-section-label">04 &mdash; FAQ</div>
+  <h2 class="olp-section-title">Common <em>questions</em>.</h2>
+
+  <div class="olp-faq-list">
+
+    <details class="olp-faq-item">
+      <summary class="olp-faq-q">How does it <em>work</em>? / 어떻게 진행되나요?</summary>
+      <p class="olp-faq-a">
+        Every day from Monday to Friday, your child receives a learning set
+        (about 30&ndash;40 minutes) on the Solomon platform. Once a week, the principal
+        runs a live coaching session reviewing the week's content.
+        Parents receive a monthly report summarising progress.
+      </p>
+      <p class="olp-faq-a-kr">
+        평일(월~금) 매일 약 30-40분 분량의 학습 세트가 Solomon 플랫폼에 제공됩니다.
+        주 1회 원장이 직접 진행하는 라이브 수업에서 한 주 내용을 정리합니다.
+        매월 학부모 리포트로 진도와 약점을 공유드립니다.
+      </p>
+    </details>
+
+    <details class="olp-faq-item">
+      <summary class="olp-faq-q">What's the <em>refund</em> policy? / 환불 정책은?</summary>
+      <p class="olp-faq-a">
+        First 14 days: full refund, no questions asked. After that, we run on monthly
+        cycles &mdash; you can stop at the end of any month with no further charge.
+      </p>
+      <p class="olp-faq-a-kr">
+        첫 14일: 무조건 전액 환불. 이후엔 월 단위로 운영되며, 어느 달이든 월말 종료 가능합니다.
+        장기 계약 강요 없습니다.
+      </p>
+    </details>
+
+    <details class="olp-faq-item">
+      <summary class="olp-faq-q">How is this <em>different</em> from in-person? / 오프라인이랑 차이가 뭔가요?</summary>
+      <p class="olp-faq-a">
+        Same curriculum, same principal, same depth &mdash; but daily instead of once a week.
+        Live coaching replaces the in-person classroom. Best for families outside Sydney
+        or those preferring flexible scheduling.
+      </p>
+      <p class="olp-faq-a-kr">
+        커리큘럼, 원장, 깊이는 동일합니다. 다만 주 1회 오프라인 수업 대신 매일 학습 + 주 1회 라이브로 진행됩니다.
+        시드니 외 지역 거주자나 시간 유연성이 필요한 가정에 적합합니다.
+      </p>
+    </details>
+
+    <details class="olp-faq-item">
+      <summary class="olp-faq-q">What if my child <em>falls behind</em>? / 혼자 따라가지 못하면?</summary>
+      <p class="olp-faq-a">
+        Three-tier hint system on every question (nudge &rarr; method &rarr; full solution).
+        Wrong answers trigger targeted follow-up practice on the same concept.
+        Parents can message the principal directly via KakaoTalk for any concern.
+      </p>
+      <p class="olp-faq-a-kr">
+        모든 문제에 3단계 힌트 시스템이 있습니다 (살짝 &rarr; 방법 &rarr; 풀이).
+        오답이 발생하면 같은 개념의 보강 문제가 자동으로 제공됩니다.
+        걱정되시면 카카오톡으로 원장에게 직접 문의 가능합니다.
+      </p>
+    </details>
+
+    <details class="olp-faq-item">
+      <summary class="olp-faq-q">Are textbooks <em>included</em>? / 교재는 별도 구매인가요?</summary>
+      <p class="olp-faq-a">
+        Everything is included in the monthly fee &mdash; daily content, live sessions,
+        platform access, and reports. No additional textbook purchases required.
+      </p>
+      <p class="olp-faq-a-kr">
+        매월 수강료에 모든 것이 포함됩니다 &mdash; 매일 학습 콘텐츠, 라이브 수업, 플랫폼 접근, 리포트.
+        별도 교재 구매 필요 없습니다.
+      </p>
+    </details>
+
+    <details class="olp-faq-item">
+      <summary class="olp-faq-q">Can students in <em>Korea</em> join? / 한국 거주 학생도 가능한가요?</summary>
+      <p class="olp-faq-a">
+        Yes &mdash; as long as the family can join the weekly live session
+        (Australian Eastern time). Daily content can be done at any time.
+        We'll confirm the live time after enrolment to fit your timezone.
+      </p>
+      <p class="olp-faq-a-kr">
+        가능합니다 &mdash; 단, 주 1회 라이브 수업 시간(호주 동부 시간 기준)에 참여할 수 있어야 합니다.
+        매일 학습은 시간 자유. 등록 후 원장님과 시간대 협의합니다.
+      </p>
+    </details>
 
   </div>
 </section>
