@@ -2155,7 +2155,27 @@ setTimeout(function(){var o=document.getElementById('loadingOverlay');if(o)o.rem
 <!-- ══ /landing-page ══ -->
 
 <!-- ══ LOGIN MODAL placeholder (Phase 3에서 채움) ══ -->
-<div class="modal-overlay" id="login-modal"></div>
+<div class="modal-overlay" id="login-modal">
+  <div class="modal-box">
+    <button class="modal-close" type="button" onclick="closeLoginModal()">×</button>
+    <div class="modal-title">Solomon Academy</div>
+
+    <form id="login-modal-form" onsubmit="submitModalLogin(); return false;">
+      <div class="modal-role-tabs">
+        <button class="modal-role-tab active" type="button" data-role="student" onclick="selectModalRole('student')">학생</button>
+        <button class="modal-role-tab" type="button" data-role="parent" onclick="selectModalRole('parent')">학부모</button>
+        <button class="modal-role-tab" type="button" data-role="teacher" onclick="selectModalRole('teacher')">교사</button>
+      </div>
+
+      <input type="text" id="modal-id" name="username" class="modal-input" placeholder="ID" autocomplete="username">
+      <input type="password" id="modal-password" name="password" class="modal-input" placeholder="비밀번호" autocomplete="current-password">
+
+      <button type="submit" class="modal-submit">로그인</button>
+    </form>
+
+    <div class="modal-error" id="login-error-modal"></div>
+  </div>
+</div>
 
 <!-- ══ LEGACY APP WRAPPER START (default hidden — JS toggles) ══ -->
 <div id="legacy-app" style="display: none;">
@@ -3504,6 +3524,9 @@ function doLogout() {
   document.getElementById('loginId').value = '';
   document.getElementById('loginPw').value = '';
   setRole('student');  // 로그아웃 시 항상 Student 탭으로 초기화
+  // v3.3.1 추가 (결정사항 #7): 랜딩 복귀 + 세션 정리
+  if (typeof showLanding === 'function') showLanding();
+  if (typeof clearSession === 'function') clearSession();
 }
 
 // ═══════════════════════════════════════
@@ -11981,6 +12004,282 @@ function completeTSDay() {
 }
 
 
+</script>
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- ══ LANDING + MODAL LOGIN INTEGRATION (v3.3.1) ══ -->
+<!-- ══ 기존 legacy 코드는 수정하지 않고 호출만 사용 ══ -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  // 모달 선택 역할 상태
+  window._modalSelectedRole = 'student';
+
+  // =====================================
+  // 결정사항 #4: 세션 영속화 (localStorage)
+  // 보안: 비밀번호는 절대 저장하지 않음. ID와 역할만.
+  // =====================================
+  const SESSION_KEY = 'solomon_session';
+
+  function saveSession(userId, role) {
+    try {
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ userId: userId, role: role, ts: Date.now() }));
+    } catch (e) {
+      console.warn('Session save failed:', e);
+    }
+  }
+
+  function loadSession() {
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      // 7일 만료
+      if (Date.now() - data.ts > 7 * 24 * 60 * 60 * 1000) {
+        localStorage.removeItem(SESSION_KEY);
+        return null;
+      }
+      return data;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function clearSession() {
+    try {
+      localStorage.removeItem(SESSION_KEY);
+    } catch (e) {}
+  }
+
+  // 전역 노출 — doLogout에서 호출
+  window.clearSession = clearSession;
+
+  // =====================================
+  // 화면 전환
+  // =====================================
+  function showLanding() {
+    const lp = document.getElementById('landing-page');
+    const la = document.getElementById('legacy-app');
+    if (lp) lp.style.display = 'block';
+    if (la) la.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+
+  function showLegacyApp() {
+    const lp = document.getElementById('landing-page');
+    const la = document.getElementById('legacy-app');
+    if (lp) lp.style.display = 'none';
+    if (la) la.style.display = 'block';
+    document.body.style.overflow = '';
+  }
+
+  // 전역 노출 — doLogout에서 호출
+  window.showLanding = showLanding;
+  window.showLegacyApp = showLegacyApp;
+
+  // =====================================
+  // 모달 제어 (결정사항 #19: loadingOverlay 방어)
+  // =====================================
+  function openLoginModal() {
+    // v3.2 신규: loadingOverlay가 살아있으면 즉시 제거 (z-index 충돌 방지)
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay && overlay.style.display !== 'none') {
+      overlay.style.display = 'none';
+    }
+
+    const modal = document.getElementById('login-modal');
+    if (modal) modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    // 첫 빈 입력 필드에 포커스
+    setTimeout(function() {
+      const idInput = document.getElementById('modal-id');
+      const pwInput = document.getElementById('modal-password');
+      if (idInput && !idInput.value) {
+        idInput.focus();
+      } else if (pwInput && !pwInput.value) {
+        pwInput.focus();
+      } else if (idInput) {
+        idInput.focus();
+      }
+    }, 200);
+  }
+
+  function closeLoginModal() {
+    const modal = document.getElementById('login-modal');
+    if (modal) modal.classList.remove('active');
+    document.body.style.overflow = '';
+    // 입력 필드 초기화
+    const idEl = document.getElementById('modal-id');
+    const pwEl = document.getElementById('modal-password');
+    const errEl = document.getElementById('login-error-modal');
+    if (idEl) idEl.value = '';
+    if (pwEl) pwEl.value = '';
+    if (errEl) errEl.classList.remove('visible');
+  }
+
+  function selectModalRole(role) {
+    window._modalSelectedRole = role;
+    document.querySelectorAll('.modal-role-tab').forEach(function(tab) {
+      tab.classList.toggle('active', tab.dataset.role === role);
+    });
+    const errEl = document.getElementById('login-error-modal');
+    if (errEl) errEl.classList.remove('visible');
+  }
+
+  function showModalError(msg) {
+    const errEl = document.getElementById('login-error-modal');
+    if (!errEl) return;
+    errEl.textContent = msg;
+    errEl.classList.add('visible');
+  }
+
+  // 전역 노출 (HTML onclick에서 호출)
+  window.openLoginModal = openLoginModal;
+  window.closeLoginModal = closeLoginModal;
+  window.selectModalRole = selectModalRole;
+
+  // =====================================
+  // 결정사항 #5, #6: doLogin 호출 + 에러 미러링
+  // v3.3.1 흐름: 로그인 실패 시 legacy 화면 거치지 않음 (UX 깜빡임 제거)
+  // =====================================
+  async function submitModalLogin() {
+    const role = window._modalSelectedRole;
+    const id = document.getElementById('modal-id').value.trim();
+    const password = document.getElementById('modal-password').value;
+
+    if (!id || !password) {
+      showModalError('ID와 비밀번호를 입력해 주세요.');
+      return;
+    }
+
+    // legacy form에 값 채우기
+    const legacyId = document.getElementById('loginId');
+    const legacyPw = document.getElementById('loginPw');
+    if (legacyId) legacyId.value = id;
+    if (legacyPw) legacyPw.value = password;
+
+    if (typeof setRole === 'function') {
+      setRole(role);
+    }
+
+    // legacy doLogin 호출 (legacy-app은 hidden 유지, 모달 위에서 실행)
+    if (typeof doLogin === 'function') {
+      try {
+        await doLogin();
+        // 성공 판별: window.currentUser
+        if (window.currentUser) {
+          saveSession(id, role);
+          showLegacyApp();    // ← 성공 시에만 화면 전환
+          closeLoginModal();
+        }
+        // 실패: 화면 전환 없이 모달 그대로
+        // legacy의 #loginError가 표시되며, MutationObserver가 모달에 미러링
+      } catch (e) {
+        console.error('Login failed:', e);
+        showModalError('로그인 중 오류가 발생했습니다. 다시 시도해 주세요.');
+      }
+    } else {
+      showModalError('로그인 시스템을 찾을 수 없습니다.');
+    }
+  }
+
+  // 전역 노출 (form onsubmit에서 호출)
+  window.submitModalLogin = submitModalLogin;
+
+  // =====================================
+  // 에러 미러링 (결정사항 #6)
+  // v3.3.1: 모달이 닫혀있을 때 자동 재오픈하지 않음
+  // =====================================
+  function setupErrorMirror() {
+    const legacyError = document.getElementById('loginError');
+    if (!legacyError) return;
+
+    const observer = new MutationObserver(function() {
+      const text = legacyError.textContent || '';
+      const visible = legacyError.style.display !== 'none' && text.trim();
+      if (visible) {
+        const modal = document.getElementById('login-modal');
+        if (modal && modal.classList.contains('active')) {
+          showModalError(text);
+        }
+      }
+    });
+
+    observer.observe(legacyError, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['style']
+    });
+  }
+
+  // =====================================
+  // 키보드 / 배경 클릭
+  // =====================================
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      const modal = document.getElementById('login-modal');
+      if (modal && modal.classList.contains('active')) {
+        closeLoginModal();
+      }
+    }
+  });
+
+  // =====================================
+  // 초기화
+  // =====================================
+  document.addEventListener('DOMContentLoaded', function() {
+    // 에러 미러링 설정
+    setupErrorMirror();
+
+    // 모달 배경 클릭 → 닫기
+    const modal = document.getElementById('login-modal');
+    if (modal) {
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+          closeLoginModal();
+        }
+      });
+    }
+
+    // 세션 확인
+    const session = loadSession();
+    if (session && session.userId) {
+      // legacy form에 미리 채움 (자동 로그인 아님 — 옵션 A)
+      const legacyId = document.getElementById('loginId');
+      if (legacyId) legacyId.value = session.userId;
+      if (typeof setRole === 'function') {
+        setRole(session.role);
+      }
+      // 모달도 미리 채움
+      const modalId = document.getElementById('modal-id');
+      if (modalId) modalId.value = session.userId;
+      selectModalRole(session.role);
+
+      // 랜딩 표시 + 모달 자동 열기 (비밀번호만 입력하면 진입)
+      showLanding();
+      setTimeout(function() { openLoginModal(); }, 300);
+    } else {
+      // 세션 없음 → 랜딩만 표시
+      showLanding();
+    }
+
+    // 랜딩 페이지의 "로그인" 버튼 연결 (Student Login ↗ 등)
+    const loginBtn = document.querySelector('[data-action="login"]')
+                  || document.querySelector('.lp-login-btn')
+                  || document.querySelector('.lp-nav-links a[href="#login"]');
+    if (loginBtn) {
+      loginBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        openLoginModal();
+      });
+    }
+  });
+})();
 </script>
 </body>
 </html>
