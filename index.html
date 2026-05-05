@@ -12169,8 +12169,9 @@ function completeTSDay() {
     if (typeof doLogin === 'function') {
       try {
         await doLogin();
-        // 성공 판별: window.currentUser
-        if (window.currentUser) {
+        // 성공 판별: legacy의 currentUser는 `let` 선언이라 window.* 미바인딩.
+        // typeof로 script-scope 변수에 안전 접근 (Phase 3 fix).
+        if (typeof currentUser !== 'undefined' && currentUser) {
           saveSession(id, role);
           showLegacyApp();    // ← 성공 시에만 화면 전환
           closeLoginModal();
