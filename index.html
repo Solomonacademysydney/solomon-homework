@@ -3438,9 +3438,15 @@ async function ensureStore() {
     }
     if (pwMigrated) { saveStore(store); fbSetUsers(store.users); }
   }
-  // store에만 있던 API 키를 localStorage로 이전 (1회)
-  if (store.claudeApiKey && !localStorage.getItem('claude_api_key')) {
-    localStorage.setItem('claude_api_key', store.claudeApiKey);
+  // [Security 2026-05] 옛 store.claudeApiKey 영구 정리
+  // 학생 브라우저에서 페이지 로드마다 키가 부활하는 누수 차단
+  // 교사 키는 별도 namespace solomon_teacher_api_key 사용 (Step 8 참조)
+  if (localStorage.getItem('claude_api_key')) {
+    localStorage.removeItem('claude_api_key');
+  }
+  if (store.claudeApiKey) {
+    delete store.claudeApiKey;
+    saveStore(store);
   }
   return store;
 }
@@ -3528,6 +3534,17 @@ async function doLogin() {
     return;
   }
   currentUser = user;
+
+  // [Security 2026-05] 학생/학부모 브라우저에서 두 종류 API 키 모두 제거
+  if (currentUser.role !== 'teacher') {
+    ['claude_api_key', 'solomon_teacher_api_key'].forEach(k => {
+      if (localStorage.getItem(k)) {
+        localStorage.removeItem(k);
+        console.log(`[Security] ${k} removed from non-teacher localStorage`);
+      }
+    });
+  }
+
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   // 로그인 성공 → 로딩 오버레이 완전 제거 (다시는 나타나지 않음)
@@ -3547,6 +3564,9 @@ async function doLogin() {
       saveStore(_s);
       fbSetPeriod(_s.currentPeriod);
       renderTeacher();
+      // [Security 2026-05] 옛 키 정리 (1회만, 플래그로 보장)
+      await cleanupLegacyApiKey();
+      await cleanupLegacyBackupKeys();
       autoBackupToFirebase();
     }
     else if (user.role==='parent') renderParent();
@@ -6699,7 +6719,10 @@ function forceUploadToFirebase() {
   const localData = localStorage.getItem(STORE_KEY);
   if (!localData) { alert('로컬 데이터가 없습니다.'); return; }
   if (!confirm('이 컴퓨터의 데이터를 Firebase로 업로드합니다.\n다른 기기의 데이터는 덮어써집니다. 계속할까요?')) return;
-  window.FB_REF.set(JSON.parse(localData), (err) => {
+  const parsed = JSON.parse(localData);
+  // [Security 2026-05] 업로드 데이터에서 API 키 제거
+  if (parsed.claudeApiKey) delete parsed.claudeApiKey;
+  window.FB_REF.set(parsed, (err) => {
     if (err) alert('업로드 실패: ' + err.message);
     else alert('✅ Firebase 업로드 완료! 이제 다른 기기에서도 같은 데이터가 보입니다.');
   });
@@ -6711,6 +6734,8 @@ function forceDownloadFromFirebase() {
   window.FB_REF.once('value', (snapshot) => {
     const data = snapshot.val();
     if (!data) { alert('Firebase에 데이터가 없습니다.'); return; }
+    // [Security 2026-05] 다운로드 데이터에서 API 키 제거
+    if (data.claudeApiKey) delete data.claudeApiKey;
     localStorage.setItem(STORE_KEY, JSON.stringify(data));
     alert('✅ 다운로드 완료!');
     renderTeacher();
@@ -10674,6 +10699,8 @@ const firebaseConfig = {
       if (!data.homeworkSets) return;
       // 내가 직접 쓴 데이터의 echo는 무시 (타임스탬프 일치 시)
       if (data.lastModified && data.lastModified === _lastFbWriteTs) return;
+      // [Security 2026-05] Firebase에서 받는 데이터에서 API 키 항상 제거
+      if (data.claudeApiKey) delete data.claudeApiKey;
       const localRaw = localStorage.getItem(STORE_KEY);
       const localData = localRaw ? JSON.parse(localRaw) : null;
       const fbTs = data.lastModified || 0;
@@ -10696,6 +10723,10 @@ const firebaseConfig = {
       const fbData = snapshot.val();
       const localRaw = localStorage.getItem(STORE_KEY);
       const localData = localRaw ? JSON.parse(localRaw) : null;
+
+      // [Security 2026-05] Firebase 수신/송신 데이터 양쪽에서 API 키 제거
+      if (fbData?.claudeApiKey) delete fbData.claudeApiKey;
+      if (localData?.claudeApiKey) delete localData.claudeApiKey;
 
       if (fbData) {
         // Firebase가 있으면 항상 Firebase 우선 (source of truth)
@@ -10845,6 +10876,64 @@ function getBackupRef() {
   return firebase.database().ref(BACKUP_REF_PATH);
 }
 
+// ── 옛 평문 API 키 1회 정리 (2026-05) ──────────────────────
+// store.claudeApiKey와 Firebase의 solomon_hw_v3/claudeApiKey를 영구 삭제.
+// localStorage 마이그레이션 플래그로 1회만 실행.
+async function cleanupLegacyApiKey() {
+  if (currentUser?.role !== 'teacher') return;
+  if (localStorage.getItem('apiKeyCleanup_v1_done')) return;
+  try {
+    if (window.FB_REF) {
+      await window.FB_REF.child('claudeApiKey').remove();
+      console.log('[Cleanup] Firebase claudeApiKey 삭제 완료');
+    }
+    const store = getStore();
+    if (store.claudeApiKey) {
+      delete store.claudeApiKey;
+      saveStore(store);
+      console.log('[Cleanup] localStorage store.claudeApiKey 제거 완료');
+    }
+    localStorage.setItem('apiKeyCleanup_v1_done', '1');
+    console.log('[Cleanup] API key cleanup v1 완료');
+  } catch (e) {
+    console.error('[Cleanup] 실패:', e);
+  }
+}
+
+// ── 과거 백업의 평문 API 키 1회 정리 (2026-05 갭1 옵션B) ──
+// solomon_backups 노드의 모든 백업에서 data.claudeApiKey 필드 삭제.
+async function cleanupLegacyBackupKeys() {
+  if (currentUser?.role !== 'teacher') return;
+  if (localStorage.getItem('backupKeyCleanup_v1_done')) return;
+  try {
+    const snap = await getBackupRef().once('value');
+    const backups = snap.val();
+    if (!backups) {
+      localStorage.setItem('backupKeyCleanup_v1_done', '1');
+      console.log('[Cleanup] 백업 없음 — 정리 완료');
+      return;
+    }
+    let cleanedCount = 0;
+    const updates = {};
+    Object.keys(backups).forEach(backupKey => {
+      const backup = backups[backupKey];
+      if (backup?.data?.claudeApiKey) {
+        updates[`${backupKey}/data/claudeApiKey`] = null;
+        cleanedCount++;
+      }
+    });
+    if (cleanedCount > 0) {
+      await getBackupRef().update(updates);
+      console.log(`[Cleanup] 과거 백업 ${cleanedCount}개에서 API 키 제거 완료`);
+    } else {
+      console.log('[Cleanup] 과거 백업에 API 키 없음');
+    }
+    localStorage.setItem('backupKeyCleanup_v1_done', '1');
+  } catch (e) {
+    console.error('[Cleanup] 백업 정리 실패:', e);
+  }
+}
+
 // ── 1. Firebase 자동 백업 (선생님 로그인 시) ──
 async function autoBackupToFirebase() {
   if (!window.FB_REF) return;
@@ -10856,11 +10945,14 @@ async function autoBackupToFirebase() {
     const backupKey = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}`;
     const students = (store.users || []).filter(u => u.role === 'student');
     const hwSetCount = Object.keys(store.homeworkSets || {}).length;
+    // [Security 2026-05] 백업 데이터에서 API 키 제거
+    const safeStore = JSON.parse(JSON.stringify(store));
+    if (safeStore.claudeApiKey) delete safeStore.claudeApiKey;
     const backupEntry = {
       timestamp: now.toISOString(),
       studentCount: students.length,
       hwSetCount: hwSetCount,
-      data: store
+      data: safeStore
     };
     await getBackupRef().child(backupKey).set(backupEntry);
     // 오래된 백업 자동 삭제 (최근 30개만 보관)
@@ -10885,11 +10977,14 @@ async function autoBackupToFirebase() {
 async function manualBackupDownload() {
   const store = getStore();
   if (!store) { alert('데이터가 없습니다.'); return; }
+  // [Security 2026-05] 다운로드 데이터에서 API 키 제거
+  const safeStore = JSON.parse(JSON.stringify(store));
+  if (safeStore.claudeApiKey) delete safeStore.claudeApiKey;
   const now = new Date();
   const pad = (n) => String(n).padStart(2, '0');
   const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
   const fileName = `solomon_backup_${dateStr}.json`;
-  const jsonStr = JSON.stringify(store, null, 2);
+  const jsonStr = JSON.stringify(safeStore, null, 2);
   const blob = new Blob([jsonStr], { type: 'application/json' });
 
   // showSaveFilePicker 지원 시 사용, 아니면 fallback
