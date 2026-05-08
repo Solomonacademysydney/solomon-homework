@@ -4016,7 +4016,7 @@ function renderTeacher() {
             <div style="display:flex;gap:8px;">
               ${hasTS ? `<button class="btn-sm" style="background:rgba(255,255,255,.15);color:#e0e7ff;" onclick="toggleTSPreview(${selectedYear})">👁 미리보기</button>` : ''}
               <button class="btn-sm" style="background:#6366f1;color:#fff;" onclick="document.getElementById('tsJsonFileInput_${selectedYear}').click()">📂 TS JSON 업로드</button>
-              <input type="file" id="tsJsonFileInput_${selectedYear}" accept=".json" style="display:none;" onchange="importTsJsonForYear(this, ${selectedYear})">
+              <input type="file" id="tsJsonFileInput_${selectedYear}" accept=".json" multiple style="display:none;" onchange="importTsJsonForYear(this, ${selectedYear})">
               ${hasTS ? `<button class="btn-sm" style="background:#ef4444;color:#fff;" onclick="removeTSForYear(${selectedYear})">🗑 삭제</button>` : ''}
             </div>
           </div>
@@ -12207,58 +12207,139 @@ async function restoreBackup(backupKey) {
 }
 
 // ── TS JSON Import & Management ────────────────────────────────────────────
+// 단일 파일 또는 문제+정답 분리 파일 모두 지원.
+// 분리 파일은 id / set+number / number 순으로 매칭.
 function importTsJsonForYear(input, yr) {
-  const file = input.files[0];
-  if (!file) return;
-  input.value = '';
+  const files = Array.from(input.files);
+  if (!files.length) return;
 
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    let raw;
-    try { raw = JSON.parse(e.target.result); }
-    catch(err) { alert('JSON 파싱 오류: ' + err.message); return; }
-
-    const arr = Array.isArray(raw) ? raw : (raw.questions || []);
-    if (!arr.length) { alert('문제가 없습니다.'); return; }
-
-    const questions = arr.map((q, i) => ({
-      num: q.num ?? (i + 1),
-      text: q.text || '',
-      options: q.options || null,
-      answer: q.corrected_answer || q.answer || null,
-      hint1: q.hint1 || '',
-      hint2: q.hint2 || '',
-      explanation: q.explanation || '',
-      type: q.type || 'general'
-    }));
-
-    const qPerDay = 5;
-    const totalDays = Math.ceil(questions.length / qPerDay);
-
-    const store = getStore();
-    const p = store.currentPeriod;
-    const key = hwKey(yr, selectedCountry, p);
-
-    if (!store.homeworkSets[key]) {
-      store.homeworkSets[key] = { year: yr, country: selectedCountry, period: p, sets: [] };
-    }
-    store.homeworkSets[key].ts = {
-      enabled: true,
-      questions,
-      day_config: { questions_per_day: qPerDay, total_days: totalDays }
+  const readPromises = files.map(f => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try { resolve({ name: f.name, data: JSON.parse(e.target.result) }); }
+      catch(err) { reject(new Error(`${f.name}: JSON 파싱 오류 — ${err.message}`)); }
     };
+    reader.readAsText(f, 'utf-8');
+  }));
 
-    saveStore(store);
-    fbSetHomeworkSet(key, store.homeworkSets[key]);
-    renderTeacher();
+  Promise.all(readPromises).then(results => {
+    const questions = _mergeTsJsonFiles(results);
+    if (!questions) return;
+    _applyTsImport(yr, questions);
+  }).catch(err => {
+    alert(err.message);
+  });
 
-    const msg = document.createElement('div');
-    msg.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#4f46e5;color:#fff;padding:14px 28px;border-radius:12px;font-weight:800;font-size:15px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);';
-    msg.textContent = `🧠 TS ${questions.length}문제 등록 완료! (${totalDays}일 × ${qPerDay}문제)`;
-    document.body.appendChild(msg);
-    setTimeout(() => msg.remove(), 3000);
+  input.value = '';
+}
+
+// 여러 TS JSON 파일을 자동 감지 & 병합해 questions 배열로 반환.
+// - questions 파일: question_text 또는 text 필드 보유
+// - answers 파일: answer_text / correct_text / correct_choice 보유 (question_text 없음)
+// - 단일 통합 파일: question_text + answer 모두 보유
+function _mergeTsJsonFiles(results) {
+  let questionsArr = null;
+  let answersArr = null;
+
+  for (const { name, data } of results) {
+    // 데이터 추출: 배열 또는 { questions: [...] } / { answers: [...] }
+    let items = null;
+    let kind = null;
+    if (Array.isArray(data)) {
+      items = data;
+    } else if (data && Array.isArray(data.questions)) {
+      items = data.questions;
+      kind = 'questions';
+      // questions 파일에 answers도 같이 있으면 흡수
+      if (Array.isArray(data.answers)) answersArr = data.answers;
+    } else if (data && Array.isArray(data.answers)) {
+      items = data.answers;
+      kind = 'answers';
+    }
+    if (!items || !items.length) continue;
+
+    // kind 자동 감지
+    if (kind === null) {
+      const f = items[0];
+      const looksLikeQ = !!(f.question_text || f.text);
+      const looksLikeA = !looksLikeQ && !!(f.answer_text || f.correct_text || f.correct_choice);
+      kind = looksLikeQ ? 'questions' : (looksLikeA ? 'answers' : 'questions');
+    }
+
+    if (kind === 'questions') questionsArr = items;
+    else if (kind === 'answers') answersArr = items;
+  }
+
+  if (!questionsArr || !questionsArr.length) {
+    alert('문제 데이터를 찾을 수 없습니다.\nquestion_text 또는 text 필드가 있는 JSON 파일을 선택해주세요.');
+    return null;
+  }
+
+  // 정답 인덱스 (id / set+number / number 키 모두 등록)
+  const ansMap = {};
+  if (answersArr && answersArr.length) {
+    answersArr.forEach(a => {
+      const num = a.num ?? a.number;
+      [
+        a.id || null,
+        (a.set != null && num != null) ? `${a.set}_${num}` : null,
+        num != null ? `n_${num}` : null
+      ].filter(Boolean).forEach(k => { if (!ansMap[k]) ansMap[k] = a; });
+    });
+  }
+
+  // TS 형식으로 변환 + 정답 병합
+  const questions = questionsArr.map((q, i) => {
+    const num = q.num ?? q.number ?? (i + 1);
+    let a = null;
+    for (const k of [q.id, (q.set != null) ? `${q.set}_${num}` : null, `n_${num}`].filter(Boolean)) {
+      if (ansMap[k]) { a = ansMap[k]; break; }
+    }
+    return {
+      num,
+      text: q.question_text || q.text || '',
+      options: q.options || q.choices || null,
+      answer: (a && (a.answer_text || a.correct_text || a.correct_choice || a.answer))
+              || q.corrected_answer
+              || q.answer
+              || null,
+      hint1: q.hint1 || (a && a.hint1) || '',
+      hint2: q.hint2 || (a && a.hint2) || '',
+      explanation: q.explanation || (a && a.explanation) || '',
+      type: q.type || 'general'
+    };
+  });
+
+  return questions;
+}
+
+function _applyTsImport(yr, questions) {
+  const qPerDay = 5;
+  const totalDays = Math.ceil(questions.length / qPerDay);
+
+  const store = getStore();
+  const p = store.currentPeriod;
+  const key = hwKey(yr, selectedCountry, p);
+
+  if (!store.homeworkSets[key]) {
+    store.homeworkSets[key] = { year: yr, country: selectedCountry, period: p, sets: [] };
+  }
+  store.homeworkSets[key].ts = {
+    enabled: true,
+    questions,
+    day_config: { questions_per_day: qPerDay, total_days: totalDays }
   };
-  reader.readAsText(file, 'utf-8');
+
+  saveStore(store);
+  fbSetHomeworkSet(key, store.homeworkSets[key]);
+  renderTeacher();
+
+  const ansCount = questions.filter(q => q.answer).length;
+  const msg = document.createElement('div');
+  msg.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#4f46e5;color:#fff;padding:14px 28px;border-radius:12px;font-weight:800;font-size:15px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);';
+  msg.textContent = `🧠 TS ${questions.length}문제 등록 완료! (${totalDays}일 × ${qPerDay}문제, 정답 ${ansCount}/${questions.length}개)`;
+  document.body.appendChild(msg);
+  setTimeout(() => msg.remove(), 3500);
 }
 
 function toggleTSPreview(yr) {
