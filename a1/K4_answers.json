@@ -1,0 +1,602 @@
+[
+  {
+    "id": "U1Q1",
+    "number": 1,
+    "answer_text": "$\\dfrac{3}{5}$"
+  },
+  {
+    "id": "U1Q2",
+    "number": 2,
+    "answer_text": "$\\dfrac{5}{7}$"
+  },
+  {
+    "id": "U1Q3",
+    "number": 3,
+    "answer_text": "$\\dfrac{3}{4}$"
+  },
+  {
+    "id": "U1Q4",
+    "number": 4,
+    "answer_text": "$\\dfrac{1}{2}$"
+  },
+  {
+    "id": "U1Q5",
+    "number": 5,
+    "answer_text": "$\\dfrac{2}{3}$"
+  },
+  {
+    "id": "U1Q6",
+    "number": 6,
+    "answer_text": "$\\dfrac{2}{3}$"
+  },
+  {
+    "id": "U1Q7",
+    "number": 7,
+    "answer_text": "$\\dfrac{1}{2}$"
+  },
+  {
+    "id": "U1Q8",
+    "number": 8,
+    "answer_text": "$\\dfrac{2}{5}$"
+  },
+  {
+    "id": "U1Q9",
+    "number": 9,
+    "answer_text": "$\\dfrac{7}{11}$"
+  },
+  {
+    "id": "U1Q10",
+    "number": 10,
+    "answer_text": "$\\dfrac{2}{3}$"
+  },
+  {
+    "id": "U1Q11",
+    "number": 11,
+    "answer_text": "$\\dfrac{2}{3}$"
+  },
+  {
+    "id": "U1Q12",
+    "number": 12,
+    "answer_text": "$\\dfrac{5}{7}$"
+  },
+  {
+    "id": "U1Q13",
+    "number": 13,
+    "answer_text": "$\\dfrac{9}{11}$"
+  },
+  {
+    "id": "U1Q14",
+    "number": 14,
+    "answer_text": "$\\dfrac{3}{4}$"
+  },
+  {
+    "id": "U1Q15",
+    "number": 15,
+    "answer_text": "$\\dfrac{4}{5}$"
+  },
+  {
+    "id": "U1Q16",
+    "number": 16,
+    "answer_text": "$\\dfrac{5}{8}$"
+  },
+  {
+    "id": "U1Q17",
+    "number": 17,
+    "answer_text": "$\\dfrac{2}{3}$"
+  },
+  {
+    "id": "U1Q18",
+    "number": 18,
+    "answer_text": "$\\dfrac{4}{5}$"
+  },
+  {
+    "id": "U1Q19",
+    "number": 19,
+    "answer_text": "$\\dfrac{3}{7}$"
+  },
+  {
+    "id": "U1Q20",
+    "number": 20,
+    "answer_text": "$\\dfrac{7}{9}$"
+  },
+  {
+    "id": "U2Q1",
+    "number": 1,
+    "answer_text": "$\\dfrac{2}{5}$"
+  },
+  {
+    "id": "U2Q2",
+    "number": 2,
+    "answer_text": "$\\dfrac{3}{7}$"
+  },
+  {
+    "id": "U2Q3",
+    "number": 3,
+    "answer_text": "$\\dfrac{1}{2}$"
+  },
+  {
+    "id": "U2Q4",
+    "number": 4,
+    "answer_text": "$\\dfrac{1}{2}$"
+  },
+  {
+    "id": "U2Q5",
+    "number": 5,
+    "answer_text": "$\\dfrac{2}{3}$"
+  },
+  {
+    "id": "U2Q6",
+    "number": 6,
+    "answer_text": "$\\dfrac{1}{3}$"
+  },
+  {
+    "id": "U2Q7",
+    "number": 7,
+    "answer_text": "$\\dfrac{1}{3}$"
+  },
+  {
+    "id": "U2Q8",
+    "number": 8,
+    "answer_text": "$\\dfrac{2}{5}$"
+  },
+  {
+    "id": "U2Q9",
+    "number": 9,
+    "answer_text": "$\\dfrac{4}{11}$"
+  },
+  {
+    "id": "U2Q10",
+    "number": 10,
+    "answer_text": "$\\dfrac{3}{5}$"
+  },
+  {
+    "id": "U2Q11",
+    "number": 11,
+    "answer_text": "$\\dfrac{2}{3}$"
+  },
+  {
+    "id": "U2Q12",
+    "number": 12,
+    "answer_text": "$\\dfrac{1}{2}$"
+  },
+  {
+    "id": "U2Q13",
+    "number": 13,
+    "answer_text": "$\\dfrac{1}{2}$"
+  },
+  {
+    "id": "U2Q14",
+    "number": 14,
+    "answer_text": "$\\dfrac{2}{7}$"
+  },
+  {
+    "id": "U2Q15",
+    "number": 15,
+    "answer_text": "$\\dfrac{3}{5}$"
+  },
+  {
+    "id": "U2Q16",
+    "number": 16,
+    "answer_text": "$\\dfrac{1}{2}$ L"
+  },
+  {
+    "id": "U2Q17",
+    "number": 17,
+    "answer_text": "$\\dfrac{3}{5}$ m"
+  },
+  {
+    "id": "U2Q18",
+    "number": 18,
+    "answer_text": "$\\dfrac{5}{9}$"
+  },
+  {
+    "id": "U2Q19",
+    "number": 19,
+    "answer_text": "$\\dfrac{5}{7}$"
+  },
+  {
+    "id": "U2Q20",
+    "number": 20,
+    "answer_text": "$\\dfrac{1}{2}$"
+  },
+  {
+    "id": "U3Q1",
+    "number": 1,
+    "answer_text": "$\\dfrac{2}{3}$"
+  },
+  {
+    "id": "U3Q2",
+    "number": 2,
+    "answer_text": "$\\dfrac{3}{5}$"
+  },
+  {
+    "id": "U3Q3",
+    "number": 3,
+    "answer_text": "$\\dfrac{1}{4}$"
+  },
+  {
+    "id": "U3Q4",
+    "number": 4,
+    "answer_text": "$\\dfrac{6}{7}$"
+  },
+  {
+    "id": "U3Q5",
+    "number": 5,
+    "answer_text": "$\\dfrac{3}{8}$"
+  },
+  {
+    "id": "U3Q6",
+    "number": 6,
+    "answer_text": "$\\dfrac{7}{9}$"
+  },
+  {
+    "id": "U3Q7",
+    "number": 7,
+    "answer_text": "$\\dfrac{5}{6}$"
+  },
+  {
+    "id": "U3Q8",
+    "number": 8,
+    "answer_text": "$\\dfrac{7}{12}$"
+  },
+  {
+    "id": "U3Q9",
+    "number": 9,
+    "answer_text": "$\\dfrac{7}{10}$"
+  },
+  {
+    "id": "U3Q10",
+    "number": 10,
+    "answer_text": "$\\dfrac{7}{11}$"
+  },
+  {
+    "id": "U3Q11",
+    "number": 11,
+    "answer_text": "$\\dfrac{1}{2}$"
+  },
+  {
+    "id": "U3Q12",
+    "number": 12,
+    "answer_text": "$\\dfrac{1}{8}$"
+  },
+  {
+    "id": "U3Q13",
+    "number": 13,
+    "answer_text": "$\\dfrac{5}{9}$"
+  },
+  {
+    "id": "U3Q14",
+    "number": 14,
+    "answer_text": "$\\dfrac{9}{10}$"
+  },
+  {
+    "id": "U3Q15",
+    "number": 15,
+    "answer_text": "$\\dfrac{1}{6}$"
+  },
+  {
+    "id": "U3Q16",
+    "number": 16,
+    "answer_text": "$\\dfrac{5}{8}$"
+  },
+  {
+    "id": "U3Q17",
+    "number": 17,
+    "answer_text": "$\\dfrac{3}{5}$ L"
+  },
+  {
+    "id": "U3Q18",
+    "number": 18,
+    "answer_text": "$\\dfrac{3}{7}$"
+  },
+  {
+    "id": "U3Q19",
+    "number": 19,
+    "answer_text": "$\\dfrac{1}{2}$"
+  },
+  {
+    "id": "U3Q20",
+    "number": 20,
+    "answer_text": "$\\dfrac{7}{9}$"
+  },
+  {
+    "id": "U4Q1",
+    "number": 1,
+    "answer_text": "$3\\dfrac{3}{5}$"
+  },
+  {
+    "id": "U4Q2",
+    "number": 2,
+    "answer_text": "$3\\dfrac{1}{2}$"
+  },
+  {
+    "id": "U4Q3",
+    "number": 3,
+    "answer_text": "$4\\dfrac{5}{7}$"
+  },
+  {
+    "id": "U4Q4",
+    "number": 4,
+    "answer_text": "$3\\dfrac{2}{3}$"
+  },
+  {
+    "id": "U4Q5",
+    "number": 5,
+    "answer_text": "$4\\dfrac{2}{3}$"
+  },
+  {
+    "id": "U4Q6",
+    "number": 6,
+    "answer_text": "$4\\dfrac{2}{5}$"
+  },
+  {
+    "id": "U4Q7",
+    "number": 7,
+    "answer_text": "$4\\dfrac{1}{2}$"
+  },
+  {
+    "id": "U4Q8",
+    "number": 8,
+    "answer_text": "$6\\dfrac{1}{3}$"
+  },
+  {
+    "id": "U4Q9",
+    "number": 9,
+    "answer_text": "$6\\dfrac{2}{3}$"
+  },
+  {
+    "id": "U4Q10",
+    "number": 10,
+    "answer_text": "$6\\dfrac{1}{2}$"
+  },
+  {
+    "id": "U4Q11",
+    "number": 11,
+    "answer_text": "$8\\dfrac{3}{5}$"
+  },
+  {
+    "id": "U4Q12",
+    "number": 12,
+    "answer_text": "$5\\dfrac{2}{9}$"
+  },
+  {
+    "id": "U4Q13",
+    "number": 13,
+    "answer_text": "$8\\dfrac{4}{7}$"
+  },
+  {
+    "id": "U4Q14",
+    "number": 14,
+    "answer_text": "$6\\dfrac{1}{3}$"
+  },
+  {
+    "id": "U4Q15",
+    "number": 15,
+    "answer_text": "$4\\dfrac{1}{4}$"
+  },
+  {
+    "id": "U4Q16",
+    "number": 16,
+    "answer_text": "$3\\dfrac{2}{3}$ km"
+  },
+  {
+    "id": "U4Q17",
+    "number": 17,
+    "answer_text": "$4\\dfrac{1}{5}$ kg"
+  },
+  {
+    "id": "U4Q18",
+    "number": 18,
+    "answer_text": "$6\\dfrac{1}{3}$"
+  },
+  {
+    "id": "U4Q19",
+    "number": 19,
+    "answer_text": "$3\\dfrac{3}{7}$"
+  },
+  {
+    "id": "U4Q20",
+    "number": 20,
+    "answer_text": "$7\\dfrac{1}{2}$"
+  },
+  {
+    "id": "U5Q1",
+    "number": 1,
+    "answer_text": "$2\\dfrac{2}{5}$"
+  },
+  {
+    "id": "U5Q2",
+    "number": 2,
+    "answer_text": "$2\\dfrac{1}{2}$"
+  },
+  {
+    "id": "U5Q3",
+    "number": 3,
+    "answer_text": "$2\\dfrac{3}{7}$"
+  },
+  {
+    "id": "U5Q4",
+    "number": 4,
+    "answer_text": "$2\\dfrac{2}{3}$"
+  },
+  {
+    "id": "U5Q5",
+    "number": 5,
+    "answer_text": "$4\\dfrac{1}{3}$"
+  },
+  {
+    "id": "U5Q6",
+    "number": 6,
+    "answer_text": "$1\\dfrac{3}{5}$"
+  },
+  {
+    "id": "U5Q7",
+    "number": 7,
+    "answer_text": "$2\\dfrac{1}{2}$"
+  },
+  {
+    "id": "U5Q8",
+    "number": 8,
+    "answer_text": "$1\\dfrac{4}{7}$"
+  },
+  {
+    "id": "U5Q9",
+    "number": 9,
+    "answer_text": "$1\\dfrac{2}{3}$"
+  },
+  {
+    "id": "U5Q10",
+    "number": 10,
+    "answer_text": "$3\\dfrac{3}{4}$"
+  },
+  {
+    "id": "U5Q11",
+    "number": 11,
+    "answer_text": "$2\\dfrac{1}{3}$"
+  },
+  {
+    "id": "U5Q12",
+    "number": 12,
+    "answer_text": "$2\\dfrac{4}{9}$"
+  },
+  {
+    "id": "U5Q13",
+    "number": 13,
+    "answer_text": "$2\\dfrac{2}{5}$"
+  },
+  {
+    "id": "U5Q14",
+    "number": 14,
+    "answer_text": "$2\\dfrac{6}{11}$"
+  },
+  {
+    "id": "U5Q15",
+    "number": 15,
+    "answer_text": "$1\\dfrac{1}{2}$"
+  },
+  {
+    "id": "U5Q16",
+    "number": 16,
+    "answer_text": "$2\\dfrac{3}{5}$ m"
+  },
+  {
+    "id": "U5Q17",
+    "number": 17,
+    "answer_text": "$2\\dfrac{2}{3}$ kg"
+  },
+  {
+    "id": "U5Q18",
+    "number": 18,
+    "answer_text": "$2\\dfrac{3}{8}$"
+  },
+  {
+    "id": "U5Q19",
+    "number": 19,
+    "answer_text": "$4\\dfrac{2}{7}$"
+  },
+  {
+    "id": "U5Q20",
+    "number": 20,
+    "answer_text": "$3\\dfrac{3}{4}$"
+  },
+  {
+    "id": "U6Q1",
+    "number": 1,
+    "answer_text": "$1\\dfrac{2}{3}$"
+  },
+  {
+    "id": "U6Q2",
+    "number": 2,
+    "answer_text": "$2\\dfrac{3}{5}$"
+  },
+  {
+    "id": "U6Q3",
+    "number": 3,
+    "answer_text": "$3\\dfrac{4}{7}$"
+  },
+  {
+    "id": "U6Q4",
+    "number": 4,
+    "answer_text": "$4\\dfrac{3}{4}$"
+  },
+  {
+    "id": "U6Q5",
+    "number": 5,
+    "answer_text": "$2\\dfrac{3}{8}$"
+  },
+  {
+    "id": "U6Q6",
+    "number": 6,
+    "answer_text": "$1\\dfrac{5}{9}$"
+  },
+  {
+    "id": "U6Q7",
+    "number": 7,
+    "answer_text": "$5\\dfrac{5}{6}$"
+  },
+  {
+    "id": "U6Q8",
+    "number": 8,
+    "answer_text": "$3\\dfrac{7}{10}$"
+  },
+  {
+    "id": "U6Q9",
+    "number": 9,
+    "answer_text": "$6\\dfrac{7}{12}$"
+  },
+  {
+    "id": "U6Q10",
+    "number": 10,
+    "answer_text": "$2\\dfrac{9}{11}$"
+  },
+  {
+    "id": "U6Q11",
+    "number": 11,
+    "answer_text": "$\\dfrac{2}{3}$"
+  },
+  {
+    "id": "U6Q12",
+    "number": 12,
+    "answer_text": "$2\\dfrac{1}{4}$"
+  },
+  {
+    "id": "U6Q13",
+    "number": 13,
+    "answer_text": "$2\\dfrac{3}{5}$"
+  },
+  {
+    "id": "U6Q14",
+    "number": 14,
+    "answer_text": "$1\\dfrac{2}{7}$"
+  },
+  {
+    "id": "U6Q15",
+    "number": 15,
+    "answer_text": "$2\\dfrac{4}{9}$"
+  },
+  {
+    "id": "U6Q16",
+    "number": 16,
+    "answer_text": "$1\\dfrac{3}{5}$개"
+  },
+  {
+    "id": "U6Q17",
+    "number": 17,
+    "answer_text": "$2\\dfrac{5}{8}$ L"
+  },
+  {
+    "id": "U6Q18",
+    "number": 18,
+    "answer_text": "$5\\dfrac{1}{6}$"
+  },
+  {
+    "id": "U6Q19",
+    "number": 19,
+    "answer_text": "$3\\dfrac{1}{4}$자루"
+  },
+  {
+    "id": "U6Q20",
+    "number": 20,
+    "answer_text": "$2\\dfrac{1}{5}$"
+  }
+]

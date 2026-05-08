@@ -1,0 +1,1442 @@
+[
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 1,
+    "question_text": "$\\dfrac{1}{2} \\times \\dfrac{3}{4}$",
+    "question_katex": "\\dfrac{1}{2} \\times \\dfrac{3}{4}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 2,
+    "question_text": "$\\dfrac{2}{5} \\times \\dfrac{5}{6}$",
+    "question_katex": "\\dfrac{2}{5} \\times \\dfrac{5}{6}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 3,
+    "question_text": "$\\dfrac{3}{7} \\times \\dfrac{7}{9}$",
+    "question_katex": "\\dfrac{3}{7} \\times \\dfrac{7}{9}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 4,
+    "question_text": "$\\dfrac{4}{5} \\times \\dfrac{3}{8}$",
+    "question_katex": "\\dfrac{4}{5} \\times \\dfrac{3}{8}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 5,
+    "question_text": "$\\dfrac{5}{6} \\times \\dfrac{2}{3}$",
+    "question_katex": "\\dfrac{5}{6} \\times \\dfrac{2}{3}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 6,
+    "question_text": "$7 \\times \\dfrac{2}{3}$",
+    "question_katex": "7 \\times \\dfrac{2}{3}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 7,
+    "question_text": "$\\dfrac{3}{4} \\times 8$",
+    "question_katex": "\\dfrac{3}{4} \\times 8",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 8,
+    "question_text": "$\\dfrac{3}{5} \\div \\dfrac{1}{2}$",
+    "question_katex": "\\dfrac{3}{5} \\div \\dfrac{1}{2}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 9,
+    "question_text": "$\\dfrac{4}{7} \\div \\dfrac{2}{3}$",
+    "question_katex": "\\dfrac{4}{7} \\div \\dfrac{2}{3}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 10,
+    "question_text": "$\\dfrac{5}{6} \\div \\dfrac{5}{12}$",
+    "question_katex": "\\dfrac{5}{6} \\div \\dfrac{5}{12}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 11,
+    "question_text": "$6 \\div \\dfrac{3}{4}$",
+    "question_katex": "6 \\div \\dfrac{3}{4}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 12,
+    "question_text": "$\\dfrac{3}{5} \\div 6$",
+    "question_katex": "\\dfrac{3}{5} \\div 6",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 13,
+    "question_text": "Convert $\\dfrac{3}{4}$ to a decimal.",
+    "question_katex": "\\text{Convert} \\dfrac{3}{4} \\text{to a decimal.}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 14,
+    "question_text": "Convert $\\dfrac{7}{8}$ to a decimal.",
+    "question_katex": "\\text{Convert} \\dfrac{7}{8} \\text{to a decimal.}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 15,
+    "question_text": "Convert $\\dfrac{2}{5}$ to a decimal.",
+    "question_katex": "\\text{Convert} \\dfrac{2}{5} \\text{to a decimal.}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 16,
+    "question_text": "Convert $0.6$ to a fraction in simplest form.",
+    "question_katex": "\\text{Convert} 0.6 \\text{to a fraction in simplest form.}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 17,
+    "question_text": "Convert $0.35$ to a fraction in simplest form.",
+    "question_katex": "\\text{Convert} 0.35 \\text{to a fraction in simplest form.}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 18,
+    "question_text": "Convert $0.125$ to a fraction in simplest form.",
+    "question_katex": "\\text{Convert} 0.125 \\text{to a fraction in simplest form.}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 19,
+    "question_text": "Round $4.73$ to 1 decimal place.",
+    "question_katex": "\\text{Round} 4.73 \\text{to 1 decimal place.}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 20,
+    "question_text": "Round $8.265$ to 2 decimal places.",
+    "question_katex": "\\text{Round} 8.265 \\text{to 2 decimal places.}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 21,
+    "question_text": "Round $6.998$ to 2 decimal places.",
+    "question_katex": "\\text{Round} 6.998 \\text{to 2 decimal places.}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 22,
+    "question_text": "$5.6 + 3.48$",
+    "question_katex": "5.6 + 3.48",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 23,
+    "question_text": "$12.5 - 7.83$",
+    "question_katex": "12.5 - 7.83",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 24,
+    "question_text": "$0.7 \\times 0.8$",
+    "question_katex": "0.7 \\times 0.8",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 25,
+    "question_text": "$3.2 \\times 0.45$",
+    "question_katex": "3.2 \\times 0.45",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 26,
+    "question_text": "$4.8 \\div 0.6$",
+    "question_katex": "4.8 \\div 0.6",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 27,
+    "question_text": "$7.2 \\div 0.09$",
+    "question_katex": "7.2 \\div 0.09",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 28,
+    "question_text": "$15.6 \\div 1.2$",
+    "question_katex": "15.6 \\div 1.2",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 29,
+    "question_text": "$20 - 6.845$",
+    "question_katex": "20 - 6.845",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "Set A — Foundation",
+    "number": 30,
+    "question_text": "$12.03 + 7.9 + 0.456$",
+    "question_katex": "12.03 + 7.9 + 0.456",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 1,
+    "question_text": "$\\dfrac{2}{9} \\times \\dfrac{3}{4}$",
+    "question_katex": "\\dfrac{2}{9} \\times \\dfrac{3}{4}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 2,
+    "question_text": "$\\dfrac{5}{12} \\times \\dfrac{6}{7}$",
+    "question_katex": "\\dfrac{5}{12} \\times \\dfrac{6}{7}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 3,
+    "question_text": "$1\\dfrac{1}{2} \\times \\dfrac{2}{3}$",
+    "question_katex": "1\\dfrac{1}{2} \\times \\dfrac{2}{3}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 4,
+    "question_text": "$2\\dfrac{1}{4} \\times \\dfrac{4}{9}$",
+    "question_katex": "2\\dfrac{1}{4} \\times \\dfrac{4}{9}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 5,
+    "question_text": "$1\\dfrac{3}{5} \\times \\dfrac{5}{8}$",
+    "question_katex": "1\\dfrac{3}{5} \\times \\dfrac{5}{8}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 6,
+    "question_text": "$\\dfrac{7}{8} \\div \\dfrac{3}{4}$",
+    "question_katex": "\\dfrac{7}{8} \\div \\dfrac{3}{4}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 7,
+    "question_text": "$\\dfrac{9}{10} \\div \\dfrac{3}{5}$",
+    "question_katex": "\\dfrac{9}{10} \\div \\dfrac{3}{5}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 8,
+    "question_text": "$1\\dfrac{1}{2} \\div \\dfrac{3}{4}$",
+    "question_katex": "1\\dfrac{1}{2} \\div \\dfrac{3}{4}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 9,
+    "question_text": "$2\\dfrac{2}{5} \\div \\dfrac{4}{5}$",
+    "question_katex": "2\\dfrac{2}{5} \\div \\dfrac{4}{5}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 10,
+    "question_text": "$\\dfrac{8}{9} \\div \\dfrac{4}{9}$",
+    "question_katex": "\\dfrac{8}{9} \\div \\dfrac{4}{9}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 11,
+    "question_text": "Convert $\\dfrac{5}{16}$ to a decimal.",
+    "question_katex": "\\text{Convert} \\dfrac{5}{16} \\text{to a decimal.}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 12,
+    "question_text": "Convert $\\dfrac{1}{3}$ to a decimal.",
+    "question_katex": "\\text{Convert} \\dfrac{1}{3} \\text{to a decimal.}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 13,
+    "question_text": "Convert $\\dfrac{5}{6}$ to a decimal.",
+    "question_katex": "\\text{Convert} \\dfrac{5}{6} \\text{to a decimal.}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 14,
+    "question_text": "Convert $2\\dfrac{3}{8}$ to a decimal.",
+    "question_katex": "\\text{Convert} 2\\dfrac{3}{8} \\text{to a decimal.}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 15,
+    "question_text": "Convert $0.08$ to a fraction in simplest form.",
+    "question_katex": "\\text{Convert} 0.08 \\text{to a fraction in simplest form.}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 16,
+    "question_text": "Convert $2.75$ to a mixed number.",
+    "question_katex": "\\text{Convert} 2.75 \\text{to a mixed number.}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 17,
+    "question_text": "Round $3.14159$ to 3 decimal places.",
+    "question_katex": "\\text{Round} 3.14159 \\text{to 3 decimal places.}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 18,
+    "question_text": "Round $0.5555$ to 1 decimal place.",
+    "question_katex": "\\text{Round} 0.5555 \\text{to 1 decimal place.}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 19,
+    "question_text": "Round $2.345$ to 1 significant figure.",
+    "question_katex": "\\text{Round} 2.345 \\text{to 1 significant figure.}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 20,
+    "question_text": "Round $0.0672$ to 1 significant figure.",
+    "question_katex": "\\text{Round} 0.0672 \\text{to 1 significant figure.}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 21,
+    "question_text": "$1.5 \\times 2.4$",
+    "question_katex": "1.5 \\times 2.4",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 22,
+    "question_text": "$0.06 \\times 0.3$",
+    "question_katex": "0.06 \\times 0.3",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 23,
+    "question_text": "$0.336 \\div 0.04$",
+    "question_katex": "0.336 \\div 0.04",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 24,
+    "question_text": "$8.5 - 3.27$",
+    "question_katex": "8.5 - 3.27",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 25,
+    "question_text": "$(3.5 + 1.7) \\times 0.4$",
+    "question_katex": "(3.5 + 1.7) \\times 0.4",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 26,
+    "question_text": "$8.1 - 2.4 \\times 0.5$",
+    "question_katex": "8.1 - 2.4 \\times 0.5",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 27,
+    "question_text": "Find $\\dfrac{3}{4}$ of $240$.",
+    "question_katex": "\\text{Find} \\dfrac{3}{4} \\text{of} 240 \\text{.}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 28,
+    "question_text": "Find $\\dfrac{5}{8}$ of 240.",
+    "question_katex": "\\text{Find} \\dfrac{5}{8} \\text{of 240.}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 29,
+    "question_text": "Which is larger: $\\dfrac{5}{7}$ or $0.72$?",
+    "question_katex": "\\text{Which is larger:} \\dfrac{5}{7} \\text{or} 0.72 \\text{?}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "Set B — Foundation–Developing",
+    "number": 30,
+    "question_text": "Place in order from smallest to largest: $\\dfrac{3}{8},\\ 0.4,\\ \\dfrac{1}{3}$.",
+    "question_katex": "\\text{Place in order from smallest to largest:} \\dfrac{3}{8},\\ 0.4,\\ \\dfrac{1}{3} \\text{.}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 1,
+    "question_text": "$3\\dfrac{1}{3} \\times 2\\dfrac{1}{2}$",
+    "question_katex": "3\\dfrac{1}{3} \\times 2\\dfrac{1}{2}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 2,
+    "question_text": "$2\\dfrac{2}{3} \\times 1\\dfrac{1}{4}$",
+    "question_katex": "2\\dfrac{2}{3} \\times 1\\dfrac{1}{4}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 3,
+    "question_text": "$\\dfrac{4}{5} \\times \\dfrac{5}{8} \\times \\dfrac{2}{3}$",
+    "question_katex": "\\dfrac{4}{5} \\times \\dfrac{5}{8} \\times \\dfrac{2}{3}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 4,
+    "question_text": "$3\\dfrac{1}{3} \\div 1\\dfrac{2}{3}$",
+    "question_katex": "3\\dfrac{1}{3} \\div 1\\dfrac{2}{3}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 5,
+    "question_text": "$4\\dfrac{1}{2} \\div 2\\dfrac{1}{4}$",
+    "question_katex": "4\\dfrac{1}{2} \\div 2\\dfrac{1}{4}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 6,
+    "question_text": "$5\\dfrac{1}{3} \\div 2\\dfrac{2}{3}$",
+    "question_katex": "5\\dfrac{1}{3} \\div 2\\dfrac{2}{3}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 7,
+    "question_text": "$1\\dfrac{3}{4} \\div 3\\dfrac{1}{2}$",
+    "question_katex": "1\\dfrac{3}{4} \\div 3\\dfrac{1}{2}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 8,
+    "question_text": "Convert $\\dfrac{4}{11}$ to a decimal.",
+    "question_katex": "\\text{Convert} \\dfrac{4}{11} \\text{to a decimal.}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 9,
+    "question_text": "Convert $\\dfrac{7}{9}$ to a decimal.",
+    "question_katex": "\\text{Convert} \\dfrac{7}{9} \\text{to a decimal.}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 10,
+    "question_text": "Write $0.\\dot{6}$ as a fraction.",
+    "question_katex": "\\text{Write} 0.\\dot{6} \\text{as a fraction.}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 11,
+    "question_text": "Convert $0.875$ to a fraction.",
+    "question_katex": "\\text{Convert} 0.875 \\text{to a fraction.}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 12,
+    "question_text": "Round $4.567$ to 2 significant figures.",
+    "question_katex": "\\text{Round} 4.567 \\text{to 2 significant figures.}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 13,
+    "question_text": "Round $0.004839$ to 2 significant figures.",
+    "question_katex": "\\text{Round} 0.004839 \\text{to 2 significant figures.}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 14,
+    "question_text": "Round $99.9962$ to 2 decimal places.",
+    "question_katex": "\\text{Round} 99.9962 \\text{to 2 decimal places.}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 15,
+    "question_text": "Round $0.09998$ to 3 significant figures.",
+    "question_katex": "\\text{Round} 0.09998 \\text{to 3 significant figures.}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 16,
+    "question_text": "$2.4 \\times 3.75$",
+    "question_katex": "2.4 \\times 3.75",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 17,
+    "question_text": "$0.084 \\div 0.007$",
+    "question_katex": "0.084 \\div 0.007",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 18,
+    "question_text": "$(4.8 - 1.5) \\times (2.3 + 0.7)$",
+    "question_katex": "(4.8 - 1.5) \\times (2.3 + 0.7)",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 19,
+    "question_text": "$(6.3 - 2.1) \\div 0.7$",
+    "question_katex": "(6.3 - 2.1) \\div 0.7",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 20,
+    "question_text": "$3\\dfrac{1}{4} + 2.6$",
+    "question_katex": "3\\dfrac{1}{4} + 2.6",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 21,
+    "question_text": "$4.2 \\div \\dfrac{2}{3}$",
+    "question_katex": "4.2 \\div \\dfrac{2}{3}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 22,
+    "question_text": "$\\dfrac{2}{5} \\times 3.5$",
+    "question_katex": "\\dfrac{2}{5} \\times 3.5",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 23,
+    "question_text": "$\\dfrac{7}{8} - 0.5$ (answer as a fraction)",
+    "question_katex": "\\dfrac{7}{8} - 0.5 \\text{(answer as a fraction)}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 24,
+    "question_text": "$2\\dfrac{1}{4} \\times 1\\dfrac{1}{3}$",
+    "question_katex": "2\\dfrac{1}{4} \\times 1\\dfrac{1}{3}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 25,
+    "question_text": "$4\\dfrac{1}{2} \\div 1\\dfrac{1}{2}$",
+    "question_katex": "4\\dfrac{1}{2} \\div 1\\dfrac{1}{2}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 26,
+    "question_text": "A recipe needs $2\\dfrac{1}{2}$ cups of flour. How much for $\\dfrac{2}{3}$ of the recipe?",
+    "question_katex": "\\text{A recipe needs} 2\\dfrac{1}{2} \\text{cups of flour. How much for} \\dfrac{2}{3} \\text{of the recipe?}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 27,
+    "question_text": "A rope is $5\\dfrac{1}{4}$ m long. It is cut into pieces each $\\dfrac{3}{4}$ m. How many pieces?",
+    "question_katex": "\\text{A rope is} 5\\dfrac{1}{4} \\text{m long. It is cut into pieces each} \\dfrac{3}{4} \\text{m. How many pieces?}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 28,
+    "question_text": "$15.75 \\div 0.25$",
+    "question_katex": "15.75 \\div 0.25",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 29,
+    "question_text": "A book costs 12.95 and a pen costs 3.40. Find the change from 20.",
+    "question_katex": "\\text{A book costs 12.95 and a pen costs 3.40. Find the change from 20.}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "Set C — Developing–Proficient",
+    "number": 30,
+    "question_text": "$0.25 \\times 0.36 \\times 4$",
+    "question_katex": "0.25 \\times 0.36 \\times 4",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 1,
+    "question_text": "$\\dfrac{3}{8} \\times \\dfrac{2}{5} \\times \\dfrac{4}{3}$",
+    "question_katex": "\\dfrac{3}{8} \\times \\dfrac{2}{5} \\times \\dfrac{4}{3}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 2,
+    "question_text": "$2\\dfrac{1}{3} \\times 1\\dfrac{4}{5}$",
+    "question_katex": "2\\dfrac{1}{3} \\times 1\\dfrac{4}{5}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 3,
+    "question_text": "$\\dfrac{5}{6} \\div 2\\dfrac{1}{2}$",
+    "question_katex": "\\dfrac{5}{6} \\div 2\\dfrac{1}{2}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 4,
+    "question_text": "$3\\dfrac{1}{3} \\div 2\\dfrac{1}{2}$",
+    "question_katex": "3\\dfrac{1}{3} \\div 2\\dfrac{1}{2}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 5,
+    "question_text": "$\\left(\\dfrac{2}{3}\\right)^2 \\times \\dfrac{9}{4}$",
+    "question_katex": "\\left(\\dfrac{2}{3}\\right)^2 \\times \\dfrac{9}{4}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 6,
+    "question_text": "Convert $\\dfrac{7}{12}$ to a decimal (3 d.p.).",
+    "question_katex": "\\text{Convert} \\dfrac{7}{12} \\text{to a decimal (3 d.p.).}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 7,
+    "question_text": "Convert $0.\\dot{6}$ to a fraction.",
+    "question_katex": "\\text{Convert} 0.\\dot{6} \\text{to a fraction.}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 8,
+    "question_text": "Convert $\\dfrac{7}{15}$ to a decimal and round to 2 d.p.",
+    "question_katex": "\\text{Convert} \\dfrac{7}{15} \\text{to a decimal and round to 2 d.p.}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 9,
+    "question_text": "Round $4.5050$ to 3 significant figures.",
+    "question_katex": "\\text{Round} 4.5050 \\text{to 3 significant figures.}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 10,
+    "question_text": "Round $0.999749$ to 4 significant figures.",
+    "question_katex": "\\text{Round} 0.999749 \\text{to 4 significant figures.}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 11,
+    "question_text": "Calculate $1.2^3$.",
+    "question_katex": "\\text{Calculate} 1.2^3 \\text{.}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 12,
+    "question_text": "$\\dfrac{1}{2} + \\dfrac{1}{3}\\ \\text{of}\\ 2.4$",
+    "question_katex": "\\dfrac{1}{2} + \\dfrac{1}{3}\\ \\text{of}\\ 2.4",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 13,
+    "question_text": "$\\dfrac{5}{8}$ of 320 minus $\\dfrac{1}{4}$ of 320.",
+    "question_katex": "\\dfrac{5}{8} \\text{of 320 minus} \\dfrac{1}{4} \\text{of 320.}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 14,
+    "question_text": "Find the missing number: $? \\times 0.6 = 4.2$",
+    "question_katex": "\\text{Find the missing number:} ? \\times 0.6 = 4.2",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 15,
+    "question_text": "$3.6 \\times 10^2 - 4.5 \\times 10$",
+    "question_katex": "3.6 \\times 10^2 - 4.5 \\times 10",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 16,
+    "question_text": "$\\dfrac{1}{2} + \\dfrac{1}{4} + \\dfrac{1}{8} + \\dfrac{1}{16}$",
+    "question_katex": "\\dfrac{1}{2} + \\dfrac{1}{4} + \\dfrac{1}{8} + \\dfrac{1}{16}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 17,
+    "question_text": "A bag has $2.4$ kg of rice. If $\\dfrac{3}{8}$ is used, how many grams remain?",
+    "question_katex": "\\text{A bag has} 2.4 \\text{kg of rice. If} \\dfrac{3}{8} \\text{is used, how many grams remain?}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 18,
+    "question_text": "A car uses $8.5$ litres per $100$ km. How much fuel for $350$ km?",
+    "question_katex": "\\text{A car uses} 8.5 \\text{litres per} 100 \\text{km. How much fuel for} 350 \\text{km?}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 19,
+    "question_text": "A rectangle has length $3\\dfrac{1}{2}$ cm and width $2.8$ cm. Find the area.",
+    "question_katex": "\\text{A rectangle has length} 3\\dfrac{1}{2} \\text{cm and width} 2.8 \\text{cm. Find the area.}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 20,
+    "question_text": "Fabric costs 12.50 per metre. How much for $3\\dfrac{3}{4}$ metres?",
+    "question_katex": "\\text{Fabric costs 12.50 per metre. How much for} 3\\dfrac{3}{4} \\text{metres?}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 21,
+    "question_text": "Arrange: $\\dfrac{2}{3},\\ 0.67,\\ \\dfrac{5}{8}$ from smallest to largest.",
+    "question_katex": "\\text{Arrange:} \\dfrac{2}{3},\\ 0.67,\\ \\dfrac{5}{8} \\text{from smallest to largest.}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 22,
+    "question_text": "A student scored $\\dfrac{17}{20}$. Express as a decimal and a percentage.",
+    "question_katex": "\\text{A student scored} \\dfrac{17}{20} \\text{. Express as a decimal and a percentage.}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 23,
+    "question_text": "A car travels $135.6$ km in $2.4$ hours. Find the average speed.",
+    "question_katex": "\\text{A car travels} 135.6 \\text{km in} 2.4 \\text{hours. Find the average speed.}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 24,
+    "question_text": "Calculate $0.2 \\times 0.2 \\times 0.2$.",
+    "question_katex": "\\text{Calculate} 0.2 \\times 0.2 \\times 0.2 \\text{.}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 25,
+    "question_text": "$3\\dfrac{1}{3} \\div 1\\dfrac{2}{3}$ then multiply the result by $\\dfrac{3}{4}$.",
+    "question_katex": "3\\dfrac{1}{3} \\div 1\\dfrac{2}{3} \\text{then multiply the result by} \\dfrac{3}{4} \\text{.}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 26,
+    "question_text": "A tank holds $8\\dfrac{2}{3}$ L. Each bottle holds $1\\dfrac{1}{3}$ L. How many bottles can be filled?",
+    "question_katex": "\\text{A tank holds} 8\\dfrac{2}{3} \\text{L. Each bottle holds} 1\\dfrac{1}{3} \\text{L. How many bottles can be filled?}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 27,
+    "question_text": "Sarah ran $\\dfrac{3}{4}$ km in $\\dfrac{1}{6}$ of an hour. Speed in km/h?",
+    "question_katex": "\\text{Sarah ran} \\dfrac{3}{4} \\text{km in} \\dfrac{1}{6} \\text{of an hour. Speed in km/h?}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 28,
+    "question_text": "$\\dfrac{3}{5}$ of a number is $42$. What is $\\dfrac{7}{8}$ of that number?",
+    "question_katex": "\\dfrac{3}{5} \\text{of a number is} 42 \\text{. What is} \\dfrac{7}{8} \\text{of that number?}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 29,
+    "question_text": "$3.6^2 - 2 \\times 3.6 \\times 1.4 + 1.4^2$",
+    "question_katex": "3.6^2 - 2 \\times 3.6 \\times 1.4 + 1.4^2",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "Set D — Proficient",
+    "number": 30,
+    "question_text": "A pool is $12.5$ m long, $5.6$ m wide, $1.8$ m deep. Find its volume.",
+    "question_katex": "\\text{A pool is} 12.5 \\text{m long,} 5.6 \\text{m wide,} 1.8 \\text{m deep. Find its volume.}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 1,
+    "question_text": "Simplify: $\\dfrac{\\dfrac{3}{4} \\times \\dfrac{8}{9}}{\\dfrac{2}{3} \\times \\dfrac{3}{5}}$",
+    "question_katex": "\\text{Simplify:} \\dfrac{\\dfrac{3}{4} \\times \\dfrac{8}{9}}{\\dfrac{2}{3} \\times \\dfrac{3}{5}}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 2,
+    "question_text": "Find the value of $\\left(2\\dfrac{1}{2}\\right)^2 - \\left(1\\dfrac{1}{2}\\right)^2$.",
+    "question_katex": "\\text{Find the value of} \\left(2\\dfrac{1}{2}\\right)^2 - \\left(1\\dfrac{1}{2}\\right)^2 \\text{.}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 3,
+    "question_text": "A price is increased by $\\dfrac{1}{5}$, then decreased by $\\dfrac{1}{5}$. Express the final price as a fraction of the original.",
+    "question_katex": "\\text{A price is increased by} \\dfrac{1}{5} \\text{, then decreased by} \\dfrac{1}{5} \\text{. Express the final price as a fraction of the original.}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 4,
+    "question_text": "If $2.4 \\times 3.6 = 8.64$, find $0.24 \\times 0.036$ without a calculator.",
+    "question_katex": "\\text{If} 2.4 \\times 3.6 = 8.64 \\text{, find} 0.24 \\times 0.036 \\text{without a calculator.}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 5,
+    "question_text": "$1 - \\dfrac{1}{2} + \\dfrac{1}{4} - \\dfrac{1}{8} + \\dfrac{1}{16} - \\dfrac{1}{32}$",
+    "question_katex": "1 - \\dfrac{1}{2} + \\dfrac{1}{4} - \\dfrac{1}{8} + \\dfrac{1}{16} - \\dfrac{1}{32}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 6,
+    "question_text": "Solve: $\\dfrac{3}{5}$ of a number plus $\\dfrac{1}{4}$ of the same number equals $51$.",
+    "question_katex": "\\text{Solve:} \\dfrac{3}{5} \\text{of a number plus} \\dfrac{1}{4} \\text{of the same number equals} 51 \\text{.}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 7,
+    "question_text": "Three containers hold $2\\dfrac{1}{4}$ L, $1\\dfrac{5}{8}$ L, and $3\\dfrac{1}{2}$ L. Poured equally into 5 bottles. How much per bottle?",
+    "question_katex": "\\text{Three containers hold} 2\\dfrac{1}{4} \\text{L,} 1\\dfrac{5}{8} \\text{L, and} 3\\dfrac{1}{2} \\text{L. Poured equally into 5 bottles. How much per bottle?}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 8,
+    "question_text": "A cyclist travels $\\dfrac{3}{5}$ of a journey in $45$ minutes. Total journey time at the same speed?",
+    "question_katex": "\\text{A cyclist travels} \\dfrac{3}{5} \\text{of a journey in} 45 \\text{minutes. Total journey time at the same speed?}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 9,
+    "question_text": "$\\dfrac{3}{4}$ of a tin of paint covers $12.6 \\text{m}^2$. How many tins are needed for $50 \\text{m}^2$? (Cannot buy part-tins.)",
+    "question_katex": "\\dfrac{3}{4} \\text{of a tin of paint covers} 12.6 \\text{m}^2 \\text{. How many tins are needed for} 50 \\text{m}^2 \\text{? (Cannot buy part-tins.)}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 10,
+    "question_text": "The product of two decimals is $0.84$. One is $1.2$. Find the other.",
+    "question_katex": "\\text{The product of two decimals is} 0.84 \\text{. One is} 1.2 \\text{. Find the other.}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 11,
+    "question_text": "Tom completed $\\dfrac{5}{6}$ of a $120$-page book. He then read $\\dfrac{3}{5}$ of the remaining pages. Pages left unread?",
+    "question_katex": "\\text{Tom completed} \\dfrac{5}{6} \\text{of a} 120 \\text{-page book. He then read} \\dfrac{3}{5} \\text{of the remaining pages. Pages left unread?}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 12,
+    "question_text": "A shop offers $\\dfrac{1}{4}$ off, then an extra $\\dfrac{1}{3}$ off the reduced price. What fraction of the original do you pay?",
+    "question_katex": "\\text{A shop offers} \\dfrac{1}{4} \\text{off, then an extra} \\dfrac{1}{3} \\text{off the reduced price. What fraction of the original do you pay?}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 13,
+    "question_text": "A square has perimeter $8\\dfrac{2}{3}$ cm. Find the side length.",
+    "question_katex": "\\text{A square has perimeter} 8\\dfrac{2}{3} \\text{cm. Find the side length.}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 14,
+    "question_text": "If $x = 1\\dfrac{2}{3}$ and $y = 0.6$, find $\\dfrac{x - y}{x + y}$.",
+    "question_katex": "\\text{If} x = 1\\dfrac{2}{3} \\text{and} y = 0.6 \\text{, find} \\dfrac{x - y}{x + y} \\text{.}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 15,
+    "question_text": "In a class of $40$, $\\dfrac{3}{8}$ walk to school and $0.4$ of the rest catch the bus. How many catch the bus?",
+    "question_katex": "\\text{In a class of} 40 \\text{,} \\dfrac{3}{8} \\text{walk to school and} 0.4 \\text{of the rest catch the bus. How many catch the bus?}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 16,
+    "question_text": "A tank is $\\dfrac{2}{5}$ full. After adding $6.3$ L it is $\\dfrac{3}{4}$ full. Find the capacity.",
+    "question_katex": "\\text{A tank is} \\dfrac{2}{5} \\text{full. After adding} 6.3 \\text{L it is} \\dfrac{3}{4} \\text{full. Find the capacity.}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 17,
+    "question_text": "$9.8 \\times 7.5 + 9.8 \\times 2.5$",
+    "question_katex": "9.8 \\times 7.5 + 9.8 \\times 2.5",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 18,
+    "question_text": "Evaluate: $\\left(1\\dfrac{1}{3} + 2\\dfrac{1}{6}\\right) \\times \\left(3.5 - 1\\dfrac{3}{4}\\right)$",
+    "question_katex": "\\text{Evaluate:} \\left(1\\dfrac{1}{3} + 2\\dfrac{1}{6}\\right) \\times \\left(3.5 - 1\\dfrac{3}{4}\\right)",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 19,
+    "question_text": "If $\\dfrac{1}{a} = 0.125$, find $a^2 - 3a$.",
+    "question_katex": "\\text{If} \\dfrac{1}{a} = 0.125 \\text{, find} a^2 - 3a \\text{.}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 20,
+    "question_text": "$0.\\overline{36} = \\dfrac{a}{b}$ in simplest form. Find $a + b$.",
+    "question_katex": "0.\\overline{36} = \\dfrac{a}{b} \\text{in simplest form. Find} a + b \\text{.}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 21,
+    "question_text": "Convert $\\dfrac{5}{12}$ to a decimal (3 d.p.).",
+    "question_katex": "\\text{Convert} \\dfrac{5}{12} \\text{to a decimal (3 d.p.).}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 22,
+    "question_text": "Round $3.9962$ to 2 decimal places.",
+    "question_katex": "\\text{Round} 3.9962 \\text{to 2 decimal places.}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 23,
+    "question_text": "The average of five decimals is $3.6$. Four are $2.8,\\ 4.1,\\ 3.2,\\ 3.5$. Find the fifth.",
+    "question_katex": "\\text{The average of five decimals is} 3.6 \\text{. Four are} 2.8,\\ 4.1,\\ 3.2,\\ 3.5 \\text{. Find the fifth.}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 24,
+    "question_text": "Two numbers differ by $0.45$. Their sum is $3\\dfrac{1}{5}$. Find both numbers.",
+    "question_katex": "\\text{Two numbers differ by} 0.45 \\text{. Their sum is} 3\\dfrac{1}{5} \\text{. Find both numbers.}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 25,
+    "question_text": "A swimming pool is $25$ m long. Each lap is $2$ lengths. Swimmer completes $\\dfrac{3}{4}$ of $2.4$ km target. Laps completed?",
+    "question_katex": "\\text{A swimming pool is} 25 \\text{m long. Each lap is} 2 \\text{lengths. Swimmer completes} \\dfrac{3}{4} \\text{of} 2.4 \\text{km target. Laps completed?}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 26,
+    "question_text": "If $\\dfrac{1}{x} + \\dfrac{1}{y} = \\dfrac{5}{6}$ and $x = 2$, find $y$.",
+    "question_katex": "\\text{If} \\dfrac{1}{x} + \\dfrac{1}{y} = \\dfrac{5}{6} \\text{and} x = 2 \\text{, find} y \\text{.}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 27,
+    "question_text": "Find $\\dfrac{5}{8}$ of 240 and express the answer as a decimal.",
+    "question_katex": "\\text{Find} \\dfrac{5}{8} \\text{of 240 and express the answer as a decimal.}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 28,
+    "question_text": "Estimate $4.87 \\times 3.12$ by rounding each to 1 d.p.",
+    "question_katex": "\\text{Estimate} 4.87 \\times 3.12 \\text{by rounding each to 1 d.p.}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 29,
+    "question_text": "$\\pi = 3.14159265\\ldots$ Round to 4 significant figures.",
+    "question_katex": "\\pi = 3.14159265\\ldots \\text{Round to 4 significant figures.}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "Set E — Advanced",
+    "number": 30,
+    "question_text": "A number rounded to 1 d.p. gives $3.7$. What are the smallest and largest possible values?",
+    "question_katex": "\\text{A number rounded to 1 d.p. gives} 3.7 \\text{. What are the smallest and largest possible values?}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 1,
+    "question_text": "Evaluate: $\\dfrac{1}{1\\times 2} + \\dfrac{1}{2\\times 3} + \\dfrac{1}{3\\times 4} + \\dfrac{1}{4\\times 5} + \\dfrac{1}{5\\times 6}$",
+    "question_katex": "\\text{Evaluate:} \\dfrac{1}{1\\times 2} + \\dfrac{1}{2\\times 3} + \\dfrac{1}{3\\times 4} + \\dfrac{1}{4\\times 5} + \\dfrac{1}{5\\times 6}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 2,
+    "question_text": "A tank is $\\dfrac{1}{3}$ full. After removing $15$ L, it is $\\dfrac{1}{5}$ full. Find the capacity.",
+    "question_katex": "\\text{A tank is} \\dfrac{1}{3} \\text{full. After removing} 15 \\text{L, it is} \\dfrac{1}{5} \\text{full. Find the capacity.}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 3,
+    "question_text": "A tap fills $\\dfrac{2}{5}$ of a tank per hour. A drain empties $\\dfrac{1}{6}$ per hour. Both running: fraction filled in 1 hour?",
+    "question_katex": "\\text{A tap fills} \\dfrac{2}{5} \\text{of a tank per hour. A drain empties} \\dfrac{1}{6} \\text{per hour. Both running: fraction filled in 1 hour?}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 4,
+    "question_text": "Express $0.\\overline{142857}$ as a fraction. What is special about it?",
+    "question_katex": "\\text{Express} 0.\\overline{142857} \\text{as a fraction. What is special about it?}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 5,
+    "question_text": "Convert $\\dfrac{5}{7}$ to a decimal. What digit is in the $100$th decimal place?",
+    "question_katex": "\\text{Convert} \\dfrac{5}{7} \\text{to a decimal. What digit is in the} 100 \\text{th decimal place?}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 6,
+    "question_text": "If $a = 0.\\dot{3}$ and $b = 0.\\dot{6}$, find $a \\times b$ as a fraction.",
+    "question_katex": "\\text{If} a = 0.\\dot{3} \\text{and} b = 0.\\dot{6} \\text{, find} a \\times b \\text{as a fraction.}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 7,
+    "question_text": "A shopkeeper buys goods for 480 and sells $\\dfrac{3}{4}$ for 432. The rest are sold at $\\dfrac{2}{3}$ of the buying price. Find total profit.",
+    "question_katex": "\\text{A shopkeeper buys goods for 480 and sells} \\dfrac{3}{4} \\text{for 432. The rest are sold at} \\dfrac{2}{3} \\text{of the buying price. Find total profit.}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 8,
+    "question_text": "$\\left(\\dfrac{5}{6} - \\dfrac{1}{3}\\right) \\div \\left(\\dfrac{2}{3} + \\dfrac{1}{4}\\right)$",
+    "question_katex": "\\left(\\dfrac{5}{6} - \\dfrac{1}{3}\\right) \\div \\left(\\dfrac{2}{3} + \\dfrac{1}{4}\\right)",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 9,
+    "question_text": "If $\\dfrac{3}{5}$ of a number is $42$, find $\\dfrac{5}{7}$ of the same number.",
+    "question_katex": "\\text{If} \\dfrac{3}{5} \\text{of a number is} 42 \\text{, find} \\dfrac{5}{7} \\text{of the same number.}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 10,
+    "question_text": "Three-quarters of a tin covers $12.6$ m$^2$. One tin covers how many m$^2$?",
+    "question_katex": "\\text{Three-quarters of a tin covers} 12.6 \\text{m} ^2 \\text{. One tin covers how many m} ^2 \\text{?}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 11,
+    "question_text": "A price rises by $20\\%$ then falls by $20\\%$. What percentage of the original is the final price?",
+    "question_katex": "\\text{A price rises by} 20\\% \\text{then falls by} 20\\% \\text{. What percentage of the original is the final price?}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 12,
+    "question_text": "Find: $\\left(\\dfrac{1}{2}\\right)^2 + \\left(\\dfrac{1}{3}\\right)^2 + \\left(\\dfrac{1}{6}\\right)^2$",
+    "question_katex": "\\text{Find:} \\left(\\dfrac{1}{2}\\right)^2 + \\left(\\dfrac{1}{3}\\right)^2 + \\left(\\dfrac{1}{6}\\right)^2",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 13,
+    "question_text": "$0.2 + 0.02 + 0.002 + 0.0002 + \\ldots$ (infinite sum)",
+    "question_katex": "0.2 + 0.02 + 0.002 + 0.0002 + \\ldots \\text{(infinite sum)}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 14,
+    "question_text": "In the expression $\\dfrac{n}{n+1} \\times \\dfrac{n+1}{n+2}$ for $n = 5$, find the result.",
+    "question_katex": "\\text{In the expression} \\dfrac{n}{n+1} \\times \\dfrac{n+1}{n+2} \\text{for} n = 5 \\text{, find the result.}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 15,
+    "question_text": "A recipe for 8 serves uses $1\\dfrac{1}{3}$ cups of sugar. How much sugar for 6 serves?",
+    "question_katex": "\\text{A recipe for 8 serves uses} 1\\dfrac{1}{3} \\text{cups of sugar. How much sugar for 6 serves?}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 16,
+    "question_text": "$\\dfrac{1}{2} \\times \\dfrac{2}{3} \\times \\dfrac{3}{4} \\times \\dfrac{4}{5} \\times \\dfrac{5}{6} \\times \\dfrac{6}{7}$",
+    "question_katex": "\\dfrac{1}{2} \\times \\dfrac{2}{3} \\times \\dfrac{3}{4} \\times \\dfrac{4}{5} \\times \\dfrac{5}{6} \\times \\dfrac{6}{7}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 17,
+    "question_text": "A clock gains $1\\dfrac{1}{2}$ minutes every hour. After $8$ hours, how many minutes fast is it?",
+    "question_katex": "\\text{A clock gains} 1\\dfrac{1}{2} \\text{minutes every hour. After} 8 \\text{hours, how many minutes fast is it?}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 18,
+    "question_text": "Two pipes fill a tank. Pipe A fills $\\dfrac{1}{4}$ in 1 hour, pipe B fills $\\dfrac{1}{6}$ in 1 hour. Working together, how long to fill the tank?",
+    "question_katex": "\\text{Two pipes fill a tank. Pipe A fills} \\dfrac{1}{4} \\text{in 1 hour, pipe B fills} \\dfrac{1}{6} \\text{in 1 hour. Working together, how long to fill the tank?}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 19,
+    "question_text": "$\\dfrac{1 + \\dfrac{1}{2}}{1 - \\dfrac{1}{2}} \\times \\dfrac{1 + \\dfrac{1}{3}}{1 - \\dfrac{1}{3}} \\times \\dfrac{1 + \\dfrac{1}{4}}{1 - \\dfrac{1}{4}}$",
+    "question_katex": "\\dfrac{1 + \\dfrac{1}{2}}{1 - \\dfrac{1}{2}} \\times \\dfrac{1 + \\dfrac{1}{3}}{1 - \\dfrac{1}{3}} \\times \\dfrac{1 + \\dfrac{1}{4}}{1 - \\dfrac{1}{4}}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 20,
+    "question_text": "A car's fuel tank is $\\dfrac{3}{4}$ full. After a $180$ km trip using $0.08$ L/km, it is $\\dfrac{3}{8}$ full. Find tank capacity.",
+    "question_katex": "\\text{A car's fuel tank is} \\dfrac{3}{4} \\text{full. After a} 180 \\text{km trip using} 0.08 \\text{L/km, it is} \\dfrac{3}{8} \\text{full. Find tank capacity.}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 21,
+    "question_text": "$\\left(3\\dfrac{3}{4}\\right)^2 - \\left(1\\dfrac{1}{4}\\right)^2$",
+    "question_katex": "\\left(3\\dfrac{3}{4}\\right)^2 - \\left(1\\dfrac{1}{4}\\right)^2",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 22,
+    "question_text": "What fraction is exactly halfway between $\\dfrac{1}{3}$ and $\\dfrac{1}{2}$?",
+    "question_katex": "\\text{What fraction is exactly halfway between} \\dfrac{1}{3} \\text{and} \\dfrac{1}{2} \\text{?}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 23,
+    "question_text": "$N$ is a whole number. $\\dfrac{N}{7}$ is between $3.5$ and $4.2$. Find all possible values of $N$.",
+    "question_katex": "N \\text{is a whole number.} \\dfrac{N}{7} \\text{is between} 3.5 \\text{and} 4.2 \\text{. Find all possible values of} N \\text{.}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 24,
+    "question_text": "A barrel is $\\dfrac{2}{3}$ full of water. After $12$ L are removed, it is $\\dfrac{5}{12}$ full. Find the barrel's capacity.",
+    "question_katex": "\\text{A barrel is} \\dfrac{2}{3} \\text{full of water. After} 12 \\text{L are removed, it is} \\dfrac{5}{12} \\text{full. Find the barrel's capacity.}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 25,
+    "question_text": "Simplify: $\\dfrac{1 - \\dfrac{1}{4}}{1 + \\dfrac{1}{4}} + \\dfrac{1 - \\dfrac{1}{3}}{1 + \\dfrac{1}{3}}$",
+    "question_katex": "\\text{Simplify:} \\dfrac{1 - \\dfrac{1}{4}}{1 + \\dfrac{1}{4}} + \\dfrac{1 - \\dfrac{1}{3}}{1 + \\dfrac{1}{3}}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 26,
+    "question_text": "Evaluate: $0.1 \\times 0.2 \\times 0.3 \\times \\ldots \\times 0.9$. How many zeros after the decimal point before the first non-zero digit?",
+    "question_katex": "\\text{Evaluate:} 0.1 \\times 0.2 \\times 0.3 \\times \\ldots \\times 0.9 \\text{. How many zeros after the decimal point before the first non-zero digit?}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 27,
+    "question_text": "Alex saves $\\dfrac{1}{5}$ of his pocket money. He spends $\\dfrac{2}{3}$ of the remainder on food. He has 8 left. Find his pocket money.",
+    "question_katex": "\\text{Alex saves} \\dfrac{1}{5} \\text{of his pocket money. He spends} \\dfrac{2}{3} \\text{of the remainder on food. He has 8 left. Find his pocket money.}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 28,
+    "question_text": "What is the sum $\\dfrac{1}{1 \\times 3} + \\dfrac{1}{3 \\times 5} + \\dfrac{1}{5 \\times 7} + \\dfrac{1}{7 \\times 9} + \\dfrac{1}{9 \\times 11}$?",
+    "question_katex": "\\text{What is the sum} \\dfrac{1}{1 \\times 3} + \\dfrac{1}{3 \\times 5} + \\dfrac{1}{5 \\times 7} + \\dfrac{1}{7 \\times 9} + \\dfrac{1}{9 \\times 11} \\text{?}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 29,
+    "question_text": "Find the value of $n$ if $\\dfrac{n}{n + 3} = 0.6$.",
+    "question_katex": "\\text{Find the value of} n \\text{if} \\dfrac{n}{n + 3} = 0.6 \\text{.}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "Set F — Selective Level",
+    "number": 30,
+    "question_text": "A tank has two taps. Tap A fills it in $3$ hours. Tap B fills it in $6$ hours. A drain empties it in $4$ hours. All three running: how long to fill the tank?",
+    "question_katex": "\\text{A tank has two taps. Tap A fills it in} 3 \\text{hours. Tap B fills it in} 6 \\text{hours. A drain empties it in} 4 \\text{hours. All three running: how long to fill the tank?}",
+    "type": "SA"
+  }
+]

@@ -1,0 +1,30 @@
+1. $\dfrac{2}{9} \times \dfrac{3}{4}$
+2. $\dfrac{5}{12} \times \dfrac{6}{7}$
+3. $1\dfrac{1}{2} \times \dfrac{2}{3}$
+4. $2\dfrac{1}{4} \times \dfrac{4}{9}$
+5. $1\dfrac{3}{5} \times \dfrac{5}{8}$
+6. $\dfrac{7}{8} \div \dfrac{3}{4}$
+7. $\dfrac{9}{10} \div \dfrac{3}{5}$
+8. $1\dfrac{1}{2} \div \dfrac{3}{4}$
+9. $2\dfrac{2}{5} \div \dfrac{4}{5}$
+10. $\dfrac{8}{9} \div \dfrac{4}{9}$
+11. Convert $\dfrac{5}{16}$ to a decimal.
+12. Convert $\dfrac{1}{3}$ to a decimal.
+13. Convert $\dfrac{5}{6}$ to a decimal.
+14. Convert $2\dfrac{3}{8}$ to a decimal.
+15. Convert $0.08$ to a fraction in simplest form.
+16. Convert $2.75$ to a mixed number.
+17. Round $3.14159$ to 3 decimal places.
+18. Round $0.5555$ to 1 decimal place.
+19. Round $2.345$ to 1 significant figure.
+20. Round $0.0672$ to 1 significant figure.
+21. $1.5 \times 2.4$
+22. $0.06 \times 0.3$
+23. $0.336 \div 0.04$
+24. $8.5 - 3.27$
+25. $(3.5 + 1.7) \times 0.4$
+26. $8.1 - 2.4 \times 0.5$
+27. Find $\dfrac{3}{4}$ of $240$.
+28. Find $\dfrac{5}{8}$ of $\$240$.
+29. Which is larger: $\dfrac{5}{7}$ or $0.72$?
+30. Place in order from smallest to largest: $\dfrac{3}{8},\ 0.4,\ \dfrac{1}{3}$.

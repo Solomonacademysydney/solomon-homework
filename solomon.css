@@ -160,7 +160,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 /* ── TEACHER ── */
 .page-title{font-family:'Noto Serif KR',serif;font-size:24px;font-weight:800;color:var(--navy);margin-bottom:6px;}
 .page-sub{font-size:14px;color:var(--muted);margin-bottom:24px;}
-.week-bar{display:flex;align-items:center;gap:12px;background:#fff;border-radius:var(--radius);padding:16px 20px;margin-bottom:24px;box-shadow:0 2px 10px rgba(0,0,0,.05);}
+.week-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:#fff;border-radius:var(--radius);padding:16px 20px;margin-bottom:24px;box-shadow:0 2px 10px rgba(0,0,0,.05);}
 .week-bar label{font-weight:800;font-size:14px;color:var(--navy);}
 .week-bar input{width:70px;padding:8px 12px;border:2px solid var(--border);border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-size:15px;font-weight:800;text-align:center;outline:none;}
 .week-bar input:focus{border-color:var(--gold2);}
@@ -244,6 +244,24 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .qc-num-row{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
 .qc-num{width:40px;height:40px;background:var(--navy);color:var(--gold);border-radius:11px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;}
 .qc-text{font-size:17px;font-weight:700;color:var(--navy);line-height:1.55;margin-bottom:24px;}
+
+/* MR question-card track theming (added 2026-05-07) - student MR quiz screen only */
+.question-card.track-default{background:#F8FAFC;border-left:4px solid #94A3B8;border-radius:0 var(--radius) var(--radius) 0;}
+.question-card.track-default .qc-text{color:#1E293B;}
+
+.question-card.track-oc{background:#F4F6FB;border-left:4px solid #1E3A8A;border-radius:0 var(--radius) var(--radius) 0;}
+.question-card.track-oc .qc-text{color:#0F1E40;}
+.question-card.track-oc .qc-num{background:#1E3A8A;color:#fff;}
+
+.question-card.track-sel{background:#FFF8E7;border-left:4px solid #B8860B;border-radius:0 var(--radius) var(--radius) 0;}
+.question-card.track-sel .qc-text{color:#4A3A07;}
+.question-card.track-sel .qc-num{background:#B8860B;color:#fff;}
+
+.question-card.track-school{background:#F2EEF7;border-left:4px solid #5B3A87;border-radius:0 var(--radius) var(--radius) 0;}
+.question-card.track-school .qc-text{color:#3C2659;}
+.question-card.track-school .qc-num{background:#5B3A87;color:#fff;}
+
+.question-card[class*="track-"] .qc-text{line-height:1.65;}
 
 .options{display:flex;flex-direction:column;gap:10px;}
 .opt-btn{display:flex;align-items:center;gap:14px;padding:14px 18px;border:2px solid var(--border);border-radius:13px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;font-weight:700;font-size:15px;background:#fff;text-align:left;transition:all .15s;}

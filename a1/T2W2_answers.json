@@ -1,0 +1,2406 @@
+{
+  "title": "Y9 Advanced — T2W2 Equations: Answers",
+  "total_questions": 300,
+  "answers": [
+    {
+      "id": "T2W2_A_01",
+      "set": "A",
+      "number": 1,
+      "correct_choice": "B",
+      "correct_text": "7",
+      "explanation": "2n + 5 = 19, 2n = 14, n = 7"
+    },
+    {
+      "id": "T2W2_A_02",
+      "set": "A",
+      "number": 2,
+      "correct_choice": "B",
+      "correct_text": "25",
+      "explanation": "n + (n+1) = 51, 2n = 50, n = 25"
+    },
+    {
+      "id": "T2W2_A_03",
+      "set": "A",
+      "number": 3,
+      "correct_choice": "B",
+      "correct_text": "8 cm",
+      "explanation": "2(w + w+4) = 40, 4w + 8 = 40, w = 8"
+    },
+    {
+      "id": "T2W2_A_04",
+      "set": "A",
+      "number": 4,
+      "correct_choice": "B",
+      "correct_text": "7",
+      "explanation": "4n + 3 = 31, 4n = 28, n = 7"
+    },
+    {
+      "id": "T2W2_A_05",
+      "set": "A",
+      "number": 5,
+      "correct_choice": "B",
+      "correct_text": "14",
+      "explanation": "s + 3s = 56, 4s = 56, s = 14"
+    },
+    {
+      "id": "T2W2_A_06",
+      "set": "A",
+      "number": 6,
+      "correct_choice": "A",
+      "correct_text": "20",
+      "explanation": "10a + 6(50-a) = 380, 4a + 300 = 380, 4a = 80, a = 20"
+    },
+    {
+      "id": "T2W2_A_07",
+      "set": "A",
+      "number": 7,
+      "correct_choice": "B",
+      "correct_text": "20",
+      "explanation": "n + (n+2) + (n+4) = 66, 3n + 6 = 66, n = 20"
+    },
+    {
+      "id": "T2W2_A_08",
+      "set": "A",
+      "number": 8,
+      "correct_choice": "B",
+      "correct_text": "4",
+      "explanation": "50 + 40h = 210, 40h = 160, h = 4"
+    },
+    {
+      "id": "T2W2_A_09",
+      "set": "A",
+      "number": 9,
+      "correct_choice": "B",
+      "correct_text": "72°",
+      "explanation": "x + (x+36) = 180, 2x = 144, x = 72"
+    },
+    {
+      "id": "T2W2_A_10",
+      "set": "A",
+      "number": 10,
+      "correct_choice": "B",
+      "correct_text": "7",
+      "explanation": "6n - n = 35, 5n = 35, n = 7"
+    },
+    {
+      "id": "T2W2_A_11",
+      "set": "A",
+      "number": 11,
+      "correct_choice": "B",
+      "correct_text": "$29",
+      "explanation": "x + (x+15) = 73, 2x = 58, x = 29"
+    },
+    {
+      "id": "T2W2_A_12",
+      "set": "A",
+      "number": 12,
+      "correct_choice": "C",
+      "correct_text": "11",
+      "explanation": "3n - 8 = 25, 3n = 33, n = 11"
+    },
+    {
+      "id": "T2W2_A_13",
+      "set": "A",
+      "number": 13,
+      "correct_choice": "C",
+      "correct_text": "7 km",
+      "explanation": "3.50 + 2.50k = 21, 2.50k = 17.50, k = 7"
+    },
+    {
+      "id": "T2W2_A_14",
+      "set": "A",
+      "number": 14,
+      "correct_choice": "A",
+      "correct_text": "x = -2 or x = -3",
+      "explanation": "(x+2)(x+3)=0, x=-2 or x=-3. Check: 4-10+6=0 ✓"
+    },
+    {
+      "id": "T2W2_A_15",
+      "set": "A",
+      "number": 15,
+      "correct_choice": "C",
+      "correct_text": "x = 3 or x = 5",
+      "explanation": "(x-3)(x-5)=0, x=3 or x=5"
+    },
+    {
+      "id": "T2W2_A_16",
+      "set": "A",
+      "number": 16,
+      "correct_choice": "C",
+      "correct_text": "x = ±5",
+      "explanation": "(x-5)(x+5)=0, x=±5"
+    },
+    {
+      "id": "T2W2_A_17",
+      "set": "A",
+      "number": 17,
+      "correct_choice": "A",
+      "correct_text": "x = 2 or x = -5",
+      "explanation": "(x+5)(x-2)=0, x=2 or x=-5"
+    },
+    {
+      "id": "T2W2_A_18",
+      "set": "A",
+      "number": 18,
+      "correct_choice": "C",
+      "correct_text": "x = 0 or x = 6",
+      "explanation": "x(x-6)=0, x=0 or x=6"
+    },
+    {
+      "id": "T2W2_A_19",
+      "set": "A",
+      "number": 19,
+      "correct_choice": "B",
+      "correct_text": "x = -5",
+      "explanation": "(x+5)²=0, x=-5"
+    },
+    {
+      "id": "T2W2_A_20",
+      "set": "A",
+      "number": 20,
+      "correct_choice": "B",
+      "correct_text": "x = -4 or x = 5",
+      "explanation": "(x-5)(x+4)=0, x=5 or x=-4"
+    },
+    {
+      "id": "T2W2_A_21",
+      "set": "A",
+      "number": 21,
+      "correct_choice": "A",
+      "correct_text": "x = 2 or x = -6",
+      "explanation": "x²+4x-12=0, (x+6)(x-2)=0, x=2 or x=-6"
+    },
+    {
+      "id": "T2W2_A_22",
+      "set": "A",
+      "number": 22,
+      "correct_choice": "B",
+      "correct_text": "6 and 7",
+      "explanation": "n(n+1)=42, n²+n-42=0, (n+7)(n-6)=0, n=6"
+    },
+    {
+      "id": "T2W2_A_23",
+      "set": "A",
+      "number": 23,
+      "correct_choice": "A",
+      "correct_text": "x = 3 or x = 6",
+      "explanation": "x²-9x+18=0, (x-3)(x-6)=0, x=3 or x=6"
+    },
+    {
+      "id": "T2W2_A_24",
+      "set": "A",
+      "number": 24,
+      "correct_choice": "B",
+      "correct_text": "x = 6",
+      "explanation": "(x-6)²=0, x=6"
+    },
+    {
+      "id": "T2W2_A_25",
+      "set": "A",
+      "number": 25,
+      "correct_choice": "B",
+      "correct_text": "5 cm",
+      "explanation": "w(w+4)=45, w²+4w-45=0, (w+9)(w-5)=0, w=5"
+    },
+    {
+      "id": "T2W2_A_26",
+      "set": "A",
+      "number": 26,
+      "correct_choice": "B",
+      "correct_text": "x > 5",
+      "explanation": "3x > 15, x > 5"
+    },
+    {
+      "id": "T2W2_A_27",
+      "set": "A",
+      "number": 27,
+      "correct_choice": "C",
+      "correct_text": "x ≤ 7",
+      "explanation": "2x ≤ 14, x ≤ 7"
+    },
+    {
+      "id": "T2W2_A_28",
+      "set": "A",
+      "number": 28,
+      "correct_choice": "C",
+      "correct_text": "x < -6",
+      "explanation": "Divide by -5 (flip): x < -6"
+    },
+    {
+      "id": "T2W2_A_29",
+      "set": "A",
+      "number": 29,
+      "correct_choice": "B",
+      "correct_text": "x ≤ 2",
+      "explanation": "-2x ≥ -4, x ≤ 2"
+    },
+    {
+      "id": "T2W2_A_30",
+      "set": "A",
+      "number": 30,
+      "correct_choice": "C",
+      "correct_text": "x < 4",
+      "explanation": "4x - 4 < 12, 4x < 16, x < 4"
+    },
+    {
+      "id": "T2W2_A_31",
+      "set": "A",
+      "number": 31,
+      "correct_choice": "B",
+      "correct_text": "x ≥ 6",
+      "explanation": "2x+10 ≤ 3x+4, 6 ≤ x, x ≥ 6"
+    },
+    {
+      "id": "T2W2_A_32",
+      "set": "A",
+      "number": 32,
+      "correct_choice": "C",
+      "correct_text": "x > 9",
+      "explanation": "x/3 > 3, x > 9"
+    },
+    {
+      "id": "T2W2_A_33",
+      "set": "A",
+      "number": 33,
+      "correct_choice": "C",
+      "correct_text": "x > 4",
+      "explanation": "2x > 8, x > 4"
+    },
+    {
+      "id": "T2W2_A_34",
+      "set": "A",
+      "number": 34,
+      "correct_choice": "A",
+      "correct_text": "1 ≤ x < 4",
+      "explanation": "3 ≤ 3x < 12, 1 ≤ x < 4"
+    },
+    {
+      "id": "T2W2_A_35",
+      "set": "A",
+      "number": 35,
+      "correct_choice": "A",
+      "correct_text": "-5 < x ≤ 3",
+      "explanation": "-10 < 2x ≤ 6, -5 < x ≤ 3"
+    },
+    {
+      "id": "T2W2_A_36",
+      "set": "A",
+      "number": 36,
+      "correct_choice": "B",
+      "correct_text": "x ≤ -2",
+      "explanation": "-3x+6 ≥ 12, -3x ≥ 6, x ≤ -2"
+    },
+    {
+      "id": "T2W2_A_37",
+      "set": "A",
+      "number": 37,
+      "correct_choice": "C",
+      "correct_text": "x > 4",
+      "explanation": "12 < 3x, x > 4"
+    },
+    {
+      "id": "T2W2_A_38",
+      "set": "A",
+      "number": 38,
+      "correct_choice": "A",
+      "correct_text": "x > 4 or x ≤ 1",
+      "explanation": "3x > 12 → x > 4; or 5x ≤ 5 → x ≤ 1"
+    },
+    {
+      "id": "T2W2_A_39",
+      "set": "A",
+      "number": 39,
+      "correct_choice": "B",
+      "correct_text": "x = 4",
+      "explanation": "x = ∛64 = 4"
+    },
+    {
+      "id": "T2W2_A_40",
+      "set": "A",
+      "number": 40,
+      "correct_choice": "A",
+      "correct_text": "x = -2",
+      "explanation": "x = ∛(-8) = -2"
+    },
+    {
+      "id": "T2W2_A_41",
+      "set": "A",
+      "number": 41,
+      "correct_choice": "A",
+      "correct_text": "x = 3",
+      "explanation": "x³ = 27, x = 3"
+    },
+    {
+      "id": "T2W2_A_42",
+      "set": "A",
+      "number": 42,
+      "correct_choice": "A",
+      "correct_text": "x = -3",
+      "explanation": "2x³ = -54, x³ = -27, x = -3"
+    },
+    {
+      "id": "T2W2_A_43",
+      "set": "A",
+      "number": 43,
+      "correct_choice": "A",
+      "correct_text": "x = 5",
+      "explanation": "x³ = 125, x = 5"
+    },
+    {
+      "id": "T2W2_A_44",
+      "set": "A",
+      "number": 44,
+      "correct_choice": "B",
+      "correct_text": "x = 4",
+      "explanation": "x³ = 64, x = 4"
+    },
+    {
+      "id": "T2W2_A_45",
+      "set": "A",
+      "number": 45,
+      "correct_choice": "A",
+      "correct_text": "x = 0",
+      "explanation": "x³ = 0, x = 0"
+    },
+    {
+      "id": "T2W2_A_46",
+      "set": "A",
+      "number": 46,
+      "correct_choice": "B",
+      "correct_text": "x = -4",
+      "explanation": "x³ = -64, x = -4"
+    },
+    {
+      "id": "T2W2_A_47",
+      "set": "A",
+      "number": 47,
+      "correct_choice": "C",
+      "correct_text": "6 cm",
+      "explanation": "s³ = 216, s = 6"
+    },
+    {
+      "id": "T2W2_A_48",
+      "set": "A",
+      "number": 48,
+      "correct_choice": "B",
+      "correct_text": "x = -2",
+      "explanation": "x³ = -8, x = -2"
+    },
+    {
+      "id": "T2W2_A_49",
+      "set": "A",
+      "number": 49,
+      "correct_choice": "A",
+      "correct_text": "x = 2",
+      "explanation": "x³ = 8, x = 2"
+    },
+    {
+      "id": "T2W2_A_50",
+      "set": "A",
+      "number": 50,
+      "correct_choice": "B",
+      "correct_text": "x = 1/3",
+      "explanation": "x = ∛(1/27) = 1/3"
+    },
+    {
+      "id": "T2W2_B_01",
+      "set": "B",
+      "number": 1,
+      "correct_choice": "C",
+      "correct_text": "9",
+      "explanation": "5n - 7 = 38, 5n = 45, n = 9"
+    },
+    {
+      "id": "T2W2_B_02",
+      "set": "B",
+      "number": 2,
+      "correct_choice": "C",
+      "correct_text": "33",
+      "explanation": "n+(n+1)+(n+2)=96, 3n+3=96, n=31, largest=33"
+    },
+    {
+      "id": "T2W2_B_03",
+      "set": "B",
+      "number": 3,
+      "correct_choice": "B",
+      "correct_text": "16 cm",
+      "explanation": "2(w+w+6)=52, 4w+12=52, w=10, l=16"
+    },
+    {
+      "id": "T2W2_B_04",
+      "set": "B",
+      "number": 4,
+      "correct_choice": "A",
+      "correct_text": "8",
+      "explanation": "4d+8=2.5d+20, 1.5d=12, d=8"
+    },
+    {
+      "id": "T2W2_B_05",
+      "set": "B",
+      "number": 5,
+      "correct_choice": "B",
+      "correct_text": "27",
+      "explanation": "n+(n+2)+(n+4)=81, 3n+6=81, n=25, middle=27"
+    },
+    {
+      "id": "T2W2_B_06",
+      "set": "B",
+      "number": 6,
+      "correct_choice": "D",
+      "correct_text": "24",
+      "explanation": "3p+5(40-p)=152, 3p+200-5p=152, -2p=-48, p=24"
+    },
+    {
+      "id": "T2W2_B_07",
+      "set": "B",
+      "number": 7,
+      "correct_choice": "D",
+      "correct_text": "52°",
+      "explanation": "x+(x-14)=90, 2x=104, x=52"
+    },
+    {
+      "id": "T2W2_B_08",
+      "set": "B",
+      "number": 8,
+      "correct_choice": "C",
+      "correct_text": "325 km",
+      "explanation": "Speed = 65 km/h, 65×5 = 325 km"
+    },
+    {
+      "id": "T2W2_B_09",
+      "set": "B",
+      "number": 9,
+      "correct_choice": "D",
+      "correct_text": "9",
+      "explanation": "2n+15=4n-3, 18=2n, n=9"
+    },
+    {
+      "id": "T2W2_B_10",
+      "set": "B",
+      "number": 10,
+      "correct_choice": "B",
+      "correct_text": "$51 and $69",
+      "explanation": "x+(x+18)=120, 2x=102, x=51, other=69"
+    },
+    {
+      "id": "T2W2_B_11",
+      "set": "B",
+      "number": 11,
+      "correct_choice": "B",
+      "correct_text": "14",
+      "explanation": "5f+20(40-f)=410, 5f+800-20f=410, -15f=-390, f=26, 20c=14"
+    },
+    {
+      "id": "T2W2_B_12",
+      "set": "B",
+      "number": 12,
+      "correct_choice": "C",
+      "correct_text": "$26,000",
+      "explanation": "V - 3(2500) = 18500, V = 18500+7500 = 26000"
+    },
+    {
+      "id": "T2W2_B_13",
+      "set": "B",
+      "number": 13,
+      "correct_choice": "C",
+      "correct_text": "20",
+      "explanation": "Boys = (5/8)×32 = 20"
+    },
+    {
+      "id": "T2W2_B_14",
+      "set": "B",
+      "number": 14,
+      "correct_choice": "A",
+      "correct_text": "x = -2 or x = -5",
+      "explanation": "(x+2)(x+5)=0, x=-2 or x=-5"
+    },
+    {
+      "id": "T2W2_B_15",
+      "set": "B",
+      "number": 15,
+      "correct_choice": "A",
+      "correct_text": "x = 3 or x = 8",
+      "explanation": "(x-3)(x-8)=0, x=3 or x=8"
+    },
+    {
+      "id": "T2W2_B_16",
+      "set": "B",
+      "number": 16,
+      "correct_choice": "C",
+      "correct_text": "x = ±7",
+      "explanation": "(x-7)(x+7)=0, x=±7"
+    },
+    {
+      "id": "T2W2_B_17",
+      "set": "B",
+      "number": 17,
+      "correct_choice": "A",
+      "correct_text": "x = 5 or x = -7",
+      "explanation": "(x+7)(x-5)=0, x=5 or x=-7"
+    },
+    {
+      "id": "T2W2_B_18",
+      "set": "B",
+      "number": 18,
+      "correct_choice": "C",
+      "correct_text": "x = 0 or x = 10",
+      "explanation": "x(x-10)=0, x=0 or x=10"
+    },
+    {
+      "id": "T2W2_B_19",
+      "set": "B",
+      "number": 19,
+      "correct_choice": "A",
+      "correct_text": "x = 7",
+      "explanation": "(x-7)²=0, x=7"
+    },
+    {
+      "id": "T2W2_B_20",
+      "set": "B",
+      "number": 20,
+      "correct_choice": "A",
+      "correct_text": "x = 4 or x = -7",
+      "explanation": "x²+3x-28=0, (x+7)(x-4)=0, x=4 or x=-7"
+    },
+    {
+      "id": "T2W2_B_21",
+      "set": "B",
+      "number": 21,
+      "correct_choice": "A",
+      "correct_text": "x = 7 or x = -2",
+      "explanation": "x²-5x-14=0, (x-7)(x+2)=0, x=7 or x=-2"
+    },
+    {
+      "id": "T2W2_B_22",
+      "set": "B",
+      "number": 22,
+      "correct_choice": "C",
+      "correct_text": "8 and 9",
+      "explanation": "n(n+1)=72, n²+n-72=0, (n+9)(n-8)=0, n=8. 8 and 9"
+    },
+    {
+      "id": "T2W2_B_23",
+      "set": "B",
+      "number": 23,
+      "correct_choice": "A",
+      "correct_text": "x = 1 or x = 4",
+      "explanation": "x²-5x-6=-10, x²-5x+4=0, (x-1)(x-4)=0, x=1 or x=4"
+    },
+    {
+      "id": "T2W2_B_24",
+      "set": "B",
+      "number": 24,
+      "correct_choice": "B",
+      "correct_text": "x = -3",
+      "explanation": "(x+3)²=0, x=-3"
+    },
+    {
+      "id": "T2W2_B_25",
+      "set": "B",
+      "number": 25,
+      "correct_choice": "C",
+      "correct_text": "5 cm",
+      "explanation": "w(w+7)=60, w²+7w-60=0, (w+12)(w-5)=0, w=5"
+    },
+    {
+      "id": "T2W2_B_26",
+      "set": "B",
+      "number": 26,
+      "correct_choice": "C",
+      "correct_text": "x > 5",
+      "explanation": "4x > 20, x > 5"
+    },
+    {
+      "id": "T2W2_B_27",
+      "set": "B",
+      "number": 27,
+      "correct_choice": "C",
+      "correct_text": "x ≤ 6",
+      "explanation": "3x ≤ 18, x ≤ 6"
+    },
+    {
+      "id": "T2W2_B_28",
+      "set": "B",
+      "number": 28,
+      "correct_choice": "C",
+      "correct_text": "x ≤ -6",
+      "explanation": "Divide by -4 (flip): x ≤ -6"
+    },
+    {
+      "id": "T2W2_B_29",
+      "set": "B",
+      "number": 29,
+      "correct_choice": "B",
+      "correct_text": "x < 2",
+      "explanation": "-3x > -6, x < 2"
+    },
+    {
+      "id": "T2W2_B_30",
+      "set": "B",
+      "number": 30,
+      "correct_choice": "C",
+      "correct_text": "x < 4",
+      "explanation": "5x+10 < 3x+18, 2x < 8, x < 4"
+    },
+    {
+      "id": "T2W2_B_31",
+      "set": "B",
+      "number": 31,
+      "correct_choice": "C",
+      "correct_text": "x ≥ 4",
+      "explanation": "6x-3 ≥ 4x+5, 2x ≥ 8, x ≥ 4"
+    },
+    {
+      "id": "T2W2_B_32",
+      "set": "B",
+      "number": 32,
+      "correct_choice": "C",
+      "correct_text": "x > 8",
+      "explanation": "x/2 > 4, x > 8"
+    },
+    {
+      "id": "T2W2_B_33",
+      "set": "B",
+      "number": 33,
+      "correct_choice": "C",
+      "correct_text": "x ≤ 6",
+      "explanation": "3x ≤ 18, x ≤ 6"
+    },
+    {
+      "id": "T2W2_B_34",
+      "set": "B",
+      "number": 34,
+      "correct_choice": "A",
+      "correct_text": "-1 ≤ x < 3",
+      "explanation": "-4 ≤ 4x < 12, -1 ≤ x < 3"
+    },
+    {
+      "id": "T2W2_B_35",
+      "set": "B",
+      "number": 35,
+      "correct_choice": "A",
+      "correct_text": "-2 < x ≤ 3",
+      "explanation": "-6 < 3x ≤ 9, -2 < x ≤ 3"
+    },
+    {
+      "id": "T2W2_B_36",
+      "set": "B",
+      "number": 36,
+      "correct_choice": "B",
+      "correct_text": "x < -7",
+      "explanation": "-2x-8 > 6, -2x > 14, x < -7"
+    },
+    {
+      "id": "T2W2_B_37",
+      "set": "B",
+      "number": 37,
+      "correct_choice": "C",
+      "correct_text": "x ≥ 3",
+      "explanation": "9 ≤ 3x, x ≥ 3"
+    },
+    {
+      "id": "T2W2_B_38",
+      "set": "B",
+      "number": 38,
+      "correct_choice": "A",
+      "correct_text": "x > 4 or x ≤ -2",
+      "explanation": "2x > 8 → x > 4; or 4x ≤ -8 → x ≤ -2"
+    },
+    {
+      "id": "T2W2_B_39",
+      "set": "B",
+      "number": 39,
+      "correct_choice": "A",
+      "correct_text": "x = 5",
+      "explanation": "x = ∛125 = 5"
+    },
+    {
+      "id": "T2W2_B_40",
+      "set": "B",
+      "number": 40,
+      "correct_choice": "A",
+      "correct_text": "x = -3",
+      "explanation": "x = ∛(-27) = -3"
+    },
+    {
+      "id": "T2W2_B_41",
+      "set": "B",
+      "number": 41,
+      "correct_choice": "A",
+      "correct_text": "x = 3",
+      "explanation": "x³ = 27, x = 3"
+    },
+    {
+      "id": "T2W2_B_42",
+      "set": "B",
+      "number": 42,
+      "correct_choice": "A",
+      "correct_text": "x = -2",
+      "explanation": "5x³ = -40, x³ = -8, x = -2"
+    },
+    {
+      "id": "T2W2_B_43",
+      "set": "B",
+      "number": 43,
+      "correct_choice": "A",
+      "correct_text": "x = 6",
+      "explanation": "x³ = 216, x = 6"
+    },
+    {
+      "id": "T2W2_B_44",
+      "set": "B",
+      "number": 44,
+      "correct_choice": "A",
+      "correct_text": "x = 5",
+      "explanation": "x³ = 125, x = 5"
+    },
+    {
+      "id": "T2W2_B_45",
+      "set": "B",
+      "number": 45,
+      "correct_choice": "B",
+      "correct_text": "x = -2",
+      "explanation": "x³ = -8, x = -2"
+    },
+    {
+      "id": "T2W2_B_46",
+      "set": "B",
+      "number": 46,
+      "correct_choice": "C",
+      "correct_text": "7 cm",
+      "explanation": "s³ = 343, s = 7"
+    },
+    {
+      "id": "T2W2_B_47",
+      "set": "B",
+      "number": 47,
+      "correct_choice": "A",
+      "correct_text": "x = 5",
+      "explanation": "2x³ = 250, x³ = 125, x = 5"
+    },
+    {
+      "id": "T2W2_B_48",
+      "set": "B",
+      "number": 48,
+      "correct_choice": "A",
+      "correct_text": "x = -10",
+      "explanation": "x³ = -1000, x = -10"
+    },
+    {
+      "id": "T2W2_B_49",
+      "set": "B",
+      "number": 49,
+      "correct_choice": "A",
+      "correct_text": "x = 1/2",
+      "explanation": "x³ = 1/8, x = 1/2"
+    },
+    {
+      "id": "T2W2_B_50",
+      "set": "B",
+      "number": 50,
+      "correct_choice": "B",
+      "correct_text": "x = 0.2",
+      "explanation": "x = ∛0.008 = 0.2"
+    },
+    {
+      "id": "T2W2_C_01",
+      "set": "C",
+      "number": 1,
+      "correct_choice": "C",
+      "correct_text": "8",
+      "explanation": "2n+9=4n-7, 16=2n, n=8"
+    },
+    {
+      "id": "T2W2_C_02",
+      "set": "C",
+      "number": 2,
+      "correct_choice": "B",
+      "correct_text": "12",
+      "explanation": "4s+6=3s+18, s=12"
+    },
+    {
+      "id": "T2W2_C_03",
+      "set": "C",
+      "number": 3,
+      "correct_choice": "C",
+      "correct_text": "62",
+      "explanation": "8a+5(120-a)=786, 3a+600=786, 3a=186, a=62"
+    },
+    {
+      "id": "T2W2_C_04",
+      "set": "C",
+      "number": 4,
+      "correct_choice": "C",
+      "correct_text": "6 cm",
+      "explanation": "2(3+l)=3l, 6+2l=3l, l=6"
+    },
+    {
+      "id": "T2W2_C_05",
+      "set": "C",
+      "number": 5,
+      "correct_choice": "C",
+      "correct_text": "20 L",
+      "explanation": "0.3a+0.6(10)=0.4(a+10), 0.3a+6=0.4a+4, 2=0.1a, a=20"
+    },
+    {
+      "id": "T2W2_C_06",
+      "set": "C",
+      "number": 6,
+      "correct_choice": "B",
+      "correct_text": "36",
+      "explanation": "t+(t+3)=9, 2t=6, t=3, number=36"
+    },
+    {
+      "id": "T2W2_C_07",
+      "set": "C",
+      "number": 7,
+      "correct_choice": "B",
+      "correct_text": "5 hours",
+      "explanation": "Speed=80 km/h, t=400/80=5"
+    },
+    {
+      "id": "T2W2_C_08",
+      "set": "C",
+      "number": 8,
+      "correct_choice": "C",
+      "correct_text": "$1,200",
+      "explanation": "B+0.06(25000)=2700, B+1500=2700, B=1200"
+    },
+    {
+      "id": "T2W2_C_09",
+      "set": "C",
+      "number": 9,
+      "correct_choice": "C",
+      "correct_text": "40 cm",
+      "explanation": "x+(x+5)+2x=85, 4x=80, x=20, longest=40"
+    },
+    {
+      "id": "T2W2_C_10",
+      "set": "C",
+      "number": 10,
+      "correct_choice": "B",
+      "correct_text": "70 km/h",
+      "explanation": "3v+3(v+20)=360, 6v+60=360, v=50, faster=70"
+    },
+    {
+      "id": "T2W2_C_11",
+      "set": "C",
+      "number": 11,
+      "correct_choice": "C",
+      "correct_text": "12 cm",
+      "explanation": "3s=2s+12, s=12"
+    },
+    {
+      "id": "T2W2_C_12",
+      "set": "C",
+      "number": 12,
+      "correct_choice": "A",
+      "correct_text": "10",
+      "explanation": "10f+50(40-f)=800, 10f+2000-50f=800, -40f=-1200, f=30, 50c=10"
+    },
+    {
+      "id": "T2W2_C_13",
+      "set": "C",
+      "number": 13,
+      "correct_choice": "C",
+      "correct_text": "$20,000",
+      "explanation": "0.85V=17000, V=20000"
+    },
+    {
+      "id": "T2W2_C_14",
+      "set": "C",
+      "number": 14,
+      "correct_choice": "A",
+      "correct_text": "x = 6 or x = -3",
+      "explanation": "(x-6)(x+3)=0, x=6 or x=-3"
+    },
+    {
+      "id": "T2W2_C_15",
+      "set": "C",
+      "number": 15,
+      "correct_choice": "A",
+      "correct_text": "x = 6 or x = -4",
+      "explanation": "x²-2x-24=0, (x-6)(x+4)=0, x=6 or x=-4"
+    },
+    {
+      "id": "T2W2_C_16",
+      "set": "C",
+      "number": 16,
+      "correct_choice": "C",
+      "correct_text": "x = ±9",
+      "explanation": "(x-9)(x+9)=0, x=±9"
+    },
+    {
+      "id": "T2W2_C_17",
+      "set": "C",
+      "number": 17,
+      "correct_choice": "A",
+      "correct_text": "x = 5 or x = -6",
+      "explanation": "(x+6)(x-5)=0, x=5 or x=-6"
+    },
+    {
+      "id": "T2W2_C_18",
+      "set": "C",
+      "number": 18,
+      "correct_choice": "A",
+      "correct_text": "x = -3 or x = -5",
+      "explanation": "x²+8x+15=0, (x+3)(x+5)=0, x=-3 or x=-5"
+    },
+    {
+      "id": "T2W2_C_19",
+      "set": "C",
+      "number": 19,
+      "correct_choice": "A",
+      "correct_text": "x = 0 or x = 5",
+      "explanation": "x²-5x-6=-6, x²-5x=0, x(x-5)=0, x=0 or x=5"
+    },
+    {
+      "id": "T2W2_C_20",
+      "set": "C",
+      "number": 20,
+      "correct_choice": "B",
+      "correct_text": "9 and 10",
+      "explanation": "n(n+1)=90, n²+n-90=0, (n+10)(n-9)=0, n=9"
+    },
+    {
+      "id": "T2W2_C_21",
+      "set": "C",
+      "number": 21,
+      "correct_choice": "B",
+      "correct_text": "x = 8",
+      "explanation": "(x-8)²=0, x=8"
+    },
+    {
+      "id": "T2W2_C_22",
+      "set": "C",
+      "number": 22,
+      "correct_choice": "C",
+      "correct_text": "7 cm",
+      "explanation": "w(w+5)=84, w²+5w-84=0, (w+12)(w-7)=0, w=7"
+    },
+    {
+      "id": "T2W2_C_23",
+      "set": "C",
+      "number": 23,
+      "correct_choice": "A",
+      "correct_text": "x = 4 or x = -9",
+      "explanation": "(x+9)(x-4)=0, x=4 or x=-9"
+    },
+    {
+      "id": "T2W2_C_24",
+      "set": "C",
+      "number": 24,
+      "correct_choice": "A",
+      "correct_text": "x = 2 or x = 5",
+      "explanation": "x²-7x+10=0, (x-2)(x-5)=0, x=2 or x=5"
+    },
+    {
+      "id": "T2W2_C_25",
+      "set": "C",
+      "number": 25,
+      "correct_choice": "C",
+      "correct_text": "x = ±10",
+      "explanation": "(x-10)(x+10)=0, x=±10"
+    },
+    {
+      "id": "T2W2_C_26",
+      "set": "C",
+      "number": 26,
+      "correct_choice": "C",
+      "correct_text": "x > 4",
+      "explanation": "4x > 16, x > 4"
+    },
+    {
+      "id": "T2W2_C_27",
+      "set": "C",
+      "number": 27,
+      "correct_choice": "C",
+      "correct_text": "x ≤ 9",
+      "explanation": "6x-8 ≤ 5x+1, x ≤ 9"
+    },
+    {
+      "id": "T2W2_C_28",
+      "set": "C",
+      "number": 28,
+      "correct_choice": "C",
+      "correct_text": "x > 5",
+      "explanation": "x+3 > 8, x > 5"
+    },
+    {
+      "id": "T2W2_C_29",
+      "set": "C",
+      "number": 29,
+      "correct_choice": "B",
+      "correct_text": "x ≤ -3",
+      "explanation": "-5x+5 ≥ 20, -5x ≥ 15, x ≤ -3"
+    },
+    {
+      "id": "T2W2_C_30",
+      "set": "C",
+      "number": 30,
+      "correct_choice": "C",
+      "correct_text": "x > 6",
+      "explanation": "3x+2x > 30, 5x > 30, x > 6"
+    },
+    {
+      "id": "T2W2_C_31",
+      "set": "C",
+      "number": 31,
+      "correct_choice": "C",
+      "correct_text": "x ≥ 7",
+      "explanation": "4x+4 ≤ 6x-10, 14 ≤ 2x, x ≥ 7"
+    },
+    {
+      "id": "T2W2_C_32",
+      "set": "C",
+      "number": 32,
+      "correct_choice": "A",
+      "correct_text": "-2 ≤ x < 4",
+      "explanation": "-4 ≤ 2x < 8, -2 ≤ x < 4"
+    },
+    {
+      "id": "T2W2_C_33",
+      "set": "C",
+      "number": 33,
+      "correct_choice": "A",
+      "correct_text": "0, 1, 2, 3",
+      "explanation": "-3 < 3x ≤ 9, -1 < x ≤ 3. Integers: 0,1,2,3"
+    },
+    {
+      "id": "T2W2_C_34",
+      "set": "C",
+      "number": 34,
+      "correct_choice": "C",
+      "correct_text": "x ≤ 5",
+      "explanation": "2x-1 ≥ 3x-6, 5 ≥ x, x ≤ 5"
+    },
+    {
+      "id": "T2W2_C_35",
+      "set": "C",
+      "number": 35,
+      "correct_choice": "A",
+      "correct_text": "x ≥ 11/5",
+      "explanation": "5-3x ≤ 2x-6, 11 ≤ 5x, x ≥ 11/5"
+    },
+    {
+      "id": "T2W2_C_36",
+      "set": "C",
+      "number": 36,
+      "correct_choice": "C",
+      "correct_text": "79",
+      "explanation": "(82+68+71+x)/4 ≥ 75, 221+x ≥ 300, x ≥ 79"
+    },
+    {
+      "id": "T2W2_C_37",
+      "set": "C",
+      "number": 37,
+      "correct_choice": "A",
+      "correct_text": "1 < x ≤ 3",
+      "explanation": "x ≤ 3 and x > 1, so 1 < x ≤ 3"
+    },
+    {
+      "id": "T2W2_C_38",
+      "set": "C",
+      "number": 38,
+      "correct_choice": "A",
+      "correct_text": "x < 17/5",
+      "explanation": "15-3x > 2x-2, 17 > 5x, x < 17/5"
+    },
+    {
+      "id": "T2W2_C_39",
+      "set": "C",
+      "number": 39,
+      "correct_choice": "A",
+      "correct_text": "x = 3",
+      "explanation": "x³ = 27, x = 3"
+    },
+    {
+      "id": "T2W2_C_40",
+      "set": "C",
+      "number": 40,
+      "correct_choice": "A",
+      "correct_text": "x = -4",
+      "explanation": "x³ = -64, x = -4"
+    },
+    {
+      "id": "T2W2_C_41",
+      "set": "C",
+      "number": 41,
+      "correct_choice": "A",
+      "correct_text": "x = 1",
+      "explanation": "x+2=3, x=1"
+    },
+    {
+      "id": "T2W2_C_42",
+      "set": "C",
+      "number": 42,
+      "correct_choice": "A",
+      "correct_text": "x = 2",
+      "explanation": "x³ = 8, x = 2"
+    },
+    {
+      "id": "T2W2_C_43",
+      "set": "C",
+      "number": 43,
+      "correct_choice": "B",
+      "correct_text": "∛3",
+      "explanation": "New side = ∛3 × original"
+    },
+    {
+      "id": "T2W2_C_44",
+      "set": "C",
+      "number": 44,
+      "correct_choice": "A",
+      "correct_text": "x = 0",
+      "explanation": "x-2=-2, x=0"
+    },
+    {
+      "id": "T2W2_C_45",
+      "set": "C",
+      "number": 45,
+      "correct_choice": "A",
+      "correct_text": "x = 2/3",
+      "explanation": "x = ∛(8/27) = 2/3"
+    },
+    {
+      "id": "T2W2_C_46",
+      "set": "C",
+      "number": 46,
+      "correct_choice": "A",
+      "correct_text": "x = -1",
+      "explanation": "x³ = -1, x = -1"
+    },
+    {
+      "id": "T2W2_C_47",
+      "set": "C",
+      "number": 47,
+      "correct_choice": "A",
+      "correct_text": "3 cm",
+      "explanation": "s³=27, s=3. Check: (3+2)³=125 ✓"
+    },
+    {
+      "id": "T2W2_C_48",
+      "set": "C",
+      "number": 48,
+      "correct_choice": "A",
+      "correct_text": "x = 2",
+      "explanation": "x³ = 8, x = 2"
+    },
+    {
+      "id": "T2W2_C_49",
+      "set": "C",
+      "number": 49,
+      "correct_choice": "B",
+      "correct_text": "x = 6",
+      "explanation": "x/2 = 3, x = 6"
+    },
+    {
+      "id": "T2W2_C_50",
+      "set": "C",
+      "number": 50,
+      "correct_choice": "A",
+      "correct_text": "x = 2",
+      "explanation": "x³ = 8, x = 2"
+    },
+    {
+      "id": "T2W2_D_01",
+      "set": "D",
+      "number": 1,
+      "correct_choice": "B",
+      "correct_text": "2.4 hours",
+      "explanation": "1/4+1/6=5/12. Time=12/5=2.4 hours"
+    },
+    {
+      "id": "T2W2_D_02",
+      "set": "D",
+      "number": 2,
+      "correct_choice": "B",
+      "correct_text": "5% increase",
+      "explanation": "1.40×0.75=1.05, 5% increase"
+    },
+    {
+      "id": "T2W2_D_03",
+      "set": "D",
+      "number": 3,
+      "correct_choice": "C",
+      "correct_text": "24",
+      "explanation": "4n+3n=168, 7n=168, n=24"
+    },
+    {
+      "id": "T2W2_D_04",
+      "set": "D",
+      "number": 4,
+      "correct_choice": "B",
+      "correct_text": "16",
+      "explanation": "37+5=2(s+5), 42=2s+10, 2s=32, s=16"
+    },
+    {
+      "id": "T2W2_D_05",
+      "set": "D",
+      "number": 5,
+      "correct_choice": "B",
+      "correct_text": "2 km/h",
+      "explanation": "b-c=12, b+c=16, 2c=4, c=2"
+    },
+    {
+      "id": "T2W2_D_06",
+      "set": "D",
+      "number": 6,
+      "correct_choice": "C",
+      "correct_text": "$2,000",
+      "explanation": "5/10 × 4000 = 2000"
+    },
+    {
+      "id": "T2W2_D_07",
+      "set": "D",
+      "number": 7,
+      "correct_choice": "B",
+      "correct_text": "12:30 PM",
+      "explanation": "6 hours × 5 min = 30 min ahead → 12:30"
+    },
+    {
+      "id": "T2W2_D_08",
+      "set": "D",
+      "number": 8,
+      "correct_choice": "A",
+      "correct_text": "No change",
+      "explanation": "0.8 × 1.25 = 1.00, no change"
+    },
+    {
+      "id": "T2W2_D_09",
+      "set": "D",
+      "number": 9,
+      "correct_choice": "C",
+      "correct_text": "$60",
+      "explanation": "Cost=2000, 120%=2400, sell 40kg: 2400/40=60"
+    },
+    {
+      "id": "T2W2_D_10",
+      "set": "D",
+      "number": 10,
+      "correct_choice": "C",
+      "correct_text": "26",
+      "explanation": "Total=90, new total=64, removed=90-64=26"
+    },
+    {
+      "id": "T2W2_D_11",
+      "set": "D",
+      "number": 11,
+      "correct_choice": "B",
+      "correct_text": "8/3 days",
+      "explanation": "After 2 days: 2/6=1/3 done. Together: 1/6+1/12=1/4/day. (2/3)/(1/4)=8/3 days"
+    },
+    {
+      "id": "T2W2_D_12",
+      "set": "D",
+      "number": 12,
+      "correct_choice": "B",
+      "correct_text": "2 hours",
+      "explanation": "Combined: 100 km/h, time=200/100=2 hours"
+    },
+    {
+      "id": "T2W2_D_13",
+      "set": "D",
+      "number": 13,
+      "correct_choice": "B",
+      "correct_text": "1% less",
+      "explanation": "1.1 × 0.9 = 0.99, 1% less"
+    },
+    {
+      "id": "T2W2_D_14",
+      "set": "D",
+      "number": 14,
+      "correct_choice": "A",
+      "correct_text": "x = 7 or x = -2",
+      "explanation": "(x-7)(x+2)=0, x=7 or x=-2"
+    },
+    {
+      "id": "T2W2_D_15",
+      "set": "D",
+      "number": 15,
+      "correct_choice": "A",
+      "correct_text": "x = 3 or x = -9",
+      "explanation": "x²+6x-27=0, (x+9)(x-3)=0, x=3 or x=-9"
+    },
+    {
+      "id": "T2W2_D_16",
+      "set": "D",
+      "number": 16,
+      "correct_choice": "A",
+      "correct_text": "x = 2 or x = -4",
+      "explanation": "x²+2x-15=-7, x²+2x-8=0, (x+4)(x-2)=0, x=2 or x=-4"
+    },
+    {
+      "id": "T2W2_D_17",
+      "set": "D",
+      "number": 17,
+      "correct_choice": "C",
+      "correct_text": "7",
+      "explanation": "n²+(n+1)²=85, 2n²+2n-84=0, n²+n-42=0, (n+7)(n-6)=0, n=6, larger=7"
+    },
+    {
+      "id": "T2W2_D_18",
+      "set": "D",
+      "number": 18,
+      "correct_choice": "A",
+      "correct_text": "x = 3 or x = 6",
+      "explanation": "(x-3)(x-6)=0, x=3 or x=6"
+    },
+    {
+      "id": "T2W2_D_19",
+      "set": "D",
+      "number": 19,
+      "correct_choice": "A",
+      "correct_text": "x = 3 or x = -5",
+      "explanation": "(x+1)²=16, x+1=±4, x=3 or x=-5"
+    },
+    {
+      "id": "T2W2_D_20",
+      "set": "D",
+      "number": 20,
+      "correct_choice": "A",
+      "correct_text": "t = 1 or t = 3",
+      "explanation": "20t-5t²=15, 5t²-20t+15=0, t²-4t+3=0, (t-1)(t-3)=0, t=1 or t=3"
+    },
+    {
+      "id": "T2W2_D_21",
+      "set": "D",
+      "number": 21,
+      "correct_choice": "A",
+      "correct_text": "x = 5 or x = -1",
+      "explanation": "x²-4x-5=0, (x-5)(x+1)=0, x=5 or x=-1"
+    },
+    {
+      "id": "T2W2_D_22",
+      "set": "D",
+      "number": 22,
+      "correct_choice": "A",
+      "correct_text": "x = 0 or x = 4",
+      "explanation": "2x(x-4)=0, x=0 or x=4"
+    },
+    {
+      "id": "T2W2_D_23",
+      "set": "D",
+      "number": 23,
+      "correct_choice": "C",
+      "correct_text": "6 cm",
+      "explanation": "3w²=108, w²=36, w=6"
+    },
+    {
+      "id": "T2W2_D_24",
+      "set": "D",
+      "number": 24,
+      "correct_choice": "A",
+      "correct_text": "x = 9 or x = -7",
+      "explanation": "(x-9)(x+7)=0, x=9 or x=-7"
+    },
+    {
+      "id": "T2W2_D_25",
+      "set": "D",
+      "number": 25,
+      "correct_choice": "A",
+      "correct_text": "x = 1 or x = -9",
+      "explanation": "x+4=±5, x=1 or x=-9"
+    },
+    {
+      "id": "T2W2_D_26",
+      "set": "D",
+      "number": 26,
+      "correct_choice": "B",
+      "correct_text": "x > 4",
+      "explanation": "2x-3 > 5, 2x > 8, x > 4"
+    },
+    {
+      "id": "T2W2_D_27",
+      "set": "D",
+      "number": 27,
+      "correct_choice": "C",
+      "correct_text": "x ≤ 6",
+      "explanation": "6x+2-5x ≤ 8, x+2 ≤ 8, x ≤ 6"
+    },
+    {
+      "id": "T2W2_D_28",
+      "set": "D",
+      "number": 28,
+      "correct_choice": "A",
+      "correct_text": "x ≤ 5/2",
+      "explanation": "-(2x+1)/3 ≥ -2, (2x+1)/3 ≤ 2, 2x+1 ≤ 6, x ≤ 5/2"
+    },
+    {
+      "id": "T2W2_D_29",
+      "set": "D",
+      "number": 29,
+      "correct_choice": "A",
+      "correct_text": "0, 1, 2, 3",
+      "explanation": "-1/2 ≤ n < 4. Integers: 0, 1, 2, 3"
+    },
+    {
+      "id": "T2W2_D_30",
+      "set": "D",
+      "number": 30,
+      "correct_choice": "A",
+      "correct_text": "-3 < x < 7",
+      "explanation": "-5 < x-2 < 5, -3 < x < 7"
+    },
+    {
+      "id": "T2W2_D_31",
+      "set": "D",
+      "number": 31,
+      "correct_choice": "B",
+      "correct_text": "87",
+      "explanation": "(72+85+68+x)/4 ≥ 78, 225+x ≥ 312, x ≥ 87"
+    },
+    {
+      "id": "T2W2_D_32",
+      "set": "D",
+      "number": 32,
+      "correct_choice": "A",
+      "correct_text": "1 < x ≤ 4",
+      "explanation": "1 < x ≤ 4"
+    },
+    {
+      "id": "T2W2_D_33",
+      "set": "D",
+      "number": 33,
+      "correct_choice": "A",
+      "correct_text": "x < 17/5",
+      "explanation": "15-3x > 2x-2, 17 > 5x, x < 17/5"
+    },
+    {
+      "id": "T2W2_D_34",
+      "set": "D",
+      "number": 34,
+      "correct_choice": "A",
+      "correct_text": "-7 < x ≤ 11",
+      "explanation": "-7 < x ≤ 11"
+    },
+    {
+      "id": "T2W2_D_35",
+      "set": "D",
+      "number": 35,
+      "correct_choice": "C",
+      "correct_text": "300 km",
+      "explanation": "0.20d ≤ 60, d ≤ 300"
+    },
+    {
+      "id": "T2W2_D_36",
+      "set": "D",
+      "number": 36,
+      "correct_choice": "C",
+      "correct_text": "x < -2 or x > 2",
+      "explanation": "x < -2 or x > 2"
+    },
+    {
+      "id": "T2W2_D_37",
+      "set": "D",
+      "number": 37,
+      "correct_choice": "A",
+      "correct_text": "4 ≤ x < 7",
+      "explanation": "4 ≤ x < 7"
+    },
+    {
+      "id": "T2W2_D_38",
+      "set": "D",
+      "number": 38,
+      "correct_choice": "A",
+      "correct_text": "x > 17/4",
+      "explanation": "4x > 17, x > 17/4"
+    },
+    {
+      "id": "T2W2_D_39",
+      "set": "D",
+      "number": 39,
+      "correct_choice": "A",
+      "correct_text": "x = 3",
+      "explanation": "x³ = 27, x = 3"
+    },
+    {
+      "id": "T2W2_D_40",
+      "set": "D",
+      "number": 40,
+      "correct_choice": "C",
+      "correct_text": "x = 9",
+      "explanation": "x-1 = 8, x = 9"
+    },
+    {
+      "id": "T2W2_D_41",
+      "set": "D",
+      "number": 41,
+      "correct_choice": "A",
+      "correct_text": "x = 1",
+      "explanation": "x+2 = 3, x = 1"
+    },
+    {
+      "id": "T2W2_D_42",
+      "set": "D",
+      "number": 42,
+      "correct_choice": "A",
+      "correct_text": "x = 2",
+      "explanation": "x³ = 8, x = 2"
+    },
+    {
+      "id": "T2W2_D_43",
+      "set": "D",
+      "number": 43,
+      "correct_choice": "B",
+      "correct_text": "∛3",
+      "explanation": "Side = ∛3 × original"
+    },
+    {
+      "id": "T2W2_D_44",
+      "set": "D",
+      "number": 44,
+      "correct_choice": "A",
+      "correct_text": "x = 0",
+      "explanation": "x-2 = -2, x = 0"
+    },
+    {
+      "id": "T2W2_D_45",
+      "set": "D",
+      "number": 45,
+      "correct_choice": "A",
+      "correct_text": "x = 2/3",
+      "explanation": "x = 2/3"
+    },
+    {
+      "id": "T2W2_D_46",
+      "set": "D",
+      "number": 46,
+      "correct_choice": "A",
+      "correct_text": "x = -1",
+      "explanation": "x³ = -1, x = -1"
+    },
+    {
+      "id": "T2W2_D_47",
+      "set": "D",
+      "number": 47,
+      "correct_choice": "A",
+      "correct_text": "x = -7",
+      "explanation": "(x+3)³ = -64, x+3 = -4, x = -7"
+    },
+    {
+      "id": "T2W2_D_48",
+      "set": "D",
+      "number": 48,
+      "correct_choice": "A",
+      "correct_text": "x = 2",
+      "explanation": "x³ = 8, x = 2"
+    },
+    {
+      "id": "T2W2_D_49",
+      "set": "D",
+      "number": 49,
+      "correct_choice": "B",
+      "correct_text": "x = 6",
+      "explanation": "x/2 = 3, x = 6"
+    },
+    {
+      "id": "T2W2_D_50",
+      "set": "D",
+      "number": 50,
+      "correct_choice": "A",
+      "correct_text": "x = 2",
+      "explanation": "x³ = 8, x = 2"
+    },
+    {
+      "id": "T2W2_E_01",
+      "set": "E",
+      "number": 1,
+      "correct_choice": "B",
+      "correct_text": "10",
+      "explanation": "2b+4=3(b-2), 2b+4=3b-6, b=10"
+    },
+    {
+      "id": "T2W2_E_02",
+      "set": "E",
+      "number": 2,
+      "correct_choice": "C",
+      "correct_text": "63 km/h",
+      "explanation": "1.5v+1.5(v+6)=180, 3v+9=180, v=57, faster=63"
+    },
+    {
+      "id": "T2W2_E_03",
+      "set": "E",
+      "number": 3,
+      "correct_choice": "C",
+      "correct_text": "$450",
+      "explanation": "5(y+200)+15y=6000, 20y+1000=6000, y=250, X=450"
+    },
+    {
+      "id": "T2W2_E_04",
+      "set": "E",
+      "number": 4,
+      "correct_choice": "B",
+      "correct_text": "8 kg",
+      "explanation": "8x+14(20-x)=232, -6x=-48, x=8"
+    },
+    {
+      "id": "T2W2_E_05",
+      "set": "E",
+      "number": 5,
+      "correct_choice": "B",
+      "correct_text": "3 and 7",
+      "explanation": "t²-10t+21=0, (t-3)(t-7)=0"
+    },
+    {
+      "id": "T2W2_E_06",
+      "set": "E",
+      "number": 6,
+      "correct_choice": "C",
+      "correct_text": "79.2",
+      "explanation": "72 × 1.1 = 79.2"
+    },
+    {
+      "id": "T2W2_E_07",
+      "set": "E",
+      "number": 7,
+      "correct_choice": "C",
+      "correct_text": "6",
+      "explanation": "2(3+l)=3l, 6+2l=3l, l=6"
+    },
+    {
+      "id": "T2W2_E_08",
+      "set": "E",
+      "number": 8,
+      "correct_choice": "B",
+      "correct_text": "24",
+      "explanation": "t, 2t. 10t+2t=12t. Reversed: 21t. 21t-12t=9t=18, t=2. Number=24"
+    },
+    {
+      "id": "T2W2_E_09",
+      "set": "E",
+      "number": 9,
+      "correct_choice": "D",
+      "correct_text": "31",
+      "explanation": "50n > 1500, n > 30. Min integer = 31"
+    },
+    {
+      "id": "T2W2_E_10",
+      "set": "E",
+      "number": 10,
+      "correct_choice": "C",
+      "correct_text": "21 m",
+      "explanation": "t=20/10=2, h=-20+40+1=21"
+    },
+    {
+      "id": "T2W2_E_11",
+      "set": "E",
+      "number": 11,
+      "correct_choice": "B",
+      "correct_text": "10/3 kg",
+      "explanation": "1000+300x=240(5+x), 1000+300x=1200+240x, 60x=200, x=10/3"
+    },
+    {
+      "id": "T2W2_E_12",
+      "set": "E",
+      "number": 12,
+      "correct_choice": "C",
+      "correct_text": "32",
+      "explanation": "Total=200, new=168, removed=32"
+    },
+    {
+      "id": "T2W2_E_13",
+      "set": "E",
+      "number": 13,
+      "correct_choice": "B",
+      "correct_text": "1.5 hrs",
+      "explanation": "60(t+0.5)=80t, 60t+30=80t, 20t=30, t=1.5 hrs"
+    },
+    {
+      "id": "T2W2_E_14",
+      "set": "E",
+      "number": 14,
+      "correct_choice": "A",
+      "correct_text": "x = 3/2 or x = 4",
+      "explanation": "(2x-3)(x-4)=0, x=3/2 or x=4"
+    },
+    {
+      "id": "T2W2_E_15",
+      "set": "E",
+      "number": 15,
+      "correct_choice": "A",
+      "correct_text": "x = -3/2 or x = 4/3",
+      "explanation": "(2x+3)(3x-4)=0, x=-3/2 or x=4/3"
+    },
+    {
+      "id": "T2W2_E_16",
+      "set": "E",
+      "number": 16,
+      "correct_choice": "A",
+      "correct_text": "x = -2 ± √7",
+      "explanation": "x²+6x+9=2x+12, x²+4x-3=0, x=(-4±√28)/2=-2±√7"
+    },
+    {
+      "id": "T2W2_E_17",
+      "set": "E",
+      "number": 17,
+      "correct_choice": "A",
+      "correct_text": "t = 1 or t = 3",
+      "explanation": "-5t²+20t+1=16, t²-4t+3=0, (t-1)(t-3)=0"
+    },
+    {
+      "id": "T2W2_E_18",
+      "set": "E",
+      "number": 18,
+      "correct_choice": "A",
+      "correct_text": "5 × 12",
+      "explanation": "l+w=17, l²+w²=169. (l+w)²-2lw=169, 289-2lw=169, lw=60. t²-17t+60=0, (t-5)(t-12)=0"
+    },
+    {
+      "id": "T2W2_E_19",
+      "set": "E",
+      "number": 19,
+      "correct_choice": "A",
+      "correct_text": "x = 1/3 or x = 3",
+      "explanation": "3x²+3=10x, 3x²-10x+3=0, (3x-1)(x-3)=0, x=1/3 or x=3"
+    },
+    {
+      "id": "T2W2_E_20",
+      "set": "E",
+      "number": 20,
+      "correct_choice": "B",
+      "correct_text": "12",
+      "explanation": "n²+(n+1)²=265, 2n²+2n-264=0, n²+n-132=0, (n+12)(n-11)=0, n=11, larger=12"
+    },
+    {
+      "id": "T2W2_E_21",
+      "set": "E",
+      "number": 21,
+      "correct_choice": "A",
+      "correct_text": "x = -2 ± √3",
+      "explanation": "(x+2)²-3=0, x=-2±√3"
+    },
+    {
+      "id": "T2W2_E_22",
+      "set": "E",
+      "number": 22,
+      "correct_choice": "A",
+      "correct_text": "x = (3 ± √5)/2",
+      "explanation": "3x-2=(x-1)(x+1)=x²-1, x²-3x+1=0, x=(3±√5)/2"
+    },
+    {
+      "id": "T2W2_E_23",
+      "set": "E",
+      "number": 23,
+      "correct_choice": "A",
+      "correct_text": "3 and 7",
+      "explanation": "(x-3)(x-7)=0, x=3 or x=7"
+    },
+    {
+      "id": "T2W2_E_24",
+      "set": "E",
+      "number": 24,
+      "correct_choice": "B",
+      "correct_text": "1",
+      "explanation": "(x+3)²+1 ≥ 1, minimum = 1, never 0 → no real solutions"
+    },
+    {
+      "id": "T2W2_E_25",
+      "set": "E",
+      "number": 25,
+      "correct_choice": "C",
+      "correct_text": "No solution",
+      "explanation": "LHS = x+2 for x≠2. x+2=x+3 → 2=3, impossible. No solution."
+    },
+    {
+      "id": "T2W2_E_26",
+      "set": "E",
+      "number": 26,
+      "correct_choice": "A",
+      "correct_text": "x > 14",
+      "explanation": "LCD=15: 3(2x-3)-5(x+1)>0, 6x-9-5x-5>0, x>14"
+    },
+    {
+      "id": "T2W2_E_27",
+      "set": "E",
+      "number": 27,
+      "correct_choice": "A",
+      "correct_text": "3 and 4",
+      "explanation": "n²-7n+10<0, (n-2)(n-5)<0, 2<n<5. Pos integers: 3, 4"
+    },
+    {
+      "id": "T2W2_E_28",
+      "set": "E",
+      "number": 28,
+      "correct_choice": "A",
+      "correct_text": "3 ≤ x < 7",
+      "explanation": "8 ≤ 3x-1 < 20, 9 ≤ 3x < 21, 3 ≤ x < 7"
+    },
+    {
+      "id": "T2W2_E_29",
+      "set": "E",
+      "number": 29,
+      "correct_choice": "A",
+      "correct_text": "-2 ≤ x ≤ 5",
+      "explanation": "-7 ≤ 2x-3 ≤ 7, -4 ≤ 2x ≤ 10, -2 ≤ x ≤ 5"
+    },
+    {
+      "id": "T2W2_E_30",
+      "set": "E",
+      "number": 30,
+      "correct_choice": "A",
+      "correct_text": "x ≤ -2 or x ≥ 0",
+      "explanation": "x²+2x+5 ≥ 5, x²+2x ≥ 0, x(x+2) ≥ 0, x ≤ -2 or x ≥ 0"
+    },
+    {
+      "id": "T2W2_E_31",
+      "set": "E",
+      "number": 31,
+      "correct_choice": "A",
+      "correct_text": "x < -1 or x > 3",
+      "explanation": "Parabola opens up, zeros at -1, 3. Positive outside: x<-1 or x>3"
+    },
+    {
+      "id": "T2W2_E_32",
+      "set": "E",
+      "number": 32,
+      "correct_choice": "A",
+      "correct_text": "x < -2 or x ≥ 1",
+      "explanation": "Case 1: x>-2: 3 ≤ x+2, x ≥ 1. Case 2: x<-2: 3 ≥ x+2, x ≤ 1, combined x<-2. Total: x<-2 or x ≥ 1"
+    },
+    {
+      "id": "T2W2_E_33",
+      "set": "E",
+      "number": 33,
+      "correct_choice": "B",
+      "correct_text": "No integers",
+      "explanation": "x>4 and -5<x<5. So 4<x<5. No integers exist."
+    },
+    {
+      "id": "T2W2_E_34",
+      "set": "E",
+      "number": 34,
+      "correct_choice": "B",
+      "correct_text": "−5 to 10 (all)",
+      "explanation": "5x+2 ≥ 3x-12, 2x ≥ -14, x ≥ -7. In [-5,10]: all of -5,...,10"
+    },
+    {
+      "id": "T2W2_E_35",
+      "set": "E",
+      "number": 35,
+      "correct_choice": "C",
+      "correct_text": "5",
+      "explanation": "x>4 and x≥3, combined x>4. Smallest integer: 5"
+    },
+    {
+      "id": "T2W2_E_36",
+      "set": "E",
+      "number": 36,
+      "correct_choice": "B",
+      "correct_text": "1",
+      "explanation": "2(x²-2x)+3 = 2(x-1)²+1 ≥ 1. Min = 1"
+    },
+    {
+      "id": "T2W2_E_37",
+      "set": "E",
+      "number": 37,
+      "correct_choice": "A",
+      "correct_text": "1 ≤ x ≤ 4",
+      "explanation": "Parabola opens up, ≤ 0 between roots: 1 ≤ x ≤ 4"
+    },
+    {
+      "id": "T2W2_E_38",
+      "set": "E",
+      "number": 38,
+      "correct_choice": "A",
+      "correct_text": "2 < x < 4",
+      "explanation": "(x-2)(x-4)<0, 2<x<4"
+    },
+    {
+      "id": "T2W2_E_39",
+      "set": "E",
+      "number": 39,
+      "correct_choice": "B",
+      "correct_text": "x = 2",
+      "explanation": "2x-1=3, x=2"
+    },
+    {
+      "id": "T2W2_E_40",
+      "set": "E",
+      "number": 40,
+      "correct_choice": "B",
+      "correct_text": "x = 1",
+      "explanation": "(x-1)³=0, x=1"
+    },
+    {
+      "id": "T2W2_E_41",
+      "set": "E",
+      "number": 41,
+      "correct_choice": "A",
+      "correct_text": "x = -7",
+      "explanation": "(x+3)³=-64, x+3=-4, x=-7"
+    },
+    {
+      "id": "T2W2_E_42",
+      "set": "E",
+      "number": 42,
+      "correct_choice": "A",
+      "correct_text": "x = -2",
+      "explanation": "(x+2)³=0, x=-2"
+    },
+    {
+      "id": "T2W2_E_43",
+      "set": "E",
+      "number": 43,
+      "correct_choice": "A",
+      "correct_text": "x = 1",
+      "explanation": "(x+1)³=8, x+1=2, x=1"
+    },
+    {
+      "id": "T2W2_E_44",
+      "set": "E",
+      "number": 44,
+      "correct_choice": "B",
+      "correct_text": "3 cm",
+      "explanation": "6s²+12s+8=98, 6s²+12s-90=0, s²+2s-15=0, (s+5)(s-3)=0, s=3"
+    },
+    {
+      "id": "T2W2_E_45",
+      "set": "E",
+      "number": 45,
+      "correct_choice": "A",
+      "correct_text": "x = -3",
+      "explanation": "x/3-1=-2, x/3=-1, x=-3"
+    },
+    {
+      "id": "T2W2_E_46",
+      "set": "E",
+      "number": 46,
+      "correct_choice": "A",
+      "correct_text": "x = 7",
+      "explanation": "x-2=5, x=7"
+    },
+    {
+      "id": "T2W2_E_47",
+      "set": "E",
+      "number": 47,
+      "correct_choice": "A",
+      "correct_text": "x = 1",
+      "explanation": "(3-x)³=8, 3-x=2, x=1"
+    },
+    {
+      "id": "T2W2_E_48",
+      "set": "E",
+      "number": 48,
+      "correct_choice": "C",
+      "correct_text": "6",
+      "explanation": "6s²=s³, s=6"
+    },
+    {
+      "id": "T2W2_E_49",
+      "set": "E",
+      "number": 49,
+      "correct_choice": "A",
+      "correct_text": "1",
+      "explanation": "(x-2)(x²+2x+4)=0. x²+2x+4: disc=4-16<0. Only x=2."
+    },
+    {
+      "id": "T2W2_E_50",
+      "set": "E",
+      "number": 50,
+      "correct_choice": "C",
+      "correct_text": "x = 2",
+      "explanation": "x+1=2x-1, 2=x, x=2"
+    },
+    {
+      "id": "T2W2_F_01",
+      "set": "F",
+      "number": 1,
+      "correct_choice": "B",
+      "correct_text": "8/3 days",
+      "explanation": "1/6+1/8+1/12 = 4/24+3/24+2/24 = 9/24=3/8. Time=8/3 days"
+    },
+    {
+      "id": "T2W2_F_02",
+      "set": "F",
+      "number": 2,
+      "correct_choice": "B",
+      "correct_text": "36",
+      "explanation": "t + 2t = 9, 3t = 9, t = 3. Number = 36"
+    },
+    {
+      "id": "T2W2_F_03",
+      "set": "F",
+      "number": 3,
+      "correct_choice": "B",
+      "correct_text": "2.5 km/h",
+      "explanation": "b-c=10, b+c=15. 2c=5, c=2.5"
+    },
+    {
+      "id": "T2W2_F_04",
+      "set": "F",
+      "number": 4,
+      "correct_choice": "C",
+      "correct_text": "5 L",
+      "explanation": "0.2(15-x)+0.5x=0.3(15), 3-0.2x+0.5x=4.5, 0.3x=1.5, x=5"
+    },
+    {
+      "id": "T2W2_F_05",
+      "set": "F",
+      "number": 5,
+      "correct_choice": "B",
+      "correct_text": "35",
+      "explanation": "A=50-B. 50-B-5=3(B-5), 45-B=3B-15, 60=4B, B=15, A=35"
+    },
+    {
+      "id": "T2W2_F_06",
+      "set": "F",
+      "number": 6,
+      "correct_choice": "C",
+      "correct_text": "12:30 PM",
+      "explanation": "A head start: 1.5×80=120 km. Relative speed: 40 km/h. Time: 120/40=3 hrs after 9:30 = 12:30 PM"
+    },
+    {
+      "id": "T2W2_F_07",
+      "set": "F",
+      "number": 7,
+      "correct_choice": "A",
+      "correct_text": "4 m",
+      "explanation": "Total=(w+4)(w+8), garden=w(w+4). Path=(w+4)(w+8)-w(w+4)=(w+4)(w+8-w)=(w+4)(8)=8w+32=64, w=4"
+    },
+    {
+      "id": "T2W2_F_08",
+      "set": "F",
+      "number": 8,
+      "correct_choice": "B",
+      "correct_text": "$1,500",
+      "explanation": "A's share = 5/(5+7) × 3600 = 5/12 × 3600 = 1500"
+    },
+    {
+      "id": "T2W2_F_09",
+      "set": "F",
+      "number": 9,
+      "correct_choice": "C",
+      "correct_text": "19.6 L",
+      "explanation": "City: 120×8/100=9.6L, Hwy: 200×5/100=10L. Total=19.6L"
+    },
+    {
+      "id": "T2W2_F_10",
+      "set": "F",
+      "number": 10,
+      "correct_choice": "B",
+      "correct_text": "$210",
+      "explanation": "1000(1.1)²=1210, interest=210"
+    },
+    {
+      "id": "T2W2_F_11",
+      "set": "F",
+      "number": 11,
+      "correct_choice": "B",
+      "correct_text": "7.5°",
+      "explanation": "Hour hand: 90+7.5=97.5°, Minute hand: 90°. Angle=7.5°"
+    },
+    {
+      "id": "T2W2_F_12",
+      "set": "F",
+      "number": 12,
+      "correct_choice": "B",
+      "correct_text": "189",
+      "explanation": "S = 3(2⁶-1)/(2-1) = 3(63) = 189"
+    },
+    {
+      "id": "T2W2_F_13",
+      "set": "F",
+      "number": 13,
+      "correct_choice": "B",
+      "correct_text": "9",
+      "explanation": "11,22,33,...,99 = 9 numbers"
+    },
+    {
+      "id": "T2W2_F_14",
+      "set": "F",
+      "number": 14,
+      "correct_choice": "A",
+      "correct_text": "x = 3 or x = -2/3",
+      "explanation": "(3x+2)(x-3)=0, x=3 or x=-2/3"
+    },
+    {
+      "id": "T2W2_F_15",
+      "set": "F",
+      "number": 15,
+      "correct_choice": "C",
+      "correct_text": "5",
+      "explanation": "x²+(x+7)²=(x+8)², x²+x²+14x+49=x²+16x+64, x²-2x-15=0, (x-5)(x+3)=0, x=5"
+    },
+    {
+      "id": "T2W2_F_16",
+      "set": "F",
+      "number": 16,
+      "correct_choice": "A",
+      "correct_text": "x = 2 or x = 3",
+      "explanation": "x²-5x+6=0, (x-2)(x-3)=0, x=2 or x=3"
+    },
+    {
+      "id": "T2W2_F_17",
+      "set": "F",
+      "number": 17,
+      "correct_choice": "A",
+      "correct_text": "b = -1, c = -12",
+      "explanation": "b = -(4+(-3)) = -1, c = 4×(-3) = -12"
+    },
+    {
+      "id": "T2W2_F_18",
+      "set": "F",
+      "number": 18,
+      "correct_choice": "A",
+      "correct_text": "x = ±3 or x = ±1",
+      "explanation": "x²-5=4 → x²=9, x=±3. x²-5=-4 → x²=1, x=±1"
+    },
+    {
+      "id": "T2W2_F_19",
+      "set": "F",
+      "number": 19,
+      "correct_choice": "A",
+      "correct_text": "k < 9",
+      "explanation": "Disc = 36-4k > 0, k < 9"
+    },
+    {
+      "id": "T2W2_F_20",
+      "set": "F",
+      "number": 20,
+      "correct_choice": "A",
+      "correct_text": "x = ±1 or x = ±2",
+      "explanation": "u²-5u+4=0, (u-1)(u-4)=0, u=1 or u=4, x=±1 or x=±2"
+    },
+    {
+      "id": "T2W2_F_21",
+      "set": "F",
+      "number": 21,
+      "correct_choice": "C",
+      "correct_text": "7",
+      "explanation": "(a+b)(a-b)=24, 12(a-b)=24, a-b=2. a=7, b=5. Larger=7"
+    },
+    {
+      "id": "T2W2_F_22",
+      "set": "F",
+      "number": 22,
+      "correct_choice": "B",
+      "correct_text": "19",
+      "explanation": "α+β=5, αβ=3. α²+β²=(α+β)²-2αβ=25-6=19"
+    },
+    {
+      "id": "T2W2_F_23",
+      "set": "F",
+      "number": 23,
+      "correct_choice": "A",
+      "correct_text": "x²−2x−1=0",
+      "explanation": "Sum=2, product=(1)²-(√2)²=-1. x²-2x-1=0"
+    },
+    {
+      "id": "T2W2_F_24",
+      "set": "F",
+      "number": 24,
+      "correct_choice": "A",
+      "correct_text": "-3 ≤ x ≤ 1",
+      "explanation": "(x+3)(x-1) ≤ 0, -3 ≤ x ≤ 1"
+    },
+    {
+      "id": "T2W2_F_25",
+      "set": "F",
+      "number": 25,
+      "correct_choice": "C",
+      "correct_text": "122.5 m",
+      "explanation": "t = 49/9.8 = 5, h = -4.9(25)+245 = -122.5+245 = 122.5"
+    },
+    {
+      "id": "T2W2_F_26",
+      "set": "F",
+      "number": 26,
+      "correct_choice": "A",
+      "correct_text": "x < 2 or x > 3",
+      "explanation": "(x-2)(x-3)>0, positive outside roots: x<2 or x>3"
+    },
+    {
+      "id": "T2W2_F_27",
+      "set": "F",
+      "number": 27,
+      "correct_choice": "A",
+      "correct_text": "-3 ≤ x ≤ 2",
+      "explanation": "(x+3)(x-2) ≤ 0, -3 ≤ x ≤ 2"
+    },
+    {
+      "id": "T2W2_F_28",
+      "set": "F",
+      "number": 28,
+      "correct_choice": "A",
+      "correct_text": "x < -3 or x > 1",
+      "explanation": "Both positive: x>1. Both negative: x<-3. Solution: x<-3 or x>1"
+    },
+    {
+      "id": "T2W2_F_29",
+      "set": "F",
+      "number": 29,
+      "correct_choice": "A",
+      "correct_text": "x > 3 or x < -11/3",
+      "explanation": "3x+1>10 → x>3. 3x+1<-10 → x<-11/3"
+    },
+    {
+      "id": "T2W2_F_30",
+      "set": "F",
+      "number": 30,
+      "correct_choice": "A",
+      "correct_text": "k > 4",
+      "explanation": "Disc = 16-4k < 0, k > 4"
+    },
+    {
+      "id": "T2W2_F_31",
+      "set": "F",
+      "number": 31,
+      "correct_choice": "A",
+      "correct_text": "x < 2 or x ≥ 3",
+      "explanation": "x/(x-2)-3 ≤ 0, (x-3x+6)/(x-2) ≤ 0, (-2x+6)/(x-2) ≤ 0, 2(3-x)/(x-2) ≤ 0. Sign analysis: x<2 or x≥3"
+    },
+    {
+      "id": "T2W2_F_32",
+      "set": "F",
+      "number": 32,
+      "correct_choice": "A",
+      "correct_text": "-1 < x < 4",
+      "explanation": "(x-4)(x+2)<0: -2<x<4. x>-1. Combined: -1<x<4"
+    },
+    {
+      "id": "T2W2_F_33",
+      "set": "F",
+      "number": 33,
+      "correct_choice": "D",
+      "correct_text": "1/x",
+      "explanation": "For 0<x<1: 1/x > 1 > √x > x > x²"
+    },
+    {
+      "id": "T2W2_F_34",
+      "set": "F",
+      "number": 34,
+      "correct_choice": "A",
+      "correct_text": "3 and 4",
+      "explanation": "(x+y)²-2xy=25, 49-2xy=25, xy=12. t²-7t+12=0, (t-3)(t-4)=0. x=3,y=4 or x=4,y=3"
+    },
+    {
+      "id": "T2W2_F_35",
+      "set": "F",
+      "number": 35,
+      "correct_choice": "C",
+      "correct_text": "4",
+      "explanation": "AM-GM: x+4/x ≥ 2√4 = 4. Min=4 when x=2"
+    },
+    {
+      "id": "T2W2_F_36",
+      "set": "F",
+      "number": 36,
+      "correct_choice": "B",
+      "correct_text": "1 ≤ x ≤ 5",
+      "explanation": "For 1≤x≤5: (x-1)+(5-x)=4≠6. For x>5: (x-1)+(x-5)=2x-6=6, x=6. For x<1: (1-x)+(5-x)=6-2x=6, x=0. Plus boundary. Actually: distance from 1 to 5 is 4. |x-1|+|x-5|≥4. Equals 6 when total exceeds by 2 → symmetric outside. For x≥5: 2x-6=6, x=6. For x≤1: 6-2x=6, x=0. For 1<x<5: sum=4≠6. So x=0 or x=6."
+    },
+    {
+      "id": "T2W2_F_37",
+      "set": "F",
+      "number": 37,
+      "correct_choice": "B",
+      "correct_text": "13",
+      "explanation": "x=0: y=-2,...,2 (5). x=±1: y=-1,...,1 (3 each, 6). x=±2: y=0 (1 each, 2). Total=13"
+    },
+    {
+      "id": "T2W2_F_38",
+      "set": "F",
+      "number": 38,
+      "correct_choice": "A",
+      "correct_text": "Always true",
+      "explanation": "a(b+1) vs b(a+1): ab+a vs ab+b. Since a>b, ab+a>ab+b. So a/b > (a+1)/(b+1). Always true."
+    },
+    {
+      "id": "T2W2_F_39",
+      "set": "F",
+      "number": 39,
+      "correct_choice": "A",
+      "correct_text": "x = 2, 3, 4",
+      "explanation": "(x-2)(x²-7x+12)=0, (x-2)(x-3)(x-4)=0"
+    },
+    {
+      "id": "T2W2_F_40",
+      "set": "F",
+      "number": 40,
+      "correct_choice": "A",
+      "correct_text": "x = 1, 2, -2",
+      "explanation": "x²(x-1)-4(x-1)=0, (x-1)(x²-4)=0, (x-1)(x-2)(x+2)=0"
+    },
+    {
+      "id": "T2W2_F_41",
+      "set": "F",
+      "number": 41,
+      "correct_choice": "A",
+      "correct_text": "1",
+      "explanation": "(x-2)(x²+2x+4)=0. Disc of quadratic: 4-16=-12<0. Only x=2."
+    },
+    {
+      "id": "T2W2_F_42",
+      "set": "F",
+      "number": 42,
+      "correct_choice": "A",
+      "correct_text": "x = 0",
+      "explanation": "(x-3)³=-27, x-3=-3, x=0"
+    },
+    {
+      "id": "T2W2_F_43",
+      "set": "F",
+      "number": 43,
+      "correct_choice": "A",
+      "correct_text": "x = 1",
+      "explanation": "(x+1)³=8, x+1=2, x=1"
+    },
+    {
+      "id": "T2W2_F_44",
+      "set": "F",
+      "number": 44,
+      "correct_choice": "C",
+      "correct_text": "6",
+      "explanation": "x³-y³=(x-y)(x²+xy+y²)=1×(x²+xy+y²)=19. (x-y)²=x²-2xy+y²=1. So x²+y²=1+2xy. Thus 1+2xy+xy=19, 1+3xy=19, xy=6"
+    },
+    {
+      "id": "T2W2_F_45",
+      "set": "F",
+      "number": 45,
+      "correct_choice": "A",
+      "correct_text": "x = 2",
+      "explanation": "2x+1=x+3, x=2"
+    },
+    {
+      "id": "T2W2_F_46",
+      "set": "F",
+      "number": 46,
+      "correct_choice": "C",
+      "correct_text": "6",
+      "explanation": "(x-1)(x-2)(x-3)=0. Roots: 1,2,3. Sum=6"
+    },
+    {
+      "id": "T2W2_F_47",
+      "set": "F",
+      "number": 47,
+      "correct_choice": "B",
+      "correct_text": "10%",
+      "explanation": "1.331 = 1.1³. Side increases by 10%."
+    },
+    {
+      "id": "T2W2_F_48",
+      "set": "F",
+      "number": 48,
+      "correct_choice": "A",
+      "correct_text": "x = 1 or x = 2",
+      "explanation": "u²-9u+8=0, (u-1)(u-8)=0, u=1→x=1, u=8→x=2"
+    },
+    {
+      "id": "T2W2_F_49",
+      "set": "F",
+      "number": 49,
+      "correct_choice": "C",
+      "correct_text": "3",
+      "explanation": "1-k+2=0, k=3"
+    },
+    {
+      "id": "T2W2_F_50",
+      "set": "F",
+      "number": 50,
+      "correct_choice": "B",
+      "correct_text": "5",
+      "explanation": "(x-1)(x-2)(x-3)=x³-6x²+11x-6. a=-6, b=11, a+b=5"
+    }
+  ]
+}
