@@ -9569,7 +9569,7 @@ async function _callAIViaFunctions(input) {
     try {
       await firebase.auth().signInAnonymously();
     } catch (e) {
-      throw new Error('익명 인증 실패: ' + e.message);
+      const ne = new Error('S-AUTH'); ne._sysCode = 'S-AUTH'; throw ne;
     }
   }
 
@@ -9579,8 +9579,17 @@ async function _callAIViaFunctions(input) {
     return result?.data?.text || '';
   } catch (err) {
     console.error('[callAIViaFunctions] failed:', err);
-    throw new Error('AI 호출 실패: ' + (err.message || String(err)));
+    const m = String(err?.message || err).match(/^S-[A-Z0-9]+$/);
+    const code = m ? m[0] : 'S-NET';
+    const wrapped = new Error(code); wrapped._sysCode = code; throw wrapped;
   }
+}
+
+// 시스템 일시 오류 코드 추출 (학생/학부모 화면용)
+function _extractSysCode(err) {
+  if (err?._sysCode) return err._sysCode;
+  const m = String(err?.message || err || '').match(/^S-[A-Z0-9]+$/);
+  return m ? m[0] : 'S-NET';
 }
 
 async function _callAIDirect(input) {
@@ -10806,8 +10815,9 @@ async function startRemediation(setIdx) {
     fbSetSubmission(key, store.submissions[key]);
     renderRemediationExplanation(setIdx, roundIdx);
   } catch(e) {
-    mainEl.innerHTML = '<div class="exam-wrap"><div style="padding:40px;text-align:center;"><div style="font-size:36px;margin-bottom:12px;">⚠️</div><div style="font-weight:800;color:#991b1b;font-size:16px;margin-bottom:8px;">AI Error</div><div id="aiErrMsg" style="color:var(--muted);font-size:14px;margin-bottom:16px;"></div></div></div>';
-    document.getElementById('aiErrMsg').textContent = e.message;
+    const code = _extractSysCode(e);
+    mainEl.innerHTML = '<div class="exam-wrap"><div style="padding:40px;text-align:center;"><div style="font-size:36px;margin-bottom:12px;">⚠️</div><div style="font-weight:800;color:#991b1b;font-size:16px;margin-bottom:8px;">시스템 일시 오류</div><div id="aiErrMsg" style="color:var(--muted);font-size:14px;margin-bottom:16px;"></div></div></div>';
+    document.getElementById('aiErrMsg').textContent = '잠시 후 다시 시도해 주세요. (Code: ' + code + ')';
     const goBackBtn1 = document.createElement('button');
     goBackBtn1.className = 'btn-sm btn-navy';
     goBackBtn1.textContent = '← Go Back';
@@ -11161,8 +11171,9 @@ async function onExplanationRead(setIdx, roundIdx) {
     fbSetSubmission(key, store.submissions[key]);
     renderPracticeSet(setIdx, roundIdx);
   } catch (e) {
-    mainEl.innerHTML = '<div class="exam-wrap"><div style="padding:40px;text-align:center;"><div style="font-size:36px;margin-bottom:12px;">⚠️</div><div id="remErrMsg" style="font-weight:800;color:#991b1b;"></div></div></div>';
-    document.getElementById('remErrMsg').textContent = 'Error: ' + e.message;
+    const code = _extractSysCode(e);
+    mainEl.innerHTML = '<div class="exam-wrap"><div style="padding:40px;text-align:center;"><div style="font-size:36px;margin-bottom:12px;">⚠️</div><div style="font-weight:800;color:#991b1b;font-size:16px;margin-bottom:8px;">시스템 일시 오류</div><div id="remErrMsg" style="color:var(--muted);font-size:14px;margin-bottom:16px;"></div></div></div>';
+    document.getElementById('remErrMsg').textContent = '잠시 후 다시 시도해 주세요. (Code: ' + code + ')';
     const goBackBtn2 = document.createElement('button');
     goBackBtn2.className = 'btn-sm btn-navy';
     goBackBtn2.style.marginTop = '16px';
