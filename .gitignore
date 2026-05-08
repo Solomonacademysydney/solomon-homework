@@ -1,0 +1,69 @@
+# ===== 보안: 비밀 키와 환경변수 (2026-04-30 추가) =====
+config.json
+../HP backup/
+*.env
+.env
+.env.*
+
+# 일반 비밀 패턴
+secrets.json
+credentials.json
+*api_key*
+*apikey*
+
+# ===== 백업·체크포인트·임시 파일 (2026-05-08 추가) =====
+*.bak
+*.bak.*
+*.bak_*
+*.backup
+*.backup-*
+*.backup_*
+*.checkpoint
+*.checkpoint_*
+*.tmp
+*.swp
+*.orig
+*.zip
+index_updated.html
+
+# 한국어 폴더명 백업
+본파일 백업/
+새 폴더/
+학부모 리포트/
+solomon_work/
+backup/
+
+# ===== node / Cloud Functions =====
+node_modules/
+functions/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json.bak
+
+# ===== Firebase =====
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+*.local
+
+# ===== 에디터/IDE =====
+.vscode/
+.idea/
+*.code-workspace
+.cursor/
+
+# ===== Claude Code 로컬 설정/지시서 =====
+.claude/
+CLAUDE_CODE_INTEGRATE_LANDING_v3_3_1.md
+THINKING_SKILLS_BUILD_SPEC.md
+학습리포트_Claude_Code_지시서_v2.md
+
+# ===== OS 생성 파일 =====
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+
+# ===== 검토용 임시 스크립트 =====
+_review_*
