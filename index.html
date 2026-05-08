@@ -10635,6 +10635,97 @@ async function startRemediation(setIdx) {
   }
 }
 
+// [PR-4] MR 해설 본문에 보라 숫자 강조 + 줄바꿈 (TS 갈색 → MR 보라 톤 차별화).
+function _formatMRBody(text) {
+  if (!text) return '';
+  const isShort = text.length < 80;
+
+  const mathBlocks = [];
+  let processed = text.replace(/\$[^$]+\$|\\\([^)]+\\\)|\\\[[^\]]+\\\]/g, (m) => {
+    mathBlocks.push(m);
+    return `MATH${mathBlocks.length - 1}`;
+  });
+
+  processed = processed.replace(
+    /(?<![a-zA-Z])\b(\d+)\b(?![a-zA-Z])/g,
+    '<strong style="color:#5b21b6;font-weight:600;">$1</strong>'
+  );
+
+  if (!isShort) {
+    processed = processed.replace(/\b(Mr|Mrs|Ms|Dr|St|vs|etc|i\.e|e\.g)\./g, '$1');
+    processed = processed.replace(/\.(\s+)([A-Z])/g, '.<br><br>$2');
+    processed = processed.replace(//g, '.');
+  }
+
+  processed = processed.replace(/MATH(\d+)/g, (_, i) => mathBlocks[parseInt(i)]);
+  return processed;
+}
+
+// [PR-4] MR 해설 구조화 (라벤더/네이비 톤). Step / Distractor / Answer 패턴 감지 시 분리.
+// 패턴 없으면 라벤더 단순 박스 fallback (W1: _formatMRBody 사용 — 톤 일관성).
+function _renderMRExplanation(rawText) {
+  if (!rawText) return '';
+  const text = String(rawText).trim();
+
+  const hasSteps = /\bStep\s*\d+\s*[:\.]/i.test(text);
+  const hasDistractors = /\b(Distractor|Option)\s*\d+\s*[\(:]/i.test(text);
+
+  if (!hasSteps && !hasDistractors) {
+    return `<div style="background:#f5f3ff;border:1px solid #c4b5fd;border-radius:14px;padding:18px 16px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:600;color:#5b21b6;margin-bottom:8px;letter-spacing:0.05em;">📖 EXPLANATION</div>
+      <div style="font-size:15px;color:#1e1b4b;line-height:1.8;">${renderMath(_formatMRBody(text))}</div>
+    </div>`;
+  }
+
+  let html = `<div style="background:#f5f3ff;border:1px solid #c4b5fd;border-radius:14px;padding:18px 16px;margin-bottom:12px;">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:14px;">
+      <span style="font-size:16px;">📖</span>
+      <span style="font-size:12px;font-weight:600;color:#5b21b6;letter-spacing:0.05em;">EXPLANATION</span>
+    </div>`;
+
+  const stepRegex = /Step\s*(\d+)\s*[:\.](.+?)(?=Step\s*\d+\s*[:\.]|Distractor\s*\d+\s*[\(:]|Option\s*\d+\s*[\(:]|Therefore|So the answer|$)/gis;
+  const steps = [];
+  let m;
+  while ((m = stepRegex.exec(text)) !== null) {
+    steps.push({ num: m[1], body: m[2].trim() });
+  }
+  steps.forEach(step => {
+    html += `<div style="margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="background:#1e1b4b;color:#fff;font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;">STEP ${step.num}</span>
+      </div>
+      <div style="font-size:15px;color:#1e1b4b;line-height:1.7;padding-left:4px;">${renderMath(_formatMRBody(step.body))}</div>
+    </div>`;
+  });
+
+  const distractorRegex = /(?:Distractor|Option)\s*\d+\s*\(\s*([A-E])\s*\)\s*([^.]+\.)/gi;
+  const mistakes = [];
+  let dm;
+  while ((dm = distractorRegex.exec(text)) !== null) {
+    mistakes.push({ letter: dm[1].toUpperCase(), text: dm[2].trim() });
+  }
+  if (mistakes.length > 0) {
+    html += `<div style="background:#fef3c7;border-left:3px solid #f59e0b;border-radius:6px;padding:10px 12px;margin-top:14px;">
+      <div style="font-size:11px;font-weight:600;color:#854d0e;margin-bottom:6px;letter-spacing:0.05em;">⚠️ COMMON MISTAKES</div>
+      <div style="font-size:13px;color:#1e1b4b;line-height:1.7;">`;
+    mistakes.forEach(mk => {
+      html += `<div style="margin-bottom:3px;"><strong style="color:#dc2626;font-weight:600;">${mk.letter}:</strong> ${renderMath(mk.text)}</div>`;
+    });
+    html += `</div></div>`;
+  }
+
+  const answerMatch = text.match(/(?:Therefore|So)[^.]*?\b(?:answer|the\s+answer)\s+is\s+([A-E])\b/i);
+  if (answerMatch) {
+    html += `<div style="background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:10px 14px;margin-top:12px;display:flex;align-items:center;gap:8px;">
+      <span style="font-size:18px;">✓</span>
+      <div style="font-size:14px;color:#14532d;font-weight:600;">Answer: ${answerMatch[1].toUpperCase()}</div>
+    </div>`;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
 function renderRemediationExplanation(setIdx, roundIdx) {
   const store = getStore();
   const p = studentPeriod || store.currentPeriod;
@@ -10659,7 +10750,7 @@ function renderRemediationExplanation(setIdx, roundIdx) {
   const expl = (round.explanations || {})[q.id] || '';
   const isSolved = attempts === 99;
   const letters = ['A','B','C','D','E'];
-  const roundLabel = roundIdx === 0 ? 'Homework' : `Practice Round ${roundIdx}`;
+  const roundLabel = roundIdx === 0 ? 'Homework' : 'Practice';
 
   // 전체 진행 상황 계산
   const doneCount = qs.filter(q2 => {
@@ -10680,18 +10771,17 @@ function renderRemediationExplanation(setIdx, roundIdx) {
   let cardHtml = '';
 
   if (isSolved) {
-    const isLast = hintQIdx >= total - 1;
-    const solvedNextBtn = isLast
-      ? `<button class="all-done-btn" onclick="hintQIdx=0;onExplanationRead(${setIdx},${roundIdx})">💪 Start Practice Questions</button>`
-      : `<button class="btn-nav" style="margin-top:12px;" onclick="hintQIdx++;renderRemediationExplanation(${setIdx},${roundIdx})">Next →</button>`;
-    cardHtml = `<div class="hint-card stage-solved">
-      <div class="hint-stage-badge s-ok">✅ Solved!</div>
-      <div class="explanation-q-title">Q. ${renderMath(q.text)}</div>
-      <div style="margin-top:8px;font-size:13px;color:#166534;font-weight:700;">
-        Great job! Correct answer: <span style="background:#dcfce7;padding:2px 8px;border-radius:6px;">${renderMath(q.answer)}</span>
+    cardHtml = `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:14px;padding:18px 16px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+        <span style="font-size:16px;">✅</span>
+        <span style="font-size:12px;font-weight:600;color:#14532d;letter-spacing:0.05em;">SOLVED</span>
       </div>
-      <div style="margin-top:8px;font-size:13px;color:#555;line-height:1.7;">${expl}</div>
-      ${solvedNextBtn}
+      <div style="font-size:15px;font-weight:500;color:#1e1b4b;margin-bottom:10px;">Q. ${renderMath(q.text)}</div>
+      <div style="background:#dcfce7;border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:14px;">✓</span>
+        <div style="font-size:14px;color:#14532d;font-weight:600;">Correct answer: ${renderMath(q.answer)}</div>
+      </div>
+      ${expl ? `<div style="margin-top:10px;font-size:13px;color:#1e1b4b;line-height:1.7;">${renderMath(_formatMRBody(expl))}</div>` : ''}
     </div>`;
   } else if (attempts === 0) {
     let optHtml0 = '';
@@ -10712,11 +10802,13 @@ function renderRemediationExplanation(setIdx, roundIdx) {
         <button class="btn-sm btn-navy" onclick="answerHintRetry(${setIdx},${roundIdx},'${q.id}',document.getElementById('hr_${q.id}').value)">Submit</button>
       </div>`;
     }
-    cardHtml = `<div class="hint-card">
-      <div class="hint-stage-badge s1">Step 1 of 3</div>
-      <div class="explanation-q-title">Q. ${renderMath(q.text)}</div>
+    cardHtml = `<div style="background:#f5f3ff;border:1px solid #c4b5fd;border-radius:14px;padding:18px 16px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+        <span style="background:#1e1b4b;color:#fff;font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;">STEP 1 OF 3</span>
+      </div>
+      <div style="font-size:15px;font-weight:500;color:#1e1b4b;margin-bottom:14px;line-height:1.6;">Q. ${renderMath(q.text)}</div>
       ${optHtml0}
-      <button class="hint-get-btn" style="margin-top:14px;" onclick="showHintStage(${setIdx},${roundIdx},'${q.id}',1)">💡 Get a Hint</button>
+      <button onclick="showHintStage(${setIdx},${roundIdx},'${q.id}',1)" style="margin-top:14px;width:100%;padding:12px;background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;color:#854d0e;font-weight:600;cursor:pointer;font-size:14px;">💡 Get a Hint</button>
     </div>`;
   } else if (attempts === 1) {
     let retryHtml = '';
@@ -10736,39 +10828,50 @@ function renderRemediationExplanation(setIdx, roundIdx) {
         <button class="btn-sm btn-navy" onclick="answerHintRetry(${setIdx},${roundIdx},'${q.id}',document.getElementById('hr_${q.id}').value)">Submit</button>
       </div>`;
     }
-    cardHtml = `<div class="hint-card stage-hint">
-      <div class="hint-stage-badge s1">💡 Hint shown ✓ — try again</div>
-      <div class="explanation-q-title">Q. ${renderMath(q.text)}</div>
-      <div class="hint-box">💡 ${hint}</div>
-      <div class="hint-retry-section">
-        <div class="hint-retry-label">Try again — choose your answer:</div>
-        ${retryHtml}
+    cardHtml = `<div style="background:#f5f3ff;border:1px solid #c4b5fd;border-radius:14px;padding:18px 16px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+        <span style="background:#f59e0b;color:#fff;font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;">STEP 2 — TRY AGAIN</span>
       </div>
+      <div style="font-size:15px;font-weight:500;color:#1e1b4b;margin-bottom:12px;line-height:1.6;">Q. ${renderMath(q.text)}</div>
+      <div style="background:#fef3c7;border-left:3px solid #f59e0b;border-radius:6px;padding:12px 14px;margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:600;color:#854d0e;margin-bottom:4px;letter-spacing:0.05em;">💡 HINT</div>
+        <div style="font-size:14px;color:#1e1b4b;line-height:1.7;">${renderMath(hint)}</div>
+      </div>
+      <div style="font-size:12px;font-weight:500;color:#5b21b6;margin-bottom:8px;">Try again — choose your answer:</div>
+      ${retryHtml}
     </div>`;
   } else if (attempts >= 2) {
-    const wrongNextBtn = hintQIdx < total - 1
-      ? `<button class="btn-nav" style="margin-top:12px;" onclick="hintQIdx++;renderRemediationExplanation(${setIdx},${roundIdx})">Next →</button>`
-      : `<button class="all-done-btn" onclick="hintQIdx=0;onExplanationRead(${setIdx},${roundIdx})">💪 Start Practice Questions</button>`;
-    cardHtml = `<div class="hint-card stage-explain">
-      <div class="hint-stage-badge s2">❌ Incorrect</div>
-      <div class="explanation-q-title">Q. ${renderMath(q.text)}</div>
-      <div style="margin-top:8px;font-size:13px;font-weight:700;">Correct answer: <span style="background:#dcfce7;color:#166534;padding:2px 10px;border-radius:6px;">${renderMath(q.answer)}</span></div>
-      <div class="concept-box" style="margin-top:10px;">📚 ${expl}</div>
-      ${wrongNextBtn}
-    </div>`;
+    // [2026-05] MC 정답 표시에 보기 텍스트 추가
+    let answerDisplay = renderMath(q.answer);
+    if (q.type === 'mc' && q.options) {
+      const ci = letters.indexOf(q.answer);
+      if (ci >= 0 && q.options[ci]) {
+        answerDisplay = `<b>${q.answer}</b> — ${renderMath(q.options[ci])}`;
+      }
+    }
+    cardHtml = `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:14px;padding:14px;margin-bottom:10px;">
+      <div style="font-size:14px;font-weight:500;color:#991b1b;">❌ Incorrect — Correct answer: ${answerDisplay}</div>
+    </div>
+    <div style="font-size:15px;font-weight:500;color:#1e1b4b;margin-bottom:12px;padding:0 4px;">Q. ${renderMath(q.text)}</div>
+    ${_renderMRExplanation(expl)}`;
   }
 
-  // 이전/다음 버튼
+  // [2026-05] 통합 네비게이션 — Prev/Next/Start-Practice를 외부 영역 한 곳에 모음
+  const curDone = attempts === 99 || attempts >= 2;
+  const isLastQ = hintQIdx >= total - 1;
+
   const prevBtn = hintQIdx > 0
     ? `<button class="btn-nav" onclick="hintQIdx=${hintQIdx-1};renderRemediationExplanation(${setIdx},${roundIdx})">← Prev</button>`
-    : `<button class="btn-nav" disabled>← Prev</button>`;
+    : `<button class="btn-nav" disabled style="opacity:.4;cursor:not-allowed;">← Prev</button>`;
 
-  const curDone = attempts === 99 || attempts >= 2;
-  const nextBtn = hintQIdx < total - 1 && !curDone
-    ? `<button class="btn-nav" disabled onclick="">Next →</button>`
-    : '';
-
-
+  let nextBtn;
+  if (!curDone) {
+    nextBtn = `<button class="btn-nav" disabled style="opacity:.4;cursor:not-allowed;" title="Answer the question or view the explanation first">Next →</button>`;
+  } else if (isLastQ) {
+    nextBtn = `<button class="all-done-btn" onclick="hintQIdx=0;onExplanationRead(${setIdx},${roundIdx})">💪 Start Practice Questions</button>`;
+  } else {
+    nextBtn = `<button class="btn-nav" onclick="hintQIdx++;renderRemediationExplanation(${setIdx},${roundIdx})">Next →</button>`;
+  }
 
   const html = `<div class="exam-wrap">
     <div class="remediation-section">
@@ -10779,11 +10882,10 @@ function renderRemediationExplanation(setIdx, roundIdx) {
       </div>
       <div class="hint-progress-bar" style="margin-top:10px;">${progressBar}</div>
       ${cardHtml}
-      <div class="q-nav" style="margin-top:16px;justify-content:space-between;">
+      <div style="margin-top:20px;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;">
         ${prevBtn}
         ${nextBtn}
       </div>
-
     </div>
   </div>`;
 
@@ -10935,14 +11037,14 @@ function renderPracticeSet(setIdx, roundIdx) {
 
   let html = `<div class="exam-wrap">
     <div class="practice-header">
-      <h3>💪 Practice Questions (Round ${roundIdx+1})</h3>
-      <p>Let's practice the questions you got wrong! ${total} questions total</p>
+      <h3>💪 Variations of Your Wrong Questions</h3>
+      <p>${total} similar question${total > 1 ? 's' : ''} based on what you missed today — same skills, new numbers.</p>
     </div>
     <div class="exam-header-card">
       <div class="exam-header-top">
         <div>
-          <div class="exam-title">📝 Practice Round ${roundIdx+1}</div>
-          <div class="exam-sub">${total} questions</div>
+          <div class="exam-title">📝 Practice — Similar Questions</div>
+          <div class="exam-sub">${total} question${total > 1 ? 's' : ''}</div>
         </div>
         <div class="exam-counter"><div class="big">${answered}/${total}</div><div class="lbl">answered</div></div>
       </div>
@@ -11028,18 +11130,83 @@ function renderPracticeSet(setIdx, roundIdx) {
         <button class="btn-sm btn-navy" onclick="practiceAnswerWithHint('${q.id}',document.getElementById('psa2_${q.id}').value,${setIdx},${roundIdx})">Submit</button>
       </div>`;
     }
-    html += `<div class="hint-box" style="margin-top:10px;">💡 ${hintText}</div>
-    <div class="hint-retry-section">
-      <div class="hint-retry-label">Try again with the hint:</div>
-      ${retryHtml}
-    </div>`;
+    html += `<div style="background:#fef3c7;border-left:3px solid #f59e0b;border-radius:6px;padding:12px 14px;margin-top:10px;margin-bottom:14px;">
+      <div style="font-size:11px;font-weight:600;color:#854d0e;margin-bottom:4px;letter-spacing:0.05em;">💡 HINT</div>
+      <div style="font-size:14px;color:#1e1b4b;line-height:1.7;">${renderMath(hintText)}</div>
+    </div>
+    <div style="font-size:12px;font-weight:500;color:#5b21b6;margin-bottom:8px;">Try again with the hint:</div>
+    ${retryHtml}`;
   } else if (pAttempt >= 2) {
-    // 2번 틀림 — 정답 공개
+    // 2번 틀림 — 정답 공개 + 모든 보기 표시
     const explText = pHintData[q.id + '_expl'] || '';
-    html += `<div class="concept-box" style="margin-top:10px;">📚 ${explText}</div>
-    <div style="background:#fff3cd;border-radius:10px;padding:10px 14px;margin-top:8px;font-size:13px;font-weight:700;color:#856404;">
-      Correct answer: ${q.answer}
-    </div>`;
+    html += _renderMRExplanation(explText);
+
+    // [2026-05] 보기 전체 + 정답/학생답 시각 표시
+    const correctAns = (q.answer || '').toString().toUpperCase();
+    const studentAns = (userAns || '').toString().toUpperCase();
+
+    if (q.type === 'mc' && q.options) {
+      let optionsHtml = `<div style="margin-top:12px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;">
+        <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:0.05em;margin-bottom:10px;">ALL CHOICES</div>`;
+      q.options.forEach((opt, i) => {
+        const letter = letters[i];
+        const isCorrect = letter === correctAns;
+        const isStudent = letter === studentAns;
+        let bg = '#f8fafc', border = '#e2e8f0', color = '#475569', icon = '', tag = '';
+        if (isCorrect) {
+          bg = '#dcfce7'; border = '#86efac'; color = '#14532d';
+          icon = '<span style="font-size:14px;font-weight:700;">✓</span>';
+          tag = '<span style="margin-left:auto;font-size:11px;font-weight:700;color:#15803d;">Correct</span>';
+        } else if (isStudent) {
+          bg = '#fee2e2'; border = '#fca5a5'; color = '#991b1b';
+          icon = '<span style="font-size:14px;font-weight:700;">✗</span>';
+          tag = '<span style="margin-left:auto;font-size:11px;font-weight:700;color:#b91c1c;">Your answer</span>';
+        } else {
+          icon = '<span style="font-size:14px;color:#94a3b8;">·</span>';
+        }
+        optionsHtml += `<div style="display:flex;align-items:center;gap:10px;background:${bg};border:1px solid ${border};border-radius:8px;padding:8px 12px;margin-bottom:6px;color:${color};font-size:14px;">
+          ${icon}<b>${letter})</b><span style="flex:1;">${renderMath(opt)}</span>${tag}
+        </div>`;
+      });
+      optionsHtml += `</div>`;
+      html += optionsHtml;
+    } else if (q.type === 'ox') {
+      const opts = [['O', '⭕ True'], ['X', '❌ False']];
+      let optionsHtml = `<div style="margin-top:12px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;">
+        <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:0.05em;margin-bottom:10px;">CHOICES</div>`;
+      opts.forEach(([letter, label]) => {
+        const isCorrect = letter === correctAns;
+        const isStudent = letter === studentAns;
+        let bg = '#f8fafc', border = '#e2e8f0', color = '#475569', icon = '', tag = '';
+        if (isCorrect) {
+          bg = '#dcfce7'; border = '#86efac'; color = '#14532d';
+          icon = '<span style="font-size:14px;font-weight:700;">✓</span>';
+          tag = '<span style="margin-left:auto;font-size:11px;font-weight:700;color:#15803d;">Correct</span>';
+        } else if (isStudent) {
+          bg = '#fee2e2'; border = '#fca5a5'; color = '#991b1b';
+          icon = '<span style="font-size:14px;font-weight:700;">✗</span>';
+          tag = '<span style="margin-left:auto;font-size:11px;font-weight:700;color:#b91c1c;">Your answer</span>';
+        }
+        optionsHtml += `<div style="display:flex;align-items:center;gap:10px;background:${bg};border:1px solid ${border};border-radius:8px;padding:8px 12px;margin-bottom:6px;color:${color};font-size:14px;">
+          ${icon}<span style="flex:1;">${label}</span>${tag}
+        </div>`;
+      });
+      optionsHtml += `</div>`;
+      html += optionsHtml;
+    } else {
+      // 단답형 — 학생 답 + 정답 같이 표시
+      html += `<div style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">`;
+      if (studentAns) {
+        html += `<div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:8px;">
+          <span style="font-size:14px;font-weight:700;color:#991b1b;">✗</span>
+          <div style="font-size:14px;color:#991b1b;"><b>Your answer:</b> ${renderMath(userAns)}</div>
+        </div>`;
+      }
+      html += `<div style="background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:14px;font-weight:700;color:#14532d;">✓</span>
+        <div style="font-size:14px;color:#14532d;"><b>Correct answer:</b> ${renderMath(q.answer)}</div>
+      </div></div>`;
+    }
   }
 
   html += `</div><div class="nav-row">
@@ -11220,12 +11387,13 @@ function renderPracticeResults(setIdx, roundIdx) {
   const scoreMsg = score>=90?'🎉 Outstanding!':score>=70?'👍 Well done!':score>=50?'💪 Keep going!':'📚 Let\'s study more!';
 
   let html = `<div class="exam-wrap">
+    <div style="text-align:center;font-size:12px;font-weight:700;color:var(--muted);letter-spacing:0.08em;margin-bottom:8px;">YOUR PRACTICE SCORE</div>
     <div class="score-banner">
       <div class="score-big">${score}%</div>
       <div class="score-msg">${scoreMsg} &nbsp;${correct}/${qs.length} correct</div>
     </div>
     <div class="results-wrap" style="margin-bottom:20px;">
-      <h3>📊 Practice Round ${roundIdx+1} Results</h3>`;
+      <h3>📊 Practice Results</h3>`;
 
   qs.forEach((q,i) => {
     if (!q) return;
@@ -11243,15 +11411,17 @@ function renderPracticeResults(setIdx, roundIdx) {
   if (wrong.length === 0) {
     html += `<div style="text-align:center;padding:30px;background:#dcfce7;border-radius:var(--radius);margin-bottom:16px;">
       <div style="font-size:48px;margin-bottom:12px;">🎉</div>
-      <div style="font-size:20px;font-weight:900;color:#166534;">Perfect! You got every question right!</div>
-      <div style="margin-top:8px;color:#15803d;">You can move on to the next set now.</div>
+      <div style="font-size:20px;font-weight:900;color:#166534;">Perfect! You mastered all ${qs.length} ${qs.length>1?'variations':'variation'}.</div>
+      <div style="margin-top:8px;color:#15803d;font-size:14px;line-height:1.6;">These were variations of questions you originally missed — and you got every one right!</div>
     </div>
     <div style="text-align:center;">
       <button class="btn-nav" onclick="currentSetIdx=null;renderStudent()">← Back to Set List</button>
     </div>`;
   } else {
-    html += `<div style="text-align:center;padding:20px;background:#fef3c7;border-radius:var(--radius);margin-bottom:16px;">
-      <div style="font-size:16px;font-weight:800;color:#92400e;">You got ${wrong.length} question${wrong.length>1?'s':''} wrong. Keep practising!</div>
+    html += `<div style="text-align:center;padding:20px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:var(--radius);margin-bottom:16px;">
+      <div style="font-size:15px;color:#1e40af;line-height:1.7;">
+        💡 You got <b>${correct} out of ${qs.length}</b> right — these were variations of questions you originally missed. <b>Keep practising!</b>
+      </div>
     </div>
     <div style="text-align:center;">
       <button class="btn-nav" onclick="currentSetIdx=null;renderStudent()">← Back to Set List</button>
