@@ -33,20 +33,20 @@ exports.callClaudeForStudent = onCall({
   secrets: [anthropicKey]
 }, async (request) => {
   if (!request.auth) {
-    throw new HttpsError('unauthenticated', '익명 인증이 필요합니다.');
+    throw new HttpsError('unauthenticated', 'S-AUTH');
   }
 
   const { prompt, model } = request.data || {};
   if (!prompt || typeof prompt !== 'string') {
-    throw new HttpsError('invalid-argument', 'prompt(string)가 필수입니다.');
+    throw new HttpsError('invalid-argument', 'S-ARG');
   }
   if (prompt.length > MAX_PROMPT_LEN) {
-    throw new HttpsError('invalid-argument', `prompt가 너무 깁니다 (${prompt.length} > ${MAX_PROMPT_LEN}).`);
+    throw new HttpsError('invalid-argument', 'S-LEN');
   }
 
   const apiKey = anthropicKey.value();
   if (!apiKey) {
-    throw new HttpsError('internal', 'ANTHROPIC_KEY 시크릿이 설정되지 않았습니다.');
+    throw new HttpsError('internal', 'S-CFG');
   }
 
   let res;
@@ -67,20 +67,20 @@ exports.callClaudeForStudent = onCall({
     });
   } catch (err) {
     console.error('[callClaudeForStudent] fetch failed:', err);
-    throw new HttpsError('internal', 'Anthropic API 호출 실패: ' + (err.message || String(err)));
+    throw new HttpsError('internal', 'S-NET');
   }
 
   if (!res.ok) {
     const errText = await res.text().catch(() => '');
-    console.error('[callClaudeForStudent] Anthropic error:', res.status, errText);
-    throw new HttpsError('internal', `Anthropic API ${res.status}`);
+    console.error('[callClaudeForStudent] upstream error:', res.status, errText);
+    throw new HttpsError('internal', `S-${res.status}`);
   }
 
   let data;
   try {
     data = await res.json();
   } catch (err) {
-    throw new HttpsError('internal', 'Anthropic 응답 파싱 실패');
+    throw new HttpsError('internal', 'S-PARSE');
   }
 
   const text = data?.content?.[0]?.text || '';
