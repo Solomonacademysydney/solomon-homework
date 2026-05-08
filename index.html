@@ -7267,8 +7267,8 @@ function buildReportDataForStudent(studentId, period, store) {
       finalData,
       wrongCount: wrongQs.length,
       wrongQs: wrongQs.map((q,i)=>({num:i+1, text:q.text.substring(0,60)})),
-      allQuestions: autoQs.map(q => ({
-        num: q.num,
+      allQuestions: autoQs.map((q, i) => ({
+        num: q.num != null ? q.num : (i + 1),
         text: q.text,
         type: q.type,
         answer: q.answer,
@@ -7576,7 +7576,8 @@ function fallbackActions(reportData) {
  * - renderParent() 호출 → isTeacher === true 분기로 좌측 카드 + 우측 세부보기 표시
  * - 학부모 시점 화면 상단에 "← 학생 목록으로" 버튼이 추가로 보이게 됨 (renderParent 안에서 처리)
  */
-function viewAsParent(studentId) {
+async function viewAsParent(studentId) {
+  console.log('[TEST-v2] viewAsParent called', studentId);
   const store = getStore();
   const child = store.users.find(u => u.id === studentId && u.role === 'student');
   if (!child) {
@@ -7590,11 +7591,44 @@ function viewAsParent(studentId) {
   }
 
   currentParentChildId = studentId;
-
-  // [v3.2 필수] 학부모 시점 모드 마커
-  // → renderParent 안의 childIds 분기에서 활용
-  // → renderParentMobileReports 안의 backHTML 표시 조건
   window._teacherViewingAsParent = true;
+
+  const p = store.currentPeriod;
+  const pKey = reportPeriodKey(p);
+  const hasSaved = store.reports?.[pKey]?.[studentId]?.maths;
+
+  if (!hasSaved) {
+    const visualData = buildVisualReportData(studentId, p);
+    if (visualData) {
+      showBackupToast('📝 리포트 생성 중...');
+      let c;
+      try { c = await generateReportComment(visualData); }
+      catch (e) { c = fallbackComment(visualData); }
+      const saveData = {
+        scorePercent: visualData.scorePercent,
+        completionPercent: visualData.completionPercent,
+        attemptedCount: visualData.attemptedCount,
+        totalCorrect: visualData.totalCorrect,
+        totalQuestions: visualData.totalQuestions,
+        wrongCount: visualData.wrongCount,
+        setCount: visualData.setCount,
+        grade: visualData.grade,
+        setScores: visualData.setScores,
+        weakAreas: visualData.weakAreas,
+        finalReports: visualData.finalReports || [],
+        comment: c,
+        generatedAt: Date.now()
+      };
+      const s2 = getStore();
+      if (!s2.reports) s2.reports = {};
+      if (!s2.reports[pKey]) s2.reports[pKey] = {};
+      if (!s2.reports[pKey][studentId]) s2.reports[pKey][studentId] = {};
+      s2.reports[pKey][studentId].maths = saveData;
+      saveStore(s2);
+      fbSetReport(pKey, studentId, 'maths', saveData);
+      showBackupToast('✅ 리포트 생성 완료!');
+    }
+  }
 
   renderParent();
 }
@@ -7924,6 +7958,50 @@ function openReportFromShortcut() {
   const id = sel?.value;
   if (!id) { alert('학생을 선택해주세요.'); return; }
   showTeacherReport(id);
+}
+
+async function generateParentReportInline(studentId) {
+  const store = getStore();
+  const p = store.currentPeriod;
+  const visualData = buildVisualReportData(studentId, p);
+  if (!visualData) {
+    alert('제출된 숙제가 없습니다.');
+    return;
+  }
+  showBackupToast('📝 리포트 생성 중...');
+  let c;
+  try { c = await generateReportComment(visualData); }
+  catch (e) { c = fallbackComment(visualData); }
+  try {
+    const pKey = reportPeriodKey(p);
+    const saveData = {
+      scorePercent: visualData.scorePercent,
+      completionPercent: visualData.completionPercent,
+      attemptedCount: visualData.attemptedCount,
+      totalCorrect: visualData.totalCorrect,
+      totalQuestions: visualData.totalQuestions,
+      wrongCount: visualData.wrongCount,
+      setCount: visualData.setCount,
+      grade: visualData.grade,
+      setScores: visualData.setScores,
+      weakAreas: visualData.weakAreas,
+      finalReports: visualData.finalReports || [],
+      comment: c,
+      generatedAt: Date.now()
+    };
+    const s2 = getStore();
+    if (!s2.reports) s2.reports = {};
+    if (!s2.reports[pKey]) s2.reports[pKey] = {};
+    if (!s2.reports[pKey][studentId]) s2.reports[pKey][studentId] = {};
+    s2.reports[pKey][studentId].maths = saveData;
+    saveStore(s2);
+    fbSetReport(pKey, studentId, 'maths', saveData);
+    showBackupToast('✅ 리포트가 생성되었습니다!');
+    rerenderParentMobileReportsOnly(studentId);
+  } catch (e) {
+    console.error('리포트 저장 실패:', e);
+    showBackupToast('⚠️ 저장 실패: ' + e.message);
+  }
 }
 
 function viewYearResults(yr) {
@@ -8611,8 +8689,13 @@ function renderParentMobileReports(child, store, period) {
     ? renderMobileWeeklyCard(child, savedWeekly, period)
     : renderMobileMonthlyCard(child, monthlyData);
 
+  const genBtnHTML = (isTeacher && activeMode === 'weekly')
+    ? `<button class="btn-sm btn-navy" style="background:#1B2A4A;color:#fff;font-weight:800;padding:10px 20px;font-size:14px;" onclick="generateParentReportInline('${child.id}')">${savedWeekly ? '🔄 리포트 재생성' : '📊 리포트 생성'}</button>`
+    : '';
+
   const cardActionsHTML = `
     <div style="display:flex;gap:8px;margin-top:14px;justify-content:center;flex-wrap:wrap;">
+      ${genBtnHTML}
       <button class="btn-sm btn-navy" onclick="downloadMobileReportPNG('${child.id}','${activeMode}')">📥 PNG 저장</button>
       <button class="btn-sm btn-navy" onclick="printParentReport()">🖨️ 인쇄</button>
       ${isTeacher ? `<button class="btn-sm" style="background:#D4A93C;color:#1B2A4A;font-weight:800;" onclick="openReportEditor('${child.id}','${activeMode}')">✏️ 코멘트/액션 편집</button>` : ''}
