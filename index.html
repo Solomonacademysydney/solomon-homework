@@ -3916,8 +3916,8 @@ function renderTeacher() {
       <select id="selWeek">${weekOpts}</select>
       <button class="btn-sm btn-navy" onclick="setPeriod()">Apply</button>
       ${(()=>{ const _t=getTodayPeriod(); const _same=periodGte(p,_t)&&periodGte(_t,p); return _same
-        ? `<span style="font-size:13px;color:var(--muted);margin-left:8px;">Current: <b>${periodLabel(p)}</b></span>`
-        : `<span style="font-size:13px;background:#fffbe6;padding:2px 6px;border-radius:4px;margin-left:8px;">Current: <b>${periodLabel(p)}</b> ⚠ 오늘 기준과 다름</span>`; })()}
+        ? `<span style="font-size:13px;color:var(--muted);margin-left:8px;white-space:nowrap;">Current: <b>${periodLabel(p)}</b></span>`
+        : `<span style="font-size:13px;background:#fffbe6;padding:2px 6px;border-radius:4px;margin-left:8px;white-space:nowrap;">Current: <b>${periodLabel(p)}</b> ⚠ 오늘 기준과 다름</span>`; })()}
     </div>
     <div class="student-grid">`;
 
@@ -5405,6 +5405,15 @@ let tsQIdx = 0;                // current question index within a TS day
 let _cachedStudentPeriod = null;
 let studentView = null;        // null=home choice, 'mr'=math reasoning, 'ts'=thinking skills
 
+// Track identification by year - Y3-Y4 OC, Y5-Y6 Selective, Y7-Y9 School
+function getTrackByYear(year) {
+  const y = parseInt(year);
+  if (y === 3 || y === 4) return 'oc';
+  if (y === 5 || y === 6) return 'sel';
+  if (y >= 7 && y <= 9)   return 'school';
+  return 'default';
+}
+
 function renderStudent() {
   const store = getStore();
   const p     = studentPeriod || store.currentPeriod;
@@ -5677,7 +5686,7 @@ function renderStudent() {
   });
   html += `</div>
 
-    <div class="question-card">
+    <div class="question-card track-${getTrackByYear(currentUser.year)}">
       <div class="qc-num-row">
         <div class="qc-num">${qIdx+1}</div>
         ${q.type==='mc'?'<span class="type-badge badge-mc">Multiple Choice</span>':''}
@@ -7110,6 +7119,72 @@ function fallbackComment(reportData) {
     `가정에서도 복습해 주시면 큰 도움이 됩니다!`;
 }
 
+// [PR-2] 학부모 리포트용 TS Daily 데이터 집계.
+// 1차 무힌트 정답 / 힌트 후 정답 / 정답 공개 / 진행 중 4 카테고리로 분류.
+// pre-PR-1 데이터(correct:false인데 revealed 필드 없음)는 마지막 fallback으로 revealedCount에 포함.
+function buildTSReportData(studentId, period, store) {
+  const student = store.users.find(u => u.id === studentId && u.role === 'student');
+  if (!student) return null;
+
+  const hw = store.homeworkSets[hwKey(student.year, student.country || 'AU', period)];
+  const ts = hw?.ts;
+  if (!ts || !ts.enabled || !ts.questions?.length) return null;
+
+  const tsKey = tsSubKey(studentId, period);
+  const tsProgress = store.submissions[tsKey] || {};
+  const totalDays = ts.day_config?.total_days || 0;
+
+  let completedDays = 0;
+  let totalQuestions = 0;
+  let firstTryCorrect = 0;
+  let afterHintCorrect = 0;
+  let revealedCount = 0;
+  let inProgressCount = 0;
+
+  for (let d = 1; d <= totalDays; d++) {
+    const dayData = tsProgress[`day${d}`];
+    if (!dayData) continue;
+    if (dayData.completed) completedDays++;
+    const answers = dayData.answers || {};
+    Object.values(answers).forEach(a => {
+      const attempts = a.attempts || 0;
+      if (attempts === 0 && a.correct === undefined) return;
+      totalQuestions++;
+      if (a.correct === true && attempts === 1 && !a.hint1_used && !a.hint2_used) {
+        firstTryCorrect++;
+      } else if (a.correct === true) {
+        afterHintCorrect++;
+      } else if (a.revealed === true) {
+        revealedCount++;
+      } else if (a.correct === undefined && attempts > 0) {
+        inProgressCount++;
+      } else if (a.correct === false) {
+        // pre-PR-1 호환: 옛 모델에서는 오답 즉시 정답 공개됨
+        revealedCount++;
+      }
+    });
+  }
+
+  if (totalQuestions === 0 && completedDays === 0) return null;
+
+  const firstTryRate = totalQuestions > 0 ? Math.round(firstTryCorrect / totalQuestions * 100) : 0;
+  const overallProgress = totalDays > 0 ? Math.round(completedDays / totalDays * 100) : 0;
+
+  return {
+    hasData: true,
+    totalDays,
+    completedDays,
+    totalQuestions,
+    firstTryCorrect,
+    afterHintCorrect,
+    revealedCount,
+    inProgressCount,
+    firstTryRate,
+    totalStars: firstTryCorrect,
+    overallProgress
+  };
+}
+
 function buildReportDataForStudent(studentId, period, store) {
   const student = store.users.find(u=>u.id===studentId && u.role==='student');
   if (!student) return null;
@@ -8094,7 +8169,105 @@ function generateVisualReportHTML(data, comment, editable = false) {
 /**
  * [v3] 1주 리포트를 모바일 380px 카드로 렌더링.
  */
+// [PR-2] 학부모 리포트의 TS Daily 섹션 HTML.
+function renderTSDailySection(tsData) {
+  if (!tsData || !tsData.hasData) return '';
+
+  const {
+    totalDays, completedDays,
+    totalQuestions, firstTryCorrect, afterHintCorrect, revealedCount, inProgressCount,
+    firstTryRate, totalStars, overallProgress
+  } = tsData;
+
+  const rateColor = firstTryRate >= 70 ? '#16A34A'
+                  : firstTryRate >= 50 ? '#F59E0B'
+                  : '#DC2626';
+
+  const starText = totalStars === 0
+    ? '<span style="color:#94A3B8;font-size:13px;">아직 별점 없음</span>'
+    : `<span style="font-size:18px;">⭐</span> <span style="font-size:18px;font-weight:900;color:#1B2A4A;">${totalStars}</span><span style="font-size:12px;color:#64748B;">개</span>`;
+
+  const totalForBar = firstTryCorrect + afterHintCorrect + revealedCount + inProgressCount;
+  const firstPct = totalForBar > 0 ? Math.round(firstTryCorrect / totalForBar * 100) : 0;
+  const hintPct = totalForBar > 0 ? Math.round(afterHintCorrect / totalForBar * 100) : 0;
+  const revealedPct = totalForBar > 0 ? Math.round(revealedCount / totalForBar * 100) : 0;
+  const inProgressPct = totalForBar > 0 ? 100 - firstPct - hintPct - revealedPct : 0;
+
+  return `
+    <div class="m-card">
+      <div class="m-card-title">🧠 TS Daily (사고력 훈련)
+        <span class="m-card-meta">진도 ${completedDays}/${totalDays}일 (${overallProgress}%)</span>
+      </div>
+
+      <div class="m-stats-grid-2" style="grid-template-columns:repeat(3,1fr);">
+        <div class="m-stat-block">
+          <div class="m-stat-num" style="color:${rateColor};">${firstTryRate}<span>%</span></div>
+          <div class="m-stat-lbl">한 번에 정답</div>
+        </div>
+        <div class="m-stat-block">
+          <div class="m-stat-num" style="font-size:18px;line-height:1.4;">${starText}</div>
+          <div class="m-stat-lbl">획득 별점</div>
+        </div>
+        <div class="m-stat-block">
+          <div class="m-stat-num">${totalQuestions}<span>문제</span></div>
+          <div class="m-stat-lbl">이번 주 풀이</div>
+        </div>
+      </div>
+
+      ${totalForBar > 0 ? `
+      <div style="margin-top:14px;">
+        <div style="display:flex;height:10px;border-radius:5px;overflow:hidden;background:#E5E7EB;">
+          ${firstPct > 0 ? `<div style="background:#16A34A;width:${firstPct}%;"></div>` : ''}
+          ${hintPct > 0 ? `<div style="background:#F59E0B;width:${hintPct}%;"></div>` : ''}
+          ${revealedPct > 0 ? `<div style="background:#DC2626;width:${revealedPct}%;"></div>` : ''}
+          ${inProgressPct > 0 ? `<div style="background:#94A3B8;width:${inProgressPct}%;"></div>` : ''}
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:10px;color:#64748B;font-weight:700;">
+          <span><span style="color:#16A34A;">●</span> 1차 정답 ${firstTryCorrect}</span>
+          <span><span style="color:#F59E0B;">●</span> 힌트 후 ${afterHintCorrect}</span>
+          ${revealedCount > 0 ? `<span><span style="color:#DC2626;">●</span> 정답 공개 ${revealedCount}</span>` : ''}
+          ${inProgressCount > 0 ? `<span><span style="color:#94A3B8;">●</span> 진행 중 ${inProgressCount}</span>` : ''}
+        </div>
+      </div>
+      ` : ''}
+
+      <div style="background:#EEF2FF;border-radius:8px;padding:10px 12px;margin-top:12px;font-size:12px;color:#3730A3;line-height:1.5;">
+        ${_buildTSSummaryText(tsData)}
+      </div>
+    </div>`;
+}
+
+// [PR-2] TS 데이터 기반 학부모용 한 줄 평.
+function _buildTSSummaryText(tsData) {
+  const { firstTryRate, totalQuestions, revealedCount, inProgressCount } = tsData;
+
+  if (totalQuestions === 0) {
+    return '💡 이번 주 TS Daily 풀이 기록이 아직 없습니다. 매일 5분씩 사고력 훈련을 권장드립니다.';
+  }
+  if (firstTryRate >= 80) {
+    return `🌟 한 번에 정답을 맞히는 비율이 매우 높습니다 (${firstTryRate}%). 안정적인 사고력을 보입니다.`;
+  }
+  if (firstTryRate >= 60) {
+    return `👍 1차 정답률 ${firstTryRate}%로 좋은 흐름입니다. 힌트 없이 풀어내는 비율을 더 늘려가는 것이 목표입니다.`;
+  }
+  if (firstTryRate >= 40) {
+    return `💪 1차 정답률 ${firstTryRate}%입니다. 문제를 천천히 다시 읽고 한 번 더 생각하는 연습이 도움이 됩니다.`;
+  }
+  if (revealedCount >= 3) {
+    return `📚 정답을 끝까지 찾지 못한 문제가 ${revealedCount}개 있습니다. 해설을 함께 다시 읽어주시면 큰 도움이 됩니다.`;
+  }
+  if (inProgressCount >= 3) {
+    return `🔄 아직 풀이 중인 문제가 ${inProgressCount}개 있습니다. 학생이 끝까지 풀어볼 수 있게 격려해주세요.`;
+  }
+  return `📈 사고력 훈련을 꾸준히 진행 중입니다. 1차 정답률을 높이는 것을 다음 목표로 삼아주세요.`;
+}
+
 function renderMobileWeeklyCard(child, savedReport, period) {
+  // [PR-2] TS 데이터는 savedReport 유무와 무관하게 항상 조회
+  const store = getStore();
+  const tsData = buildTSReportData(child.id, period, store);
+  const tsHTML = tsData ? renderTSDailySection(tsData) : '';
+
   if (!savedReport) {
     return `
     <div class="parent-report-card">
@@ -8105,10 +8278,16 @@ function renderMobileWeeklyCard(child, savedReport, period) {
           <div class="m-meta">${child.name} · Year ${child.year}</div>
           <div class="m-meta-sub">${periodLabel(period)}</div>
         </div>
-        <div class="m-card" style="text-align:center;padding:30px 20px;">
-          <div style="font-size:40px;margin-bottom:8px;">📊</div>
-          <div style="font-weight:800;color:#1B2A4A;margin-bottom:4px;">아직 리포트가 준비되지 않았습니다</div>
-          <div style="font-size:12px;color:#64748B;">선생님이 리포트를 생성하면 여기에 표시됩니다</div>
+        <div class="m-card" style="text-align:center;padding:24px 16px;background:#FFFBEB;border:1px dashed #F59E0B;">
+          <div style="font-size:32px;margin-bottom:6px;">📝</div>
+          <div style="font-weight:800;color:#92400E;margin-bottom:4px;font-size:14px;">수학 리포트는 준비 중입니다</div>
+          <div style="font-size:11px;color:#A16207;">선생님이 이번 주 수학 리포트를 생성하면 표시됩니다</div>
+        </div>
+        ${tsHTML}
+        <div class="m-footer">
+          <div class="m-footer-name">Solomon Math Academy</div>
+          <div class="m-footer-loc">West Ryde, Sydney</div>
+          <div class="m-footer-link">solomonacademy.com.au</div>
         </div>
       </div>
     </div>`;
@@ -8225,6 +8404,8 @@ function renderMobileWeeklyCard(child, savedReport, period) {
           <div class="m-card-title">🎯 오답 단원 분석 ${weakAreas.length>0?`<span class="m-card-meta">총 ${weakAreas.reduce((s,w)=>s+w.count,0)}개</span>`:''}</div>
           <div class="m-bar-list">${weakHTML}</div>
         </div>
+
+        ${tsHTML}
 
         <div class="m-card m-action-card">
           <div class="m-card-title">💡 이번 주 가정 학습 권장</div>
@@ -12818,8 +12999,11 @@ function renderTSBlock(ts, store, p) {
 
     let correctCount = 0, stars = 0;
     if (completed && dayData?.answers) {
-      correctCount = Object.values(dayData.answers).filter(a => a.correct).length;
-      stars = Object.values(dayData.answers).filter(a => a.correct && !a.hint1_used && !a.hint2_used).length;
+      const firstTryCorrect = Object.values(dayData.answers).filter(a =>
+        a.correct === true && a.attempts === 1 && !a.hint1_used && !a.hint2_used
+      ).length;
+      correctCount = firstTryCorrect;
+      stars = firstTryCorrect;
     }
 
     let cardBg, statusHtml, cursor, onclick;
@@ -12859,6 +13043,96 @@ function openTSDay(day) {
   renderTSDay();
 }
 
+// [PR-3] TS 지문 가독성 개선: 숫자 강조 + 긴 문장 자동 분리. KaTeX 수식은 보호.
+function _formatTSQuestion(text) {
+  if (!text) return '';
+  const isShort = text.length < 80;
+
+  const mathBlocks = [];
+  let processed = text.replace(/\$[^$]+\$|\\\([^)]+\\\)|\\\[[^\]]+\\\]/g, (m) => {
+    mathBlocks.push(m);
+    return `MATH${mathBlocks.length - 1}`;
+  });
+
+  processed = processed.replace(
+    /(?<![a-zA-Z])\b(\d+)\b(?![a-zA-Z])/g,
+    '<strong style="color:#b45309;font-weight:600;">$1</strong>'
+  );
+
+  if (!isShort) {
+    processed = processed.replace(/\b(Mr|Mrs|Ms|Dr|St|vs|etc|i\.e|e\.g)\./g, '$1');
+    processed = processed.replace(/\.(\s+)([A-Z])/g, '.<br><br>$2');
+    processed = processed.replace(//g, '.');
+  }
+
+  processed = processed.replace(/MATH(\d+)/g, (_, i) => mathBlocks[parseInt(i)]);
+  return processed;
+}
+
+// [PR-3] TS 해설 구조화. Step / Distractor / Answer 패턴 감지 시 분리, 없으면 단순 박스 fallback.
+function _renderTSExplanation(rawText) {
+  if (!rawText) return '';
+  const text = String(rawText).trim();
+
+  const hasSteps = /\bStep\s*\d+\s*[:\.]/i.test(text);
+  const hasDistractors = /\b(Distractor|Option)\s*\d+\s*[\(:]/i.test(text);
+
+  if (!hasSteps && !hasDistractors) {
+    return `<div style="background:#fefce8;border:1px solid rgba(251,191,36,.4);border-radius:14px;padding:18px 16px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:600;color:#854d0e;margin-bottom:8px;letter-spacing:0.05em;">💡 SOLUTION</div>
+      <div style="font-size:15px;color:#1e1b4b;line-height:1.8;">${renderMath(_formatTSQuestion(text))}</div>
+    </div>`;
+  }
+
+  let html = `<div style="background:#fefce8;border:1px solid rgba(251,191,36,.5);border-radius:14px;padding:18px 16px;margin-bottom:12px;">
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:14px;">
+      <span style="font-size:16px;">💡</span>
+      <span style="font-size:12px;font-weight:600;color:#854d0e;letter-spacing:0.05em;">SOLUTION</span>
+    </div>`;
+
+  const stepRegex = /Step\s*(\d+)\s*[:\.](.+?)(?=Step\s*\d+\s*[:\.]|Distractor\s*\d+\s*[\(:]|Option\s*\d+\s*[\(:]|Therefore|So the answer|$)/gis;
+  const steps = [];
+  let m;
+  while ((m = stepRegex.exec(text)) !== null) {
+    steps.push({ num: m[1], body: m[2].trim() });
+  }
+  steps.forEach(step => {
+    html += `<div style="margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="background:#fbbf24;color:#1e1b4b;font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;">STEP ${step.num}</span>
+      </div>
+      <div style="font-size:15px;color:#1e1b4b;line-height:1.7;padding-left:4px;">${renderMath(_formatTSQuestion(step.body))}</div>
+    </div>`;
+  });
+
+  const distractorRegex = /(?:Distractor|Option)\s*\d+\s*\(\s*([A-E])\s*\)\s*([^.]+\.)/gi;
+  const mistakes = [];
+  let dm;
+  while ((dm = distractorRegex.exec(text)) !== null) {
+    mistakes.push({ letter: dm[1].toUpperCase(), text: dm[2].trim() });
+  }
+  if (mistakes.length > 0) {
+    html += `<div style="background:#fef3c7;border-left:3px solid #f59e0b;border-radius:6px;padding:10px 12px;margin-top:14px;">
+      <div style="font-size:11px;font-weight:600;color:#854d0e;margin-bottom:6px;letter-spacing:0.05em;">⚠️ COMMON MISTAKES</div>
+      <div style="font-size:13px;color:#1e1b4b;line-height:1.7;">`;
+    mistakes.forEach(mk => {
+      html += `<div style="margin-bottom:3px;"><strong style="color:#dc2626;font-weight:600;">${mk.letter}:</strong> ${renderMath(mk.text)}</div>`;
+    });
+    html += `</div></div>`;
+  }
+
+  const answerMatch = text.match(/(?:Therefore|So)[^.]*?\b(?:answer|the\s+answer)\s+is\s+([A-E])\b/i);
+  if (answerMatch) {
+    html += `<div style="background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:10px 14px;margin-top:12px;display:flex;align-items:center;gap:8px;">
+      <span style="font-size:18px;">✓</span>
+      <div style="font-size:14px;color:#14532d;font-weight:600;">Answer: ${answerMatch[1].toUpperCase()}</div>
+    </div>`;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
 function renderTSDay() {
   const store = getStore();
   const p = studentPeriod || _cachedStudentPeriod || store.currentPeriod;
@@ -12886,7 +13160,10 @@ function renderTSDay() {
   const qKey = `q${startIdx + tsQIdx}`;
   const ansData = dayProgress.answers[qKey] || null;
   const userAns = ansData?.selected || null;
-  const isRevealed = ansData?.correct !== undefined;
+  // PR-1.2: 옛 데이터(correct:false, revealed 필드 없음)도 종료 상태로 인식
+  const isRevealed = ansData?.correct === true
+                  || ansData?.revealed === true
+                  || ansData?.correct === false;
   const isCorrect = ansData?.correct || false;
   const hint1Used = ansData?.hint1_used || false;
   const hint2Used = ansData?.hint2_used || false;
@@ -12915,19 +13192,23 @@ function renderTSDay() {
     <div style="margin-bottom:12px;">
       <span style="background:rgba(139,92,246,.3);color:#c4b5fd;font-size:11px;font-weight:800;padding:4px 12px;border-radius:99px;">${q.type || 'Thinking Skills'}</span>
     </div>
-    <div style="background:rgba(255,255,255,.07);border-radius:18px;padding:24px;border:1px solid rgba(139,92,246,.2);margin-bottom:16px;">
-      <div style="font-size:16px;font-weight:700;color:#e0e7ff;line-height:1.7;">${renderMath(q.text)}</div>
+    <div style="background:#fef9e7;border-radius:18px;padding:28px 24px;border:1px solid rgba(251,191,36,.4);margin-bottom:16px;">
+      <div style="font-size:17px;font-weight:400;color:#1e1b4b;line-height:1.9;letter-spacing:0.01em;">${renderMath(_formatTSQuestion(q.text))}</div>
     </div>
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">`;
 
   opts.forEach(opt => {
     let bg, border, textColor;
+    const wrongList = ansData?.wrongAttempts || [];
+    const isPreviousWrong = !isRevealed && wrongList.includes(opt.letter);
     if (isRevealed) {
       if (opt.letter === normAns(q.answer)) { bg='rgba(34,197,94,.2)'; border='2px solid #4ade80'; textColor='#4ade80'; }
-      else if (opt.letter === userAns && !isCorrect) { bg='rgba(239,68,68,.2)'; border='2px solid #f87171'; textColor='#f87171'; }
+      else if (wrongList.includes(opt.letter) || (opt.letter === userAns && !isCorrect)) { bg='rgba(239,68,68,.2)'; border='2px solid #f87171'; textColor='#f87171'; }
       else { bg='rgba(255,255,255,.05)'; border='1px solid rgba(255,255,255,.1)'; textColor='#94a3b8'; }
     } else if (opt.letter === userAns) {
       bg='rgba(99,102,241,.3)'; border='2px solid #818cf8'; textColor='#e0e7ff';
+    } else if (isPreviousWrong) {
+      bg='rgba(239,68,68,.1)'; border='1px solid rgba(239,68,68,.3)'; textColor='#fca5a5';
     } else {
       bg='rgba(255,255,255,.05)'; border='1px solid rgba(255,255,255,.1)'; textColor='#e0e7ff';
     }
@@ -12943,16 +13224,10 @@ function renderTSDay() {
 
   if (!isRevealed) {
     if (userAns) {
-      html += `<button onclick="submitTSAnswer('${qKey}')" style="width:100%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:900;cursor:pointer;margin-bottom:12px;box-shadow:0 4px 16px rgba(99,102,241,.4);min-height:52px;">Check Answer ✓</button>`;
+      const tryCount = ansData?.attempts || 0;
+      const btnText = tryCount === 0 ? 'Check Answer ✓' : `Try Again ✓ (${tryCount}/3)`;
+      html += `<button onclick="submitTSAnswer('${qKey}')" style="width:100%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:900;cursor:pointer;margin-bottom:12px;box-shadow:0 4px 16px rgba(99,102,241,.4);min-height:52px;">${btnText}</button>`;
     }
-    html += `<div style="display:flex;gap:10px;margin-bottom:16px;">`;
-    if (!hint1Used && q.hint1) {
-      html += `<button onclick="useTSHint('${qKey}',1)" style="flex:1;background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.3);color:#fbbf24;border-radius:12px;padding:12px;font-weight:700;cursor:pointer;font-size:13px;min-height:48px;">💡 Hint 1</button>`;
-    }
-    if (hint1Used && !hint2Used && q.hint2) {
-      html += `<button onclick="useTSHint('${qKey}',2)" style="flex:1;background:rgba(251,146,36,.15);border:1px solid rgba(251,146,36,.3);color:#fb923c;border-radius:12px;padding:12px;font-weight:700;cursor:pointer;font-size:13px;min-height:48px;">💡 Hint 2</button>`;
-    }
-    html += `</div>`;
     if (hint1Used && q.hint1) {
       html += `<div style="background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.2);border-radius:14px;padding:16px;margin-bottom:10px;"><div style="font-size:11px;font-weight:800;color:#fbbf24;margin-bottom:6px;">💡 HINT 1</div><div style="font-size:14px;color:#fde68a;line-height:1.6;">${renderMath(q.hint1)}</div></div>`;
     }
@@ -12967,19 +13242,22 @@ function renderTSDay() {
         <div style="font-size:16px;font-weight:900;color:#e0e7ff;">${isCorrect?'✅ Correct!':'❌ Incorrect — Answer: ' + q.answer}</div>
       </div>`;
     if (q.explanation) {
-      html += `<div style="background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.2);border-radius:14px;padding:16px;margin-bottom:12px;"><div style="font-size:11px;font-weight:800;color:#818cf8;margin-bottom:6px;">📖 EXPLANATION</div><div style="font-size:14px;color:#c7d2fe;line-height:1.7;">${renderMath(q.explanation)}</div></div>`;
+      html += _renderTSExplanation(q.explanation);
     }
   }
 
   const allAnswered = dayQuestions.every((_, i) => dayProgress.answers[`q${startIdx + i}`]?.correct !== undefined);
+  const prevDisabled = tsQIdx === 0;
+  const nextDisabled = !isRevealed;
+
   html += `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.1);">
-      <button onclick="tsGoQ(${tsQIdx - 1})" ${tsQIdx===0?'disabled':''} style="background:rgba(255,255,255,.1);border:none;color:#c4b5fd;padding:10px 20px;border-radius:10px;font-weight:700;cursor:${tsQIdx===0?'default':'pointer'};opacity:${tsQIdx===0?'.3':'1'};font-size:13px;min-height:44px;">← Prev</button>`;
+      <button ${prevDisabled ? 'disabled' : `onclick="tsGoQ(${tsQIdx - 1})"`} style="background:rgba(255,255,255,.1);border:none;color:#c4b5fd;padding:10px 20px;border-radius:10px;font-weight:700;cursor:${prevDisabled?'default':'pointer'};opacity:${prevDisabled?'.3':'1'};font-size:13px;min-height:44px;">← Prev</button>`;
 
   if (tsQIdx === totalQ - 1 && allAnswered && !dayProgress.completed) {
     html += `<button onclick="completeTSDay()" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#1e1b4b;border:none;border-radius:12px;padding:12px 24px;font-weight:900;cursor:pointer;font-size:14px;box-shadow:0 4px 16px rgba(251,191,36,.4);min-height:48px;">🎉 Complete Day ${currentTSDay}</button>`;
   } else if (tsQIdx < totalQ - 1) {
-    html += `<button onclick="tsGoQ(${tsQIdx + 1})" style="background:rgba(99,102,241,.3);border:none;color:#e0e7ff;padding:10px 20px;border-radius:10px;font-weight:700;cursor:pointer;font-size:13px;min-height:44px;">Next →</button>`;
+    html += `<button ${nextDisabled ? 'disabled' : `onclick="tsGoQ(${tsQIdx + 1})"`} style="background:${nextDisabled?'rgba(255,255,255,.1)':'rgba(99,102,241,.3)'};border:none;color:${nextDisabled?'#c4b5fd':'#e0e7ff'};padding:10px 20px;border-radius:10px;font-weight:700;cursor:${nextDisabled?'default':'pointer'};opacity:${nextDisabled?'.3':'1'};font-size:13px;min-height:44px;">Next →</button>`;
   } else {
     html += `<div></div>`;
   }
@@ -12996,8 +13274,12 @@ function selectTSAnswer(qKey, letter) {
   if (!store.submissions[tsKey]) store.submissions[tsKey] = {};
   if (!store.submissions[tsKey][dayKey]) store.submissions[tsKey][dayKey] = { answers: {}, completed: false };
   const dayProgress = store.submissions[tsKey][dayKey];
-  if (dayProgress.answers[qKey]?.correct !== undefined) return;
-  if (!dayProgress.answers[qKey]) dayProgress.answers[qKey] = { selected: null, attempts: 0, correct: undefined, hint1_used: false, hint2_used: false };
+  const existing = dayProgress.answers[qKey];
+  // PR-1.2: 옛 데이터(correct:false)도 차단 대상
+  if (existing?.correct === true
+      || existing?.revealed === true
+      || existing?.correct === false) return;
+  if (!dayProgress.answers[qKey]) dayProgress.answers[qKey] = { selected: null, attempts: 0, correct: undefined, hint1_used: false, hint2_used: false, revealed: false, wrongAttempts: [] };
   dayProgress.answers[qKey].selected = letter;
   saveStore(store);
   renderTSDay();
@@ -13018,11 +13300,28 @@ function submitTSAnswer(qKey) {
   const q = ts.questions[qIdx2];
   const isCorrect = ansData.selected === q.answer;
   ansData.attempts = (ansData.attempts || 0) + 1;
-  ansData.correct = isCorrect;
+
+  if (isCorrect) {
+    ansData.correct = true;
+  } else {
+    if (!ansData.wrongAttempts) ansData.wrongAttempts = [];
+    if (!ansData.wrongAttempts.includes(ansData.selected)) {
+      ansData.wrongAttempts.push(ansData.selected);
+    }
+    if (ansData.attempts >= 3) {
+      ansData.correct = false;
+      ansData.revealed = true;
+    } else {
+      if (ansData.attempts === 1 && q.hint1) ansData.hint1_used = true;
+      if (ansData.attempts === 2 && q.hint2) ansData.hint2_used = true;
+      ansData.selected = null;
+    }
+  }
+
   saveStore(store);
   fbSetTSProgress(tsKey, store.submissions[tsKey]);
   renderTSDay();
-  if (isCorrect) {
+  if (ansData.correct === true) {
     const { questions_per_day: qPerDay } = ts.day_config;
     const endIdx = Math.min(currentTSDay * qPerDay, ts.questions.length);
     const totalQ = endIdx - (currentTSDay - 1) * qPerDay;
