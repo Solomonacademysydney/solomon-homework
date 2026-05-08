@@ -671,6 +671,21 @@
   vertical-align: baseline;
 }
 
+.lp-hero-tagline {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: clamp(30px, 3.2vw, 42px);
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.5;
+  letter-spacing: -0.03em;
+  margin-top: 28px;
+  max-width: 700px;
+}
+.lp-hero-tagline strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
 .lp-hero-sub {
   margin-top: 40px;
   display: flex;
@@ -685,6 +700,16 @@
   line-height: 1.75;
   font-weight: 400;
   order: 1;
+}
+.lp-hero-sub .lp-kr-line p {
+  margin: 0 0 16px 0;
+}
+.lp-hero-sub .lp-kr-line p:last-child {
+  margin-bottom: 0;
+}
+.lp-hero-sub .lp-kr-line strong {
+  color: var(--ink);
+  font-weight: 500;
 }
 .lp-hero-sub .lp-en-line {
   font-size: 13px;
@@ -1532,24 +1557,61 @@
   line-height: 1.2;
   margin-bottom: 20px;
 }
+.lp-diagnostic-tagline {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: clamp(20px, 1.8vw, 24px);
+  font-weight: 500;
+  color: #0E1F3A;
+  line-height: 1.5;
+  letter-spacing: -0.025em;
+  margin-bottom: 22px;
+  max-width: 460px;
+}
+.lp-diagnostic-tagline strong {
+  color: #B8412C;
+  font-weight: 700;
+}
 .lp-diagnostic-desc {
   font-size: 15px;
   line-height: 1.7;
   color: #2C3E5E;
   margin-bottom: 28px;
 }
+.lp-diagnostic-desc-kr {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 14px;
+  line-height: 1.85;
+  color: #6B6658;
+  margin-top: -16px;
+  margin-bottom: 28px;
+  max-width: 460px;
+}
 .lp-diagnostic-cta {
-  display: inline-block;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
   background: #0E1F3A;
   color: #F6F1E7;
-  padding: 16px 28px;
+  padding: 14px 32px;
   border-radius: 2px;
   text-decoration: none;
-  font-size: 15px;
-  font-weight: 500;
   transition: all 0.2s;
+  line-height: 1.3;
 }
 .lp-diagnostic-cta:hover { background: #1B2A4A; }
+.lp-diagnostic-cta-en {
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  font-size: 16px;
+}
+.lp-diagnostic-cta-kr {
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  color: rgba(246, 241, 231, 0.75);
+  margin-top: 2px;
+  letter-spacing: 0.02em;
+}
 .lp-diagnostic-meta {
   font-family: 'Noto Sans KR', sans-serif;
   font-size: 12px;
@@ -1575,14 +1637,56 @@
   font-family: 'Fraunces', serif;
   font-size: 17px;
   line-height: 1.55;
-  margin-bottom: 24px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(201, 168, 76, 0.2);
+  margin-bottom: 18px;
+}
+.lp-diagnostic-visual-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+.lp-diagnostic-visual-option {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 14px;
+  color: #F6F1E7;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.lp-diagnostic-visual-option.correct {
+  border-color: #4CAF7D;
+  background: rgba(76, 175, 125, 0.15);
+  color: #7EE8A8;
+}
+.lp-diagnostic-visual-option-letter {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.lp-diagnostic-visual-option.correct .lp-diagnostic-visual-option-letter {
+  background: #4CAF7D;
+  color: #0A1628;
 }
 .lp-diagnostic-visual-stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-  padding-top: 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 18px;
+  border-top: 1px solid rgba(201, 168, 76, 0.2);
 }
 .lp-diagnostic-visual-stat-label {
   font-family: 'JetBrains Mono', monospace;
@@ -1801,17 +1905,21 @@ setTimeout(function(){var o=document.getElementById('loadingOverlay');if(o)o.rem
 
   <h1 class="lp-hero-title">
     Quiet, <em>deliberate</em><br>
-    preparation<br>
-    for New South Wales'<br>
+    preparation for the<br>
     <span class="lp-small-em">most competitive</span> entrance exams.
   </h1>
 
+  <div class="lp-hero-tagline">
+    매일 수학을 공부하면<br>
+    <strong>실력은</strong> 반드시 <strong>자라납니다</strong>.
+  </div>
+
   <div class="lp-hero-sub">
     <div class="lp-kr-line">
-      NSW Selective High School과 Opportunity Class(OC) 시험을 준비하는
-      Year 3–9 학생들을 위한 소규모 수학·사고력 전문 학원입니다.
-      원장이 직접 설계한 커리큘럼, 매주 손으로 작성되는 영문 교재,
-      그리고 자체 개발한 숙제 플랫폼 — 양이 아닌 깊이를 위해 만들었습니다.
+      <p>Selective High School과 Opportunity Class(OC) 시험은 물론,<br>
+      NAPLAN과 학교 내신까지 함께 준비하는 Year 3–9 학생들을 위한 소규모 수학·사고력 전문 학원입니다.</p>
+      <p>원장이 직접 설계한 커리큘럼, 매주 손으로 작성되는 영문 교재, 그리고 자체 개발한 숙제 플랫폼 —<br>
+      <strong>매일 꾸준히, 수학을 습관으로 만듭니다.</strong></p>
     </div>
     <div class="lp-en-line">
       A small Ryde-based academy focused exclusively on Mathematics and Thinking Skills for students in Years 3 to 9. Custom curriculum, hands-on instruction from the principal, and a purpose-built homework platform — engineered for depth, not volume.
@@ -1915,7 +2023,7 @@ setTimeout(function(){var o=document.getElementById('loadingOverlay');if(o)o.rem
       A live coaching session caps each week.
     </p>
     <p class="lp-online-card-desc-kr">
-      매일 학습과 주 1회 원장 라이브 수업이 결합된 온라인 프로그램.
+      매일 학습과 주 1회 원장 라이브 수업이 결합된 온라인 프로그램.<br>
       NSW Y3-Y9 학생을 위해 호주 전국에서 수강 가능합니다.
     </p>
     <div class="lp-online-card-tracks">
@@ -1934,14 +2042,23 @@ setTimeout(function(){var o=document.getElementById('loadingOverlay');if(o)o.rem
 <section class="lp-diagnostic-section">
   <div class="lp-diagnostic-inner">
     <div>
-      <div class="lp-diagnostic-label">02 &mdash; Diagnostic</div>
+      <div class="lp-diagnostic-label">02 &mdash; Diagnostic &middot; 진단</div>
       <h2 class="lp-diagnostic-h2">Where exactly is your child right now?</h2>
+      <div class="lp-diagnostic-tagline">
+        <strong>30분 진단</strong>으로,<br>
+        우리 아이의 수학을 정확히 알 수 있습니다.
+      </div>
       <p class="lp-diagnostic-desc">
         A free 30-question level test mapped to NSW OC and Selective standards.
         See strengths, gaps, and where to start &mdash; before you commit to anything.
       </p>
+      <p class="lp-diagnostic-desc-kr">
+        Selective &middot; OC &middot; NAPLAN 기준 30문항 무료 진단입니다.<br>
+        등록 전, 아이의 강점과 부족한 부분을 한 번에 확인하세요.
+      </p>
       <a href="https://solomonacademy.com.au/lt/level-test.html" class="lp-diagnostic-cta">
-        Take the free test
+        <span class="lp-diagnostic-cta-en">Take the free test</span>
+        <span class="lp-diagnostic-cta-kr">무료 진단 시작하기</span>
       </a>
       <div class="lp-diagnostic-meta">약 30분 &middot; 무료 &middot; Year 1-10</div>
     </div>
@@ -1950,6 +2067,20 @@ setTimeout(function(){var o=document.getElementById('loadingOverlay');if(o)o.rem
       <div class="lp-diagnostic-visual-q">
         Three friends share 24 marbles in the ratio 1:2:3.
         How many marbles does the third friend get?
+      </div>
+      <div class="lp-diagnostic-visual-options">
+        <div class="lp-diagnostic-visual-option">
+          <div class="lp-diagnostic-visual-option-letter">A</div>4 marbles
+        </div>
+        <div class="lp-diagnostic-visual-option">
+          <div class="lp-diagnostic-visual-option-letter">B</div>8 marbles
+        </div>
+        <div class="lp-diagnostic-visual-option correct">
+          <div class="lp-diagnostic-visual-option-letter">C</div>12 marbles
+        </div>
+        <div class="lp-diagnostic-visual-option">
+          <div class="lp-diagnostic-visual-option-letter">D</div>16 marbles
+        </div>
       </div>
       <div class="lp-diagnostic-visual-stats">
         <div>
@@ -1975,7 +2106,8 @@ setTimeout(function(){var o=document.getElementById('loadingOverlay');if(o)o.rem
     <div class="lp-pull-quote">
       We'd rather teach ten students well than a hundred vaguely.
       <div class="lp-pull-quote-kr">
-        우리는 백 명을 느슨하게 가르치는 것보다 열 명을 정확하게 가르치는 쪽을 택합니다.
+        우리는 백 명을 느슨하게 가르치는 것보다<br>
+      열 명을 정확하게 가르치는 쪽을 택합니다.
       </div>
     </div>
     <div class="lp-philosophy-body">
