@@ -1,0 +1,962 @@
+[
+  {
+    "set": "A",
+    "set_title": "진분수 + 진분수",
+    "number": 1,
+    "question_text": "$\\dfrac{1}{5} + \\dfrac{2}{5}$",
+    "question_katex": "\\dfrac{1}{5} + \\dfrac{2}{5}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "진분수 + 진분수",
+    "number": 2,
+    "question_text": "$\\dfrac{2}{7} + \\dfrac{3}{7}$",
+    "question_katex": "\\dfrac{2}{7} + \\dfrac{3}{7}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "진분수 + 진분수",
+    "number": 3,
+    "question_text": "$\\dfrac{1}{4} + \\dfrac{2}{4}$",
+    "question_katex": "\\dfrac{1}{4} + \\dfrac{2}{4}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "진분수 + 진분수",
+    "number": 4,
+    "question_text": "$\\dfrac{3}{8} + \\dfrac{1}{8}$",
+    "question_katex": "\\dfrac{3}{8} + \\dfrac{1}{8}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "진분수 + 진분수",
+    "number": 5,
+    "question_text": "$\\dfrac{2}{9} + \\dfrac{4}{9}$",
+    "question_katex": "\\dfrac{2}{9} + \\dfrac{4}{9}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "진분수 + 진분수",
+    "number": 6,
+    "question_text": "$\\dfrac{1}{6} + \\dfrac{3}{6}$",
+    "question_katex": "\\dfrac{1}{6} + \\dfrac{3}{6}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "진분수 + 진분수",
+    "number": 7,
+    "question_text": "$\\dfrac{5}{12} + \\dfrac{1}{12}$",
+    "question_katex": "\\dfrac{5}{12} + \\dfrac{1}{12}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "진분수 + 진분수",
+    "number": 8,
+    "question_text": "$\\dfrac{3}{10} + \\dfrac{1}{10}$",
+    "question_katex": "\\dfrac{3}{10} + \\dfrac{1}{10}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "진분수 + 진분수",
+    "number": 9,
+    "question_text": "$\\dfrac{2}{11} + \\dfrac{5}{11}$",
+    "question_katex": "\\dfrac{2}{11} + \\dfrac{5}{11}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "진분수 + 진분수",
+    "number": 10,
+    "question_text": "$\\dfrac{1}{3} + \\dfrac{1}{3}$",
+    "question_katex": "\\dfrac{1}{3} + \\dfrac{1}{3}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "진분수 + 진분수",
+    "number": 11,
+    "question_text": "$\\dfrac{4}{9} + \\dfrac{2}{9}$",
+    "question_katex": "\\dfrac{4}{9} + \\dfrac{2}{9}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "진분수 + 진분수",
+    "number": 12,
+    "question_text": "$\\dfrac{3}{7} + \\dfrac{2}{7}$",
+    "question_katex": "\\dfrac{3}{7} + \\dfrac{2}{7}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "진분수 + 진분수",
+    "number": 13,
+    "question_text": "$\\dfrac{5}{11} + \\dfrac{4}{11}$",
+    "question_katex": "\\dfrac{5}{11} + \\dfrac{4}{11}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "진분수 + 진분수",
+    "number": 14,
+    "question_text": "$\\dfrac{1}{8} + \\dfrac{5}{8}$",
+    "question_katex": "\\dfrac{1}{8} + \\dfrac{5}{8}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "진분수 + 진분수",
+    "number": 15,
+    "question_text": "$\\dfrac{2}{5} + \\dfrac{2}{5}$",
+    "question_katex": "\\dfrac{2}{5} + \\dfrac{2}{5}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "진분수 + 진분수",
+    "number": 16,
+    "question_text": "피자 한 판의 $\\dfrac{2}{8}$을 민수가, $\\dfrac{3}{8}$을 지영이가 먹었습니다. 두 사람이 먹은 피자는 모두 얼마인가요?",
+    "question_katex": "\\text{피자 한 판의} \\dfrac{2}{8} \\text{을 민수가,} \\dfrac{3}{8} \\text{을 지영이가 먹었습니다. 두 사람이 먹은 피자는 모두 얼마인가요?}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "진분수 + 진분수",
+    "number": 17,
+    "question_text": "리본의 $\\dfrac{1}{6}$은 빨간색이고, $\\dfrac{3}{6}$은 파란색입니다. 빨간색과 파란색은 전체의 얼마인가요?",
+    "question_katex": "\\text{리본의} \\dfrac{1}{6} \\text{은 빨간색이고,} \\dfrac{3}{6} \\text{은 파란색입니다. 빨간색과 파란색은 전체의 얼마인가요?}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "진분수 + 진분수",
+    "number": 18,
+    "question_text": "$\\dfrac{3}{10} + \\dfrac{4}{10} + \\dfrac{1}{10}$을 계산하세요.",
+    "question_katex": "\\dfrac{3}{10} + \\dfrac{4}{10} + \\dfrac{1}{10} \\text{을 계산하세요.}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "진분수 + 진분수",
+    "number": 19,
+    "question_text": "어떤 분수에 $\\dfrac{2}{7}$을 더하면 $\\dfrac{5}{7}$이 됩니다. 어떤 분수를 구하세요.",
+    "question_katex": "\\text{어떤 분수에} \\dfrac{2}{7} \\text{을 더하면} \\dfrac{5}{7} \\text{이 됩니다. 어떤 분수를 구하세요.}",
+    "type": "SA"
+  },
+  {
+    "set": "A",
+    "set_title": "진분수 + 진분수",
+    "number": 20,
+    "question_text": "$\\dfrac{1}{9} + \\dfrac{2}{9} + \\dfrac{4}{9}$을 계산하세요.",
+    "question_katex": "\\dfrac{1}{9} + \\dfrac{2}{9} + \\dfrac{4}{9} \\text{을 계산하세요.}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "진분수 − 진분수",
+    "number": 1,
+    "question_text": "$\\dfrac{3}{5} - \\dfrac{1}{5}$",
+    "question_katex": "\\dfrac{3}{5} - \\dfrac{1}{5}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "진분수 − 진분수",
+    "number": 2,
+    "question_text": "$\\dfrac{5}{7} - \\dfrac{2}{7}$",
+    "question_katex": "\\dfrac{5}{7} - \\dfrac{2}{7}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "진분수 − 진분수",
+    "number": 3,
+    "question_text": "$\\dfrac{3}{4} - \\dfrac{1}{4}$",
+    "question_katex": "\\dfrac{3}{4} - \\dfrac{1}{4}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "진분수 − 진분수",
+    "number": 4,
+    "question_text": "$\\dfrac{7}{8} - \\dfrac{3}{8}$",
+    "question_katex": "\\dfrac{7}{8} - \\dfrac{3}{8}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "진분수 − 진분수",
+    "number": 5,
+    "question_text": "$\\dfrac{5}{6} - \\dfrac{1}{6}$",
+    "question_katex": "\\dfrac{5}{6} - \\dfrac{1}{6}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "진분수 − 진분수",
+    "number": 6,
+    "question_text": "$\\dfrac{7}{9} - \\dfrac{4}{9}$",
+    "question_katex": "\\dfrac{7}{9} - \\dfrac{4}{9}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "진분수 − 진분수",
+    "number": 7,
+    "question_text": "$\\dfrac{5}{12} - \\dfrac{1}{12}$",
+    "question_katex": "\\dfrac{5}{12} - \\dfrac{1}{12}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "진분수 − 진분수",
+    "number": 8,
+    "question_text": "$\\dfrac{7}{10} - \\dfrac{3}{10}$",
+    "question_katex": "\\dfrac{7}{10} - \\dfrac{3}{10}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "진분수 − 진분수",
+    "number": 9,
+    "question_text": "$\\dfrac{9}{11} - \\dfrac{5}{11}$",
+    "question_katex": "\\dfrac{9}{11} - \\dfrac{5}{11}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "진분수 − 진분수",
+    "number": 10,
+    "question_text": "$\\dfrac{4}{5} - \\dfrac{1}{5}$",
+    "question_katex": "\\dfrac{4}{5} - \\dfrac{1}{5}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "진분수 − 진분수",
+    "number": 11,
+    "question_text": "$\\dfrac{8}{9} - \\dfrac{2}{9}$",
+    "question_katex": "\\dfrac{8}{9} - \\dfrac{2}{9}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "진분수 − 진분수",
+    "number": 12,
+    "question_text": "$\\dfrac{5}{8} - \\dfrac{1}{8}$",
+    "question_katex": "\\dfrac{5}{8} - \\dfrac{1}{8}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "진분수 − 진분수",
+    "number": 13,
+    "question_text": "$\\dfrac{11}{12} - \\dfrac{5}{12}$",
+    "question_katex": "\\dfrac{11}{12} - \\dfrac{5}{12}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "진분수 − 진분수",
+    "number": 14,
+    "question_text": "$\\dfrac{6}{7} - \\dfrac{4}{7}$",
+    "question_katex": "\\dfrac{6}{7} - \\dfrac{4}{7}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "진분수 − 진분수",
+    "number": 15,
+    "question_text": "$\\dfrac{7}{10} - \\dfrac{1}{10}$",
+    "question_katex": "\\dfrac{7}{10} - \\dfrac{1}{10}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "진분수 − 진분수",
+    "number": 16,
+    "question_text": "주스가 $\\dfrac{7}{8}$ L 있었습니다. $\\dfrac{3}{8}$ L를 마셨습니다. 남은 주스는 몇 L인가요?",
+    "question_katex": "\\text{주스가} \\dfrac{7}{8} \\text{L 있었습니다.} \\dfrac{3}{8} \\text{L를 마셨습니다. 남은 주스는 몇 L인가요?}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "진분수 − 진분수",
+    "number": 17,
+    "question_text": "철사의 길이가 $\\dfrac{9}{10}$ m입니다. $\\dfrac{3}{10}$ m를 사용했습니다. 남은 길이는?",
+    "question_katex": "\\text{철사의 길이가} \\dfrac{9}{10} \\text{m입니다.} \\dfrac{3}{10} \\text{m를 사용했습니다. 남은 길이는?}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "진분수 − 진분수",
+    "number": 18,
+    "question_text": "$\\dfrac{8}{9} - \\dfrac{2}{9} - \\dfrac{1}{9}$을 계산하세요.",
+    "question_katex": "\\dfrac{8}{9} - \\dfrac{2}{9} - \\dfrac{1}{9} \\text{을 계산하세요.}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "진분수 − 진분수",
+    "number": 19,
+    "question_text": "어떤 분수에서 $\\dfrac{2}{7}$을 빼면 $\\dfrac{3}{7}$이 됩니다. 어떤 분수를 구하세요.",
+    "question_katex": "\\text{어떤 분수에서} \\dfrac{2}{7} \\text{을 빼면} \\dfrac{3}{7} \\text{이 됩니다. 어떤 분수를 구하세요.}",
+    "type": "SA"
+  },
+  {
+    "set": "B",
+    "set_title": "진분수 − 진분수",
+    "number": 20,
+    "question_text": "$\\dfrac{11}{12} - \\dfrac{3}{12} - \\dfrac{2}{12}$를 계산하세요.",
+    "question_katex": "\\dfrac{11}{12} - \\dfrac{3}{12} - \\dfrac{2}{12} \\text{를 계산하세요.}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "1 − 진분수",
+    "number": 1,
+    "question_text": "$1 - \\dfrac{1}{3}$",
+    "question_katex": "1 - \\dfrac{1}{3}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "1 − 진분수",
+    "number": 2,
+    "question_text": "$1 - \\dfrac{2}{5}$",
+    "question_katex": "1 - \\dfrac{2}{5}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "1 − 진분수",
+    "number": 3,
+    "question_text": "$1 - \\dfrac{3}{4}$",
+    "question_katex": "1 - \\dfrac{3}{4}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "1 − 진분수",
+    "number": 4,
+    "question_text": "$1 - \\dfrac{1}{7}$",
+    "question_katex": "1 - \\dfrac{1}{7}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "1 − 진분수",
+    "number": 5,
+    "question_text": "$1 - \\dfrac{5}{8}$",
+    "question_katex": "1 - \\dfrac{5}{8}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "1 − 진분수",
+    "number": 6,
+    "question_text": "$1 - \\dfrac{2}{9}$",
+    "question_katex": "1 - \\dfrac{2}{9}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "1 − 진분수",
+    "number": 7,
+    "question_text": "$1 - \\dfrac{1}{6}$",
+    "question_katex": "1 - \\dfrac{1}{6}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "1 − 진분수",
+    "number": 8,
+    "question_text": "$1 - \\dfrac{5}{12}$",
+    "question_katex": "1 - \\dfrac{5}{12}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "1 − 진분수",
+    "number": 9,
+    "question_text": "$1 - \\dfrac{3}{10}$",
+    "question_katex": "1 - \\dfrac{3}{10}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "1 − 진분수",
+    "number": 10,
+    "question_text": "$1 - \\dfrac{4}{11}$",
+    "question_katex": "1 - \\dfrac{4}{11}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "1 − 진분수",
+    "number": 11,
+    "question_text": "$1 - \\dfrac{1}{2}$",
+    "question_katex": "1 - \\dfrac{1}{2}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "1 − 진분수",
+    "number": 12,
+    "question_text": "$1 - \\dfrac{7}{8}$",
+    "question_katex": "1 - \\dfrac{7}{8}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "1 − 진분수",
+    "number": 13,
+    "question_text": "$1 - \\dfrac{4}{9}$",
+    "question_katex": "1 - \\dfrac{4}{9}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "1 − 진분수",
+    "number": 14,
+    "question_text": "$1 - \\dfrac{1}{10}$",
+    "question_katex": "1 - \\dfrac{1}{10}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "1 − 진분수",
+    "number": 15,
+    "question_text": "$1 - \\dfrac{5}{6}$",
+    "question_katex": "1 - \\dfrac{5}{6}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "1 − 진분수",
+    "number": 16,
+    "question_text": "케이크 1개가 있습니다. $\\dfrac{3}{8}$을 먹었습니다. 남은 양은?",
+    "question_katex": "\\text{케이크 1개가 있습니다.} \\dfrac{3}{8} \\text{을 먹었습니다. 남은 양은?}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "1 − 진분수",
+    "number": 17,
+    "question_text": "물 1 L에서 $\\dfrac{2}{5}$ L를 사용했습니다. 남은 물은 몇 L인가요?",
+    "question_katex": "\\text{물 1 L에서} \\dfrac{2}{5} \\text{L를 사용했습니다. 남은 물은 몇 L인가요?}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "1 − 진분수",
+    "number": 18,
+    "question_text": "$1 - \\dfrac{3}{7}$을 계산하고, 그 결과에서 $\\dfrac{1}{7}$을 빼세요.",
+    "question_katex": "1 - \\dfrac{3}{7} \\text{을 계산하고, 그 결과에서} \\dfrac{1}{7} \\text{을 빼세요.}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "1 − 진분수",
+    "number": 19,
+    "question_text": "$1 - \\dfrac{1}{4} - \\dfrac{1}{4}$를 계산하세요.",
+    "question_katex": "1 - \\dfrac{1}{4} - \\dfrac{1}{4} \\text{를 계산하세요.}",
+    "type": "SA"
+  },
+  {
+    "set": "C",
+    "set_title": "1 − 진분수",
+    "number": 20,
+    "question_text": "어떤 분수를 $1$에서 빼면 $\\dfrac{2}{9}$이 됩니다. 어떤 분수를 구하세요.",
+    "question_katex": "\\text{어떤 분수를} 1 \\text{에서 빼면} \\dfrac{2}{9} \\text{이 됩니다. 어떤 분수를 구하세요.}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "대분수 + 대분수",
+    "number": 1,
+    "question_text": "$1\\dfrac{1}{5} + 2\\dfrac{2}{5}$",
+    "question_katex": "1\\dfrac{1}{5} + 2\\dfrac{2}{5}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "대분수 + 대분수",
+    "number": 2,
+    "question_text": "$2\\dfrac{1}{4} + 1\\dfrac{1}{4}$",
+    "question_katex": "2\\dfrac{1}{4} + 1\\dfrac{1}{4}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "대분수 + 대분수",
+    "number": 3,
+    "question_text": "$1\\dfrac{2}{7} + 3\\dfrac{3}{7}$",
+    "question_katex": "1\\dfrac{2}{7} + 3\\dfrac{3}{7}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "대분수 + 대분수",
+    "number": 4,
+    "question_text": "$2\\dfrac{1}{3} + 1\\dfrac{1}{3}$",
+    "question_katex": "2\\dfrac{1}{3} + 1\\dfrac{1}{3}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "대분수 + 대분수",
+    "number": 5,
+    "question_text": "$3\\dfrac{2}{9} + 1\\dfrac{4}{9}$",
+    "question_katex": "3\\dfrac{2}{9} + 1\\dfrac{4}{9}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "대분수 + 대분수",
+    "number": 6,
+    "question_text": "$2\\dfrac{3}{5} + 1\\dfrac{4}{5}$",
+    "question_katex": "2\\dfrac{3}{5} + 1\\dfrac{4}{5}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "대분수 + 대분수",
+    "number": 7,
+    "question_text": "$1\\dfrac{5}{8} + 2\\dfrac{7}{8}$",
+    "question_katex": "1\\dfrac{5}{8} + 2\\dfrac{7}{8}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "대분수 + 대분수",
+    "number": 8,
+    "question_text": "$3\\dfrac{2}{3} + 2\\dfrac{2}{3}$",
+    "question_katex": "3\\dfrac{2}{3} + 2\\dfrac{2}{3}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "대분수 + 대분수",
+    "number": 9,
+    "question_text": "$4\\dfrac{5}{6} + 1\\dfrac{5}{6}$",
+    "question_katex": "4\\dfrac{5}{6} + 1\\dfrac{5}{6}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "대분수 + 대분수",
+    "number": 10,
+    "question_text": "$2\\dfrac{3}{4} + 3\\dfrac{3}{4}$",
+    "question_katex": "2\\dfrac{3}{4} + 3\\dfrac{3}{4}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "대분수 + 대분수",
+    "number": 11,
+    "question_text": "$5\\dfrac{7}{10} + 2\\dfrac{9}{10}$",
+    "question_katex": "5\\dfrac{7}{10} + 2\\dfrac{9}{10}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "대분수 + 대분수",
+    "number": 12,
+    "question_text": "$1\\dfrac{4}{9} + 3\\dfrac{7}{9}$",
+    "question_katex": "1\\dfrac{4}{9} + 3\\dfrac{7}{9}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "대분수 + 대분수",
+    "number": 13,
+    "question_text": "$3\\dfrac{5}{7} + 4\\dfrac{6}{7}$",
+    "question_katex": "3\\dfrac{5}{7} + 4\\dfrac{6}{7}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "대분수 + 대분수",
+    "number": 14,
+    "question_text": "$2\\dfrac{5}{12} + 3\\dfrac{11}{12}$",
+    "question_katex": "2\\dfrac{5}{12} + 3\\dfrac{11}{12}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "대분수 + 대분수",
+    "number": 15,
+    "question_text": "$1\\dfrac{3}{8} + 2\\dfrac{7}{8}$",
+    "question_katex": "1\\dfrac{3}{8} + 2\\dfrac{7}{8}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "대분수 + 대분수",
+    "number": 16,
+    "question_text": "지민이는 $2\\dfrac{1}{6}$ km, 수아는 $1\\dfrac{3}{6}$ km를 걸었습니다. 두 사람이 걸은 거리의 합은?",
+    "question_katex": "\\text{지민이는} 2\\dfrac{1}{6} \\text{km, 수아는} 1\\dfrac{3}{6} \\text{km를 걸었습니다. 두 사람이 걸은 거리의 합은?}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "대분수 + 대분수",
+    "number": 17,
+    "question_text": "밀가루 $1\\dfrac{2}{5}$ kg과 설탕 $2\\dfrac{4}{5}$ kg을 합하면 모두 몇 kg인가요?",
+    "question_katex": "\\text{밀가루} 1\\dfrac{2}{5} \\text{kg과 설탕} 2\\dfrac{4}{5} \\text{kg을 합하면 모두 몇 kg인가요?}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "대분수 + 대분수",
+    "number": 18,
+    "question_text": "$3\\dfrac{5}{9} + 2\\dfrac{7}{9}$을 계산하세요.",
+    "question_katex": "3\\dfrac{5}{9} + 2\\dfrac{7}{9} \\text{을 계산하세요.}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "대분수 + 대분수",
+    "number": 19,
+    "question_text": "어떤 대분수에 $1\\dfrac{2}{7}$을 더하면 $4\\dfrac{5}{7}$이 됩니다. 어떤 대분수를 구하세요.",
+    "question_katex": "\\text{어떤 대분수에} 1\\dfrac{2}{7} \\text{을 더하면} 4\\dfrac{5}{7} \\text{이 됩니다. 어떤 대분수를 구하세요.}",
+    "type": "SA"
+  },
+  {
+    "set": "D",
+    "set_title": "대분수 + 대분수",
+    "number": 20,
+    "question_text": "$2\\dfrac{5}{8} + 1\\dfrac{5}{8} + 3\\dfrac{2}{8}$을 계산하세요.",
+    "question_katex": "2\\dfrac{5}{8} + 1\\dfrac{5}{8} + 3\\dfrac{2}{8} \\text{을 계산하세요.}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "대분수 − 대분수",
+    "number": 1,
+    "question_text": "$3\\dfrac{3}{5} - 1\\dfrac{1}{5}$",
+    "question_katex": "3\\dfrac{3}{5} - 1\\dfrac{1}{5}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "대분수 − 대분수",
+    "number": 2,
+    "question_text": "$4\\dfrac{3}{4} - 2\\dfrac{1}{4}$",
+    "question_katex": "4\\dfrac{3}{4} - 2\\dfrac{1}{4}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "대분수 − 대분수",
+    "number": 3,
+    "question_text": "$5\\dfrac{5}{7} - 3\\dfrac{2}{7}$",
+    "question_katex": "5\\dfrac{5}{7} - 3\\dfrac{2}{7}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "대분수 − 대분수",
+    "number": 4,
+    "question_text": "$3\\dfrac{5}{6} - 1\\dfrac{1}{6}$",
+    "question_katex": "3\\dfrac{5}{6} - 1\\dfrac{1}{6}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "대분수 − 대분수",
+    "number": 5,
+    "question_text": "$6\\dfrac{7}{9} - 2\\dfrac{4}{9}$",
+    "question_katex": "6\\dfrac{7}{9} - 2\\dfrac{4}{9}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "대분수 − 대분수",
+    "number": 6,
+    "question_text": "$4\\dfrac{1}{5} - 2\\dfrac{3}{5}$",
+    "question_katex": "4\\dfrac{1}{5} - 2\\dfrac{3}{5}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "대분수 − 대분수",
+    "number": 7,
+    "question_text": "$5\\dfrac{1}{4} - 2\\dfrac{3}{4}$",
+    "question_katex": "5\\dfrac{1}{4} - 2\\dfrac{3}{4}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "대분수 − 대분수",
+    "number": 8,
+    "question_text": "$3\\dfrac{2}{7} - 1\\dfrac{5}{7}$",
+    "question_katex": "3\\dfrac{2}{7} - 1\\dfrac{5}{7}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "대분수 − 대분수",
+    "number": 9,
+    "question_text": "$6\\dfrac{1}{3} - 4\\dfrac{2}{3}$",
+    "question_katex": "6\\dfrac{1}{3} - 4\\dfrac{2}{3}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "대분수 − 대분수",
+    "number": 10,
+    "question_text": "$7\\dfrac{3}{8} - 3\\dfrac{5}{8}$",
+    "question_katex": "7\\dfrac{3}{8} - 3\\dfrac{5}{8}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "대분수 − 대분수",
+    "number": 11,
+    "question_text": "$5\\dfrac{1}{6} - 2\\dfrac{5}{6}$",
+    "question_katex": "5\\dfrac{1}{6} - 2\\dfrac{5}{6}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "대분수 − 대분수",
+    "number": 12,
+    "question_text": "$8\\dfrac{2}{9} - 5\\dfrac{7}{9}$",
+    "question_katex": "8\\dfrac{2}{9} - 5\\dfrac{7}{9}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "대분수 − 대분수",
+    "number": 13,
+    "question_text": "$4\\dfrac{1}{10} - 1\\dfrac{7}{10}$",
+    "question_katex": "4\\dfrac{1}{10} - 1\\dfrac{7}{10}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "대분수 − 대분수",
+    "number": 14,
+    "question_text": "$9\\dfrac{3}{11} - 6\\dfrac{8}{11}$",
+    "question_katex": "9\\dfrac{3}{11} - 6\\dfrac{8}{11}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "대분수 − 대분수",
+    "number": 15,
+    "question_text": "$5\\dfrac{1}{12} - 3\\dfrac{7}{12}$",
+    "question_katex": "5\\dfrac{1}{12} - 3\\dfrac{7}{12}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "대분수 − 대분수",
+    "number": 16,
+    "question_text": "끈이 $5\\dfrac{2}{5}$ m 있습니다. $2\\dfrac{4}{5}$ m를 잘라냈습니다. 남은 끈의 길이는?",
+    "question_katex": "\\text{끈이} 5\\dfrac{2}{5} \\text{m 있습니다.} 2\\dfrac{4}{5} \\text{m를 잘라냈습니다. 남은 끈의 길이는?}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "대분수 − 대분수",
+    "number": 17,
+    "question_text": "밀가루가 $4\\dfrac{1}{3}$ kg 있었습니다. $1\\dfrac{2}{3}$ kg을 사용했습니다. 남은 양은?",
+    "question_katex": "\\text{밀가루가} 4\\dfrac{1}{3} \\text{kg 있었습니다.} 1\\dfrac{2}{3} \\text{kg을 사용했습니다. 남은 양은?}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "대분수 − 대분수",
+    "number": 18,
+    "question_text": "$6\\dfrac{3}{8} - 2\\dfrac{7}{8} - 1\\dfrac{1}{8}$을 계산하세요.",
+    "question_katex": "6\\dfrac{3}{8} - 2\\dfrac{7}{8} - 1\\dfrac{1}{8} \\text{을 계산하세요.}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "대분수 − 대분수",
+    "number": 19,
+    "question_text": "어떤 대분수에서 $2\\dfrac{3}{7}$을 빼면 $1\\dfrac{6}{7}$이 됩니다. 어떤 대분수를 구하세요.",
+    "question_katex": "\\text{어떤 대분수에서} 2\\dfrac{3}{7} \\text{을 빼면} 1\\dfrac{6}{7} \\text{이 됩니다. 어떤 대분수를 구하세요.}",
+    "type": "SA"
+  },
+  {
+    "set": "E",
+    "set_title": "대분수 − 대분수",
+    "number": 20,
+    "question_text": "$10\\dfrac{1}{4} - 3\\dfrac{3}{4} - 2\\dfrac{3}{4}$을 계산하세요.",
+    "question_katex": "10\\dfrac{1}{4} - 3\\dfrac{3}{4} - 2\\dfrac{3}{4} \\text{을 계산하세요.}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "자연수 − 분수",
+    "number": 1,
+    "question_text": "$2 - \\dfrac{1}{3}$",
+    "question_katex": "2 - \\dfrac{1}{3}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "자연수 − 분수",
+    "number": 2,
+    "question_text": "$3 - \\dfrac{2}{5}$",
+    "question_katex": "3 - \\dfrac{2}{5}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "자연수 − 분수",
+    "number": 3,
+    "question_text": "$4 - \\dfrac{3}{7}$",
+    "question_katex": "4 - \\dfrac{3}{7}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "자연수 − 분수",
+    "number": 4,
+    "question_text": "$5 - \\dfrac{1}{4}$",
+    "question_katex": "5 - \\dfrac{1}{4}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "자연수 − 분수",
+    "number": 5,
+    "question_text": "$3 - \\dfrac{5}{8}$",
+    "question_katex": "3 - \\dfrac{5}{8}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "자연수 − 분수",
+    "number": 6,
+    "question_text": "$2 - \\dfrac{4}{9}$",
+    "question_katex": "2 - \\dfrac{4}{9}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "자연수 − 분수",
+    "number": 7,
+    "question_text": "$6 - \\dfrac{1}{6}$",
+    "question_katex": "6 - \\dfrac{1}{6}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "자연수 − 분수",
+    "number": 8,
+    "question_text": "$4 - \\dfrac{3}{10}$",
+    "question_katex": "4 - \\dfrac{3}{10}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "자연수 − 분수",
+    "number": 9,
+    "question_text": "$7 - \\dfrac{5}{12}$",
+    "question_katex": "7 - \\dfrac{5}{12}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "자연수 − 분수",
+    "number": 10,
+    "question_text": "$3 - \\dfrac{2}{11}$",
+    "question_katex": "3 - \\dfrac{2}{11}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "자연수 − 분수",
+    "number": 11,
+    "question_text": "$2 - 1\\dfrac{1}{3}$",
+    "question_katex": "2 - 1\\dfrac{1}{3}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "자연수 − 분수",
+    "number": 12,
+    "question_text": "$5 - 2\\dfrac{3}{4}$",
+    "question_katex": "5 - 2\\dfrac{3}{4}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "자연수 − 분수",
+    "number": 13,
+    "question_text": "$4 - 1\\dfrac{2}{5}$",
+    "question_katex": "4 - 1\\dfrac{2}{5}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "자연수 − 분수",
+    "number": 14,
+    "question_text": "$3 - 1\\dfrac{5}{7}$",
+    "question_katex": "3 - 1\\dfrac{5}{7}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "자연수 − 분수",
+    "number": 15,
+    "question_text": "$6 - 3\\dfrac{5}{9}$",
+    "question_katex": "6 - 3\\dfrac{5}{9}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "자연수 − 분수",
+    "number": 16,
+    "question_text": "사과가 $3$개 있습니다. $1\\dfrac{2}{5}$개를 먹었습니다. 남은 사과는 몇 개인가요?",
+    "question_katex": "\\text{사과가} 3 \\text{개 있습니다.} 1\\dfrac{2}{5} \\text{개를 먹었습니다. 남은 사과는 몇 개인가요?}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "자연수 − 분수",
+    "number": 17,
+    "question_text": "물이 $5$ L 있었습니다. $2\\dfrac{3}{8}$ L를 사용했습니다. 남은 물은?",
+    "question_katex": "\\text{물이} 5 \\text{L 있었습니다.} 2\\dfrac{3}{8} \\text{L를 사용했습니다. 남은 물은?}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "자연수 − 분수",
+    "number": 18,
+    "question_text": "$10 - 4\\dfrac{5}{6}$을 계산하세요.",
+    "question_katex": "10 - 4\\dfrac{5}{6} \\text{을 계산하세요.}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "자연수 − 분수",
+    "number": 19,
+    "question_text": "연필이 $4$자루 있었습니다. $\\dfrac{3}{4}$자루를 친구에게 주었습니다. 남은 연필은?",
+    "question_katex": "\\text{연필이} 4 \\text{자루 있었습니다.} \\dfrac{3}{4} \\text{자루를 친구에게 주었습니다. 남은 연필은?}",
+    "type": "SA"
+  },
+  {
+    "set": "F",
+    "set_title": "자연수 − 분수",
+    "number": 20,
+    "question_text": "$8 - 3\\dfrac{7}{10} - 2\\dfrac{1}{10}$을 계산하세요.",
+    "question_katex": "8 - 3\\dfrac{7}{10} - 2\\dfrac{1}{10} \\text{을 계산하세요.}",
+    "type": "SA"
+  }
+]

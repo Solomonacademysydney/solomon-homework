@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>지뢰찾기 🍄</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: #FEFAE0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 40px;
+      background-image:
+        radial-gradient(circle at 15% 15%, rgba(126,200,80,0.12) 0%, transparent 45%),
+        radial-gradient(circle at 85% 85%, rgba(126,200,80,0.12) 0%, transparent 45%);
+    }
+
+    /* ── Decorative bg ── */
+    .deco {
+      position: fixed;
+      font-size: 2.4rem;
+      opacity: 0.13;
+      pointer-events: none;
+      user-select: none;
+    }
+    .d1 { top:4%;   left:2%;  font-size:3.2rem; }
+    .d2 { top:12%;  right:4%; font-size:2rem; }
+    .d3 { top:50%;  left:1%;  font-size:2.8rem; }
+    .d4 { bottom:8%;left:4%;  font-size:2rem; }
+    .d5 { bottom:4%;right:3%; font-size:3rem; }
+    .d6 { top:35%;  right:2%; font-size:2.5rem; }
+
+    /* ── Header ── */
+    .header { text-align:center; margin-bottom:20px; }
+    .title  {
+      font-size: clamp(1.8rem, 5vw, 2.6rem);
+      font-weight: 900;
+      color: #3D6B26;
+      letter-spacing: -0.5px;
+      text-shadow: 2px 3px 0 rgba(61,107,38,0.15);
+    }
+    .subtitle {
+      font-size: 0.95rem;
+      color: #7A9060;
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
+    /* ── Difficulty ── */
+    .diff-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .diff-btn {
+      padding: 7px 18px;
+      border: 2.5px solid #7EC850;
+      background: white;
+      color: #3D6B26;
+      border-radius: 20px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .diff-btn:hover  { background: #EAF7D8; }
+    .diff-btn.active { background: #7EC850; color: white; border-color: #7EC850; }
+
+    /* ── Stats bar ── */
+    .stats-bar {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      background: white;
+      border-radius: 20px;
+      padding: 10px 22px;
+      margin-bottom: 18px;
+      box-shadow: 0 4px 16px rgba(126,200,80,0.18);
+      border: 2px solid #E8F5D8;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #3D6B26;
+      min-width: 60px;
+    }
+    .stat-icon { font-size: 1.2rem; }
+
+    .reset-btn {
+      padding: 8px 18px;
+      background: #7EC850;
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 3px 0 #4F9030;
+      transition: all 0.12s;
+    }
+    .reset-btn:hover  { background: #6DB840; transform: translateY(-1px); box-shadow: 0 4px 0 #4F9030; }
+    .reset-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #4F9030; }
+
+    /* ── Board ── */
+    .board-wrap {
+      background: white;
+      border-radius: 22px;
+      padding: 14px;
+      box-shadow: 0 8px 32px rgba(126,200,80,0.22);
+      border: 3px solid #E8F5D8;
+      overflow: auto;
+      max-width: 100%;
+    }
+    .board {
+      display: inline-grid;
+      gap: 3px;
+      user-select: none;
+    }
+
+    /* ── Cell base ── */
+    .cell {
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform 0.08s, box-shadow 0.08s, background 0.08s;
+      position: relative;
+      font-family: 'Nunito', sans-serif;
+    }
+
+    /* Grass (unrevealed) */
+    .cell.unrev {
+      background: linear-gradient(145deg, #93DE65 0%, #7EC850 55%, #6BB43E 100%);
+      box-shadow: 0 3px 0 #4F9030, inset 0 1px 0 rgba(255,255,255,0.35);
+      color: transparent;
+    }
+    .cell.unrev:hover {
+      background: linear-gradient(145deg, #A5EE72 0%, #93DE65 55%, #7EC850 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 0 #4F9030, inset 0 1px 0 rgba(255,255,255,0.35);
+    }
+    .cell.unrev:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #4F9030;
+    }
+
+    /* Dirt (revealed) */
+    .cell.rev {
+      background: #EDE0C4;
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.10);
+      cursor: default;
+    }
+
+    /* Flagged */
+    .cell.flagged {
+      background: linear-gradient(145deg, #93DE65 0%, #7EC850 55%, #6BB43E 100%);
+      box-shadow: 0 3px 0 #4F9030;
+      cursor: pointer;
+    }
+
+    /* Mine revealed (not exploded) */
+    .cell.mine-safe {
+      background: #FFE5D8;
+      box-shadow: inset 0 2px 4px rgba(200,80,0,0.12);
+      cursor: default;
+    }
+
+    /* Exploded mine */
+    .cell.mine-boom {
+      background: linear-gradient(135deg, #FF7B5C, #FF4B2B);
+      box-shadow: 0 0 12px rgba(255,75,43,0.5);
+      animation: boom 0.35s cubic-bezier(.36,.07,.19,.97);
+      cursor: default;
+    }
+    @keyframes boom {
+      0%   { transform: scale(1);   }
+      30%  { transform: scale(1.4); }
+      60%  { transform: scale(0.9); }
+      100% { transform: scale(1);   }
+    }
+
+    /* Wrong flag */
+    .cell.wrong-flag {
+      background: #FFE5D8;
+    }
+
+    /* Number colors */
+    .n1{color:#1D4ED8} .n2{color:#15803D} .n3{color:#B91C1C}
+    .n4{color:#6D28D9} .n5{color:#92400E} .n6{color:#0E7490}
+    .n7{color:#1F2937} .n8{color:#6B7280}
+
+    /* ── Modal ── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(254,250,224,0.8);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .overlay.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .modal {
+      background: white;
+      border-radius: 28px;
+      padding: 40px 52px;
+      text-align: center;
+      box-shadow: 0 16px 48px rgba(126,200,80,0.28);
+      border: 3px solid #E8F5D8;
+      transform: scale(0.85);
+      transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
+      max-width: 90vw;
+    }
+    .overlay.show .modal { transform: scale(1); }
+
+    .modal-emoji    { font-size: 4rem; margin-bottom: 10px; line-height: 1; }
+    .modal-title    { font-size: 1.8rem; font-weight: 900; color: #3D6B26; margin-bottom: 6px; }
+    .modal-sub      { font-size: 0.95rem; color: #7A9060; margin-bottom: 6px; font-weight: 600; }
+    .modal-time     { font-size: 0.9rem; color: #A0A0A0; margin-bottom: 22px; }
+    .modal-btn {
+      padding: 12px 36px;
+      background: #7EC850;
+      color: white;
+      border: none;
+      border-radius: 18px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #4F9030;
+      transition: all 0.12s;
+    }
+    .modal-btn:hover  { background: #6DB840; transform: translateY(-1px); }
+    .modal-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #4F9030; }
+
+    /* ── How-to tooltip ── */
+    .howto {
+      margin-top: 14px;
+      font-size: 0.8rem;
+      color: #A0B080;
+      font-weight: 600;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background decorations -->
+  <div class="deco d1">🌿</div>
+  <div class="deco d2">🍀</div>
+  <div class="deco d3">🌸</div>
+  <div class="deco d4">🌻</div>
+  <div class="deco d5">🍃</div>
+  <div class="deco d6">🌼</div>
+
+  <div class="header">
+    <div class="title">지뢰찾기 🍄</div>
+    <div class="subtitle">숨겨진 독버섯을 찾아 마을을 지켜요!</div>
+  </div>
+
+  <div class="diff-row">
+    <button class="diff-btn active" onclick="setDiff('easy')">🌱 쉬움</button>
+    <button class="diff-btn"        onclick="setDiff('medium')">🌿 보통</button>
+    <button class="diff-btn"        onclick="setDiff('hard')">🌳 어려움</button>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat">
+      <span class="stat-icon">🍄</span>
+      <span id="mine-cnt">10</span>
+    </div>
+    <div class="stat">
+      <span class="stat-icon">⏱️</span>
+      <span id="timer-cnt">0</span>
+    </div>
+    <button class="reset-btn" onclick="newGame()">🔄 새 게임</button>
+  </div>
+
+  <div class="board-wrap">
+    <div class="board" id="board"></div>
+  </div>
+
+  <div class="howto">
+    왼쪽 클릭: 타일 열기 &nbsp;|&nbsp; 오른쪽 클릭: 🚩 깃발 꽂기
+  </div>
+
+  <!-- Win / Lose modal -->
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <div class="modal-emoji" id="m-emoji">🎉</div>
+      <div class="modal-title" id="m-title">마을 청소 완료!</div>
+      <div class="modal-sub"   id="m-sub">독버섯을 모두 찾아냈어요!</div>
+      <div class="modal-time"  id="m-time"></div>
+      <button class="modal-btn" onclick="newGame()">다시 하기 🎮</button>
+    </div>
+  </div>
+
+  <script>
+  // ─────────────────────────────────────────────────────────────
+  //  State
+  // ─────────────────────────────────────────────────────────────
+  const PRESETS = {
+    easy:   { r: 9,  c: 9,  m: 10,  cell: 38 },
+    medium: { r: 16, c: 16, m: 40,  cell: 34 },
+    hard:   { r: 16, c: 30, m: 99,  cell: 28 },
+  };
+
+  let diff = 'easy';
+  let ROWS, COLS, MINES, CSIZE;
+  let grid = [];          // grid[r][c] = { mine, rev, flag, count, exploded, wrongFlag }
+  let revealed = 0;
+  let flags = 0;
+  let status = 'idle';   // idle | playing | won | lost
+  let first = true;
+  let ticks = 0;
+  let tickId = null;
+
+  // ─────────────────────────────────────────────────────────────
+  //  Setup
+  // ─────────────────────────────────────────────────────────────
+  function setDiff(d) {
+    diff = d;
+    document.querySelectorAll('.diff-btn').forEach((btn, i) => {
+      btn.classList.toggle('active', Object.keys(PRESETS)[i] === d);
+    });
+    newGame();
+  }
+
+  function newGame() {
+    const p = PRESETS[diff];
+    ROWS = p.r; COLS = p.c; MINES = p.m; CSIZE = p.cell;
+
+    grid = Array.from({length: ROWS}, () =>
+      Array.from({length: COLS}, () =>
+        ({ mine:false, rev:false, flag:false, count:0, exploded:false, wrongFlag:false })
+      )
+    );
+
+    revealed = 0;
+    flags    = 0;
+    status   = 'idle';
+    first    = true;
+    ticks    = 0;
+
+    clearInterval(tickId);
+    tickId = null;
+
+    hideModal();
+    syncStats();
+    render();
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  Mine placement (safe first click)
+  // ─────────────────────────────────────────────────────────────
+  function placeMines(sr, sc) {
+    const safe = new Set();
+    for (let dr = -1; dr <= 1; dr++)
+      for (let dc = -1; dc <= 1; dc++) {
+        const nr = sr+dr, nc = sc+dc;
+        if (nr>=0 && nr<ROWS && nc>=0 && nc<COLS)
+          safe.add(nr*COLS+nc);
+      }
+
+    const limit = Math.min(MINES, ROWS*COLS - safe.size);
+    let placed = 0;
+    while (placed < limit) {
+      const r = Math.floor(Math.random()*ROWS);
+      const c = Math.floor(Math.random()*COLS);
+      if (!grid[r][c].mine && !safe.has(r*COLS+c)) {
+        grid[r][c].mine = true;
+        placed++;
+      }
+    }
+    for (let r=0;r<ROWS;r++)
+      for (let c=0;c<COLS;c++)
+        if (!grid[r][c].mine)
+          grid[r][c].count = adjMines(r,c);
+  }
+
+  function adjMines(r,c) {
+    let n=0;
+    for (let dr=-1;dr<=1;dr++)
+      for (let dc=-1;dc<=1;dc++) {
+        if (!dr&&!dc) continue;
+        const nr=r+dr,nc=c+dc;
+        if (nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&grid[nr][nc].mine) n++;
+      }
+    return n;
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  Flood-fill reveal
+  // ─────────────────────────────────────────────────────────────
+  function flood(r,c) {
+    if (r<0||r>=ROWS||c<0||c>=COLS) return;
+    const cell = grid[r][c];
+    if (cell.rev||cell.flag) return;
+    cell.rev = true;
+    revealed++;
+    if (cell.count===0)
+      for (let dr=-1;dr<=1;dr++)
+        for (let dc=-1;dc<=1;dc++)
+          if (dr||dc) flood(r+dr,c+dc);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  Chord click (middle-click / double-click on revealed number)
+  // ─────────────────────────────────────────────────────────────
+  function chord(r,c) {
+    const cell = grid[r][c];
+    if (!cell.rev || cell.count===0) return;
+    let adjFlags=0;
+    for (let dr=-1;dr<=1;dr++)
+      for (let dc=-1;dc<=1;dc++) {
+        const nr=r+dr,nc=c+dc;
+        if ((dr||dc)&&nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&grid[nr][nc].flag) adjFlags++;
+      }
+    if (adjFlags !== cell.count) return;
+    for (let dr=-1;dr<=1;dr++)
+      for (let dc=-1;dc<=1;dc++) {
+        const nr=r+dr,nc=c+dc;
+        if (!(dr||dc)||nr<0||nr>=ROWS||nc<0||nc>=COLS) continue;
+        const nb=grid[nr][nc];
+        if (!nb.flag&&!nb.rev) {
+          if (nb.mine) { triggerLose(nr,nc); return; }
+          flood(nr,nc);
+        }
+      }
+    checkWin();
+    render();
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  Click handlers
+  // ─────────────────────────────────────────────────────────────
+  function onLeft(r,c) {
+    if (status==='won'||status==='lost') return;
+    const cell = grid[r][c];
+    if (cell.flag) return;
+
+    // Chord on revealed number
+    if (cell.rev) { chord(r,c); return; }
+
+    if (first) {
+      first = false;
+      placeMines(r,c);
+      status = 'playing';
+      tickId = setInterval(()=>{ ticks++; syncStats(); },1000);
+    }
+
+    if (cell.mine) { triggerLose(r,c); return; }
+    flood(r,c);
+    checkWin();
+    render();
+  }
+
+  function onRight(e,r,c) {
+    e.preventDefault();
+    if (status==='won'||status==='lost') return;
+    const cell = grid[r][c];
+    if (cell.rev) return;
+    cell.flag = !cell.flag;
+    flags += cell.flag ? 1 : -1;
+    syncStats();
+    render();
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  Win / Lose
+  // ─────────────────────────────────────────────────────────────
+  function triggerLose(er,ec) {
+    status = 'lost';
+    clearInterval(tickId);
+    grid[er][ec].exploded = true;
+    for (let r=0;r<ROWS;r++)
+      for (let c=0;c<COLS;c++) {
+        if (grid[r][c].mine && !grid[r][c].flag) grid[r][c].rev=true;
+        if (grid[r][c].flag && !grid[r][c].mine) grid[r][c].wrongFlag=true;
+      }
+    render();
+    setTimeout(()=>showModal(false),500);
+  }
+
+  function checkWin() {
+    if (revealed >= ROWS*COLS - MINES) {
+      status = 'won';
+      clearInterval(tickId);
+      for (let r=0;r<ROWS;r++)
+        for (let c=0;c<COLS;c++)
+          if (grid[r][c].mine) grid[r][c].flag=true;
+      setTimeout(()=>showModal(true),400);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  Render
+  // ─────────────────────────────────────────────────────────────
+  function render() {
+    const el = document.getElementById('board');
+    el.style.gridTemplateColumns = `repeat(${COLS},${CSIZE}px)`;
+    el.innerHTML = '';
+
+    for (let r=0;r<ROWS;r++) {
+      for (let c=0;c<COLS;c++) {
+        const cell = grid[r][c];
+        const div  = document.createElement('div');
+        div.className = 'cell';
+        div.style.width  = CSIZE+'px';
+        div.style.height = CSIZE+'px';
+        div.style.fontSize = Math.round(CSIZE*0.48)+'px';
+
+        if (cell.rev) {
+          if (cell.mine) {
+            div.classList.add(cell.exploded ? 'mine-boom' : 'mine-safe');
+            div.textContent = '🍄';
+          } else {
+            div.classList.add('rev');
+            if (cell.count) {
+              div.textContent = cell.count;
+              div.classList.add('n'+cell.count);
+            }
+          }
+        } else if (cell.flag) {
+          div.classList.add(cell.wrongFlag ? 'wrong-flag rev' : 'flagged');
+          div.textContent = cell.wrongFlag ? '❌' : '🚩';
+        } else {
+          div.classList.add('unrev');
+        }
+
+        div.addEventListener('click',       ()    => onLeft(r,c));
+        div.addEventListener('contextmenu', (e)   => onRight(e,r,c));
+        el.appendChild(div);
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  Stats
+  // ─────────────────────────────────────────────────────────────
+  function syncStats() {
+    document.getElementById('mine-cnt').textContent  = MINES - flags;
+    document.getElementById('timer-cnt').textContent = ticks;
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  Modal
+  // ─────────────────────────────────────────────────────────────
+  function showModal(won) {
+    const messages = {
+      won: {
+        emoji: '🎉',
+        title: '마을 청소 완료!',
+        sub:   '독버섯을 모두 찾아냈어요~ 마을이 안전해졌어요!',
+      },
+      lost: {
+        emoji: '🍄',
+        title: '독버섯을 밟았어요!',
+        sub:   '앗, 독버섯이었어요! 다시 도전해봐요!',
+      }
+    };
+    const m = won ? messages.won : messages.lost;
+    document.getElementById('m-emoji').textContent = m.emoji;
+    document.getElementById('m-title').textContent = m.title;
+    document.getElementById('m-sub').textContent   = m.sub;
+    document.getElementById('m-time').textContent  = won ? `⏱️ ${ticks}초 만에 클리어!` : '';
+    document.getElementById('overlay').classList.add('show');
+  }
+
+  function hideModal() {
+    document.getElementById('overlay').classList.remove('show');
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  Start
+  // ─────────────────────────────────────────────────────────────
+  newGame();
+  </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+1. Simplify: $\dfrac{\dfrac{3}{4} \times \dfrac{8}{9}}{\dfrac{2}{3} \times \dfrac{3}{5}}$
+2. Find the value of $\left(2\dfrac{1}{2}\right)^2 - \left(1\dfrac{1}{2}\right)^2$.
+3. A price is increased by $\dfrac{1}{5}$, then decreased by $\dfrac{1}{5}$. Express the final price as a fraction of the original.
+4. If $2.4 \times 3.6 = 8.64$, find $0.24 \times 0.036$ without a calculator.
+5. $1 - \dfrac{1}{2} + \dfrac{1}{4} - \dfrac{1}{8} + \dfrac{1}{16} - \dfrac{1}{32}$
+6. Solve: $\dfrac{3}{5}$ of a number plus $\dfrac{1}{4}$ of the same number equals $51$.
+7. Three containers hold $2\dfrac{1}{4}$ L, $1\dfrac{5}{8}$ L, and $3\dfrac{1}{2}$ L. Poured equally into 5 bottles. How much per bottle?
+8. A cyclist travels $\dfrac{3}{5}$ of a journey in $45$ minutes. Total journey time at the same speed?
+9. $\dfrac{3}{4}$ of a tin of paint covers $12.6\ \text{m}^2$. How many tins are needed for $50\ \text{m}^2$? (Cannot buy part-tins.)
+10. The product of two decimals is $0.84$. One is $1.2$. Find the other.
+11. Tom completed $\dfrac{5}{6}$ of a $120$-page book. He then read $\dfrac{3}{5}$ of the remaining pages. Pages left unread?
+12. A shop offers $\dfrac{1}{4}$ off, then an extra $\dfrac{1}{3}$ off the reduced price. What fraction of the original do you pay?
+13. A square has perimeter $8\dfrac{2}{3}$ cm. Find the side length.
+14. If $x = 1\dfrac{2}{3}$ and $y = 0.6$, find $\dfrac{x - y}{x + y}$.
+15. In a class of $40$, $\dfrac{3}{8}$ walk to school and $0.4$ of the rest catch the bus. How many catch the bus?
+16. A tank is $\dfrac{2}{5}$ full. After adding $6.3$ L it is $\dfrac{3}{4}$ full. Find the capacity.
+17. $9.8 \times 7.5 + 9.8 \times 2.5$
+18. Evaluate: $\left(1\dfrac{1}{3} + 2\dfrac{1}{6}\right) \times \left(3.5 - 1\dfrac{3}{4}\right)$
+19. If $\dfrac{1}{a} = 0.125$, find $a^2 - 3a$.
+20. $0.\overline{36} = \dfrac{a}{b}$ in simplest form. Find $a + b$.
+21. Convert $\dfrac{5}{12}$ to a decimal (3 d.p.).
+22. Round $3.9962$ to 2 decimal places.
+23. The average of five decimals is $3.6$. Four are $2.8,\ 4.1,\ 3.2,\ 3.5$. Find the fifth.
+24. Two numbers differ by $0.45$. Their sum is $3\dfrac{1}{5}$. Find both numbers.
+25. A swimming pool is $25$ m long. Each lap is $2$ lengths. Swimmer completes $\dfrac{3}{4}$ of $2.4$ km target. Laps completed?
+26. If $\dfrac{1}{x} + \dfrac{1}{y} = \dfrac{5}{6}$ and $x = 2$, find $y$.
+27. Find $\dfrac{5}{8}$ of $\$240$ and express the answer as a decimal.
+28. Estimate $4.87 \times 3.12$ by rounding each to 1 d.p.
+29. $\pi = 3.14159265\ldots$ Round to 4 significant figures.
+30. A number rounded to 1 d.p. gives $3.7$. What are the smallest and largest possible values?

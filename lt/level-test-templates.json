@@ -1,0 +1,205 @@
+{
+  "_meta": {
+    "version": "1.1",
+    "created": "2026-04-27",
+    "description": "Solomon Academy Free Level Test - Growth Areas & Growth Path templates",
+    "usage": "Match by topic + score band for Growth Areas; match by grade band + grade letter for Growth Path",
+    "replaces": ["getWeakDesc", "getRecommendations"],
+    "changelog": {
+      "v1.1": [
+        "_score_bands.top 정의 명확화 (90%+ 표시 제외 명시)",
+        "growthPath.lower.A.month6 NSW OC 시스템 사실 오류 수정",
+        "growthPath._label 상수로 분리 (16개 중복 제거)",
+        "_meta.replaces 추가",
+        "selectionRule 추가 — B안 (90% 미만 중 점수 낮은 3개)"
+      ]
+    }
+  },
+
+  "growthAreas": {
+    "_score_bands": {
+      "low": "below 50%",
+      "mid": "50-69%",
+      "high": "70-79%",
+      "top": "80% 이상 (단, 90%+ 토픽은 Growth Areas 표시에서 제외)"
+    },
+    "_selectionRule": {
+      "filter": "score < 90",
+      "sort": "score ascending (점수 낮은 순)",
+      "limit": 3,
+      "fallback": "필터 통과 토픽이 0개면 Growth Areas 섹션 자체를 숨김 (전 영역 90%+ 우수 학생)",
+      "note": "Grade A 학생(전체 85%+)도 특정 토픽이 80~89%면 'top' 밴드 메시지(강점 영역)를 받을 수 있음 — 의도된 설계"
+    },
+
+    "Number": {
+      "low":  { "kr_title": "수와 연산 — 기초 연산 다지기 단계", "kr_desc": "사칙연산 기본기를 차근차근 다질 시기입니다. 매일 10분씩 기초 연산을 반복하면 1~2개월 내 안정화 가능합니다.", "en_desc": "Build core fluency in addition, subtraction, multiplication and division through daily short practice." },
+      "mid":  { "kr_title": "수와 연산 — 기본은 잡혔으나 속도 보강 필요", "kr_desc": "기본 개념은 이해하고 있으나 계산 속도와 정확도가 아직 부족합니다. 시간제한 연산 훈련을 통해 시험장 대응력을 키울 수 있습니다.", "en_desc": "Practise timed mental arithmetic to build speed and accuracy under exam conditions." },
+      "high": { "kr_title": "수와 연산 — 안정권 진입, 응용 단계로", "kr_desc": "기본 연산은 안정적입니다. 큰 수의 연산과 다단계 응용 문제로 넘어가면 90%대 진입이 가능합니다.", "en_desc": "Move on to multi-step word problems and operations with larger numbers." },
+      "top":  { "kr_title": "수와 연산 — 강점 영역", "kr_desc": "수와 연산은 강점입니다. 이 영역의 안정성을 유지하면서 약한 영역 보강에 집중하시면 됩니다.", "en_desc": "A clear strength — maintain through review while focusing energy on weaker areas." }
+    },
+
+    "Algebra": {
+      "low":  { "kr_title": "대수 — 미지수 개념 기초 단계", "kr_desc": "미지수와 식 변형의 기초 개념부터 시작해야 합니다. 패턴 찾기와 단순한 □ 문제부터 차근차근 접근하면 빠르게 따라잡을 수 있습니다.", "en_desc": "Begin with pattern recognition and simple equations using boxes or symbols for unknowns." },
+      "mid":  { "kr_title": "대수 — 패턴은 이해, 식 변형 연습 필요", "kr_desc": "단순 패턴 문제는 풀지만 미지수가 포함된 식 변형에서 막힙니다. Selective·고학년 단계에서 비중이 큰 영역이라 지금부터 다지는 것이 유리합니다.", "en_desc": "Build fluency with simple equations, number sentences and algebraic patterns." },
+      "high": { "kr_title": "대수 — 식 변형 안정권, 응용으로 확장", "kr_desc": "기본 식 변형은 안정적입니다. 문장형 응용 문제와 다단계 방정식으로 확장하면 상위권 진입이 가능합니다.", "en_desc": "Extend into multi-step equations and word problems requiring algebraic setup." },
+      "top":  { "kr_title": "대수 — 강점 영역", "kr_desc": "대수는 강점입니다. Selective High School 시험에서 변별력 큰 영역이므로 이 우위를 유지하는 것이 중요합니다.", "en_desc": "A strength — algebra is a high-leverage area for Selective entrance exams." }
+    },
+
+    "Geometry": {
+      "low":  { "kr_title": "기하 — 도형 기본 성질부터 다지기", "kr_desc": "도형의 기본 성질부터 차근차근 다질 시기입니다. 각도와 변의 관계를 그림으로 익히면 빠르게 따라잡을 수 있습니다.", "en_desc": "Start with basic shape properties, angle relationships and visual problem-solving." },
+      "mid":  { "kr_title": "기하 — 가장 우선 보강이 필요한 영역", "kr_desc": "도형의 기본 성질은 이해하고 있으나 각도 관계와 복합 도형 응용에서 막힙니다. Selective 시험 단골 출제 영역이므로 이 영역을 잡으면 점수 상승 폭이 가장 큽니다.", "en_desc": "Review angle rules, properties of polygons and composite shape problems." },
+      "high": { "kr_title": "기하 — 안정권 진입, 복합 도형으로 확장", "kr_desc": "기하 영역 안정권 진입 단계입니다. 복합 도형과 각도 응용 문제 위주로 풀이하면 90%대 진입이 가능합니다.", "en_desc": "Practise composite shapes and multi-step angle problems to push toward mastery." },
+      "top":  { "kr_title": "기하 — 강점 영역", "kr_desc": "기하는 강점입니다. 복잡한 도형 문제도 안정적으로 처리하므로, 이 강점을 유지하면서 약한 영역에 집중하시면 됩니다.", "en_desc": "A strength — maintain through periodic challenge problems." }
+    },
+
+    "Statistics": {
+      "low":  { "kr_title": "통계 — 자료 읽기 기초 단계", "kr_desc": "표와 그래프 읽기 기초부터 다질 시기입니다. 일상에서 접하는 자료(스포츠 점수, 날씨 등)로 시작하면 흥미를 유지하며 학습 가능합니다.", "en_desc": "Build foundations in reading tables, bar graphs and simple data displays." },
+      "mid":  { "kr_title": "통계 — 자료 해석에서 실수 발생", "kr_desc": "기본 자료 읽기는 가능하나 평균·중앙값·비교 분석에서 혼동이 있습니다. 다양한 그래프 유형 연습이 필요합니다.", "en_desc": "Practise comparing data sets and interpreting mean, median and mode." },
+      "high": { "kr_title": "통계 — 안정권, 추론 단계로", "kr_desc": "자료 해석은 안정적입니다. 자료로부터의 추론과 예측 문제로 확장하면 상위권 진입이 가능합니다.", "en_desc": "Extend into data inference and prediction-based problems." },
+      "top":  { "kr_title": "통계 — 강점 영역", "kr_desc": "통계는 강점입니다. 자료 해석 능력이 안정적이므로 이 우위를 유지하시면 됩니다.", "en_desc": "A strength — strong data interpretation skills." }
+    },
+
+    "Fractions": {
+      "low":  { "kr_title": "분수 — 기초 개념 다지기 단계", "kr_desc": "분수의 기본 개념부터 시작해야 합니다. 시각 자료(피자, 막대 등)로 분수의 의미를 익히면 빠르게 따라잡을 수 있습니다.", "en_desc": "Use visual models (bars, circles) to build understanding of fraction meaning." },
+      "mid":  { "kr_title": "분수 — 기초는 안정, 응용 단계 보강 필요", "kr_desc": "분수의 사칙연산은 정확하지만 분수가 포함된 문장형 응용 문제에서 실수가 발생합니다. 매주 응용 문제 10개씩 풀이로 4주면 안정화 가능합니다.", "en_desc": "Practise word problems involving fractions, mixed numbers and equivalent fractions." },
+      "high": { "kr_title": "분수 — 안정권, 복잡한 응용으로 확장", "kr_desc": "분수 응용은 안정적입니다. 분수와 소수·백분율을 자유롭게 변환하는 단계로 확장하면 상위권 진입이 가능합니다.", "en_desc": "Develop fluency converting between fractions, decimals and percentages." },
+      "top":  { "kr_title": "분수 — 강점 영역", "kr_desc": "분수는 강점입니다. 이 영역의 안정성을 유지하면서 약한 영역 보강에 집중하시면 됩니다.", "en_desc": "A strength — maintain through periodic review." }
+    },
+
+    "Measurement": {
+      "low":  { "kr_title": "측정 — 기본 단위 익히기 단계", "kr_desc": "길이·무게·시간 등 기본 단위 개념부터 다질 시기입니다. 실생활 측정 활동을 통해 단위 감각을 키울 수 있습니다.", "en_desc": "Build intuition for length, weight, time and volume through practical measurement activities." },
+      "mid":  { "kr_title": "측정 — 단위 환산에서 혼동 발생", "kr_desc": "기본 측정은 가능하나 단위 환산(m↔cm, kg↔g 등)과 시간 계산에서 실수가 발생합니다. 환산표 암기와 반복 연습이 효과적입니다.", "en_desc": "Practise unit conversions and time calculations through repeated drills." },
+      "high": { "kr_title": "측정 — 안정권 진입, 복합 응용으로", "kr_desc": "단위 환산은 안정적입니다. 넓이·부피와 결합된 측정 응용 문제로 확장하면 상위권 진입이 가능합니다.", "en_desc": "Extend into area, volume and multi-step measurement word problems." },
+      "top":  { "kr_title": "측정 — 강점 영역", "kr_desc": "측정은 강점입니다. 단위 감각이 안정적이므로 이 우위를 유지하시면 됩니다.", "en_desc": "A strength — strong unit and measurement intuition." }
+    },
+
+    "Probability": {
+      "low":  { "kr_title": "확률 — 가능성 개념 기초 단계", "kr_desc": "확실/불확실, 가능성의 비교 등 직관적 개념부터 익혀야 합니다. 동전·주사위 활동으로 흥미롭게 접근 가능합니다.", "en_desc": "Begin with intuitive likelihood concepts using coins, dice and card activities." },
+      "mid":  { "kr_title": "확률 — 기본 계산은 가능, 응용 보강 필요", "kr_desc": "단순 확률 계산은 하지만 복합 사건과 조건부 상황에서 혼동이 있습니다. 표와 트리 다이어그램 활용 연습이 효과적입니다.", "en_desc": "Use tables and tree diagrams to handle compound and conditional events." },
+      "high": { "kr_title": "확률 — 안정권 진입 단계", "kr_desc": "기본 확률은 안정적입니다. 복합 사건 확률과 실험 확률로 확장하면 상위권 진입이 가능합니다.", "en_desc": "Practise compound events and experimental versus theoretical probability." },
+      "top":  { "kr_title": "확률 — 강점 영역", "kr_desc": "확률은 강점입니다. 논리적 추론 능력이 우수하므로 이 우위를 유지하시면 됩니다.", "en_desc": "A strength — strong probabilistic reasoning." }
+    },
+
+    "Indices": {
+      "low":  { "kr_title": "지수 — 거듭제곱 개념 기초 단계", "kr_desc": "거듭제곱의 기본 개념부터 시작해야 합니다. 2², 2³ 같은 작은 수의 반복 곱셈으로 직관을 키우면 좋습니다.", "en_desc": "Start with small powers (2², 3², 2³) to build the meaning of repeated multiplication." },
+      "mid":  { "kr_title": "지수 — 기본은 이해, 지수법칙 보강 필요", "kr_desc": "단순 거듭제곱은 계산하지만 지수법칙 적용에서 혼동이 있습니다. 법칙별 분류 연습이 효과적입니다.", "en_desc": "Practise the index laws systematically — multiplication, division and power of a power." },
+      "high": { "kr_title": "지수 — 안정권 진입 단계", "kr_desc": "지수법칙은 안정적입니다. 음의 지수와 분수 지수로 확장하면 상위권 진입이 가능합니다.", "en_desc": "Extend into negative and fractional indices for upper-level mastery." },
+      "top":  { "kr_title": "지수 — 강점 영역", "kr_desc": "지수는 강점입니다. 고학년 대수 영역의 핵심이므로 이 우위가 큰 자산이 됩니다.", "en_desc": "A strength — a major asset for senior algebra." }
+    },
+
+    "Trigonometry": {
+      "low":  { "kr_title": "삼각비 — 기본 개념 다지기 단계", "kr_desc": "직각삼각형의 변 비율 개념부터 차근차근 시작해야 합니다. 그림과 함께 sin·cos·tan의 의미를 시각화하면 효과적입니다.", "en_desc": "Begin with right-triangle ratios and the visual meaning of sine, cosine and tangent." },
+      "mid":  { "kr_title": "삼각비 — 기본은 이해, 응용 보강 필요", "kr_desc": "기본 비율은 이해하지만 변과 각의 미지수를 구하는 응용에서 막힙니다. 다양한 각도 패턴 연습이 효과적입니다.", "en_desc": "Practise solving for unknown sides and angles in varied triangle configurations." },
+      "high": { "kr_title": "삼각비 — 안정권 진입 단계", "kr_desc": "기본 삼각비는 안정적입니다. 각도 변환과 응용 문제로 확장하면 상위권 진입이 가능합니다.", "en_desc": "Extend into angle of elevation, depression and bearing problems." },
+      "top":  { "kr_title": "삼각비 — 강점 영역", "kr_desc": "삼각비는 강점입니다. 고학년 수학의 핵심 영역이므로 이 우위가 큰 자산이 됩니다.", "en_desc": "A strength — a key area for senior mathematics." }
+    },
+
+    "Percentage": {
+      "low":  { "kr_title": "백분율 — 기초 개념 다지기 단계", "kr_desc": "백분율의 기본 의미(100분의 ?)부터 다질 시기입니다. 분수·소수와의 관계를 같이 익히면 효과적입니다.", "en_desc": "Build foundations in percentage as 'parts per hundred', linked to fractions and decimals." },
+      "mid":  { "kr_title": "백분율 — 기본 계산은 가능, 응용 보강 필요", "kr_desc": "단순 백분율 계산은 가능하나 할인·증가율·복합 응용에서 실수가 발생합니다. 실생활 문제 풀이가 효과적입니다.", "en_desc": "Practise discount, increase and percentage change problems in everyday contexts." },
+      "high": { "kr_title": "백분율 — 안정권, 복합 응용으로 확장", "kr_desc": "기본 백분율은 안정적입니다. 복리·연속 변화율 등 복합 응용으로 확장하면 상위권 진입이 가능합니다.", "en_desc": "Extend into successive percentage changes and compound applications." },
+      "top":  { "kr_title": "백분율 — 강점 영역", "kr_desc": "백분율은 강점입니다. 실생활 응용력이 우수하므로 이 우위를 유지하시면 됩니다.", "en_desc": "A strength — strong real-world application skills." }
+    },
+
+    "Functions": {
+      "low":  { "kr_title": "함수 — 입력·출력 개념 기초 단계", "kr_desc": "입력과 출력 관계라는 함수의 기본 개념부터 차근차근 시작해야 합니다. 입출력 표 작성 활동으로 직관을 키울 수 있습니다.", "en_desc": "Start with input-output tables and machine analogies to build function intuition." },
+      "mid":  { "kr_title": "함수 — 기본은 이해, 그래프 보강 필요", "kr_desc": "함수의 기본 개념은 이해하지만 그래프 해석과 식 변환에서 막힙니다. 좌표평면 시각화 연습이 효과적입니다.", "en_desc": "Practise interpreting graphs and translating between equations and visual representations." },
+      "high": { "kr_title": "함수 — 안정권 진입 단계", "kr_desc": "기본 함수는 안정적입니다. 다양한 함수 유형(일차·이차)으로 확장하면 상위권 진입이 가능합니다.", "en_desc": "Extend into linear and quadratic function types and their distinct behaviours." },
+      "top":  { "kr_title": "함수 — 강점 영역", "kr_desc": "함수는 강점입니다. 고학년 수학의 핵심이므로 이 우위가 큰 자산이 됩니다.", "en_desc": "A strength — a critical foundation for senior mathematics." }
+    },
+
+    "Decimals": {
+      "low":  { "kr_title": "소수 — 자릿값 개념 다지기 단계", "kr_desc": "소수의 자릿값 개념부터 차근차근 시작해야 합니다. 분수·소수의 연결을 익히면 빠르게 따라잡을 수 있습니다.", "en_desc": "Build foundations in decimal place value and the link between fractions and decimals." },
+      "mid":  { "kr_title": "소수 — 기본 연산은 가능, 정확도 보강", "kr_desc": "소수 사칙연산은 하지만 자릿수 정렬과 반올림에서 실수가 발생합니다. 정확도 중심 반복 연습이 효과적입니다.", "en_desc": "Practise place-value alignment and rounding through focused accuracy drills." },
+      "high": { "kr_title": "소수 — 안정권 진입 단계", "kr_desc": "소수 연산은 안정적입니다. 복잡한 응용 문제와 분수 변환으로 확장하면 상위권 진입이 가능합니다.", "en_desc": "Extend into multi-step problems and conversions with fractions and percentages." },
+      "top":  { "kr_title": "소수 — 강점 영역", "kr_desc": "소수는 강점입니다. 정확한 계산력이 안정적이므로 이 우위를 유지하시면 됩니다.", "en_desc": "A strength — accurate computation skills." }
+    },
+
+    "Surds": {
+      "low":  { "kr_title": "무리수 — 제곱근 기초 개념 단계", "kr_desc": "제곱근의 기본 개념부터 차근차근 시작해야 합니다. 완전제곱수 암기로 시작하면 빠르게 자신감을 얻을 수 있습니다.", "en_desc": "Begin by memorising perfect squares to build confidence with square roots." },
+      "mid":  { "kr_title": "무리수 — 기본은 이해, 단순화 보강 필요", "kr_desc": "기본 제곱근은 계산하지만 무리수 단순화와 분모 유리화에서 막힙니다. 패턴별 분류 연습이 효과적입니다.", "en_desc": "Practise simplifying surds and rationalising denominators through pattern-based drills." },
+      "high": { "kr_title": "무리수 — 안정권 진입 단계", "kr_desc": "무리수 단순화는 안정적입니다. 복합 무리수 연산과 응용으로 확장하면 상위권 진입이 가능합니다.", "en_desc": "Extend into operations with multiple surds and applied problems." },
+      "top":  { "kr_title": "무리수 — 강점 영역", "kr_desc": "무리수는 강점입니다. Selective High School 시험에서 변별력 큰 영역이므로 이 우위가 큰 자산이 됩니다.", "en_desc": "A strength — a high-leverage area for Selective High School entry." }
+    },
+
+    "Multiplication": {
+      "low":  { "kr_title": "곱셈 — 구구단 다지기 단계", "kr_desc": "구구단 정확도와 속도부터 다질 시기입니다. 매일 5분 구구단 연습으로 1~2개월 내 안정화 가능합니다.", "en_desc": "Build automaticity with times tables through daily 5-minute drills." },
+      "mid":  { "kr_title": "곱셈 — 기본은 안정, 다자릿수 보강 필요", "kr_desc": "기본 구구단은 안정적이나 다자릿수 곱셈에서 자릿수 오류가 발생합니다. 자릿수 정렬 연습이 효과적입니다.", "en_desc": "Practise multi-digit multiplication with careful place-value alignment." },
+      "high": { "kr_title": "곱셈 — 안정권 진입 단계", "kr_desc": "곱셈 연산은 안정적입니다. 곱셈이 포함된 응용 문제로 확장하면 상위권 진입이 가능합니다.", "en_desc": "Extend into word problems requiring multiplicative reasoning." },
+      "top":  { "kr_title": "곱셈 — 강점 영역", "kr_desc": "곱셈은 강점입니다. 빠르고 정확한 곱셈은 모든 수학의 기반이므로 큰 자산입니다.", "en_desc": "A strength — fast multiplication is foundational across mathematics." }
+    },
+
+    "Division": {
+      "low":  { "kr_title": "나눗셈 — 나누기 기본 개념 단계", "kr_desc": "나눗셈의 기본 개념(같이 나누기, 묶기)부터 다질 시기입니다. 그림과 실물 활동으로 직관을 키우면 효과적입니다.", "en_desc": "Build foundations through grouping and sharing activities with concrete objects." },
+      "mid":  { "kr_title": "나눗셈 — 기본은 가능, 나머지 처리 보강", "kr_desc": "기본 나눗셈은 하지만 나머지가 있는 나눗셈과 다자릿수 나눗셈에서 실수가 발생합니다. 단계별 풀이 연습이 효과적입니다.", "en_desc": "Practise long division and remainders through step-by-step structured methods." },
+      "high": { "kr_title": "나눗셈 — 안정권 진입 단계", "kr_desc": "나눗셈 연산은 안정적입니다. 나눗셈이 포함된 응용 문제로 확장하면 상위권 진입이 가능합니다.", "en_desc": "Extend into word problems involving division and remainder interpretation." },
+      "top":  { "kr_title": "나눗셈 — 강점 영역", "kr_desc": "나눗셈은 강점입니다. 정확한 나눗셈 능력이 안정적이므로 이 우위를 유지하시면 됩니다.", "en_desc": "A strength — accurate division skills." }
+    },
+
+    "Ratio": {
+      "low":  { "kr_title": "비와 비율 — 기초 개념 다지기 단계", "kr_desc": "비의 기본 의미부터 차근차근 시작해야 합니다. 실생활 예시(레시피, 지도 축척 등)로 접근하면 효과적입니다.", "en_desc": "Build foundations through real-world examples like recipes and map scales." },
+      "mid":  { "kr_title": "비와 비율 — 기본은 이해, 응용 보강 필요", "kr_desc": "단순 비례 관계는 이해하지만 비례식과 응용 문제에서 막힙니다. 다양한 응용 문제 연습이 효과적입니다.", "en_desc": "Practise proportional reasoning through varied word problems." },
+      "high": { "kr_title": "비와 비율 — 안정권 진입 단계", "kr_desc": "기본 비율은 안정적입니다. 복합 비례와 변화율 응용으로 확장하면 상위권 진입이 가능합니다.", "en_desc": "Extend into compound ratios and rate-of-change applications." },
+      "top":  { "kr_title": "비와 비율 — 강점 영역", "kr_desc": "비와 비율은 강점입니다. 비례적 사고력이 우수하므로 이 우위를 유지하시면 됩니다.", "en_desc": "A strength — strong proportional reasoning." }
+    }
+  },
+
+  "growthPath": {
+    "_label": "📈 EXPECTED GROWTH PATH · 예상 성장 경로",
+    "_grade_bands": {
+      "lower":  "Y1-Y2 (저학년)",
+      "primary": "Y3-Y4 (OC 응시 예정 단계)",
+      "selective": "Y5-Y6 (OC 재학 / Selective 준비 단계)",
+      "secondary": "Y7-Y10 (중등 단계)"
+    },
+    "_grades": {
+      "A": "85% 이상 (Above Year Level)",
+      "B": "70~84% (At Year Level)",
+      "C": "50~69% (Developing)",
+      "D": "50% 미만 (Needs Foundation)"
+    },
+    "_nsw_oc_note": "NSW OC(Opportunity Class)는 Year 5–6 과정. Year 4 학생이 Year 5 OC 진학을 위해 응시. 따라서 lower(Y1-Y2)·primary(Y3-Y4) 학년대 메시지에서 '준비반' 표현 사용 시 시기를 정확히 명시.",
+
+    "lower": {
+      "A": { "month3": "<strong>3개월 후</strong> 학년 최상위권 안정화 + 한 학년 선행 시작", "month6": "<strong>6개월 후</strong> 한 학년 선행 완료 · OC 장기 준비 방향 확인" },
+      "B": { "month3": "<strong>3개월 후</strong> 학년 상위권 안정화 (목표 90%+)", "month6": "<strong>6개월 후</strong> 약점 영역 보강 완료 + 선행 학습 시작" },
+      "C": { "month3": "<strong>3개월 후</strong> 학년 평균권 진입 + 핵심 개념 안정화", "month6": "<strong>6개월 후</strong> 학년 상위권 도전 단계" },
+      "D": { "month3": "<strong>3개월 후</strong> 기초 개념 다지기 완료 + 학습 습관 정착", "month6": "<strong>6개월 후</strong> 학년 평균권 진입 목표" }
+    },
+
+    "primary": {
+      "A": { "month3": "<strong>3개월 후</strong> Year 4 상위권 + 한 학년 선행 시작", "month6": "<strong>6개월 후</strong> OC 시험 도전권 진입, Selective 장기 준비 시작" },
+      "B": { "month3": "<strong>3개월 후</strong> 학년 상위권 안정화 (목표 88%+)", "month6": "<strong>6개월 후</strong> OC 도전권 진입 가능, 약점 영역 완전 보강" },
+      "C": { "month3": "<strong>3개월 후</strong> 학년 평균권 안정화 + 핵심 개념 정착", "month6": "<strong>6개월 후</strong> 학년 상위권 도전, 약점 영역 70%+ 달성" },
+      "D": { "month3": "<strong>3개월 후</strong> 학년 기초 다지기 완료 + 자신감 회복", "month6": "<strong>6개월 후</strong> 학년 평균권 안정 진입" }
+    },
+
+    "selective": {
+      "A": { "month3": "<strong>3개월 후</strong> Selective 도전반 안정화 + Year 7 선행 시작", "month6": "<strong>6개월 후</strong> Selective High School 상위 학교 도전권 진입" },
+      "B": { "month3": "<strong>3개월 후</strong> 학년 상위권 안정화 (현재 → 목표 88%+)", "month6": "<strong>6개월 후</strong> Selective 도전반 진입, Year 6 선행 시작" },
+      "C": { "month3": "<strong>3개월 후</strong> 학년 평균권 안정 + 약점 영역 70%+ 달성", "month6": "<strong>6개월 후</strong> 학년 상위권 도전, Selective 가능성 재평가" },
+      "D": { "month3": "<strong>3개월 후</strong> 학년 핵심 개념 다지기 완료", "month6": "<strong>6개월 후</strong> 학년 평균권 안정 진입 목표" }
+    },
+
+    "secondary": {
+      "A": { "month3": "<strong>3개월 후</strong> 학년 최상위권 안정화 + 선행 가속", "month6": "<strong>6개월 후</strong> HSC 장기 준비 본격화, 상위 트랙 진입" },
+      "B": { "month3": "<strong>3개월 후</strong> 학년 상위권 안정화 (목표 88%+)", "month6": "<strong>6개월 후</strong> 약점 영역 완전 보강 + 선행 학습 시작" },
+      "C": { "month3": "<strong>3개월 후</strong> 학년 평균권 안정 + 핵심 단원 정착", "month6": "<strong>6개월 후</strong> 학년 상위권 도전 단계 진입" },
+      "D": { "month3": "<strong>3개월 후</strong> 누락 개념 보강 + 학습 습관 재정립", "month6": "<strong>6개월 후</strong> 학년 평균권 안정 진입 목표" }
+    }
+  },
+
+  "gradeMapping": {
+    "_description": "기존 시스템의 A/B/C/D 등급을 결과 페이지 표시용으로 매핑. 기존 finishTest()의 title, sub 변수를 이 매핑으로 완전 대체.",
+    "A": { "badge": "Above Year Level", "kr": "학년 상위권 · Selective 도전권", "en_sub": "Performing above year-level expectations. On track for Selective HS preparation.", "kr_sub": "Selective 시험 도전이 충분히 가능한 단계입니다. 약점 영역 2~3곳만 보강하면 상위권 진입을 노릴 수 있습니다.", "css": "grade-A" },
+    "B": { "badge": "At Year Level", "kr": "학년 평균권 · 안정 단계", "en_sub": "Performing at year-level expectations with solid foundations.", "kr_sub": "학년에서 요구되는 기준을 안정적으로 충족하고 있습니다. 약점 영역 보강을 통해 상위권 진입을 노릴 수 있는 단계입니다.", "css": "grade-B" },
+    "C": { "badge": "Developing", "kr": "학년 평균권 진입 단계", "en_sub": "Developing year-level skills, with room to grow in several areas.", "kr_sub": "학년 평균권에 진입 중이며, 핵심 영역의 보강이 필요한 단계입니다. 체계적 학습으로 안정권 진입이 가능합니다.", "css": "grade-C" },
+    "D": { "badge": "Needs Foundation", "kr": "기초 다지기 단계", "en_sub": "Building foundational skills — significant growth opportunity ahead.", "kr_sub": "기초 개념 다지기가 우선되어야 하는 단계입니다. 학습 습관과 핵심 개념부터 차근차근 잡으면 충분히 따라잡을 수 있습니다.", "css": "grade-D" }
+  },
+
+  "_helpers": {
+    "scoreBandFromPercent": "score < 50 → 'low' / 50-69 → 'mid' / 70-79 → 'high' / 80-89 → 'top' / 90+ → Growth Areas 표시 제외 (강점이지만 노출 안 함)",
+    "gradeBandFromYear": "Y1-Y2 → 'lower' / Y3-Y4 → 'primary' / Y5-Y6 → 'selective' / Y7-Y10 → 'secondary'",
+    "growthAreasSelection": "topics 객체에서 percent < 90 인 항목만 필터, 점수 낮은 순으로 정렬, 상위 3개 추출. 필터 통과 항목이 0개면 Growth Areas 섹션 자체를 숨김."
+  }
+}

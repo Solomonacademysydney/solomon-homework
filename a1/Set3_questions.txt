@@ -1,0 +1,30 @@
+1. $3\dfrac{1}{3} \times 2\dfrac{1}{2}$
+2. $2\dfrac{2}{3} \times 1\dfrac{1}{4}$
+3. $\dfrac{4}{5} \times \dfrac{5}{8} \times \dfrac{2}{3}$
+4. $3\dfrac{1}{3} \div 1\dfrac{2}{3}$
+5. $4\dfrac{1}{2} \div 2\dfrac{1}{4}$
+6. $5\dfrac{1}{3} \div 2\dfrac{2}{3}$
+7. $1\dfrac{3}{4} \div 3\dfrac{1}{2}$
+8. Convert $\dfrac{4}{11}$ to a decimal.
+9. Convert $\dfrac{7}{9}$ to a decimal.
+10. Write $0.\dot{6}$ as a fraction.
+11. Convert $0.875$ to a fraction.
+12. Round $4.567$ to 2 significant figures.
+13. Round $0.004839$ to 2 significant figures.
+14. Round $99.9962$ to 2 decimal places.
+15. Round $0.09998$ to 3 significant figures.
+16. $2.4 \times 3.75$
+17. $0.084 \div 0.007$
+18. $(4.8 - 1.5) \times (2.3 + 0.7)$
+19. $(6.3 - 2.1) \div 0.7$
+20. $3\dfrac{1}{4} + 2.6$
+21. $4.2 \div \dfrac{2}{3}$
+22. $\dfrac{2}{5} \times 3.5$
+23. $\dfrac{7}{8} - 0.5$ (answer as a fraction)
+24. $2\dfrac{1}{4} \times 1\dfrac{1}{3}$
+25. $4\dfrac{1}{2} \div 1\dfrac{1}{2}$
+26. A recipe needs $2\dfrac{1}{2}$ cups of flour. How much for $\dfrac{2}{3}$ of the recipe?
+27. A rope is $5\dfrac{1}{4}$ m long. It is cut into pieces each $\dfrac{3}{4}$ m. How many pieces?
+28. $15.75 \div 0.25$
+29. A book costs $\$12.95$ and a pen costs $\$3.40$. Find the change from $\$20$.
+30. $0.25 \times 0.36 \times 4$
