@@ -1442,16 +1442,18 @@
 }
 .modal-overlay.active { display: flex; }
 
-.modal-box {
+.modal-overlay .modal-box {
   background: #FFFFFF;
-  border-radius: 8px;
-  padding: 40px 36px;
-  max-width: 420px;
+  border-radius: 14px;
+  padding: 32px 28px;
+  max-width: 360px;
+  max-height: none;
   width: 100%;
+  overflow: visible;
   box-shadow: 0 30px 60px rgba(14, 31, 58, 0.25);
   position: relative;
 }
-.modal-close {
+.modal-overlay .modal-close {
   position: absolute;
   top: 12px; right: 16px;
   background: none; border: none;
@@ -1460,40 +1462,54 @@
 }
 .modal-title {
   font-family: 'Fraunces', serif;
-  font-size: 24px; font-weight: 400;
+  font-size: 22px; font-weight: 400;
   color: #0E1F3A;
-  margin-bottom: 24px;
+  margin-bottom: 4px;
   text-align: center;
+  line-height: 1.2;
+}
+.modal-title-sub {
+  font-family: 'Fraunces', serif;
+  font-size: 13px;
+  color: #D4A93C;
+  letter-spacing: 0.3em;
+  text-align: center;
+  margin-bottom: 24px;
 }
 .modal-role-tabs {
   display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
+  gap: 0;
+  margin-bottom: 18px;
+  background: #F5F2EA;
+  padding: 3px;
+  border-radius: 10px;
 }
 .modal-role-tab {
   flex: 1;
-  padding: 10px 0;
-  border: 1px solid #E0DACA;
+  padding: 9px 0;
+  border: none;
   background: transparent;
-  border-radius: 4px;
-  font-size: 13px;
+  border-radius: 7px;
+  font-size: 12px;
   cursor: pointer;
   color: #6B6658;
   transition: all 0.2s;
+  font-family: inherit;
 }
 .modal-role-tab.active {
   background: #0E1F3A;
   color: #FFFFFF;
-  border-color: #0E1F3A;
+  font-weight: 500;
 }
 .modal-input {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid #E0DACA;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 14px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   font-family: inherit;
+  box-sizing: border-box;
 }
 .modal-input:focus {
   outline: none;
@@ -1501,15 +1517,16 @@
 }
 .modal-submit {
   width: 100%;
-  padding: 14px;
+  padding: 13px;
   background: #0E1F3A;
   color: #FFFFFF;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  margin-top: 8px;
+  margin-top: 4px;
+  border-top: 2px solid #D4A93C;
 }
 .modal-submit:hover { background: #1B2A4A; }
 .modal-error {
@@ -1740,59 +1757,73 @@
   border-bottom: 1px solid rgba(14, 31, 58, 0.1);
 }
 .lp-online-card {
-  background: linear-gradient(135deg, #FBF8F1 0%, #F6F1E7 100%);
-  border: 1px solid rgba(196, 154, 63, 0.3);
+  background: linear-gradient(135deg, #0E1F3A 0%, #243B68 100%);
+  border: 2px solid rgba(232, 184, 71, 0.6);
   border-radius: 6px;
   padding: 36px 40px;
   margin-top: 24px;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 16px 48px rgba(14, 31, 58, 0.25);
+}
+.lp-online-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 6px;
+  background: linear-gradient(180deg, #E8B847 0%, #C49A3F 100%);
 }
 .lp-online-card::before {
-  content: "NEW";
+  content: "NEW · 신규";
   position: absolute;
-  top: 20px;
-  right: 24px;
-  background: #C49A3F;
-  color: #FFFFFF;
+  top: 22px;
+  right: 26px;
+  background: #E8B847;
+  color: #0E1F3A;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.15em;
-  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  padding: 7px 16px;
   border-radius: 3px;
+  box-shadow: 0 4px 14px rgba(232, 184, 71, 0.35);
+  z-index: 2;
 }
 .lp-online-card h3 {
   font-family: 'Fraunces', serif;
   font-weight: 300;
   font-size: 32px;
-  color: #0E1F3A;
+  color: #FBF8F1;
   margin: 0 0 8px 0;
   letter-spacing: -0.02em;
 }
 .lp-online-card h3 em {
-  color: #B8412C;
+  color: #E8B847;
   font-style: italic;
+  font-weight: 400;
 }
 .lp-online-card-status {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
-  color: #6B6658;
-  margin-bottom: 20px;
+  letter-spacing: 0.18em;
+  color: #C49A3F;
+  margin-bottom: 22px;
 }
 .lp-online-card-desc {
   font-size: 15px;
-  line-height: 1.6;
-  color: #2C3E5E;
-  margin-bottom: 12px;
+  line-height: 1.65;
+  color: #E8DFC7;
+  margin-bottom: 14px;
 }
 .lp-online-card-desc-kr {
   font-family: 'Noto Sans KR', sans-serif;
   font-size: 13px;
-  color: #6B6658;
-  margin-bottom: 24px;
-  line-height: 1.7;
+  color: #B5AC95;
+  margin-bottom: 26px;
+  line-height: 1.8;
 }
 .lp-online-card-tracks {
   display: flex;
@@ -1800,17 +1831,17 @@
   flex-wrap: wrap;
   margin-bottom: 28px;
   padding: 16px 0;
-  border-top: 1px solid rgba(14, 31, 58, 0.08);
-  border-bottom: 1px solid rgba(14, 31, 58, 0.08);
+  border-top: 1px solid rgba(232, 184, 71, 0.2);
+  border-bottom: 1px solid rgba(232, 184, 71, 0.2);
 }
 .lp-online-card-track {
   font-family: 'Fraunces', serif;
   font-size: 14px;
-  color: #0E1F3A;
+  color: #FBF8F1;
 }
 .lp-online-card-track::before {
   content: "•";
-  color: #C49A3F;
+  color: #E8B847;
   margin-right: 8px;
 }
 .lp-online-card-cta {
@@ -1818,16 +1849,17 @@
   align-items: center;
   gap: 8px;
   font-family: 'Fraunces', serif;
+  font-style: italic;
   font-size: 15px;
-  color: #0E1F3A;
+  color: #E8B847;
   text-decoration: none;
-  border-bottom: 1px solid #0E1F3A;
+  border-bottom: 1px solid rgba(232, 184, 71, 0.5);
   padding-bottom: 2px;
   transition: all 0.2s;
 }
 .lp-online-card-cta:hover {
-  color: #B8412C;
-  border-bottom-color: #B8412C;
+  color: #FBF8F1;
+  border-bottom-color: #FBF8F1;
 }
 .lp-online-card-cta::after {
   content: "→";
@@ -1837,11 +1869,12 @@
   transform: translateX(4px);
 }
 .lp-online-card-cta-disabled {
-  opacity: 0.4;
+  opacity: 0.6;
   cursor: not-allowed;
   pointer-events: none;
-  border-bottom-color: #6B6658;
-  color: #6B6658;
+  border-bottom-color: rgba(232, 184, 71, 0.3);
+  color: #C49A3F;
+  font-style: italic;
 }
 .lp-online-card-cta-disabled::after {
   content: "";
@@ -1853,7 +1886,7 @@
 @media (max-width: 768px) {
   .lp-diagnostic-section { padding: 60px 24px; }
   .lp-diagnostic-inner { grid-template-columns: 1fr; gap: 40px; }
-  .modal-box { padding: 30px 24px; }
+  .modal-overlay .modal-box { padding: 26px 22px; }
   .lp-online-card { padding: 24px; }
   .lp-online-card h3 { font-size: 26px; }
   .lp-online-card-tracks { flex-direction: column; gap: 8px; }
@@ -2360,7 +2393,8 @@ setTimeout(function(){var o=document.getElementById('loadingOverlay');if(o)o.rem
 <div class="modal-overlay" id="login-modal">
   <div class="modal-box">
     <button class="modal-close" type="button" onclick="closeLoginModal()">×</button>
-    <div class="modal-title">Solomon Academy</div>
+    <div class="modal-title">Solomon</div>
+    <div class="modal-title-sub">ACADEMY</div>
 
     <form id="login-modal-form" onsubmit="submitModalLogin(); return false;">
       <div class="modal-role-tabs">
@@ -13126,9 +13160,9 @@ function completeTSDay() {
       if (modalId) modalId.value = session.userId;
       selectModalRole(session.role);
 
-      // 랜딩 표시 + 모달 자동 열기 (비밀번호만 입력하면 진입)
+      // [PR-3.1] 자동 모달 표시 끔 — 사용자가 Log In 버튼 직접 클릭
+      // (ID/role 미리 채워져 있어서 클릭 후 비밀번호 칸 자동 포커스로 빠른 로그인)
       showLanding();
-      setTimeout(function() { openLoginModal(); }, 300);
     } else {
       // 세션 없음 → 랜딩만 표시
       showLanding();
