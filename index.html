@@ -4303,7 +4303,8 @@ function deleteSet(idx) {
   hw.sets.splice(idx, 1);
   // re-index remaining sets
   hw.sets.forEach((s,i) => { s.setIdx=i; s.title=`Set ${i+1}`; });
-  if (hw.sets.length === 0) delete store.homeworkSets[key];
+  // MR sets가 비어도 TS 데이터가 있으면 bucket 보존
+  if (hw.sets.length === 0 && !hw.ts) delete store.homeworkSets[key];
   saveStore(store);
   fbSetHomeworkSets(store.homeworkSets);
   fbSetSubmissions(store.submissions);
@@ -4431,7 +4432,8 @@ function confirmMoveSet(fromIdx) {
   // 원본에서 set 제거 후 재번호
   fromHw.sets.splice(fromIdx, 1);
   fromHw.sets.forEach((s, i) => { s.setIdx = i; s.title = `Set ${i + 1}`; });
-  if (fromHw.sets.length === 0) delete store.homeworkSets[fromKey];
+  // MR sets가 비어도 TS 데이터가 있으면 bucket 보존
+  if (fromHw.sets.length === 0 && !fromHw.ts) delete store.homeworkSets[fromKey];
 
   saveStore(store);
   fbSetHomeworkSets(store.homeworkSets);
