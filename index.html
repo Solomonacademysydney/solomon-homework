@@ -7577,7 +7577,6 @@ function fallbackActions(reportData) {
  * - 학부모 시점 화면 상단에 "← 학생 목록으로" 버튼이 추가로 보이게 됨 (renderParent 안에서 처리)
  */
 async function viewAsParent(studentId) {
-  console.log('[TEST-v2] viewAsParent called', studentId);
   const store = getStore();
   const child = store.users.find(u => u.id === studentId && u.role === 'student');
   if (!child) {
