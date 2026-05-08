@@ -1759,6 +1759,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js"></script>
 <link rel="stylesheet" href="solomon.css">
 </head>
 <body>
@@ -2448,6 +2450,76 @@ function fbSetHomeworkSets(homeworkSets) {
 
 function fbSetSubmissions(submissions) {
   fbWrite({ submissions: submissions });
+}
+
+// ── AI Cache Helpers (2026-05) ────────────────────────────
+// 학생이 직접 AI를 호출하지 않도록, 교사가 미리 생성한 결과를 Firebase에 캐시.
+// 경로: solomon_hw_v3/aiCache/{hwKey}/{setIdx}/round_{roundIdx}/
+function aiCachePath(hwKey, setIdx, roundIdx) {
+  return `aiCache/${hwKey}/${setIdx}/round_${roundIdx}`;
+}
+
+async function getAICache(hwKey, setIdx, roundIdx) {
+  if (!window.FB_REF) return null;
+  try {
+    const snap = await window.FB_REF.child(aiCachePath(hwKey, setIdx, roundIdx)).once('value');
+    return snap.val();
+  } catch (e) {
+    console.warn('[aiCache] read failed:', e);
+    return null;
+  }
+}
+
+async function setAICache(hwKey, setIdx, roundIdx, data) {
+  if (currentUser?.role !== 'teacher') {
+    console.error('[Security] setAICache blocked for non-teacher');
+    return;
+  }
+  if (!window.FB_REF) return;
+  try {
+    const payload = {
+      hints: data.hints || {},
+      explanations: data.explanations || {},
+      practiceQuestions: data.practiceQuestions || [],
+      generatedAt: Date.now()
+    };
+    await window.FB_REF.child(aiCachePath(hwKey, setIdx, roundIdx)).set(payload);
+  } catch (e) {
+    console.error('[aiCache] write failed:', e);
+  }
+}
+
+// ── 캐시 누적 저장 (2026-05 lazy caching) ──
+async function appendToAICache(hwKey, setIdx, roundIdx, partial) {
+  if (!window.FB_REF) return;
+  try {
+    const existing = await getAICache(hwKey, setIdx, roundIdx) || {};
+    const merged = {
+      hints: { ...(existing.hints || {}), ...(partial.hints || {}) },
+      explanations: { ...(existing.explanations || {}), ...(partial.explanations || {}) },
+      practiceQuestions: [
+        ...(existing.practiceQuestions || []),
+        ...(partial.practiceQuestions || [])
+      ],
+      generatedAt: Date.now()
+    };
+    await window.FB_REF.child(aiCachePath(hwKey, setIdx, roundIdx)).set(merged);
+  } catch (e) {
+    console.warn('[aiCache] appendToAICache failed:', e);
+  }
+}
+
+// ── AI 캐시 존재 여부 확인 (2026-05) ──────────────────────
+// round_0의 generatedAt 필드만 확인 (전체 노드 받지 않음 — 효율성)
+async function hasAICache(hwKey, setIdx) {
+  if (!window.FB_REF) return false;
+  try {
+    const snap = await window.FB_REF.child(`${aiCachePath(hwKey, setIdx, 0)}/generatedAt`).once('value');
+    return snap.exists();
+  } catch (e) {
+    console.warn('[aiCache] hasAICache failed:', e);
+    return false;
+  }
 }
 
 // ── Taxonomy (Phase C) ──
@@ -4525,6 +4597,8 @@ async function doSave() {
     editingSetIdx = null;
     renderTeacher();
 
+    // [2026-05 lazy caching 전환] 자동 사전생성 제거 — 학생이 실제 틀린 것만 그때그때 생성
+
     // Show save confirmation at top of page
     const msg = document.createElement('div');
     msg.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#166534;color:#fff;padding:14px 28px;border-radius:12px;font-family:"Noto Sans KR",sans-serif;font-weight:800;font-size:15px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);';
@@ -5330,7 +5404,9 @@ function renderStudent() {
       const ans = sub.answers[q.id];
       return ans === undefined || normAns(ans) !== normAns(q.answer);
     });
-    const hasApiKey = !!getAIKey();
+    // [2026-05] 학생은 Cloud Functions 경유로 AI 호출 가능 → 키 없어도 OK
+    // 교사는 자기 키로 직접 호출 → 키 필요
+    const hasApiKey = !!getAIKey() || (currentUser && currentUser.role === 'student');
     const rem = sub.remediation;
 
     if (wrongQs.length > 0 && hasApiKey) {
@@ -9104,13 +9180,63 @@ function copyKakaoMsg(resultIdx) {
 //  GEMINI AI INTEGRATION
 // ═══════════════════════════════════════
 function getAIKey() {
-  return localStorage.getItem('claude_api_key') || '';
+  // [Security 2026-05] 교사 전용 namespace (옛 claude_api_key는 폐기)
+  return localStorage.getItem('solomon_teacher_api_key') || '';
 }
 function setAIKey(k) {
-  localStorage.setItem('claude_api_key', k.trim());
+  // [Security 2026-05] 교사만 호출 가능 (안전망)
+  if (currentUser && currentUser.role !== 'teacher') {
+    console.error('[Security] setAIKey blocked for non-teacher');
+    return;
+  }
+  localStorage.setItem('solomon_teacher_api_key', k.trim());
+  if (localStorage.getItem('claude_api_key')) {
+    localStorage.removeItem('claude_api_key');
+  }
 }
 
 async function callAI(input) {
+  // [Security 2026-05] 학생/학부모: Cloud Functions 경유 (브라우저에 키 0)
+  // 교사: 자기 localStorage 키로 직접 호출 (옵션 B)
+  if (currentUser && currentUser.role !== 'teacher') {
+    return _callAIViaFunctions(input);
+  }
+  return _callAIDirect(input);
+}
+
+async function _callAIViaFunctions(input) {
+  if (!firebase?.functions) {
+    throw new Error('Firebase Functions SDK가 로드되지 않았습니다.');
+  }
+  let prompt;
+  if (typeof input === 'string') {
+    prompt = input;
+  } else if (input && typeof input === 'object') {
+    prompt = (input.cached || '') + (input.fresh || '');
+    if (!prompt) throw new Error('callAI: empty input');
+  } else {
+    throw new Error('callAI: input must be string or { cached, fresh } object');
+  }
+
+  if (!firebase.auth().currentUser) {
+    try {
+      await firebase.auth().signInAnonymously();
+    } catch (e) {
+      throw new Error('익명 인증 실패: ' + e.message);
+    }
+  }
+
+  try {
+    const callable = firebase.app().functions('australia-southeast1').httpsCallable('callClaudeForStudent');
+    const result = await callable({ prompt, model: 'claude-sonnet-4-5-20250929' });
+    return result?.data?.text || '';
+  } catch (err) {
+    console.error('[callAIViaFunctions] failed:', err);
+    throw new Error('AI 호출 실패: ' + (err.message || String(err)));
+  }
+}
+
+async function _callAIDirect(input) {
   const apiKey = getAIKey();
   if (!apiKey) throw new Error('Claude API key is not set.\nPlease set it in Teacher Settings.');
 
@@ -9780,14 +9906,70 @@ function applyVerificationChanges() { /* auto-applied now */ }
 function dismissVerification() { /* auto-applied now */ }
 
 // ── REMEDIATION: EXPLANATIONS ───────────
-async function generateExplanationsForWrong(wrongQs, year) {
+// [2026-05 lazy caching] 학생도 cache miss 시 AI 호출 (callAI가 학생 → Functions 자동 라우팅).
+async function generateExplanationsForWrong(wrongQs, year, ctx, isPregenerationMode) {
+  // 1. 캐시 조회
+  if (ctx) {
+    const cached = await getAICache(ctx.hwKey, ctx.setIdx, ctx.roundIdx);
+    if (cached?.hints && cached?.explanations) {
+      const cachedQs = wrongQs.filter(q => cached.hints[q.id]);
+      const missingQs = wrongQs.filter(q => !cached.hints[q.id]);
+      // 1-A. Full hit
+      if (missingQs.length === 0) {
+        const hints = {}, explanations = {};
+        cachedQs.forEach(q => {
+          hints[q.id] = cached.hints[q.id];
+          explanations[q.id] = cached.explanations[q.id];
+        });
+        return { hints, explanations };
+      }
+      // 1-B. Partial hit — 누락분만 생성
+      const hints = {}, explanations = {};
+      cachedQs.forEach(q => {
+        hints[q.id] = cached.hints[q.id];
+        explanations[q.id] = cached.explanations[q.id];
+      });
+      const generated = await _generateExplanationsAI(missingQs, year, isPregenerationMode);
+      Object.assign(hints, generated.hints);
+      Object.assign(explanations, generated.explanations);
+      await appendToAICache(ctx.hwKey, ctx.setIdx, ctx.roundIdx, {
+        hints: generated.hints,
+        explanations: generated.explanations
+      });
+      return { hints, explanations };
+    }
+  }
+
+  // 2. 캐시 없음 → 전체 생성
+  const generated = await _generateExplanationsAI(wrongQs, year, isPregenerationMode);
+  if (ctx) {
+    await appendToAICache(ctx.hwKey, ctx.setIdx, ctx.roundIdx, {
+      hints: generated.hints,
+      explanations: generated.explanations
+    });
+  }
+  return generated;
+}
+
+// 내부 AI 호출 (학생/교사 모두 사용 — callAI가 알아서 라우팅)
+async function _generateExplanationsAI(wrongQs, year, isPregenerationMode) {
   const lines = wrongQs.map(q => {
-    let s = `- ID:${q.id} | Question: ${q.text} | Student answer: ${q.studentAnswer} | Correct answer: ${q.answer}`;
+    let s = `- ID:${q.id} | Question: ${q.text}`;
+    if (isPregenerationMode) {
+      s += ` | Student answer: (not available — pre-generation mode, generate generic hint applicable to common student errors)`;
+    } else {
+      s += ` | Student answer: ${q.studentAnswer}`;
+    }
+    s += ` | Correct answer: ${q.answer}`;
     if (q.type === 'mc' && q.options) s += ` | Options: ${q.options.join(', ')}`;
     return s;
   }).join('\n');
 
-  const prompt = `You are a math teacher. A Year ${year} student got these questions wrong.
+  const modeNote = isPregenerationMode
+    ? '\n\nNOTE: This is pre-generation. Student answers are not available yet. Generate hints that address the most common errors students typically make for each question type. Make hints generic enough to apply regardless of which wrong choice the student picked.'
+    : '';
+
+  const prompt = `You are a math teacher. A Year ${year} student got these questions wrong.${modeNote}
 For each question provide exactly two things:
 1. "hint": ONE sentence guiding the student toward the answer WITHOUT revealing it. Do not mention the correct answer or give away numbers.
 2. "explanation": 1-2 sentences that clearly explain the correct method AND state the correct answer.
@@ -9811,7 +9993,44 @@ ${lines}`;
 }
 
 // ── REMEDIATION: PRACTICE QUESTIONS ─────
-async function generatePracticeQuestions(wrongQs, year, roundIdx) {
+// [2026-05 lazy caching] sourceQId 기준 부분 캐시 지원.
+async function generatePracticeQuestions(wrongQs, year, roundIdx, ctx) {
+  const wrongIds = new Set(wrongQs.map(q => q.id || `q${q.num}`));
+
+  // 1. 캐시 조회
+  if (ctx) {
+    const cached = await getAICache(ctx.hwKey, ctx.setIdx, ctx.roundIdx);
+    const cachedPracticeQs = (cached?.practiceQuestions || []).filter(pq => wrongIds.has(pq.sourceQId));
+    const cachedSourceIds = new Set(cachedPracticeQs.map(pq => pq.sourceQId));
+
+    const missingWrongQs = wrongQs.filter(q => !cachedSourceIds.has(q.id || `q${q.num}`));
+
+    // 1-A. Full hit
+    if (missingWrongQs.length === 0 && cachedPracticeQs.length > 0) {
+      return cachedPracticeQs;
+    }
+
+    // 1-B. Partial hit — 누락된 sourceQId만 새로 생성
+    if (cachedPracticeQs.length > 0 && missingWrongQs.length > 0) {
+      const generated = await _generatePracticeQuestionsAI(missingWrongQs, year, roundIdx);
+      await appendToAICache(ctx.hwKey, ctx.setIdx, ctx.roundIdx, {
+        practiceQuestions: generated
+      });
+      return [...cachedPracticeQs, ...generated];
+    }
+  }
+
+  // 2. 캐시 없음 → 전체 생성
+  const generated = await _generatePracticeQuestionsAI(wrongQs, year, roundIdx);
+  if (ctx) {
+    await appendToAICache(ctx.hwKey, ctx.setIdx, ctx.roundIdx, {
+      practiceQuestions: generated
+    });
+  }
+  return generated;
+}
+
+async function _generatePracticeQuestionsAI(wrongQs, year, roundIdx) {
   const originalPerQ = roundIdx === 0 ? 3 : 2;  // 1차: 3문제, 2차: 2문제
   const effectiveWrongQs = wrongQs;
   const perQList = effectiveWrongQs.map(() => 1);
@@ -9842,7 +10061,7 @@ ${effectiveWrongQs.map((q, i) => {
 
   // flatten: add sourceQNum for display (original homework Q number)
   const practiceQs = [];
-  let idx = 0;
+  let idx = Date.now() % 100000;  // 시간 기반 시드 — 누적 캐시에서 id 충돌 방지
   result.forEach(group => {
     const srcQ = effectiveWrongQs.find(q => q.id === group.sourceQId)
              || effectiveWrongQs.find(q => String(q.num) === String(group.sourceQId))
@@ -9878,6 +10097,287 @@ ${effectiveWrongQs.map((q, i) => {
     });
   });
   return practiceQs;
+}
+
+// ── AI 사전생성 (Teacher only, 2026-05) ──────────────────────────
+// 학생이 풀기 전에 미리 모든 문제에 대한 해설/힌트/유사문제를 AI로 생성하여 Firebase에 저장.
+async function pregenerateAIForSet(hwKeyStr, setIdx) {
+  if (currentUser?.role !== 'teacher') {
+    alert('교사 권한이 필요합니다.');
+    return;
+  }
+
+  const store = getStore();
+  const hw = store.homeworkSets[hwKeyStr];
+  if (!hw?.sets?.[setIdx]) {
+    alert('세트를 찾을 수 없습니다.');
+    return;
+  }
+
+  const set = hw.sets[setIdx];
+  const allQs = (set.questions || []).map(q => ({
+    ...q,
+    id: q.id || `q${q.num}`
+  }));
+
+  if (allQs.length === 0) {
+    alert('이 세트에 문제가 없습니다.');
+    return;
+  }
+
+  if (!getAIKey()) {
+    alert('교사 설정에서 Claude API Key를 먼저 입력하세요.');
+    return;
+  }
+
+  const ok = confirm(
+    `이 세트의 ${allQs.length}개 문제에 대해\n` +
+    `AI 해설/힌트/유사문제를 미리 생성합니다.\n\n` +
+    `소요 시간: 약 30~60초\n` +
+    `예상 비용: 약 $0.05~0.15\n\n` +
+    `진행하시겠습니까?`
+  );
+  if (!ok) return;
+
+  // 버튼 즉시 disabled (이중 클릭 방지)
+  const btnEls = document.querySelectorAll(`[data-pregen-key="${hwKeyStr}_${setIdx}"]`);
+  btnEls.forEach(b => { b.disabled = true; b.textContent = '⏳ 생성 중...'; });
+
+  showAILoadingModal('AI 해설을 생성하는 중...');
+
+  try {
+    const year = hw.year;
+
+    for (let roundIdx = 0; roundIdx < 2; roundIdx++) {
+      updateAILoadingMessage(`Round ${roundIdx + 1}/2 — 해설 생성 중...`);
+      // [v3 갭2 옵션B] 사전생성 모드 플래그 전달
+      const { hints, explanations } = await generateExplanationsForWrong(allQs, year, null, true);
+
+      updateAILoadingMessage(`Round ${roundIdx + 1}/2 — 유사문제 생성 중...`);
+      const practiceQs = await generatePracticeQuestions(allQs, year, roundIdx);
+
+      updateAILoadingMessage(`Round ${roundIdx + 1}/2 — Firebase 저장 중...`);
+      await setAICache(hwKeyStr, setIdx, roundIdx, {
+        hints, explanations, practiceQuestions: practiceQs
+      });
+    }
+
+    hideAILoadingModal();
+    btnEls.forEach(b => { b.disabled = false; b.textContent = '✅ AI 사전생성 완료'; });
+    showBackupToast(`✅ AI 사전생성 완료! (${allQs.length}문제 × 2 round)`);
+
+    setTimeout(() => {
+      btnEls.forEach(b => { b.textContent = '🤖 AI 사전생성'; });
+    }, 3000);
+
+  } catch (e) {
+    hideAILoadingModal();
+    btnEls.forEach(b => { b.disabled = false; b.textContent = '🤖 AI 사전생성'; });
+    alert('AI 사전생성 실패: ' + e.message);
+  }
+}
+
+// ── 현재 주차 전체 사전생성 (Teacher only, 2026-05) ──────────
+// 옵션 1: 현재 주차 전체 학년 세트(Y3~Y9)를 순차 처리.
+// 캐시가 있는 세트는 자동 skip (forceRegenerate=true이면 무시하고 재생성)
+async function pregenerateAIForCurrentPeriod(forceRegenerate = false) {
+  if (currentUser?.role !== 'teacher') {
+    alert('교사 권한이 필요합니다.');
+    return;
+  }
+
+  if (!getAIKey()) {
+    alert('교사 설정에서 Claude API Key를 먼저 입력하세요.');
+    return;
+  }
+
+  const store = getStore();
+  const p = store.currentPeriod;
+
+  // 현재 주차의 모든 학년 + 국가 조합에서 세트 수집 (전체 학년 처리)
+  const targets = [];
+  Object.entries(store.homeworkSets).forEach(([key, hw]) => {
+    if (!hw?.sets?.length) return;
+    if (!hw.period) return;
+    if (hw.period.year !== p.year || hw.period.month !== p.month || hw.period.week !== p.week) return;
+
+    hw.sets.forEach((set, idx) => {
+      if (!set.questions?.length) return;
+      targets.push({
+        hwKey: key,
+        setIdx: idx,
+        year: hw.year,
+        country: hw.country || 'AU',
+        label: `Y${hw.year} ${set.title}`,
+        questionCount: set.questions.length
+      });
+    });
+  });
+
+  if (targets.length === 0) {
+    alert('현재 주차에 사전생성할 세트가 없습니다.');
+    return;
+  }
+
+  // 각 세트별 캐시 존재 여부 병렬 확인
+  const cacheChecks = await Promise.all(
+    targets.map(t => hasAICache(t.hwKey, t.setIdx))
+  );
+
+  const toProcess = [];
+  const toSkip = [];
+  targets.forEach((t, i) => {
+    const hasCache = cacheChecks[i];
+    if (hasCache && !forceRegenerate) toSkip.push(t);
+    else toProcess.push(t);
+  });
+
+  const totalQ = toProcess.reduce((s, t) => s + t.questionCount, 0);
+  const estimatedSec = Math.ceil(toProcess.length * 45);
+  const estimatedCost = (totalQ * 0.01).toFixed(2);
+
+  let msg = `📦 ${periodLabel(p)} 일괄 사전생성 (현재 주차 전체 학년 세트 Y3~Y9)\n\n`;
+  msg += `처리 대상: ${toProcess.length}개 세트 (${totalQ}문제)\n`;
+  if (toSkip.length > 0) msg += `건너뛰기: ${toSkip.length}개 세트 (이미 캐시 있음)\n`;
+  msg += `\n예상 시간: 약 ${estimatedSec}초\n`;
+  msg += `예상 비용: 약 $${estimatedCost}\n\n`;
+  if (forceRegenerate) msg += `⚠️ 강제 재생성: 기존 캐시도 모두 덮어씁니다.\n\n`;
+  msg += `진행하시겠습니까?`;
+
+  if (!confirm(msg)) return;
+  if (toProcess.length === 0) {
+    alert('처리할 세트가 없습니다 (모두 캐시 있음).');
+    return;
+  }
+
+  showAILoadingModal(`일괄 사전생성 시작 (0/${toProcess.length})`);
+
+  let successCount = 0;
+  let failCount = 0;
+  const failedSets = [];
+
+  for (let i = 0; i < toProcess.length; i++) {
+    const t = toProcess[i];
+    updateAILoadingMessage(`(${i + 1}/${toProcess.length}) ${t.label} 처리 중...`);
+    try {
+      const hw = store.homeworkSets[t.hwKey];
+      const set = hw.sets[t.setIdx];
+      const allQs = (set.questions || []).map(q => ({
+        ...q,
+        id: q.id || `q${q.num}`
+      }));
+
+      for (let roundIdx = 0; roundIdx < 2; roundIdx++) {
+        const { hints, explanations } = await generateExplanationsForWrong(allQs, t.year, null, true);
+        const practiceQs = await generatePracticeQuestions(allQs, t.year, roundIdx);
+        await setAICache(t.hwKey, t.setIdx, roundIdx, {
+          hints, explanations, practiceQuestions: practiceQs
+        });
+      }
+      successCount++;
+    } catch (e) {
+      console.error(`[일괄 사전생성] ${t.label} 실패:`, e);
+      failCount++;
+      failedSets.push(`${t.label}: ${e.message}`);
+    }
+  }
+
+  hideAILoadingModal();
+
+  let resultMsg = `📦 일괄 사전생성 완료\n\n`;
+  resultMsg += `✅ 성공: ${successCount}개\n`;
+  if (failCount > 0) {
+    resultMsg += `❌ 실패: ${failCount}개\n\n실패 목록:\n${failedSets.slice(0, 5).join('\n')}`;
+    if (failedSets.length > 5) resultMsg += `\n... 외 ${failedSets.length - 5}개`;
+  }
+  if (toSkip.length > 0) resultMsg += `\n⏭️ 건너뜀: ${toSkip.length}개 (기존 캐시)`;
+
+  alert(resultMsg);
+  showBackupToast(`📦 일괄 사전생성 완료: 성공 ${successCount} / 실패 ${failCount}`);
+}
+
+// ── 자동 백그라운드 사전생성 (2026-05) ──────────────────────
+// 옵션 2: 세트 저장 직후 백그라운드 조용히 실행. 우측 상단 진행 배지.
+async function autoPregenerateInBackground(hwKeyStr, setIdx, setTitle) {
+  if (currentUser?.role !== 'teacher') return;
+  if (!getAIKey()) return;
+
+  const cached = await hasAICache(hwKeyStr, setIdx);
+  if (cached) {
+    console.log(`[자동 사전생성] ${setTitle}: 캐시 있음 — skip`);
+    return;
+  }
+
+  const store = getStore();
+  const hw = store.homeworkSets[hwKeyStr];
+  if (!hw?.sets?.[setIdx]) return;
+
+  const set = hw.sets[setIdx];
+  const allQs = (set.questions || []).map(q => ({
+    ...q,
+    id: q.id || `q${q.num}`
+  }));
+  if (allQs.length === 0) return;
+
+  showAutoProgressBadge(`🤖 ${setTitle} AI 생성 중...`);
+
+  try {
+    const year = hw.year;
+    for (let roundIdx = 0; roundIdx < 2; roundIdx++) {
+      updateAutoProgressBadge(`🤖 ${setTitle} (Round ${roundIdx + 1}/2)`);
+      const { hints, explanations } = await generateExplanationsForWrong(allQs, year, null, true);
+      const practiceQs = await generatePracticeQuestions(allQs, year, roundIdx);
+      await setAICache(hwKeyStr, setIdx, roundIdx, {
+        hints, explanations, practiceQuestions: practiceQs
+      });
+    }
+    updateAutoProgressBadge(`✅ ${setTitle} AI 생성 완료`, 'success');
+    setTimeout(hideAutoProgressBadge, 3000);
+    console.log(`[자동 사전생성] ${setTitle}: 완료`);
+  } catch (e) {
+    console.error(`[자동 사전생성] ${setTitle} 실패:`, e);
+    updateAutoProgressBadge(`⚠️ ${setTitle} AI 생성 실패 (수동 시도 필요)`, 'error');
+    setTimeout(hideAutoProgressBadge, 5000);
+  }
+}
+
+// ── 우측 상단 진행 배지 (2026-05) ──
+function showAutoProgressBadge(message) {
+  const existing = document.getElementById('autoProgressBadge');
+  if (existing) existing.remove();
+  const badge = document.createElement('div');
+  badge.id = 'autoProgressBadge';
+  badge.style.cssText = `
+    position:fixed; top:80px; right:20px;
+    background:#1E3A8A; color:#fff;
+    padding:10px 18px; border-radius:99px;
+    font-family:'Noto Sans KR',sans-serif;
+    font-size:13px; font-weight:600;
+    box-shadow:0 4px 12px rgba(0,0,0,0.15);
+    z-index:9998;
+    transition:all 0.3s ease;
+    max-width:320px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  `;
+  badge.textContent = message;
+  document.body.appendChild(badge);
+}
+
+function updateAutoProgressBadge(message, status) {
+  const badge = document.getElementById('autoProgressBadge');
+  if (!badge) return;
+  badge.textContent = message;
+  if (status === 'success') badge.style.background = '#16a34a';
+  else if (status === 'error') badge.style.background = '#DC2626';
+  else badge.style.background = '#1E3A8A';
+}
+
+function hideAutoProgressBadge() {
+  const badge = document.getElementById('autoProgressBadge');
+  if (badge) {
+    badge.style.opacity = '0';
+    setTimeout(() => badge.remove(), 300);
+  }
 }
 
 // ── REMEDIATION STATE MANAGEMENT ────────
@@ -9937,7 +10437,10 @@ async function startRemediation(setIdx) {
   </div></div>`;
 
   try {
-    const aiResult = await generateExplanationsForWrong(wrongQs, currentUser.year);
+    // [2026-05] AI 캐시 조회용 ctx (학생 측에서 사용, 교사는 무시됨)
+    const _hwKey = hwKey(currentUser.year, currentUser.country || 'AU', p);
+    const ctx = { hwKey: _hwKey, setIdx, roundIdx };
+    const aiResult = await generateExplanationsForWrong(wrongQs, currentUser.year, ctx);
 
     rem.currentRound = roundIdx;
     rem.rounds[roundIdx] = {
@@ -10200,7 +10703,10 @@ async function onExplanationRead(setIdx, roundIdx) {
   </div></div>`;
 
   try {
-    const practiceQs = await generatePracticeQuestions(stillWrong, currentUser.year, roundIdx);
+    // [2026-05] AI 캐시 조회용 ctx (학생 측에서 사용, 교사는 무시됨)
+    const _hwKey = hwKey(currentUser.year, currentUser.country || 'AU', p);
+    const ctx = { hwKey: _hwKey, setIdx, roundIdx };
+    const practiceQs = await generatePracticeQuestions(stillWrong, currentUser.year, roundIdx, ctx);
     round.practiceQuestions = practiceQs;
     saveStore(store);
     fbSetSubmission(key, store.submissions[key]);
@@ -10230,7 +10736,19 @@ function renderPracticeSet(setIdx, roundIdx) {
   const round = rem.rounds?.[roundIdx];
   if (!round) { currentSetIdx = setIdx; renderStudent(); return; }
   const qs = round.practiceQuestions || [];
-  if (qs.length === 0) { currentSetIdx = setIdx; renderStudent(); return; }
+  if (qs.length === 0) {
+    // [2026-05] 사전생성 안 된 세트 → 안내 메시지
+    document.getElementById('mainContent').innerHTML = `
+      <div class="exam-wrap">
+        <div style="background:#fff;border-radius:var(--radius);padding:50px 30px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.06);">
+          <div style="font-size:48px;margin-bottom:16px;">📚</div>
+          <div style="font-size:18px;font-weight:800;color:var(--navy);margin-bottom:8px;">연습문제가 아직 준비되지 않았어요</div>
+          <div style="color:var(--muted);font-size:14px;margin-bottom:24px;">선생님께 알려주시면 곧 추가해주실 거예요.</div>
+          <button class="btn-nav" onclick="currentSetIdx=null;renderStudent()">← 학생 홈으로</button>
+        </div>
+      </div>`;
+    return;
+  }
   if (!round.practiceAnswers) round.practiceAnswers = {};
 
   if (round.practiceSubmitted) {
@@ -10452,6 +10970,7 @@ async function practiceAnswerWithHint(qId, selectedAnswer, setIdx, roundIdx) {
 }
 
 async function generatePracticeHint(q, year) {
+  // [2026-05 lazy] callAI가 학생/교사 자동 라우팅 (학생 → Functions, 교사 → 직접)
   const prompt = `You are a math teacher. A Year ${year} student got this practice question wrong.
 Provide:
 1. "hint": ONE sentence guiding toward the answer WITHOUT revealing it.
@@ -10689,6 +11208,11 @@ const firebaseConfig = {
     firebase.initializeApp(firebaseConfig);
     window.FB_REF = firebase.database().ref('solomon_hw_v3');
     window.fbReady = false;
+
+    // [2026-05] 익명 인증 — Cloud Functions 호출에 필수
+    firebase.auth().signInAnonymously()
+      .then(cred => console.log('[Auth] anonymous user:', cred.user.uid))
+      .catch(e => console.warn('[Auth] anonymous sign-in failed:', e.message));
 
     // 다른 기기에서 변경 시 실시간 반영
     // 다른 기기에서 변경 시 실시간 반영 (localStorage만 업데이트)
@@ -11029,6 +11553,50 @@ function showBackupToast(msg) {
   });
   document.body.appendChild(toast);
   setTimeout(() => { toast.remove(); }, 3000);
+}
+
+// ── AI 사전생성 전용 로딩 모달 (2026-05) ──
+function showAILoadingModal(message) {
+  const existing = document.getElementById('aiLoadingModal');
+  if (existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'aiLoadingModal';
+  modal.style.cssText = `
+    position:fixed; top:0; left:0; right:0; bottom:0;
+    background:rgba(0,0,0,0.6); z-index:10001;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Noto Sans KR',sans-serif;
+  `;
+  modal.innerHTML = `
+    <div style="background:#fff; border-radius:16px; padding:32px 40px; max-width:400px; text-align:center; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+      <div style="font-size:36px; margin-bottom:12px;">🤖</div>
+      <div id="aiLoadingMsg" style="font-size:16px; font-weight:700; color:var(--navy); margin-bottom:8px;">${message || 'AI가 작업 중입니다...'}</div>
+      <div style="font-size:13px; color:var(--muted);">잠시만 기다려주세요</div>
+      <div style="margin-top:16px;">
+        <div style="width:100%; height:6px; background:#f1f5f9; border-radius:99px; overflow:hidden;">
+          <div style="width:50%; height:100%; background:linear-gradient(90deg, var(--gold), var(--navy)); animation:aiLoadingBar 1.5s ease-in-out infinite;"></div>
+        </div>
+      </div>
+    </div>
+    <style>
+      @keyframes aiLoadingBar {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(200%); }
+      }
+    </style>
+  `;
+  document.body.appendChild(modal);
+  return modal;
+}
+
+function updateAILoadingMessage(message) {
+  const el = document.getElementById('aiLoadingMsg');
+  if (el) el.textContent = message;
+}
+
+function hideAILoadingModal() {
+  const modal = document.getElementById('aiLoadingModal');
+  if (modal) modal.remove();
 }
 
 // ── 3. 백업 목록 로드 및 복구 ──
@@ -11851,6 +12419,8 @@ async function doImportHwJson(yr) {
   saveStore(store);
   fbSetHomeworkSet(key, store.homeworkSets[key]);
   renderTeacher();
+
+  // [2026-05 lazy caching 전환] 다중 세트 자동 사전생성 제거
 
   const totalQ = Object.values(setGroups).reduce((s, g) => s + g.questions.length, 0);
   const msg = document.createElement('div');
