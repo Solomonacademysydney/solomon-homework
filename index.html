@@ -9627,12 +9627,9 @@ function setAIKey(k) {
 }
 
 async function callAI(input) {
-  // [Security 2026-05] 학생/학부모: Cloud Functions 경유 (브라우저에 키 0)
-  // 교사: 자기 localStorage 키로 직접 호출 (옵션 B)
-  if (currentUser && currentUser.role !== 'teacher') {
-    return _callAIViaFunctions(input);
-  }
-  return _callAIDirect(input);
+  // [Phase 2A] 모든 호출 Cloud Functions 경유 — 브라우저에 키 0
+  // 교사도 자기 localStorage 키 사용 안 함, Functions config의 ANTHROPIC_KEY 1개로 통일
+  return _callAIViaFunctions(input);
 }
 
 async function _callAIViaFunctions(input) {
@@ -9702,65 +9699,6 @@ function _extractSysCode(err) {
   if (err?._sysCode) return err._sysCode;
   const m = String(err?.message || err || '').match(/^S-[A-Z0-9]+$/);
   return m ? m[0] : 'S-NET';
-}
-
-async function _callAIDirect(input) {
-  const apiKey = getAIKey();
-  if (!apiKey) throw new Error('Claude API key is not set.\nPlease set it in Teacher Settings.');
-
-  // ═══════════════════════════════════════════════════════
-  //  Prompt Caching 지원
-  //  - input이 string: 기존 동작 (캐시 없음, 호환성 유지)
-  //  - input이 { cached, fresh } 객체: cached 부분에 cache_control 적용
-  //    → 5분 TTL 안에 같은 cached prefix 재호출 시 ~90% 비용 절감
-  //  - cached 부분은 최소 1024 토큰 이상이어야 캐시 적용됨 (Sonnet 기준)
-  // ═══════════════════════════════════════════════════════
-  let messages;
-  if (typeof input === 'string') {
-    messages = [{ role: 'user', content: input }];
-  } else if (input && typeof input === 'object') {
-    const parts = [];
-    if (input.cached) {
-      parts.push({ type: 'text', text: input.cached, cache_control: { type: 'ephemeral' } });
-    }
-    if (input.fresh) {
-      parts.push({ type: 'text', text: input.fresh });
-    }
-    if (parts.length === 0) throw new Error('callAI: empty input');
-    messages = [{ role: 'user', content: parts }];
-  } else {
-    throw new Error('callAI: input must be string or { cached, fresh } object');
-  }
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 60000);
-  let res;
-  try {
-    res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 8000,
-        temperature: 0.15,
-        messages: messages
-      })
-    });
-  } catch (err) {
-    clearTimeout(timeoutId);
-    if (err.name === 'AbortError') throw new Error('AI request timed out. Please try again.');
-    throw err;
-  }
-  clearTimeout(timeoutId);
-  if (!res.ok) { const e = await res.text(); throw new Error(`Claude API Error: ${res.status}\n${e}`); }
-  const data = await res.json();
-  return data.content?.[0]?.text || '';
 }
 
 function extractJSON(text) {
