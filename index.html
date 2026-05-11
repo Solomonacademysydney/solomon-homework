@@ -4638,10 +4638,9 @@ function doParse() {
 
   html += `</div>`;
 
-  // AI verification area
-  const hasApiKey = !!getAIKey();
+  // AI verification area — always available now (Cloud Functions handles auth)
   const ansCount = questions.filter(q=>q.answer).length;
-  if (hasApiKey && ansCount > 0) {
+  if (ansCount > 0) {
     html += `<div style="margin-top:16px;padding:16px;background:#eef2ff;border-radius:12px;border:2px solid #c7d2fe;">
       <div style="display:flex;align-items:center;gap:12px;">
         <div style="font-weight:800;color:var(--navy);flex:1;">🤖 AI Answer Verification</div>
@@ -4651,15 +4650,13 @@ function doParse() {
         <div class="ai-loading" style="padding:16px;"><div class="ai-spinner"></div><div>AI is checking all answers...</div></div>
       </div>
     </div>`;
-  } else if (!hasApiKey) {
-    html += `<div style="margin-top:12px;font-size:12px;color:var(--muted);">💡 Set up a Claude API Key in Teacher Settings to enable AI answer verification.</div>`;
   }
 
   document.getElementById('parsePreview').innerHTML = html;
   document.getElementById('saveBtn').style.display = 'inline-block';
 
-  // Auto-verify if API key exists
-  if (hasApiKey && ansCount > 0) {
+  // Auto-verify when answers exist
+  if (ansCount > 0) {
     doVerifyAnswers();
   }
 }
@@ -4719,7 +4716,7 @@ async function doSave() {
 
     // Phase C: auto-tag questions before save
     let tagResult = { skipped: true };
-    if (window.TAXONOMY_MR && getAIKey()) {
+    if (window.TAXONOMY_MR) {
       showBackupToast('🏷️ 태깅 중...');
       tagResult = await tagQuestions(qs, selectedYear);
     }
@@ -5554,12 +5551,10 @@ function renderStudent() {
       const ans = sub.answers[q.id];
       return ans === undefined || normAns(ans) !== normAns(q.answer);
     });
-    // [2026-05] 학생은 Cloud Functions 경유로 AI 호출 가능 → 키 없어도 OK
-    // 교사는 자기 키로 직접 호출 → 키 필요
-    const hasApiKey = !!getAIKey() || (currentUser && currentUser.role === 'student');
+    // [Phase 2A] 모든 호출 Cloud Functions 경유 — 항상 사용 가능
     const rem = sub.remediation;
 
-    if (wrongQs.length > 0 && hasApiKey) {
+    if (wrongQs.length > 0) {
       // Check if remediation is already in progress
       if (rem && rem.currentRound >= 0 && rem.rounds[rem.currentRound]) {
         const curRound = rem.rounds[rem.currentRound];
@@ -5612,10 +5607,6 @@ function renderStudent() {
           </button>
         </div>`;
       }
-    } else if (wrongQs.length > 0 && !hasApiKey) {
-      html += `<div style="font-size:12px;color:var(--muted);text-align:center;margin-top:12px;">
-        💡 Set up a Claude API Key to enable explanations and practice questions for wrong answers.
-      </div>`;
     }
 
     html += `</div>`;
@@ -9502,11 +9493,6 @@ async function generateAndShowKakao(studentId, resultIdx, setIdx) {
   const area = document.getElementById(`kakaoArea_${resultIdx}`);
   if (!btn || !area) return;
 
-  if (!getAIKey()) {
-    alert('Claude API Key가 설정되지 않았습니다.\nTeacher Settings에서 설정해주세요.');
-    return;
-  }
-
   btn.innerHTML = '<div class="ai-spinner" style="width:20px;height:20px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px;"></div> 메시지 생성 중...';
   btn.disabled = true;
 
@@ -9581,23 +9567,13 @@ function copyKakaoMsg(resultIdx) {
 }
 
 // ═══════════════════════════════════════
-//  GEMINI AI INTEGRATION
+//  AI INTEGRATION (Phase 2A: all calls via Cloud Functions)
 // ═══════════════════════════════════════
-function getAIKey() {
-  // [Security 2026-05] 교사 전용 namespace (옛 claude_api_key는 폐기)
-  return localStorage.getItem('solomon_teacher_api_key') || '';
-}
-function setAIKey(k) {
-  // [Security 2026-05] 교사만 호출 가능 (안전망)
-  if (currentUser && currentUser.role !== 'teacher') {
-    console.error('[Security] setAIKey blocked for non-teacher');
-    return;
-  }
-  localStorage.setItem('solomon_teacher_api_key', k.trim());
-  if (localStorage.getItem('claude_api_key')) {
-    localStorage.removeItem('claude_api_key');
-  }
-}
+// [Phase 2A — Phase 5 stub] getAIKey/setAIKey는 더 이상 사용하지 않음.
+// 외부 코드에서 호출하던 잔여 호출을 1주간 console.warn으로 감지 후 완전 제거 예정.
+// 또한 페이지 로드 시 옛 잔여 solomon_teacher_api_key를 1회 청소.
+function getAIKey() { console.warn('[deprecated] getAIKey called'); return ''; }
+function setAIKey() { console.warn('[deprecated] setAIKey called'); }
 
 async function callAI(input) {
   // [Phase 2A] 모든 호출 Cloud Functions 경유 — 브라우저에 키 0
@@ -9874,10 +9850,6 @@ async function tagQuestions(questions, year) {
   if (!window.TAXONOMY_MR) {
     console.warn('[Tag] Taxonomy not loaded, skipping');
     return { questions, skipped: true, reason: 'no_taxonomy' };
-  }
-  if (!getAIKey()) {
-    console.warn('[Tag] API key not set, skipping');
-    return { questions, skipped: true, reason: 'no_api_key' };
   }
   const subskillList = flattenTaxonomySubskills(year);
   if (subskillList.length === 0) {
@@ -10504,11 +10476,6 @@ async function pregenerateAIForSet(hwKeyStr, setIdx) {
     return;
   }
 
-  if (!getAIKey()) {
-    alert('교사 설정에서 Claude API Key를 먼저 입력하세요.');
-    return;
-  }
-
   const ok = confirm(
     `이 세트의 ${allQs.length}개 문제에 대해\n` +
     `AI 해설/힌트/유사문제를 미리 생성합니다.\n\n` +
@@ -10562,11 +10529,6 @@ async function pregenerateAIForSet(hwKeyStr, setIdx) {
 async function pregenerateAIForCurrentPeriod(forceRegenerate = false) {
   if (currentUser?.role !== 'teacher') {
     alert('교사 권한이 필요합니다.');
-    return;
-  }
-
-  if (!getAIKey()) {
-    alert('교사 설정에서 Claude API Key를 먼저 입력하세요.');
     return;
   }
 
@@ -10679,7 +10641,6 @@ async function pregenerateAIForCurrentPeriod(forceRegenerate = false) {
 // 옵션 2: 세트 저장 직후 백그라운드 조용히 실행. 우측 상단 진행 배지.
 async function autoPregenerateInBackground(hwKeyStr, setIdx, setTitle) {
   if (currentUser?.role !== 'teacher') return;
-  if (!getAIKey()) return;
 
   const cached = await hasAICache(hwKeyStr, setIdx);
   if (cached) {
@@ -13031,7 +12992,7 @@ async function doImportHwJson(yr) {
     const setTitle = `Set ${setIdx + 1} (${info.title})`;
 
     // Phase C: auto-tag imported questions
-    if (window.TAXONOMY_MR && getAIKey()) {
+    if (window.TAXONOMY_MR) {
       showBackupToast(`🏷️ 태깅 중... (${setTitle})`);
       await tagQuestions(questions, yr);
     }
