@@ -3773,15 +3773,14 @@ async function doLogin() {
   }
   currentUser = user;
 
-  // [Security 2026-05] 학생/학부모 브라우저에서 두 종류 API 키 모두 제거
-  if (currentUser.role !== 'teacher') {
-    ['claude_api_key', 'solomon_teacher_api_key'].forEach(k => {
-      if (localStorage.getItem(k)) {
-        localStorage.removeItem(k);
-        console.log(`[Security] ${k} removed from non-teacher localStorage`);
-      }
-    });
-  }
+  // [Phase 2A] 옛 API 키 localStorage 잔여 1회 청소 (모든 역할 대상)
+  // 더 이상 브라우저에 키가 필요 없음 — Cloud Functions config의 ANTHROPIC_KEY 사용
+  // 1~2주 운영 후 모든 기존 사용자의 잔여 정리되면 이 블록 자체 제거 예정
+  ['claude_api_key', 'solomon_teacher_api_key'].forEach(k => {
+    if (localStorage.getItem(k)) {
+      localStorage.removeItem(k);
+    }
+  });
 
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
@@ -3888,21 +3887,7 @@ function renderTeacher() {
   const auCount = allStudents.filter(s=>(s.country||'AU')==='AU'&&!s.isTest).length;
   const krCount = allStudents.filter(s=>s.country==='KR'&&!s.isTest).length;
 
-  const _hasKey = !!getAIKey();
   let html = `
-    ${!_hasKey ? `
-    <div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border:2px solid #f59e0b;border-radius:14px;padding:18px 22px;margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-      <div style="flex:1;min-width:200px;">
-        <div style="font-weight:900;color:#92400e;font-size:15px;margin-bottom:4px;">🤖 AI Setup Required</div>
-        <div style="font-size:13px;color:#78350f;">To enable automatic answer verification and student practice questions, please enter your Claude API key.</div>
-        <div style="font-size:11px;color:#92400e;margin-top:4px;">Free key from <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:#92400e;font-weight:800;">Anthropic Console</a></div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <input id="topAIKey" type="password" placeholder="Paste API key here"
-          style="padding:10px 14px;border:2px solid #d97706;border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-size:13px;width:220px;outline:none;">
-        <button class="btn-sm" style="background:#92400e;color:#fff;padding:10px 18px;" onclick="setAIKey(document.getElementById('topAIKey').value);if(getAIKey()){showBackupToast('✅ API Key saved!');renderTeacher();}else{showBackupToast('⚠️ Please enter a key.');}">Save</button>
-      </div>
-    </div>` : ''}
     <div class="page-title">📋 Weekly Homework Management</div>
     <div style="display:flex;gap:10px;margin-bottom:20px;">
       <button class="btn-sm ${selectedCountry==='AU'?'btn-navy':'btn-blue'}" onclick="selectCountryTab('AU')">🇦🇺 Australian (${auCount})</button>
@@ -4652,10 +4637,9 @@ function doParse() {
 
   html += `</div>`;
 
-  // AI verification area
-  const hasApiKey = !!getAIKey();
+  // AI verification area — always available now (Cloud Functions handles auth)
   const ansCount = questions.filter(q=>q.answer).length;
-  if (hasApiKey && ansCount > 0) {
+  if (ansCount > 0) {
     html += `<div style="margin-top:16px;padding:16px;background:#eef2ff;border-radius:12px;border:2px solid #c7d2fe;">
       <div style="display:flex;align-items:center;gap:12px;">
         <div style="font-weight:800;color:var(--navy);flex:1;">🤖 AI Answer Verification</div>
@@ -4665,15 +4649,13 @@ function doParse() {
         <div class="ai-loading" style="padding:16px;"><div class="ai-spinner"></div><div>AI is checking all answers...</div></div>
       </div>
     </div>`;
-  } else if (!hasApiKey) {
-    html += `<div style="margin-top:12px;font-size:12px;color:var(--muted);">💡 Set up a Claude API Key in Teacher Settings to enable AI answer verification.</div>`;
   }
 
   document.getElementById('parsePreview').innerHTML = html;
   document.getElementById('saveBtn').style.display = 'inline-block';
 
-  // Auto-verify if API key exists
-  if (hasApiKey && ansCount > 0) {
+  // Auto-verify when answers exist
+  if (ansCount > 0) {
     doVerifyAnswers();
   }
 }
@@ -4733,7 +4715,7 @@ async function doSave() {
 
     // Phase C: auto-tag questions before save
     let tagResult = { skipped: true };
-    if (window.TAXONOMY_MR && getAIKey()) {
+    if (window.TAXONOMY_MR) {
       showBackupToast('🏷️ 태깅 중...');
       tagResult = await tagQuestions(qs, selectedYear);
     }
@@ -4909,19 +4891,6 @@ function renderTeacherSettings(store) {
         <div class="field"><label>New Password</label><input id="ta_pw" type="password" placeholder="Leave blank to keep current"></div>
       </div>
       <button class="btn-sm btn-navy" onclick="saveTeacherAccount()">Save Account ✓</button>
-      <div style="margin-top:16px;padding-top:16px;border-top:2px solid var(--border);">
-        <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">🤖 Claude AI Settings (Answer Verification & Student Practice)</div>
-        <div class="field" style="margin-bottom:10px;">
-          <label>Claude API Key</label>
-          <input id="claudeKeyInput" type="password" value="${getAIKey()}" placeholder="API key from Anthropic Console"
-            style="width:100%;padding:10px 13px;border:2px solid var(--border);border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-size:14px;outline:none;">
-          <div style="font-size:11px;color:var(--muted);margin-top:4px;">
-            Get your key from <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--gold2);">Anthropic Console</a> → Paste here → Save
-          </div>
-        </div>
-        <button class="btn-sm btn-navy" onclick="setAIKey(document.getElementById('claudeKeyInput').value);showBackupToast('✅ API Key saved!');renderTeacher();">Save API Key</button>
-        ${getAIKey() ? '<span style="margin-left:8px;font-size:12px;color:var(--green);font-weight:700;">✅ Key configured</span>' : ''}
-      </div>
       <div style="margin-top:16px;padding-top:16px;border-top:2px solid var(--border);">
         <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">📡 Firebase 동기화</div>
         <button class="btn-sm btn-gold" onclick="forceUploadToFirebase()">⬆️ 이 컴 데이터 → Firebase 업로드</button>
@@ -5581,12 +5550,10 @@ function renderStudent() {
       const ans = sub.answers[q.id];
       return ans === undefined || normAns(ans) !== normAns(q.answer);
     });
-    // [2026-05] 학생은 Cloud Functions 경유로 AI 호출 가능 → 키 없어도 OK
-    // 교사는 자기 키로 직접 호출 → 키 필요
-    const hasApiKey = !!getAIKey() || (currentUser && currentUser.role === 'student');
+    // [Phase 2A] 모든 호출 Cloud Functions 경유 — 항상 사용 가능
     const rem = sub.remediation;
 
-    if (wrongQs.length > 0 && hasApiKey) {
+    if (wrongQs.length > 0) {
       // Check if remediation is already in progress
       if (rem && rem.currentRound >= 0 && rem.rounds[rem.currentRound]) {
         const curRound = rem.rounds[rem.currentRound];
@@ -5639,10 +5606,6 @@ function renderStudent() {
           </button>
         </div>`;
       }
-    } else if (wrongQs.length > 0 && !hasApiKey) {
-      html += `<div style="font-size:12px;color:var(--muted);text-align:center;margin-top:12px;">
-        💡 Set up a Claude API Key to enable explanations and practice questions for wrong answers.
-      </div>`;
     }
 
     html += `</div>`;
@@ -9529,11 +9492,6 @@ async function generateAndShowKakao(studentId, resultIdx, setIdx) {
   const area = document.getElementById(`kakaoArea_${resultIdx}`);
   if (!btn || !area) return;
 
-  if (!getAIKey()) {
-    alert('Claude API Key가 설정되지 않았습니다.\nTeacher Settings에서 설정해주세요.');
-    return;
-  }
-
   btn.innerHTML = '<div class="ai-spinner" style="width:20px;height:20px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:8px;"></div> 메시지 생성 중...';
   btn.disabled = true;
 
@@ -9608,43 +9566,58 @@ function copyKakaoMsg(resultIdx) {
 }
 
 // ═══════════════════════════════════════
-//  GEMINI AI INTEGRATION
+//  AI INTEGRATION (Phase 2A: all calls via Cloud Functions)
 // ═══════════════════════════════════════
-function getAIKey() {
-  // [Security 2026-05] 교사 전용 namespace (옛 claude_api_key는 폐기)
-  return localStorage.getItem('solomon_teacher_api_key') || '';
-}
-function setAIKey(k) {
-  // [Security 2026-05] 교사만 호출 가능 (안전망)
-  if (currentUser && currentUser.role !== 'teacher') {
-    console.error('[Security] setAIKey blocked for non-teacher');
-    return;
-  }
-  localStorage.setItem('solomon_teacher_api_key', k.trim());
-  if (localStorage.getItem('claude_api_key')) {
-    localStorage.removeItem('claude_api_key');
-  }
-}
+// [Phase 2A — Phase 5 stub] getAIKey/setAIKey는 더 이상 사용하지 않음.
+// 외부 코드에서 호출하던 잔여 호출을 1주간 console.warn으로 감지 후 완전 제거 예정.
+// 또한 페이지 로드 시 옛 잔여 solomon_teacher_api_key를 1회 청소.
+function getAIKey() { console.warn('[deprecated] getAIKey called'); return ''; }
+function setAIKey() { console.warn('[deprecated] setAIKey called'); }
 
 async function callAI(input) {
-  // [Security 2026-05] 학생/학부모: Cloud Functions 경유 (브라우저에 키 0)
-  // 교사: 자기 localStorage 키로 직접 호출 (옵션 B)
-  if (currentUser && currentUser.role !== 'teacher') {
-    return _callAIViaFunctions(input);
-  }
-  return _callAIDirect(input);
+  // [Phase 2A] 모든 호출 Cloud Functions 경유 — 브라우저에 키 0
+  // 교사도 자기 localStorage 키 사용 안 함, Functions config의 ANTHROPIC_KEY 1개로 통일
+  return _callAIViaFunctions(input);
 }
 
 async function _callAIViaFunctions(input) {
   if (!firebase?.functions) {
     throw new Error('Firebase Functions SDK가 로드되지 않았습니다.');
   }
-  let prompt;
+
+  // [Phase 2A] 페이로드 구성 — 두 가지 형태 지원:
+  //  - string                       → { prompt: input }                    학생 경로 + 단순 호출
+  //  - { cached, fresh } object     → { messages: [...] }                  교사 경로, cache_control 포함
+  //
+  // ★ cache_control 통과 보장: 'cached' 부분에 ephemeral 캐시 적용 시
+  //   동일 prefix 재사용으로 Anthropic 비용 ~90% 절감.
+  //   Functions가 messages 배열을 변형 없이 통과시키므로 클라이언트가 직접 설정.
+  // ★ 모델 통일: claude-sonnet-4-6 명시 (Functions DEFAULT_MODEL과 일치)
+  let payload;
   if (typeof input === 'string') {
-    prompt = input;
+    payload = { prompt: input, model: 'claude-sonnet-4-6' };
   } else if (input && typeof input === 'object') {
-    prompt = (input.cached || '') + (input.fresh || '');
-    if (!prompt) throw new Error('callAI: empty input');
+    const parts = [];
+    if (input.cached) {
+      parts.push({
+        type: 'text',
+        text: input.cached,
+        cache_control: { type: 'ephemeral' }
+      });
+    }
+    if (input.fresh) {
+      parts.push({
+        type: 'text',
+        text: input.fresh
+      });
+    }
+    if (parts.length === 0) {
+      throw new Error('callAI: empty input');
+    }
+    payload = {
+      messages: [{ role: 'user', content: parts }],
+      model: 'claude-sonnet-4-6'
+    };
   } else {
     throw new Error('callAI: input must be string or { cached, fresh } object');
   }
@@ -9659,7 +9632,7 @@ async function _callAIViaFunctions(input) {
 
   try {
     const callable = firebase.app().functions('australia-southeast1').httpsCallable('callClaudeForStudent');
-    const result = await callable({ prompt, model: 'claude-sonnet-4-5-20250929' });
+    const result = await callable(payload);
     return result?.data?.text || '';
   } catch (err) {
     console.error('[callAIViaFunctions] failed:', err);
@@ -9674,65 +9647,6 @@ function _extractSysCode(err) {
   if (err?._sysCode) return err._sysCode;
   const m = String(err?.message || err || '').match(/^S-[A-Z0-9]+$/);
   return m ? m[0] : 'S-NET';
-}
-
-async function _callAIDirect(input) {
-  const apiKey = getAIKey();
-  if (!apiKey) throw new Error('Claude API key is not set.\nPlease set it in Teacher Settings.');
-
-  // ═══════════════════════════════════════════════════════
-  //  Prompt Caching 지원
-  //  - input이 string: 기존 동작 (캐시 없음, 호환성 유지)
-  //  - input이 { cached, fresh } 객체: cached 부분에 cache_control 적용
-  //    → 5분 TTL 안에 같은 cached prefix 재호출 시 ~90% 비용 절감
-  //  - cached 부분은 최소 1024 토큰 이상이어야 캐시 적용됨 (Sonnet 기준)
-  // ═══════════════════════════════════════════════════════
-  let messages;
-  if (typeof input === 'string') {
-    messages = [{ role: 'user', content: input }];
-  } else if (input && typeof input === 'object') {
-    const parts = [];
-    if (input.cached) {
-      parts.push({ type: 'text', text: input.cached, cache_control: { type: 'ephemeral' } });
-    }
-    if (input.fresh) {
-      parts.push({ type: 'text', text: input.fresh });
-    }
-    if (parts.length === 0) throw new Error('callAI: empty input');
-    messages = [{ role: 'user', content: parts }];
-  } else {
-    throw new Error('callAI: input must be string or { cached, fresh } object');
-  }
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 60000);
-  let res;
-  try {
-    res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 8000,
-        temperature: 0.15,
-        messages: messages
-      })
-    });
-  } catch (err) {
-    clearTimeout(timeoutId);
-    if (err.name === 'AbortError') throw new Error('AI request timed out. Please try again.');
-    throw err;
-  }
-  clearTimeout(timeoutId);
-  if (!res.ok) { const e = await res.text(); throw new Error(`Claude API Error: ${res.status}\n${e}`); }
-  const data = await res.json();
-  return data.content?.[0]?.text || '';
 }
 
 function extractJSON(text) {
@@ -9935,10 +9849,6 @@ async function tagQuestions(questions, year) {
   if (!window.TAXONOMY_MR) {
     console.warn('[Tag] Taxonomy not loaded, skipping');
     return { questions, skipped: true, reason: 'no_taxonomy' };
-  }
-  if (!getAIKey()) {
-    console.warn('[Tag] API key not set, skipping');
-    return { questions, skipped: true, reason: 'no_api_key' };
   }
   const subskillList = flattenTaxonomySubskills(year);
   if (subskillList.length === 0) {
@@ -10565,11 +10475,6 @@ async function pregenerateAIForSet(hwKeyStr, setIdx) {
     return;
   }
 
-  if (!getAIKey()) {
-    alert('교사 설정에서 Claude API Key를 먼저 입력하세요.');
-    return;
-  }
-
   const ok = confirm(
     `이 세트의 ${allQs.length}개 문제에 대해\n` +
     `AI 해설/힌트/유사문제를 미리 생성합니다.\n\n` +
@@ -10623,11 +10528,6 @@ async function pregenerateAIForSet(hwKeyStr, setIdx) {
 async function pregenerateAIForCurrentPeriod(forceRegenerate = false) {
   if (currentUser?.role !== 'teacher') {
     alert('교사 권한이 필요합니다.');
-    return;
-  }
-
-  if (!getAIKey()) {
-    alert('교사 설정에서 Claude API Key를 먼저 입력하세요.');
     return;
   }
 
@@ -10740,7 +10640,6 @@ async function pregenerateAIForCurrentPeriod(forceRegenerate = false) {
 // 옵션 2: 세트 저장 직후 백그라운드 조용히 실행. 우측 상단 진행 배지.
 async function autoPregenerateInBackground(hwKeyStr, setIdx, setTitle) {
   if (currentUser?.role !== 'teacher') return;
-  if (!getAIKey()) return;
 
   const cached = await hasAICache(hwKeyStr, setIdx);
   if (cached) {
@@ -13092,7 +12991,7 @@ async function doImportHwJson(yr) {
     const setTitle = `Set ${setIdx + 1} (${info.title})`;
 
     // Phase C: auto-tag imported questions
-    if (window.TAXONOMY_MR && getAIKey()) {
+    if (window.TAXONOMY_MR) {
       showBackupToast(`🏷️ 태깅 중... (${setTitle})`);
       await tagQuestions(questions, yr);
     }
