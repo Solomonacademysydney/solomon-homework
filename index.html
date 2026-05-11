@@ -3773,15 +3773,14 @@ async function doLogin() {
   }
   currentUser = user;
 
-  // [Security 2026-05] 학생/학부모 브라우저에서 두 종류 API 키 모두 제거
-  if (currentUser.role !== 'teacher') {
-    ['claude_api_key', 'solomon_teacher_api_key'].forEach(k => {
-      if (localStorage.getItem(k)) {
-        localStorage.removeItem(k);
-        console.log(`[Security] ${k} removed from non-teacher localStorage`);
-      }
-    });
-  }
+  // [Phase 2A] 옛 API 키 localStorage 잔여 1회 청소 (모든 역할 대상)
+  // 더 이상 브라우저에 키가 필요 없음 — Cloud Functions config의 ANTHROPIC_KEY 사용
+  // 1~2주 운영 후 모든 기존 사용자의 잔여 정리되면 이 블록 자체 제거 예정
+  ['claude_api_key', 'solomon_teacher_api_key'].forEach(k => {
+    if (localStorage.getItem(k)) {
+      localStorage.removeItem(k);
+    }
+  });
 
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
