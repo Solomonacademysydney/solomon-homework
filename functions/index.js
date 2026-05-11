@@ -45,6 +45,13 @@ const DEFAULT_MODEL = 'claude-sonnet-4-6';
 const MAX_PROMPT_LEN = 50000;
 const MAX_TOKENS = 8000;
 
+// Phase 2A: 모델 화이트리스트 — 비싼 모델(opus 등) 호출 차단으로 비용 폭탄 방지
+// 새 모델 도입 시 여기에 추가 후 재배포 필요
+const ALLOWED_MODELS = new Set([
+  'claude-sonnet-4-6',                // 현재 표준
+  'claude-sonnet-4-5-20250929'        // push 직후 옛 HTML 호환 (추후 제거 가능)
+]);
+
 // Phase 2A: messages 배열 입력 시 보안 한계
 const MAX_MESSAGES = 5;        // 1~2개가 일반적, 5개면 충분
 const MAX_CONTENT_BLOCKS = 4;  // cached + fresh + 여유분
@@ -180,6 +187,13 @@ exports.callClaudeForStudent = onCall({
     throw new HttpsError('invalid-argument', 'S-ARG');
   }
 
+  // Phase 2A: 모델 화이트리스트 검증
+  // 클라이언트가 비싼 모델(opus 등)을 지정해서 비용 폭탄 시도 차단
+  const requestedModel = typeof model === 'string' ? model : DEFAULT_MODEL;
+  if (!ALLOWED_MODELS.has(requestedModel)) {
+    throw new HttpsError('invalid-argument', 'S-MODEL');
+  }
+
   const apiKey = anthropicKey.value();
   if (!apiKey) {
     throw new HttpsError('internal', 'S-CFG');
@@ -195,7 +209,7 @@ exports.callClaudeForStudent = onCall({
         'anthropic-version': ANTHROPIC_VERSION
       },
       body: JSON.stringify({
-        model: typeof model === 'string' ? model : DEFAULT_MODEL,
+        model: requestedModel,
         max_tokens: MAX_TOKENS,
         temperature: 0.15,
         messages: messagesToSend
