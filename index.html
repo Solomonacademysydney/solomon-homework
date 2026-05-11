@@ -9639,12 +9639,40 @@ async function _callAIViaFunctions(input) {
   if (!firebase?.functions) {
     throw new Error('Firebase Functions SDK가 로드되지 않았습니다.');
   }
-  let prompt;
+
+  // [Phase 2A] 페이로드 구성 — 두 가지 형태 지원:
+  //  - string                       → { prompt: input }                    학생 경로 + 단순 호출
+  //  - { cached, fresh } object     → { messages: [...] }                  교사 경로, cache_control 포함
+  //
+  // ★ cache_control 통과 보장: 'cached' 부분에 ephemeral 캐시 적용 시
+  //   동일 prefix 재사용으로 Anthropic 비용 ~90% 절감.
+  //   Functions가 messages 배열을 변형 없이 통과시키므로 클라이언트가 직접 설정.
+  // ★ 모델 통일: claude-sonnet-4-6 명시 (Functions DEFAULT_MODEL과 일치)
+  let payload;
   if (typeof input === 'string') {
-    prompt = input;
+    payload = { prompt: input, model: 'claude-sonnet-4-6' };
   } else if (input && typeof input === 'object') {
-    prompt = (input.cached || '') + (input.fresh || '');
-    if (!prompt) throw new Error('callAI: empty input');
+    const parts = [];
+    if (input.cached) {
+      parts.push({
+        type: 'text',
+        text: input.cached,
+        cache_control: { type: 'ephemeral' }
+      });
+    }
+    if (input.fresh) {
+      parts.push({
+        type: 'text',
+        text: input.fresh
+      });
+    }
+    if (parts.length === 0) {
+      throw new Error('callAI: empty input');
+    }
+    payload = {
+      messages: [{ role: 'user', content: parts }],
+      model: 'claude-sonnet-4-6'
+    };
   } else {
     throw new Error('callAI: input must be string or { cached, fresh } object');
   }
@@ -9659,7 +9687,7 @@ async function _callAIViaFunctions(input) {
 
   try {
     const callable = firebase.app().functions('australia-southeast1').httpsCallable('callClaudeForStudent');
-    const result = await callable({ prompt, model: 'claude-sonnet-4-5-20250929' });
+    const result = await callable(payload);
     return result?.data?.text || '';
   } catch (err) {
     console.error('[callAIViaFunctions] failed:', err);
