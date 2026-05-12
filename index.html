@@ -2561,8 +2561,18 @@ function escHtml(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;')
     .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+}
+
+// 학생/학부모에게 보일 수 있는 버킷만 반환. published === false 이면 차단.
+// 하위호환: published 필드가 없는 옛 버킷은 노출 유지(undefined !== false).
+// Preview 모드(교사가 학생/학부모 화면 미리보기 중)에서는 발행 상태 무시하고 노출.
+function visibleHw(hw) {
+  if (window.isPreviewMode) return hw || null;
+  if (!hw || hw.published === false) return null;
+  return hw;
 }
 
 function saveStore(d) {
@@ -3977,11 +3987,18 @@ function renderTeacher() {
       sets.some((_,idx) => store.submissions[subKey(s.id,p,idx)]?.submitted)
     ).length;
     const isActive  = selectedYear === yr;
+    const isPub     = hw && hw.published !== false;
     let dotCls='dot-none', statusTxt='No homework', pillHtml='';
     if (hw && totalSets > 0) {
-      dotCls = allCompleted>0 ? (allCompleted===yrStudents.length?'dot-submitted':'dot-set') : 'dot-set';
-      statusTxt = allCompleted>0 ? `${allCompleted}/${yrStudents.length} all done` : anyStarted>0 ? `${anyStarted}/${yrStudents.length} in progress` : `${totalSets} set${totalSets>1?'s':''} assigned`;
-      pillHtml = `<span class="score-pill pill-a" style="margin-left:6px;">${totalSets} set${totalSets>1?'s':''} · ${totalQ}q</span>`;
+      if (!isPub) {
+        dotCls = 'dot-none';
+        statusTxt = `🔒 비공개 (작성 중)`;
+        pillHtml = `<span class="score-pill" style="margin-left:6px;background:#fee2e2;color:#991b1b;">${totalSets} set${totalSets>1?'s':''} · ${totalQ}q · 미공개</span>`;
+      } else {
+        dotCls = allCompleted>0 ? (allCompleted===yrStudents.length?'dot-submitted':'dot-set') : 'dot-set';
+        statusTxt = allCompleted>0 ? `${allCompleted}/${yrStudents.length} all done` : anyStarted>0 ? `${anyStarted}/${yrStudents.length} in progress` : `${totalSets} set${totalSets>1?'s':''} assigned`;
+        pillHtml = `<span class="score-pill pill-a" style="margin-left:6px;">${totalSets} set${totalSets>1?'s':''} · ${totalQ}q</span>`;
+      }
     }
     html += `
       <div class="student-card ${isActive?'active':''}" onclick="selectYear(${yr})">
@@ -3989,7 +4006,7 @@ function renderTeacher() {
           <div class="sc-avatar" style="font-size:18px;font-weight:900;">Y${yr}</div>
           <div>
             <div class="sc-name">Year ${yr}</div>
-            <div class="sc-year">${yrStudents.map(s=>s.name+(s.isTest?' [TEST]':'')).join(', ')}</div>
+            <div class="sc-year">${yrStudents.map(s=>escHtml(s.name)+(s.isTest?' [TEST]':'')).join(', ')}</div>
           </div>
         </div>
         <div class="sc-status">
@@ -4012,11 +4029,29 @@ function renderTeacher() {
     const hw = store.homeworkSets[hwKey(selectedYear, selectedCountry, p)];
     const sets = hw?.sets || [];
     const yrStudents = students.filter(s=>s.year===selectedYear);
+    const _pubHw = hw;
+    const _isPub = _pubHw && _pubHw.published !== false;
+    const _hasContent = (sets.length > 0) || ((_pubHw?.ts?.questions || []).length > 0);
+    const _pubBadge = _hasContent
+      ? (_isPub
+          ? `<span style="background:#dcfce7;color:#166534;padding:4px 10px;border-radius:99px;font-size:12px;font-weight:800;">✅ 학생 공개 중</span>`
+          : `<span style="background:#fee2e2;color:#991b1b;padding:4px 10px;border-radius:99px;font-size:12px;font-weight:800;">🔒 학생 비공개 (작성 중)</span>`)
+      : `<span style="background:#f1f5f9;color:#64748b;padding:4px 10px;border-radius:99px;font-size:12px;font-weight:800;">📝 미작성</span>`;
+    const _pubBtn = _hasContent
+      ? (_isPub
+          ? `<button class="btn-sm" style="background:#dc2626;color:#fff;" onclick="togglePublishYear()">🔒 학생 비공개로 전환</button>`
+          : `<button class="btn-sm" style="background:#16a34a;color:#fff;" onclick="togglePublishYear()">🚀 학생에게 공개하기</button>`)
+      : '';
     html += `
       <div class="hw-editor" id="hwEditor">
         <div class="hw-editor-title">📝 Year ${selectedYear} – ${periodLabel(p)} Set Management</div>
         <div class="hw-editor-sub">
-          Students: ${yrStudents.map(s=>`<b>${s.name}</b>${s.isTest?' [TEST]':''}`).join(', ')} (${yrStudents.length}) — Sets must be completed in order.
+          Students: ${yrStudents.map(s=>`<b>${escHtml(s.name)}</b>${s.isTest?' [TEST]':''}`).join(', ')} (${yrStudents.length}) — Sets must be completed in order.
+        </div>
+        <div style="margin:14px 0 16px;padding:14px 16px;background:${_isPub&&_hasContent?'#f0fdf4':_hasContent?'#fef2f2':'#f8fafc'};border:2px solid ${_isPub&&_hasContent?'#86efac':_hasContent?'#fecaca':'#e2e8f0'};border-radius:12px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+          <span style="font-weight:800;color:var(--navy);font-size:14px;">📅 이번 주 학생 공개 상태</span>
+          ${_pubBadge}
+          ${_pubBtn}
         </div>`;
 
     // existing set list
@@ -4210,7 +4245,7 @@ function renderTeacher() {
         const btnTitle = isManual ? '수동 처리됨 (다시 처리 가능)' : '수동 완료 처리';
         return `<button class="btn-sm" style="padding:2px 7px;font-size:11px;background:${isManual?'#a78bfa':'#7c3aed'};color:#fff;" onclick="manualMarkSubmission('${s.id}',${idx})" title="${btnTitle}">${btnLabel}</button>`;
       }).join('');
-      html += `<tr><td><b>${s.name}</b>${s.isTest?' <span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;">TEST</span>':''}</td><td>${s.id}</td><td>${status}</td><td>${scoreHtml}</td><td>${reportBtn}</td><td style="white-space:nowrap;">${resetBtns||'-'}</td><td style="white-space:nowrap;">${manualBtns||'-'}</td></tr>`;
+      html += `<tr><td><b>${escHtml(s.name)}</b>${s.isTest?' <span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;">TEST</span>':''}</td><td>${s.id}</td><td>${status}</td><td>${scoreHtml}</td><td>${reportBtn}</td><td style="white-space:nowrap;">${resetBtns||'-'}</td><td style="white-space:nowrap;">${manualBtns||'-'}</td></tr>`;
     });
     html += `</tbody></table></div>`;
   });
@@ -4219,7 +4254,7 @@ function renderTeacher() {
   // ── 탭 구조: homework 탭일 때만 숙제 관리 표시 ──
   const previewStudents = store.users.filter(u=>u.role==='student'&&u.status!=='inactive');
   const previewOpts = previewStudents.map(s =>
-    `<option value="${s.id}">${s.name}${s.isTest?' [TEST]':''} (Y${s.year})</option>`
+    `<option value="${s.id}">${escHtml(s.name)}${s.isTest?' [TEST]':''} (Y${s.year})</option>`
   ).join('');
   const reportStudents = previewStudents.filter(s => {
     const hwR = store.homeworkSets[hwKey(s.year, s.country||'AU', p)];
@@ -4227,7 +4262,7 @@ function renderTeacher() {
     return setsR.some((_, idx) => store.submissions[subKey(s.id, p, idx)]?.submitted);
   });
   const reportOpts = reportStudents.map(s =>
-    `<option value="${s.id}">${s.name}${s.isTest?' [TEST]':''} (Y${s.year})</option>`
+    `<option value="${s.id}">${escHtml(s.name)}${s.isTest?' [TEST]':''} (Y${s.year})</option>`
   ).join('');
   const tabBar = `
     <div style="display:flex;gap:8px;margin-bottom:20px;padding:12px 0;border-bottom:2px solid var(--border);flex-wrap:wrap;align-items:center;">
@@ -4337,22 +4372,53 @@ function deleteSet(idx) {
   const setTitle = hw.sets[idx]?.title || `Set ${idx+1}`;
   if (!confirm(`Delete '${setTitle}'?\n(All student submissions for this set will also be deleted)`)) return;
   const yrStudents = store.users.filter(u=>u.role==='student'&&u.status!=='inactive'&&!u.isTest&&u.year===selectedYear&&(u.country||'AU')===selectedCountry);
+  // Granular Firebase update — only touch keys that changed (race-safe)
+  const fbUpdates = {};
   // delete submissions from this set onwards
   yrStudents.forEach(s => {
     for (let i = idx; i < hw.sets.length; i++) {
-      delete store.submissions[subKey(s.id, p, i)];
+      const sk = subKey(s.id, p, i);
+      delete store.submissions[sk];
+      fbUpdates['submissions/' + sk] = null;
     }
   });
   hw.sets.splice(idx, 1);
   // re-index remaining sets
   hw.sets.forEach((s,i) => { s.setIdx=i; s.title=`Set ${i+1}`; });
   // MR sets가 비어도 TS 데이터가 있으면 bucket 보존
-  if (hw.sets.length === 0 && !hw.ts) delete store.homeworkSets[key];
+  if (hw.sets.length === 0 && !hw.ts) {
+    delete store.homeworkSets[key];
+    fbUpdates['homeworkSets/' + key] = null;
+  } else {
+    fbUpdates['homeworkSets/' + key] = hw;
+  }
   saveStore(store);
-  fbSetHomeworkSets(store.homeworkSets);
-  fbSetSubmissions(store.submissions);
+  fbWrite(fbUpdates);
   editingSetIdx = null;
   parsedQuestions = [];
+  renderTeacher();
+}
+
+function togglePublishYear() {
+  if (selectedYear === null) return;
+  const store = getStore();
+  const p = store.currentPeriod;
+  const key = hwKey(selectedYear, selectedCountry, p);
+  const hw = store.homeworkSets[key];
+  if (!hw) { alert('아직 등록된 set이 없습니다.'); return; }
+  const isPublished = hw.published !== false;
+  if (isPublished) {
+    if (!confirm(`Year ${selectedYear} ${periodLabel(p)} 숙제를 학생에게 비공개로 전환합니다.\n학생 화면에서 즉시 사라집니다 (기존 제출 답안은 보존).\n계속할까요?`)) return;
+    hw.published = false;
+  } else {
+    const setCount = (hw.sets || []).length;
+    const tsCount = (hw.ts?.questions || []).length;
+    if (setCount === 0 && tsCount === 0) { alert('공개할 set이나 TS가 없습니다.'); return; }
+    if (!confirm(`Year ${selectedYear} ${periodLabel(p)} 숙제를 학생에게 공개합니다.\n· MR ${setCount} set\n· TS ${tsCount} 문제\n계속할까요?`)) return;
+    hw.published = true;
+  }
+  saveStore(store);
+  fbSetHomeworkSet(key, hw);
   renderTeacher();
 }
 
@@ -4462,7 +4528,7 @@ function confirmMoveSet(fromIdx) {
 
   // 대상 key에 sets 배열 준비
   if (!store.homeworkSets[toKey]) {
-    store.homeworkSets[toKey] = { year: toYearLevel, country: selectedCountry, period: toP, sets: [] };
+    store.homeworkSets[toKey] = { year: toYearLevel, country: selectedCountry, period: toP, sets: [], published: false };
   }
   const toHw = store.homeworkSets[toKey];
 
@@ -4476,11 +4542,17 @@ function confirmMoveSet(fromIdx) {
   fromHw.sets.splice(fromIdx, 1);
   fromHw.sets.forEach((s, i) => { s.setIdx = i; s.title = `Set ${i + 1}`; });
   // MR sets가 비어도 TS 데이터가 있으면 bucket 보존
-  if (fromHw.sets.length === 0 && !fromHw.ts) delete store.homeworkSets[fromKey];
+  const fbUpdates = {};
+  fbUpdates['homeworkSets/' + toKey] = toHw;
+  if (fromHw.sets.length === 0 && !fromHw.ts) {
+    delete store.homeworkSets[fromKey];
+    fbUpdates['homeworkSets/' + fromKey] = null;
+  } else {
+    fbUpdates['homeworkSets/' + fromKey] = fromHw;
+  }
 
   saveStore(store);
-  fbSetHomeworkSets(store.homeworkSets);
-  fbSetSubmissions(store.submissions);
+  fbWrite(fbUpdates);
   closeModal();
   editingSetIdx = null;
   showBackupToast(`✅ Set을 Year ${toYearLevel} — ${periodLabel(toP)} 으로 이동했습니다.`);
@@ -4779,7 +4851,7 @@ async function doSave() {
     }
 
     if (!store.homeworkSets[key]) {
-      store.homeworkSets[key] = { year: selectedYear, country: selectedCountry, period: p, sets: [] };
+      store.homeworkSets[key] = { year: selectedYear, country: selectedCountry, period: p, sets: [], published: false };
     }
     const hw = store.homeworkSets[key];
     const isNew = editingSetIdx === -1 || editingSetIdx === null;
@@ -4897,11 +4969,11 @@ function loadLevelTestResults() {
         const grade = r.grade || '-';
         const gc = gradeColor[grade] || '#64748b';
         return `<tr style="border-bottom:1px solid #f1f5f9;">
-          <td style="padding:10px 8px;font-weight:700;">${r.date || '-'}</td>
-          <td style="padding:10px 8px;">${r.name || '-'}</td>
-          <td style="padding:10px 8px;">${r.phone || '-'}</td>
-          <td style="padding:10px 8px;">${r.email || '-'}</td>
-          <td style="padding:10px 8px;text-align:center;font-weight:700;">Year ${r.year || '-'}</td>
+          <td style="padding:10px 8px;font-weight:700;">${escHtml(r.date || '-')}</td>
+          <td style="padding:10px 8px;">${escHtml(r.name || '-')}</td>
+          <td style="padding:10px 8px;">${escHtml(r.phone || '-')}</td>
+          <td style="padding:10px 8px;">${escHtml(r.email || '-')}</td>
+          <td style="padding:10px 8px;text-align:center;font-weight:700;">Year ${escHtml(r.year || '-')}</td>
           <td style="padding:10px 8px;text-align:center;">
             <span style="display:inline-block;padding:3px 12px;border-radius:12px;background:${gc};color:#fff;font-weight:700;font-size:13px;">${grade}</span>
           </td>
@@ -5056,7 +5128,7 @@ function renderStudentManagementSection(store) {
     const testBadge = isTest ? ' <span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;">TEST</span>' : '';
     if (inactive) {
       return `<tr style="opacity:.5;background:#f5f5f5;">
-        <td>${s.id}${testBadge}</td><td>${s.name}</td><td>Y${s.year}</td><td>${(s.country||'AU')==='AU'?'🇦🇺':'🇰🇷'}</td>
+        <td>${s.id}${testBadge}</td><td>${escHtml(s.name)}</td><td>Y${s.year}</td><td>${(s.country||'AU')==='AU'?'🇦🇺':'🇰🇷'}</td>
         <td style="white-space:nowrap;">${dayCheckboxes}</td>
         <td><button class="btn-sm btn-green" style="padding:3px 8px;" onclick="reactivateStudent('${s.id}')">✅ 복원</button></td>
       </tr>`;
@@ -5064,7 +5136,7 @@ function renderStudentManagementSection(store) {
     return `
     <tr id="srow_${s.id}">
       <td><input id="se_id_${s.id}" value="${s.id}" style="width:90px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:13px;">${testBadge}</td>
-      <td><input id="se_name_${s.id}" value="${s.name}" style="width:100px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:13px;"></td>
+      <td><input id="se_name_${s.id}" value="${escHtml(s.name)}" style="width:100px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:13px;"></td>
       <td><select id="se_year_${s.id}" style="border:1px solid var(--border);border-radius:6px;padding:3px 4px;font-size:13px;">
         ${yearRange.map(y=>`<option value="${y}"${y===s.year?'selected':''}>${y}</option>`).join('')}
       </select></td>
@@ -5455,7 +5527,7 @@ function renderStudent() {
   const store = getStore();
   const p     = studentPeriod || store.currentPeriod;
   _cachedStudentPeriod = p;
-  const hw    = store.homeworkSets[hwKey(currentUser.year, currentUser.country||'AU', p)];
+  const hw    = visibleHw(store.homeworkSets[hwKey(currentUser.year, currentUser.country||'AU', p)]);
 
   const hasSets = hw && hw.sets && hw.sets.length > 0;
   const hasTS   = !!(hw?.ts?.enabled && hw?.ts?.questions?.length > 0);
@@ -6371,7 +6443,7 @@ function renderParent() {
   }
   const child = children.find(c=>c.id===currentParentChildId);
   const p = store.currentPeriod;
-  const hw = store.homeworkSets[hwKey(child.year, child.country||'AU', p)];
+  const hw = visibleHw(store.homeworkSets[hwKey(child.year, child.country||'AU', p)]);
 
   // ── 헤더 + 자녀 탭 ──
   let html = `
@@ -6381,7 +6453,7 @@ function renderParent() {
     <div class="parent-header">
       <div class="parent-avatar">👨‍👩‍👧</div>
       <div style="flex:1;">
-        <div class="parent-child-name">${child.name}</div>
+        <div class="parent-child-name">${escHtml(child.name)}</div>
         <div style="font-family:'Noto Serif KR',serif;font-size:16px;color:rgba(255,255,255,.85);font-weight:700;margin-top:2px;">Year ${child.year}</div>
         <div class="parent-child-sub">${periodLabel(p)}</div>
       </div>
@@ -6532,7 +6604,7 @@ function renderParentReportSection(child, store, period) {
         d.style.display=open?'none':'block';
         this.textContent=open?'📋 상세 리포트 보기':'📋 상세 리포트 닫기';
       ">📋 상세 리포트 보기</button>
-      <button class="btn-sm btn-navy" onclick="downloadReportAsPNG(document.getElementById('visualReportContainer'),'${child.name}','${termLabel(new Date())}')">📥 PNG 저장</button>
+      <button class="btn-sm btn-navy" onclick="downloadReportAsPNG(document.getElementById('visualReportContainer'),'${escHtml(child.name)}','${escHtml(termLabel(new Date()))}')">📥 PNG 저장</button>
     </div>`;
   } else {
     html += `<div style="margin:20px;background:#f8f9ff;border:2px dashed #cbd5e1;border-radius:14px;padding:32px;text-align:center;">
@@ -6556,7 +6628,7 @@ function renderParentReportSection(child, store, period) {
       <div class="report-panel-title">📋 상세 학습 리포트</div>
       <button class="btn-print-parent" onclick="printParentReport()" style="padding:8px 14px;background:var(--navy);color:#fff;border:none;border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">🖨️ 인쇄 / PDF</button>
     </div>
-    <div class="report-panel-sub">${child.name} · Year ${child.year} · ${periodLabel(period)}</div>`;
+    <div class="report-panel-sub">${escHtml(child.name)} · Year ${child.year} · ${periodLabel(period)}</div>`;
 
   data.results.forEach((r, ri) => {
     const cls = r.score>=80?'pill-a':r.score>=60?'pill-b':'pill-c';
@@ -6668,7 +6740,7 @@ function renderParentHistory(child, store, currentPeriod) {
   const history = [];
   let p = {...currentPeriod};
   for (let i = 0; i < 7; i++) {
-    const hw = store.homeworkSets[hwKey(child.year, child.country||'AU', p)];
+    const hw = visibleHw(store.homeworkSets[hwKey(child.year, child.country||'AU', p)]);
     if (hw?.sets?.length > 0) {
       let totalCorrect = 0, totalQs = 0, totalSets = 0;
       hw.sets.forEach((set, idx) => {
@@ -8979,8 +9051,8 @@ function renderTeacherDetailPanel(child, period, mode) {
   const memos = Object.values(memosObj).sort((a,b) => (b.ts||0) - (a.ts||0)).slice(0, 5);
   const memoExistingHTML = memos.length > 0 ? memos.map(m => `
     <div class="t5-memo-existing">
-      <div class="t5-memo-date">${m.date} 작성</div>
-      <div class="t5-memo-text">${m.text}</div>
+      <div class="t5-memo-date">${escHtml(m.date)} 작성</div>
+      <div class="t5-memo-text">${escHtml(m.text)}</div>
     </div>`).join('') : `<div style="color:#64748B;font-size:12px;padding:10px 0;">아직 메모가 없습니다.</div>`;
 
   // T4. strand별 정답률
@@ -11838,80 +11910,100 @@ const firebaseConfig = {
     window.FB_REF = firebase.database().ref('solomon_hw_v3');
     window.fbReady = false;
 
-    // [2026-05] 익명 인증 — Cloud Functions 호출에 필수
-    firebase.auth().signInAnonymously()
-      .then(cred => console.log('[Auth] anonymous user:', cred.user.uid))
-      .catch(e => console.warn('[Auth] anonymous sign-in failed:', e.message));
-
-    // 다른 기기에서 변경 시 실시간 반영
-    // 다른 기기에서 변경 시 실시간 반영 (localStorage만 업데이트)
-    window.FB_REF.on('value', (snapshot) => {
-      if (!window.fbReady) return;
-      const data = snapshot.val();
-      if (!data) return;
-      if (!data.homeworkSets) return;
-      // 내가 직접 쓴 데이터의 echo는 무시 (타임스탬프 일치 시)
-      if (data.lastModified && data.lastModified === _lastFbWriteTs) return;
-      // [Security 2026-05] Firebase에서 받는 데이터에서 API 키 항상 제거
-      if (data.claudeApiKey) delete data.claudeApiKey;
-      const localRaw = localStorage.getItem(STORE_KEY);
-      const localData = localRaw ? JSON.parse(localRaw) : null;
-      const fbTs = data.lastModified || 0;
-      const localTs = localData?.lastModified || 0;
-      if (fbTs > localTs) {
-        localStorage.setItem(STORE_KEY, JSON.stringify(data));
-      }
-    });
-
-    // 5초 안에 Firebase 응답 없으면 강제로 로딩 해제
-    const loadingTimeout = setTimeout(() => {
+    // 중복 finishInit 방지 (timeout과 once 콜백 양쪽에서 호출될 수 있음)
+    let _initDone = false;
+    const finishInit = () => {
+      if (_initDone) return;
+      _initDone = true;
       ensureStore().then(() => {
-        document.getElementById('loadingOverlay').style.display = 'none';
+        const ov = document.getElementById('loadingOverlay');
+        if (ov) ov.style.display = 'none';
       });
-    }, 5000);
+    };
 
-    // 시작 시 Firebase에서 데이터 불러오기
-    window.FB_REF.once('value', (snapshot) => {
-      clearTimeout(loadingTimeout);
-      const fbData = snapshot.val();
-      const localRaw = localStorage.getItem(STORE_KEY);
-      const localData = localRaw ? JSON.parse(localRaw) : null;
+    // 7초 안에 인증/Firebase 응답 없으면 강제로 로딩 해제 (localStorage만으로 fallback)
+    const loadingTimeout = setTimeout(finishInit, 7000);
 
-      // [Security 2026-05] Firebase 수신/송신 데이터 양쪽에서 API 키 제거
-      if (fbData?.claudeApiKey) delete fbData.claudeApiKey;
-      if (localData?.claudeApiKey) delete localData.claudeApiKey;
-
-      if (fbData) {
-        // Firebase가 있으면 항상 Firebase 우선 (source of truth)
-        const fbTs = fbData.lastModified || 0;
+    // 실시간 리스너 등록 헬퍼 — 인증 완료 후에만 호출
+    const attachRealtimeListener = () => {
+      window.FB_REF.on('value', (snapshot) => {
+        if (!window.fbReady) return;
+        const data = snapshot.val();
+        if (!data) return;
+        if (!data.homeworkSets) return;
+        // 내가 직접 쓴 데이터의 echo는 무시 (타임스탬프 일치 시)
+        if (data.lastModified && data.lastModified === _lastFbWriteTs) return;
+        // [Security 2026-05] Firebase에서 받는 데이터에서 API 키 항상 제거
+        if (data.claudeApiKey) delete data.claudeApiKey;
+        const localRaw = localStorage.getItem(STORE_KEY);
+        const localData = localRaw ? JSON.parse(localRaw) : null;
+        const fbTs = data.lastModified || 0;
         const localTs = localData?.lastModified || 0;
-        if (localTs > fbTs) {
-          // 로컬이 더 최신이면 Firebase에 업로드 (오프라인 작업 후 복귀 등)
-          window.FB_REF.update(Object.assign({}, localData, { lastModified: localTs }));
-        } else {
-          localStorage.setItem(STORE_KEY, JSON.stringify(fbData));
+        if (fbTs > localTs) {
+          localStorage.setItem(STORE_KEY, JSON.stringify(data));
         }
-      } else if (localData) {
-        // Firebase 비어있고 로컬 있으면 Firebase에 올림 (최초 마이그레이션)
-        window.FB_REF.set(localData);
-      }
-      // 둘 다 없으면 ensureStore()에서 initStore() 처리
+      });
+    };
 
-      window.fbReady = true;
-      loadTaxonomy();
-      ensureStore().then(() => {
-        document.getElementById('loadingOverlay').style.display = 'none';
+    // 시작 시 Firebase에서 데이터 불러오기 — 인증 완료 후에만 호출
+    const loadInitialData = () => {
+      window.FB_REF.once('value', (snapshot) => {
+        clearTimeout(loadingTimeout);
+        const fbData = snapshot.val();
+        const localRaw = localStorage.getItem(STORE_KEY);
+        const localData = localRaw ? JSON.parse(localRaw) : null;
+
+        // [Security 2026-05] Firebase 수신/송신 데이터 양쪽에서 API 키 제거
+        if (fbData?.claudeApiKey) delete fbData.claudeApiKey;
+        if (localData?.claudeApiKey) delete localData.claudeApiKey;
+
+        if (fbData) {
+          // Firebase가 있으면 항상 Firebase 우선 (source of truth)
+          const fbTs = fbData.lastModified || 0;
+          const localTs = localData?.lastModified || 0;
+          if (localTs > fbTs) {
+            // 로컬이 더 최신이면 Firebase에 업로드 (오프라인 작업 후 복귀 등)
+            window.FB_REF.update(Object.assign({}, localData, { lastModified: localTs }));
+          } else {
+            localStorage.setItem(STORE_KEY, JSON.stringify(fbData));
+          }
+        } else if (localData) {
+          // Firebase 비어있고 로컬 있으면 Firebase에 올림 (최초 마이그레이션)
+          window.FB_REF.set(localData);
+        }
+        // 둘 다 없으면 ensureStore()에서 initStore() 처리
+
+        window.fbReady = true;
+        loadTaxonomy();
+        finishInit();
+      }, (err) => {
+        console.warn('[Firebase] initial read failed:', err?.message || err);
+        clearTimeout(loadingTimeout);
+        window.fbReady = false;
+        finishInit();
       });
-    }, () => {
-      clearTimeout(loadingTimeout);
-      window.fbReady = false;
-      ensureStore().then(() => {
-        document.getElementById('loadingOverlay').style.display = 'none';
+    };
+
+    // [2026-05-12] 익명 인증을 먼저 완료한 다음 DB 작업 시작
+    // (Rules가 "auth != null"이면 인증 전 호출은 모두 permission_denied)
+    firebase.auth().signInAnonymously()
+      .then(cred => {
+        console.log('[Auth] anonymous user:', cred.user.uid);
+        attachRealtimeListener();
+        loadInitialData();
+      })
+      .catch(e => {
+        console.warn('[Auth] anonymous sign-in failed:', e.message);
+        // 인증 실패 → Firebase 사용 불가, localStorage만으로 동작
+        clearTimeout(loadingTimeout);
+        window.fbReady = false;
+        finishInit();
       });
-    });
   } catch(e) {
+    console.warn('[Firebase] init exception:', e?.message || e);
     ensureStore().then(() => {
-      document.getElementById('loadingOverlay').style.display = 'none';
+      const ov = document.getElementById('loadingOverlay');
+      if (ov) ov.style.display = 'none';
     });
   }
 })();
@@ -12423,7 +12515,7 @@ function _applyTsImport(yr, questions) {
   const key = hwKey(yr, selectedCountry, p);
 
   if (!store.homeworkSets[key]) {
-    store.homeworkSets[key] = { year: yr, country: selectedCountry, period: p, sets: [] };
+    store.homeworkSets[key] = { year: yr, country: selectedCountry, period: p, sets: [], published: false };
   }
   store.homeworkSets[key].ts = {
     enabled: true,
