@@ -14,6 +14,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,700;1,9..144,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <style>
+  @keyframes ltBannerIn {
+    from { opacity:0; transform:translateX(20px); }
+    to   { opacity:1; transform:translateX(0); }
+  }
   @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.6; }
@@ -3718,6 +3722,59 @@ function setRole(r) {
   document.getElementById('loginId').placeholder = 'Username';
 }
 
+async function checkNewLtResults() {
+  if (!window.firebase || !firebase.database) return;
+  const LS_KEY = 'solomon_lt_last_check';
+  const lastCheck = parseInt(localStorage.getItem(LS_KEY) || '0');
+  localStorage.setItem(LS_KEY, String(Date.now()));
+  try {
+    const snap = await firebase.database().ref('lt_results')
+      .orderByChild('timestamp').startAfter(lastCheck).once('value');
+    const newResults = [];
+    snap.forEach(child => newResults.push(child.val()));
+    if (newResults.length === 0) return;
+
+    const existing = document.getElementById('lt-new-banner');
+    if (existing) existing.remove();
+
+    const banner = document.createElement('div');
+    banner.id = 'lt-new-banner';
+    banner.style.cssText = [
+      'position:fixed', 'top:70px', 'right:20px', 'z-index:9999',
+      'background:#1B2A4A', 'color:#fff', 'border-radius:14px',
+      'padding:18px 20px', 'box-shadow:0 6px 24px rgba(0,0,0,.35)',
+      'max-width:300px', 'font-family:Noto Sans KR,sans-serif',
+      'animation:ltBannerIn .35s ease'
+    ].join(';');
+
+    const rows = newResults.slice(0, 4)
+      .map(r => `<div style="font-size:12px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.1);">
+        ${r.name || '(이름없음)'} · Year ${r.year || '?'} · <b style="color:${r.grade==='A'?'#4caf7d':r.grade==='B'?'#c9a84c':r.grade==='C'?'#f59e0b':'#e05252'}">${r.grade || '-'}등급</b> ${r.score || 0}%
+      </div>`).join('');
+    const more = newResults.length > 4 ? `<div style="font-size:11px;color:#94a3b8;margin-top:4px;">외 ${newResults.length - 4}명</div>` : '';
+
+    banner.innerHTML = `
+      <div style="font-weight:800;font-size:14px;color:#D4A93C;margin-bottom:10px;">
+        🔔 새 레벨테스트 응시자 ${newResults.length}명
+      </div>
+      <div style="margin-bottom:10px;">${rows}${more}</div>
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <button onclick="teacherTab='leveltest';renderTeacher();document.getElementById('lt-new-banner').remove();"
+          style="flex:1;padding:8px;background:#D4A93C;color:#1B2A4A;border:none;border-radius:8px;font-weight:800;cursor:pointer;font-size:12px;">
+          결과 보기 →
+        </button>
+        <button onclick="document.getElementById('lt-new-banner').remove();"
+          style="padding:8px 12px;background:rgba(255,255,255,.12);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;">
+          닫기
+        </button>
+      </div>`;
+    document.body.appendChild(banner);
+    setTimeout(() => { const b = document.getElementById('lt-new-banner'); if (b) b.remove(); }, 20000);
+  } catch(e) {
+    console.warn('[lt check]', e);
+  }
+}
+
 async function doLogin() {
   const id = document.getElementById('loginId').value.trim();
   const pw = document.getElementById('loginPw').value;
@@ -3801,6 +3858,7 @@ async function doLogin() {
       saveStore(_s);
       fbSetPeriod(_s.currentPeriod);
       renderTeacher();
+      checkNewLtResults();
       // [Security 2026-05] 옛 키 정리 (1회만, 플래그로 보장)
       await cleanupLegacyApiKey();
       await cleanupLegacyBackupKeys();
