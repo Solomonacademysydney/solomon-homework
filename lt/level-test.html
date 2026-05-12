@@ -55,6 +55,10 @@ input::placeholder{color:var(--gray);}
 .parent-promise-text strong{color:#7ee8a8;font-weight:700;font-size:.85rem;display:block;margin-bottom:4px;}
 .error-msg{color:var(--red);font-size:.8rem;margin-top:6px;display:none;}
 .error-msg.show{display:block;}
+.field-ok input,.field-ok textarea{border-color:#4caf7d!important;}
+.field-err input,.field-err textarea{border-color:var(--red)!important;}
+.field-ok-mark{display:none;color:#4caf7d;font-size:.8rem;margin-top:4px;}
+.field-ok .field-ok-mark{display:block;}
 .btn-primary{width:100%;padding:16px;background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 100%);color:var(--navy);border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:opacity .2s,transform .1s;letter-spacing:.3px;}
 .btn-primary:hover{opacity:.9;transform:translateY(-1px);}
 .btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none;}
@@ -218,9 +222,18 @@ input::placeholder{color:var(--gray);}
         <div class="form-hint">📞 결과 발송 및 무료 상담 안내 외 다른 용도로 사용되지 않습니다. 영업 전화 없음.</div>
         <div class="error-msg" id="err-phone">올바른 연락처를 입력해 주세요. · Please enter a valid contact number.</div>
       </div>
-      <div class="form-group">
+      <div class="form-group" id="fg-email">
         <label>Email <span class="label-kr">이메일</span> (선택 · optional)</label>
         <input type="email" id="inp-email" placeholder="e.g. parent@email.com" />
+        <div class="field-ok-mark">✅ 확인됐습니다</div>
+        <div class="error-msg" id="err-email"></div>
+      </div>
+      <div class="form-group" id="fg-kakao">
+        <label>KakaoTalk ID <span class="label-kr">카톡 ID</span> (선택 · optional)</label>
+        <input type="text" id="inp-kakao" placeholder="e.g. kimjisoo99" autocomplete="off" />
+        <div class="form-hint">💬 카톡 ID 입력 시 결과 안내가 더 빠릅니다</div>
+        <div class="field-ok-mark">✅ 확인됐습니다</div>
+        <div class="error-msg" id="err-kakao"></div>
       </div>
       <div class="form-group">
         <label>Select Year Group <span class="label-kr">학년 선택</span> *</label>
@@ -426,6 +439,30 @@ async function loadTemplates() {
 }
 
 loadTemplates();
+
+/* ── BLUR VALIDATION ── */
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('inp-email').addEventListener('blur', function() {
+    const v = validateEmail(this.value.trim());
+    setFieldState('fg-email', 'err-email', v);
+  });
+  const kakaoEl = document.getElementById('inp-kakao');
+  if (kakaoEl) kakaoEl.addEventListener('blur', function() {
+    const v = validateKakaoId(this.value.trim());
+    setFieldState('fg-kakao', 'err-kakao', v);
+  });
+  // 입력 시작하면 에러 숨김
+  ['inp-email','inp-kakao'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', function() {
+      const fg = this.closest('.form-group');
+      if (fg) { fg.classList.remove('field-ok','field-err'); }
+      const errId = 'err-' + id.replace('inp-','');
+      const err = document.getElementById(errId);
+      if (err) err.classList.remove('show');
+    });
+  });
+});
 
 /* ── CTA LINKS ── */
 document.getElementById('cta-kakao').href     = KAKAO_LINK;
@@ -891,11 +928,99 @@ const QB = {
   ],
 };
 
+/* ── VALIDATION CONSTANTS ── */
+const KEYBOARD_PATTERNS = [
+  /^[asdfghjkl]{2,}$/i, /^[qwertyuiop]{2,}$/i, /^[zxcvbnm]{2,}$/i,
+  /^[dfghjkl]+$/i, /^(.)\1{2,}$/, /^[0-9]+$/, /^[ㄱ-ㅎ]+$/, /^[ㅏ-ㅣ]+$/,
+];
+const FORBIDDEN_NAMES = ['test','asdf','qwer','abc','aaa','name','테스트','ㅁㄴㅇㄹ','ㅋㅋㅋ','ㅇㅇㅇ'];
+const SUSPICIOUS_DOMAINS = [
+  'mailinator.com','tempmail.com','tempmail.net','guerrillamail.com',
+  '10minutemail.com','throwaway.email','temp-mail.org','temp-mail.io',
+  'yopmail.com','fakeinbox.com','trashmail.com','dispostable.com',
+  'mintemail.com','maildrop.cc','getairmail.com','sharklasers.com',
+];
+const COMMON_DOMAINS = [
+  'gmail.com','naver.com','hanmail.net','daum.net','nate.com',
+  'hotmail.com','outlook.com','yahoo.com','yahoo.com.au','yahoo.co.kr',
+  'icloud.com','me.com','live.com','msn.com',
+  'bigpond.com','bigpond.net.au','optusnet.com.au','tpg.com.au','iinet.net.au','kakao.com',
+];
+const PHONE_PATTERNS_VAL = {
+  aussie_mobile:      /^04\d{8}$/,
+  aussie_landline:    /^02\d{8}$/,
+  aussie_international:/^614\d{8}$/,
+  korea_mobile:       /^010\d{8}$/,
+  korea_international:/^8210\d{8}$/,
+};
+const EMAIL_REGEX_VAL = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+const KAKAO_ID_REGEX  = /^[a-zA-Z0-9._-]{4,30}$/;
+
+function validateName(name) {
+  const t = name.trim();
+  if (t.length < 2) return { valid:false, message:'이름을 2자 이상 입력해 주세요.' };
+  if (t.length > 30) return { valid:false, message:'이름은 30자 이내로 입력해 주세요.' };
+  if (!/^[가-힣a-zA-Z\s]+$/.test(t)) return { valid:false, message:'이름에는 한글 또는 영문만 사용 가능합니다.' };
+  for (const p of KEYBOARD_PATTERNS) if (p.test(t)) return { valid:false, message:'정확한 이름을 입력해 주세요. 학습 상담을 위해 필요합니다.' };
+  if (FORBIDDEN_NAMES.includes(t.toLowerCase())) return { valid:false, message:'정확한 이름을 입력해 주세요. 학습 상담을 위해 필요합니다.' };
+  return { valid:true, message:'' };
+}
+
+function validateEmail(email) {
+  const t = (email || '').trim().toLowerCase();
+  if (!t) return { valid:true, message:'', present:false, common:false };
+  if (!EMAIL_REGEX_VAL.test(t)) return { valid:false, message:'올바른 이메일 형식이 아닙니다. 예: name@gmail.com', present:true, common:false };
+  const domain = t.split('@')[1];
+  if (SUSPICIOUS_DOMAINS.includes(domain)) return { valid:false, message:'임시 이메일은 사용할 수 없습니다. 실제 이메일을 입력해 주세요.', present:true, common:false };
+  return { valid:true, message:'', present:true, common:COMMON_DOMAINS.includes(domain) };
+}
+
+function validatePhone(phone) {
+  const t = (phone || '').trim();
+  if (!t) return { valid:false, message:'전화번호를 입력해 주세요.', format:'none', digits:'' };
+  const digits = t.replace(/\D/g,'');
+  if (digits.length < 8) return { valid:false, message:'전화번호가 너무 짧습니다. 정확한 번호를 입력해 주세요.', format:'too_short', digits };
+  if (digits.length > 15) return { valid:false, message:'전화번호가 너무 깁니다. 정확한 번호를 입력해 주세요.', format:'too_long', digits };
+  let format = 'unknown';
+  for (const [key, pat] of Object.entries(PHONE_PATTERNS_VAL)) if (pat.test(digits)) { format = key; break; }
+  return { valid:true, message:'', format, digits };
+}
+
+function validateKakaoId(id) {
+  const t = (id || '').trim();
+  if (!t) return { valid:true, message:'', entered:false };
+  if (!KAKAO_ID_REGEX.test(t)) return { valid:false, message:'카톡 ID는 영문/숫자/_/-/. 만 사용 가능합니다 (4~30자).', entered:true };
+  return { valid:true, message:'', entered:true };
+}
+
+function calculateTrustScore(v) {
+  let score = 100;
+  const flags = [];
+  if (!v.email.present) { score -= 10; flags.push('no_email'); }
+  else if (v.email.valid && !v.email.common) { score -= 15; flags.push('unknown_email_domain'); }
+  const fmt = v.phone.format;
+  if (fmt === 'korea_mobile' || fmt === 'korea_international') { score -= 5; flags.push('korea_phone'); }
+  else if (fmt === 'unknown') { score -= 20; flags.push('unknown_phone_format'); }
+  if (v.kakao.entered && v.kakao.valid) score += 15;
+  return { score: Math.min(100, Math.max(0, score)), flags };
+}
+
+function setFieldState(fgId, errId, result) {
+  const fg = document.getElementById(fgId);
+  const err = document.getElementById(errId);
+  if (!fg || !err) return;
+  fg.classList.toggle('field-ok', result.valid);
+  fg.classList.toggle('field-err', !result.valid);
+  if (result.message) { err.textContent = result.message; err.classList.add('show'); }
+  else { err.classList.remove('show'); }
+}
+
 /* ── STATE ── */
 let state = {
-  name:'', phone:'', email:'', year:null,
+  name:'', phone:'', email:'', kakao:'', year:null,
   questions:[], current:0, answers:[],
-  timer:null, timeLeft:1200
+  timer:null, timeLeft:1200,
+  trustScore:100, validationFlags:[], phoneFormat:'unknown', emailCommon:false
 };
 
 /* ── YEAR GRID (1–10) ── */
@@ -936,17 +1061,32 @@ function selectQuestions(year) {
 
 /* ── START TEST ── */
 function startTest() {
-  const name  = document.getElementById('inp-name').value.trim();
-  const phone = document.getElementById('inp-phone').value.trim();
+  const nameV  = document.getElementById('inp-name').value.trim();
+  const phoneV = document.getElementById('inp-phone').value.trim();
+  const emailV = document.getElementById('inp-email').value.trim();
+  const kakaoV = document.getElementById('inp-kakao') ? document.getElementById('inp-kakao').value.trim() : '';
   let ok = true;
 
-  document.getElementById('err-name').classList.toggle('show', !name);
-  if (!name) ok = false;
+  const vName  = validateName(nameV);
+  const vPhone = validatePhone(phoneV);
+  const vEmail = validateEmail(emailV);
+  const vKakao = validateKakaoId(kakaoV);
 
-  const phoneClean = phone.replace(/\s/g,'');
-  const phoneOk = phoneClean.length >= 8;
-  document.getElementById('err-phone').classList.toggle('show', !phoneOk);
-  if (!phoneOk) ok = false;
+  setFieldState('fg-email', 'err-email', vEmail);
+  setFieldState('fg-kakao', 'err-kakao', vKakao);
+
+  // 이름 에러 (기존 err-name 재사용)
+  const errName = document.getElementById('err-name');
+  if (!vName.valid) { errName.textContent = vName.message; errName.classList.add('show'); ok = false; }
+  else errName.classList.remove('show');
+
+  // 전화번호 에러
+  const errPhone = document.getElementById('err-phone');
+  if (!vPhone.valid) { errPhone.textContent = vPhone.message; errPhone.classList.add('show'); ok = false; }
+  else errPhone.classList.remove('show');
+
+  if (!vEmail.valid) ok = false;
+  if (!vKakao.valid) ok = false;
 
   document.getElementById('err-year').classList.toggle('show', !state.year);
   if (!state.year) ok = false;
@@ -956,15 +1096,22 @@ function startTest() {
   if (!consent) ok = false;
 
   if (!ok) return;
-  if (checkBlocked(phoneClean)) { showScreen('screen-blocked'); return; }
+  if (checkBlocked(vPhone.digits)) { showScreen('screen-blocked'); return; }
 
-  state.name  = name;
-  state.phone = phoneClean;
-  state.email = document.getElementById('inp-email').value.trim();
-  state.questions = selectQuestions(state.year);
-  state.current   = 0;
-  state.answers   = new Array(state.questions.length).fill(-1);
-  state.timeLeft  = 1200;
+  const trust = calculateTrustScore({ email:vEmail, phone:vPhone, kakao:vKakao });
+
+  state.name            = nameV;
+  state.phone           = vPhone.digits;
+  state.email           = emailV;
+  state.kakao           = kakaoV;
+  state.trustScore      = trust.score;
+  state.validationFlags = trust.flags;
+  state.phoneFormat     = vPhone.format;
+  state.emailCommon     = vEmail.common;
+  state.questions       = selectQuestions(state.year);
+  state.current         = 0;
+  state.answers         = new Array(state.questions.length).fill(-1);
+  state.timeLeft        = 1200;
 
   showScreen('screen-quiz');
   renderQuestion();
@@ -1244,6 +1391,7 @@ function saveResult(pct, grade, correct, total, topics, weakAreas) {
     name:      state.name,
     phone:     state.phone,
     email:     state.email || '',
+    kakao:     state.kakao || '',
     year:      state.year,
     score:     pct,
     grade:     grade,
@@ -1252,7 +1400,11 @@ function saveResult(pct, grade, correct, total, topics, weakAreas) {
     topics:    topicsFlat,
     weakAreas: weakAreas,
     timestamp: Date.now(),
-    date:      new Date().toLocaleDateString('en-AU')
+    date:      new Date().toLocaleDateString('en-AU'),
+    trust_score:      state.trustScore      ?? 100,
+    validation_flags: state.validationFlags ?? [],
+    phone_format:     state.phoneFormat     ?? 'unknown',
+    email_common:     state.emailCommon     ?? false,
   };
   try { LT_REF.push(record); } catch(e) {}
 }
@@ -1267,11 +1419,13 @@ function showScreen(id) {
 /* ── RESET ── */
 function resetTest() {
   clearInterval(state.timer);
-  state = { name:'', phone:'', email:'', year:null, questions:[], current:0, answers:[], timer:null, timeLeft:1200 };
+  state = { name:'', phone:'', email:'', kakao:'', year:null, questions:[], current:0, answers:[], timer:null, timeLeft:1200, trustScore:100, validationFlags:[], phoneFormat:'unknown', emailCommon:false };
   document.getElementById('inp-name').value  = '';
   document.getElementById('inp-phone').value = '';
   document.getElementById('inp-email').value = '';
+  const kk = document.getElementById('inp-kakao'); if (kk) kk.value = '';
   document.getElementById('inp-consent').checked = false;
+  ['fg-email','fg-kakao'].forEach(id => { const el = document.getElementById(id); if(el){el.classList.remove('field-ok','field-err');} });
   document.querySelectorAll('.year-btn').forEach(b => b.classList.remove('selected'));
   showScreen('screen-intro');
 }
