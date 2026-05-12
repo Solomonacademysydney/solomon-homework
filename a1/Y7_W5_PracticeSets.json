@@ -1,0 +1,1862 @@
+[
+  {
+    "set_name": "Set A — Foundation",
+    "set_number": 1,
+    "topic": "Y7 Week 5: Fractions & Decimals",
+    "total_questions": 30,
+    "questions": [
+      {
+        "id": "S1Q1",
+        "number": 1,
+        "text": "$\\dfrac{1}{2} \\times \\dfrac{3}{4}$"
+      },
+      {
+        "id": "S1Q2",
+        "number": 2,
+        "text": "$\\dfrac{2}{5} \\times \\dfrac{5}{6}$"
+      },
+      {
+        "id": "S1Q3",
+        "number": 3,
+        "text": "$\\dfrac{3}{7} \\times \\dfrac{7}{9}$"
+      },
+      {
+        "id": "S1Q4",
+        "number": 4,
+        "text": "$\\dfrac{4}{5} \\times \\dfrac{3}{8}$"
+      },
+      {
+        "id": "S1Q5",
+        "number": 5,
+        "text": "$\\dfrac{5}{6} \\times \\dfrac{2}{3}$"
+      },
+      {
+        "id": "S1Q6",
+        "number": 6,
+        "text": "$7 \\times \\dfrac{2}{3}$"
+      },
+      {
+        "id": "S1Q7",
+        "number": 7,
+        "text": "$\\dfrac{3}{4} \\times 8$"
+      },
+      {
+        "id": "S1Q8",
+        "number": 8,
+        "text": "$\\dfrac{3}{5} \\div \\dfrac{1}{2}$"
+      },
+      {
+        "id": "S1Q9",
+        "number": 9,
+        "text": "$\\dfrac{4}{7} \\div \\dfrac{2}{3}$"
+      },
+      {
+        "id": "S1Q10",
+        "number": 10,
+        "text": "$\\dfrac{5}{6} \\div \\dfrac{5}{12}$"
+      },
+      {
+        "id": "S1Q11",
+        "number": 11,
+        "text": "$6 \\div \\dfrac{3}{4}$"
+      },
+      {
+        "id": "S1Q12",
+        "number": 12,
+        "text": "$\\dfrac{3}{5} \\div 6$"
+      },
+      {
+        "id": "S1Q13",
+        "number": 13,
+        "text": "Convert $\\dfrac{3}{4}$ to a decimal."
+      },
+      {
+        "id": "S1Q14",
+        "number": 14,
+        "text": "Convert $\\dfrac{7}{8}$ to a decimal."
+      },
+      {
+        "id": "S1Q15",
+        "number": 15,
+        "text": "Convert $\\dfrac{2}{5}$ to a decimal."
+      },
+      {
+        "id": "S1Q16",
+        "number": 16,
+        "text": "Convert $0.6$ to a fraction in simplest form."
+      },
+      {
+        "id": "S1Q17",
+        "number": 17,
+        "text": "Convert $0.35$ to a fraction in simplest form."
+      },
+      {
+        "id": "S1Q18",
+        "number": 18,
+        "text": "Convert $0.125$ to a fraction in simplest form."
+      },
+      {
+        "id": "S1Q19",
+        "number": 19,
+        "text": "Round $4.73$ to 1 decimal place."
+      },
+      {
+        "id": "S1Q20",
+        "number": 20,
+        "text": "Round $8.265$ to 2 decimal places."
+      },
+      {
+        "id": "S1Q21",
+        "number": 21,
+        "text": "Round $6.998$ to 2 decimal places."
+      },
+      {
+        "id": "S1Q22",
+        "number": 22,
+        "text": "$5.6 + 3.48$"
+      },
+      {
+        "id": "S1Q23",
+        "number": 23,
+        "text": "$12.5 - 7.83$"
+      },
+      {
+        "id": "S1Q24",
+        "number": 24,
+        "text": "$0.7 \\times 0.8$"
+      },
+      {
+        "id": "S1Q25",
+        "number": 25,
+        "text": "$3.2 \\times 0.45$"
+      },
+      {
+        "id": "S1Q26",
+        "number": 26,
+        "text": "$4.8 \\div 0.6$"
+      },
+      {
+        "id": "S1Q27",
+        "number": 27,
+        "text": "$7.2 \\div 0.09$"
+      },
+      {
+        "id": "S1Q28",
+        "number": 28,
+        "text": "$15.6 \\div 1.2$"
+      },
+      {
+        "id": "S1Q29",
+        "number": 29,
+        "text": "$20 - 6.845$"
+      },
+      {
+        "id": "S1Q30",
+        "number": 30,
+        "text": "$12.03 + 7.9 + 0.456$"
+      }
+    ],
+    "answers": [
+      {
+        "id": "S1Q1",
+        "number": 1,
+        "text": "$\\dfrac{3}{8}$"
+      },
+      {
+        "id": "S1Q2",
+        "number": 2,
+        "text": "$\\dfrac{1}{3}$"
+      },
+      {
+        "id": "S1Q3",
+        "number": 3,
+        "text": "$\\dfrac{1}{3}$"
+      },
+      {
+        "id": "S1Q4",
+        "number": 4,
+        "text": "$\\dfrac{3}{10}$"
+      },
+      {
+        "id": "S1Q5",
+        "number": 5,
+        "text": "$\\dfrac{5}{9}$"
+      },
+      {
+        "id": "S1Q6",
+        "number": 6,
+        "text": "$4\\dfrac{2}{3}$"
+      },
+      {
+        "id": "S1Q7",
+        "number": 7,
+        "text": "$6$"
+      },
+      {
+        "id": "S1Q8",
+        "number": 8,
+        "text": "$1\\dfrac{1}{5}$"
+      },
+      {
+        "id": "S1Q9",
+        "number": 9,
+        "text": "$\\dfrac{6}{7}$"
+      },
+      {
+        "id": "S1Q10",
+        "number": 10,
+        "text": "$2$"
+      },
+      {
+        "id": "S1Q11",
+        "number": 11,
+        "text": "$8$"
+      },
+      {
+        "id": "S1Q12",
+        "number": 12,
+        "text": "$\\dfrac{1}{10}$"
+      },
+      {
+        "id": "S1Q13",
+        "number": 13,
+        "text": "$0.75$"
+      },
+      {
+        "id": "S1Q14",
+        "number": 14,
+        "text": "$0.875$"
+      },
+      {
+        "id": "S1Q15",
+        "number": 15,
+        "text": "$0.4$"
+      },
+      {
+        "id": "S1Q16",
+        "number": 16,
+        "text": "$\\dfrac{3}{5}$"
+      },
+      {
+        "id": "S1Q17",
+        "number": 17,
+        "text": "$\\dfrac{7}{20}$"
+      },
+      {
+        "id": "S1Q18",
+        "number": 18,
+        "text": "$\\dfrac{1}{8}$"
+      },
+      {
+        "id": "S1Q19",
+        "number": 19,
+        "text": "$4.7$"
+      },
+      {
+        "id": "S1Q20",
+        "number": 20,
+        "text": "$8.27$"
+      },
+      {
+        "id": "S1Q21",
+        "number": 21,
+        "text": "$7.00$"
+      },
+      {
+        "id": "S1Q22",
+        "number": 22,
+        "text": "$9.08$"
+      },
+      {
+        "id": "S1Q23",
+        "number": 23,
+        "text": "$4.67$"
+      },
+      {
+        "id": "S1Q24",
+        "number": 24,
+        "text": "$0.56$"
+      },
+      {
+        "id": "S1Q25",
+        "number": 25,
+        "text": "$1.44$"
+      },
+      {
+        "id": "S1Q26",
+        "number": 26,
+        "text": "$8$"
+      },
+      {
+        "id": "S1Q27",
+        "number": 27,
+        "text": "$80$"
+      },
+      {
+        "id": "S1Q28",
+        "number": 28,
+        "text": "$13$"
+      },
+      {
+        "id": "S1Q29",
+        "number": 29,
+        "text": "$13.155$"
+      },
+      {
+        "id": "S1Q30",
+        "number": 30,
+        "text": "$20.386$"
+      }
+    ]
+  },
+  {
+    "set_name": "Set B — Foundation–Developing",
+    "set_number": 2,
+    "topic": "Y7 Week 5: Fractions & Decimals",
+    "total_questions": 30,
+    "questions": [
+      {
+        "id": "S2Q1",
+        "number": 1,
+        "text": "$\\dfrac{2}{9} \\times \\dfrac{3}{4}$"
+      },
+      {
+        "id": "S2Q2",
+        "number": 2,
+        "text": "$\\dfrac{5}{12} \\times \\dfrac{6}{7}$"
+      },
+      {
+        "id": "S2Q3",
+        "number": 3,
+        "text": "$1\\dfrac{1}{2} \\times \\dfrac{2}{3}$"
+      },
+      {
+        "id": "S2Q4",
+        "number": 4,
+        "text": "$2\\dfrac{1}{4} \\times \\dfrac{4}{9}$"
+      },
+      {
+        "id": "S2Q5",
+        "number": 5,
+        "text": "$1\\dfrac{3}{5} \\times \\dfrac{5}{8}$"
+      },
+      {
+        "id": "S2Q6",
+        "number": 6,
+        "text": "$\\dfrac{7}{8} \\div \\dfrac{3}{4}$"
+      },
+      {
+        "id": "S2Q7",
+        "number": 7,
+        "text": "$\\dfrac{9}{10} \\div \\dfrac{3}{5}$"
+      },
+      {
+        "id": "S2Q8",
+        "number": 8,
+        "text": "$1\\dfrac{1}{2} \\div \\dfrac{3}{4}$"
+      },
+      {
+        "id": "S2Q9",
+        "number": 9,
+        "text": "$2\\dfrac{2}{5} \\div \\dfrac{4}{5}$"
+      },
+      {
+        "id": "S2Q10",
+        "number": 10,
+        "text": "$\\dfrac{8}{9} \\div \\dfrac{4}{9}$"
+      },
+      {
+        "id": "S2Q11",
+        "number": 11,
+        "text": "Convert $\\dfrac{5}{16}$ to a decimal."
+      },
+      {
+        "id": "S2Q12",
+        "number": 12,
+        "text": "Convert $\\dfrac{1}{3}$ to a decimal."
+      },
+      {
+        "id": "S2Q13",
+        "number": 13,
+        "text": "Convert $\\dfrac{5}{6}$ to a decimal."
+      },
+      {
+        "id": "S2Q14",
+        "number": 14,
+        "text": "Convert $2\\dfrac{3}{8}$ to a decimal."
+      },
+      {
+        "id": "S2Q15",
+        "number": 15,
+        "text": "Convert $0.08$ to a fraction in simplest form."
+      },
+      {
+        "id": "S2Q16",
+        "number": 16,
+        "text": "Convert $2.75$ to a mixed number."
+      },
+      {
+        "id": "S2Q17",
+        "number": 17,
+        "text": "Round $3.14159$ to 3 decimal places."
+      },
+      {
+        "id": "S2Q18",
+        "number": 18,
+        "text": "Round $0.5555$ to 1 decimal place."
+      },
+      {
+        "id": "S2Q19",
+        "number": 19,
+        "text": "Round $2.345$ to 1 significant figure."
+      },
+      {
+        "id": "S2Q20",
+        "number": 20,
+        "text": "Round $0.0672$ to 1 significant figure."
+      },
+      {
+        "id": "S2Q21",
+        "number": 21,
+        "text": "$1.5 \\times 2.4$"
+      },
+      {
+        "id": "S2Q22",
+        "number": 22,
+        "text": "$0.06 \\times 0.3$"
+      },
+      {
+        "id": "S2Q23",
+        "number": 23,
+        "text": "$0.336 \\div 0.04$"
+      },
+      {
+        "id": "S2Q24",
+        "number": 24,
+        "text": "$8.5 - 3.27$"
+      },
+      {
+        "id": "S2Q25",
+        "number": 25,
+        "text": "$(3.5 + 1.7) \\times 0.4$"
+      },
+      {
+        "id": "S2Q26",
+        "number": 26,
+        "text": "$8.1 - 2.4 \\times 0.5$"
+      },
+      {
+        "id": "S2Q27",
+        "number": 27,
+        "text": "Find $\\dfrac{3}{4}$ of $240$."
+      },
+      {
+        "id": "S2Q28",
+        "number": 28,
+        "text": "Find $\\dfrac{5}{8}$ of $\\$240$."
+      },
+      {
+        "id": "S2Q29",
+        "number": 29,
+        "text": "Which is larger: $\\dfrac{5}{7}$ or $0.72$?"
+      },
+      {
+        "id": "S2Q30",
+        "number": 30,
+        "text": "Place in order from smallest to largest: $\\dfrac{3}{8},\\ 0.4,\\ \\dfrac{1}{3}$."
+      }
+    ],
+    "answers": [
+      {
+        "id": "S2Q1",
+        "number": 1,
+        "text": "$\\dfrac{1}{6}$"
+      },
+      {
+        "id": "S2Q2",
+        "number": 2,
+        "text": "$\\dfrac{5}{14}$"
+      },
+      {
+        "id": "S2Q3",
+        "number": 3,
+        "text": "$1$"
+      },
+      {
+        "id": "S2Q4",
+        "number": 4,
+        "text": "$1$"
+      },
+      {
+        "id": "S2Q5",
+        "number": 5,
+        "text": "$1$"
+      },
+      {
+        "id": "S2Q6",
+        "number": 6,
+        "text": "$1\\dfrac{1}{6}$"
+      },
+      {
+        "id": "S2Q7",
+        "number": 7,
+        "text": "$1\\dfrac{1}{2}$"
+      },
+      {
+        "id": "S2Q8",
+        "number": 8,
+        "text": "$2$"
+      },
+      {
+        "id": "S2Q9",
+        "number": 9,
+        "text": "$3$"
+      },
+      {
+        "id": "S2Q10",
+        "number": 10,
+        "text": "$2$"
+      },
+      {
+        "id": "S2Q11",
+        "number": 11,
+        "text": "$0.3125$"
+      },
+      {
+        "id": "S2Q12",
+        "number": 12,
+        "text": "$0.\\dot{3}$ (recurring)"
+      },
+      {
+        "id": "S2Q13",
+        "number": 13,
+        "text": "$0.8\\dot{3}$ (recurring)"
+      },
+      {
+        "id": "S2Q14",
+        "number": 14,
+        "text": "$2.375$"
+      },
+      {
+        "id": "S2Q15",
+        "number": 15,
+        "text": "$\\dfrac{2}{25}$"
+      },
+      {
+        "id": "S2Q16",
+        "number": 16,
+        "text": "$2\\dfrac{3}{4}$"
+      },
+      {
+        "id": "S2Q17",
+        "number": 17,
+        "text": "$3.142$"
+      },
+      {
+        "id": "S2Q18",
+        "number": 18,
+        "text": "$0.6$"
+      },
+      {
+        "id": "S2Q19",
+        "number": 19,
+        "text": "$2$"
+      },
+      {
+        "id": "S2Q20",
+        "number": 20,
+        "text": "$0.07$"
+      },
+      {
+        "id": "S2Q21",
+        "number": 21,
+        "text": "$3.6$"
+      },
+      {
+        "id": "S2Q22",
+        "number": 22,
+        "text": "$0.018$"
+      },
+      {
+        "id": "S2Q23",
+        "number": 23,
+        "text": "$8.4$"
+      },
+      {
+        "id": "S2Q24",
+        "number": 24,
+        "text": "$5.23$"
+      },
+      {
+        "id": "S2Q25",
+        "number": 25,
+        "text": "$2.08$"
+      },
+      {
+        "id": "S2Q26",
+        "number": 26,
+        "text": "$6.9$"
+      },
+      {
+        "id": "S2Q27",
+        "number": 27,
+        "text": "$180$"
+      },
+      {
+        "id": "S2Q28",
+        "number": 28,
+        "text": "$\\$150$"
+      },
+      {
+        "id": "S2Q29",
+        "number": 29,
+        "text": "$0.72$"
+      },
+      {
+        "id": "S2Q30",
+        "number": 30,
+        "text": "$\\dfrac{1}{3},\\ \\dfrac{3}{8},\\ 0.4$"
+      }
+    ]
+  },
+  {
+    "set_name": "Set C — Developing–Proficient",
+    "set_number": 3,
+    "topic": "Y7 Week 5: Fractions & Decimals",
+    "total_questions": 30,
+    "questions": [
+      {
+        "id": "S3Q1",
+        "number": 1,
+        "text": "$3\\dfrac{1}{3} \\times 2\\dfrac{1}{2}$"
+      },
+      {
+        "id": "S3Q2",
+        "number": 2,
+        "text": "$2\\dfrac{2}{3} \\times 1\\dfrac{1}{4}$"
+      },
+      {
+        "id": "S3Q3",
+        "number": 3,
+        "text": "$\\dfrac{4}{5} \\times \\dfrac{5}{8} \\times \\dfrac{2}{3}$"
+      },
+      {
+        "id": "S3Q4",
+        "number": 4,
+        "text": "$3\\dfrac{1}{3} \\div 1\\dfrac{2}{3}$"
+      },
+      {
+        "id": "S3Q5",
+        "number": 5,
+        "text": "$4\\dfrac{1}{2} \\div 2\\dfrac{1}{4}$"
+      },
+      {
+        "id": "S3Q6",
+        "number": 6,
+        "text": "$5\\dfrac{1}{3} \\div 2\\dfrac{2}{3}$"
+      },
+      {
+        "id": "S3Q7",
+        "number": 7,
+        "text": "$1\\dfrac{3}{4} \\div 3\\dfrac{1}{2}$"
+      },
+      {
+        "id": "S3Q8",
+        "number": 8,
+        "text": "Convert $\\dfrac{4}{11}$ to a decimal."
+      },
+      {
+        "id": "S3Q9",
+        "number": 9,
+        "text": "Convert $\\dfrac{7}{9}$ to a decimal."
+      },
+      {
+        "id": "S3Q10",
+        "number": 10,
+        "text": "Write $0.\\dot{6}$ as a fraction."
+      },
+      {
+        "id": "S3Q11",
+        "number": 11,
+        "text": "Convert $0.875$ to a fraction."
+      },
+      {
+        "id": "S3Q12",
+        "number": 12,
+        "text": "Round $4.567$ to 2 significant figures."
+      },
+      {
+        "id": "S3Q13",
+        "number": 13,
+        "text": "Round $0.004839$ to 2 significant figures."
+      },
+      {
+        "id": "S3Q14",
+        "number": 14,
+        "text": "Round $99.9962$ to 2 decimal places."
+      },
+      {
+        "id": "S3Q15",
+        "number": 15,
+        "text": "Round $0.09998$ to 3 significant figures."
+      },
+      {
+        "id": "S3Q16",
+        "number": 16,
+        "text": "$2.4 \\times 3.75$"
+      },
+      {
+        "id": "S3Q17",
+        "number": 17,
+        "text": "$0.084 \\div 0.007$"
+      },
+      {
+        "id": "S3Q18",
+        "number": 18,
+        "text": "$(4.8 - 1.5) \\times (2.3 + 0.7)$"
+      },
+      {
+        "id": "S3Q19",
+        "number": 19,
+        "text": "$(6.3 - 2.1) \\div 0.7$"
+      },
+      {
+        "id": "S3Q20",
+        "number": 20,
+        "text": "$3\\dfrac{1}{4} + 2.6$"
+      },
+      {
+        "id": "S3Q21",
+        "number": 21,
+        "text": "$4.2 \\div \\dfrac{2}{3}$"
+      },
+      {
+        "id": "S3Q22",
+        "number": 22,
+        "text": "$\\dfrac{2}{5} \\times 3.5$"
+      },
+      {
+        "id": "S3Q23",
+        "number": 23,
+        "text": "$\\dfrac{7}{8} - 0.5$ (answer as a fraction)"
+      },
+      {
+        "id": "S3Q24",
+        "number": 24,
+        "text": "$2\\dfrac{1}{4} \\times 1\\dfrac{1}{3}$"
+      },
+      {
+        "id": "S3Q25",
+        "number": 25,
+        "text": "$4\\dfrac{1}{2} \\div 1\\dfrac{1}{2}$"
+      },
+      {
+        "id": "S3Q26",
+        "number": 26,
+        "text": "A recipe needs $2\\dfrac{1}{2}$ cups of flour. How much for $\\dfrac{2}{3}$ of the recipe?"
+      },
+      {
+        "id": "S3Q27",
+        "number": 27,
+        "text": "A rope is $5\\dfrac{1}{4}$ m long. It is cut into pieces each $\\dfrac{3}{4}$ m. How many pieces?"
+      },
+      {
+        "id": "S3Q28",
+        "number": 28,
+        "text": "$15.75 \\div 0.25$"
+      },
+      {
+        "id": "S3Q29",
+        "number": 29,
+        "text": "A book costs $\\$12.95$ and a pen costs $\\$3.40$. Find the change from $\\$20$."
+      },
+      {
+        "id": "S3Q30",
+        "number": 30,
+        "text": "$0.25 \\times 0.36 \\times 4$"
+      }
+    ],
+    "answers": [
+      {
+        "id": "S3Q1",
+        "number": 1,
+        "text": "$8\\dfrac{1}{3}$"
+      },
+      {
+        "id": "S3Q2",
+        "number": 2,
+        "text": "$3\\dfrac{1}{3}$"
+      },
+      {
+        "id": "S3Q3",
+        "number": 3,
+        "text": "$\\dfrac{1}{3}$"
+      },
+      {
+        "id": "S3Q4",
+        "number": 4,
+        "text": "$2$"
+      },
+      {
+        "id": "S3Q5",
+        "number": 5,
+        "text": "$2$"
+      },
+      {
+        "id": "S3Q6",
+        "number": 6,
+        "text": "$2$"
+      },
+      {
+        "id": "S3Q7",
+        "number": 7,
+        "text": "$\\dfrac{1}{2}$"
+      },
+      {
+        "id": "S3Q8",
+        "number": 8,
+        "text": "$0.\\overline{36}$ (recurring)"
+      },
+      {
+        "id": "S3Q9",
+        "number": 9,
+        "text": "$0.\\dot{7}$ (recurring)"
+      },
+      {
+        "id": "S3Q10",
+        "number": 10,
+        "text": "$\\dfrac{2}{3}$"
+      },
+      {
+        "id": "S3Q11",
+        "number": 11,
+        "text": "$\\dfrac{7}{8}$"
+      },
+      {
+        "id": "S3Q12",
+        "number": 12,
+        "text": "$4.6$"
+      },
+      {
+        "id": "S3Q13",
+        "number": 13,
+        "text": "$0.0048$"
+      },
+      {
+        "id": "S3Q14",
+        "number": 14,
+        "text": "$100.00$"
+      },
+      {
+        "id": "S3Q15",
+        "number": 15,
+        "text": "$0.100$"
+      },
+      {
+        "id": "S3Q16",
+        "number": 16,
+        "text": "$9$"
+      },
+      {
+        "id": "S3Q17",
+        "number": 17,
+        "text": "$12$"
+      },
+      {
+        "id": "S3Q18",
+        "number": 18,
+        "text": "$9.9$"
+      },
+      {
+        "id": "S3Q19",
+        "number": 19,
+        "text": "$6$"
+      },
+      {
+        "id": "S3Q20",
+        "number": 20,
+        "text": "$5.85$"
+      },
+      {
+        "id": "S3Q21",
+        "number": 21,
+        "text": "$6.3$"
+      },
+      {
+        "id": "S3Q22",
+        "number": 22,
+        "text": "$1.4$"
+      },
+      {
+        "id": "S3Q23",
+        "number": 23,
+        "text": "$\\dfrac{3}{8}$"
+      },
+      {
+        "id": "S3Q24",
+        "number": 24,
+        "text": "$3$"
+      },
+      {
+        "id": "S3Q25",
+        "number": 25,
+        "text": "$3$"
+      },
+      {
+        "id": "S3Q26",
+        "number": 26,
+        "text": "$1\\dfrac{2}{3}$ cups"
+      },
+      {
+        "id": "S3Q27",
+        "number": 27,
+        "text": "$7$"
+      },
+      {
+        "id": "S3Q28",
+        "number": 28,
+        "text": "$63$"
+      },
+      {
+        "id": "S3Q29",
+        "number": 29,
+        "text": "$\\$3.65$"
+      },
+      {
+        "id": "S3Q30",
+        "number": 30,
+        "text": "$0.36$"
+      }
+    ]
+  },
+  {
+    "set_name": "Set D — Proficient",
+    "set_number": 4,
+    "topic": "Y7 Week 5: Fractions & Decimals",
+    "total_questions": 30,
+    "questions": [
+      {
+        "id": "S4Q1",
+        "number": 1,
+        "text": "$\\dfrac{3}{8} \\times \\dfrac{2}{5} \\times \\dfrac{4}{3}$"
+      },
+      {
+        "id": "S4Q2",
+        "number": 2,
+        "text": "$2\\dfrac{1}{3} \\times 1\\dfrac{4}{5}$"
+      },
+      {
+        "id": "S4Q3",
+        "number": 3,
+        "text": "$\\dfrac{5}{6} \\div 2\\dfrac{1}{2}$"
+      },
+      {
+        "id": "S4Q4",
+        "number": 4,
+        "text": "$3\\dfrac{1}{3} \\div 2\\dfrac{1}{2}$"
+      },
+      {
+        "id": "S4Q5",
+        "number": 5,
+        "text": "$\\left(\\dfrac{2}{3}\\right)^2 \\times \\dfrac{9}{4}$"
+      },
+      {
+        "id": "S4Q6",
+        "number": 6,
+        "text": "Convert $\\dfrac{7}{12}$ to a decimal (3 d.p.)."
+      },
+      {
+        "id": "S4Q7",
+        "number": 7,
+        "text": "Convert $0.\\dot{6}$ to a fraction."
+      },
+      {
+        "id": "S4Q8",
+        "number": 8,
+        "text": "Convert $\\dfrac{7}{15}$ to a decimal and round to 2 d.p."
+      },
+      {
+        "id": "S4Q9",
+        "number": 9,
+        "text": "Round $4.5050$ to 3 significant figures."
+      },
+      {
+        "id": "S4Q10",
+        "number": 10,
+        "text": "Round $0.999749$ to 4 significant figures."
+      },
+      {
+        "id": "S4Q11",
+        "number": 11,
+        "text": "Calculate $1.2^3$."
+      },
+      {
+        "id": "S4Q12",
+        "number": 12,
+        "text": "$\\dfrac{1}{2} + \\dfrac{1}{3}\\ \\text{of}\\ 2.4$"
+      },
+      {
+        "id": "S4Q13",
+        "number": 13,
+        "text": "$\\dfrac{5}{8}$ of $\\$320$ minus $\\dfrac{1}{4}$ of $\\$320$."
+      },
+      {
+        "id": "S4Q14",
+        "number": 14,
+        "text": "Find the missing number: $? \\times 0.6 = 4.2$"
+      },
+      {
+        "id": "S4Q15",
+        "number": 15,
+        "text": "$3.6 \\times 10^2 - 4.5 \\times 10$"
+      },
+      {
+        "id": "S4Q16",
+        "number": 16,
+        "text": "$\\dfrac{1}{2} + \\dfrac{1}{4} + \\dfrac{1}{8} + \\dfrac{1}{16}$"
+      },
+      {
+        "id": "S4Q17",
+        "number": 17,
+        "text": "A bag has $2.4$ kg of rice. If $\\dfrac{3}{8}$ is used, how many grams remain?"
+      },
+      {
+        "id": "S4Q18",
+        "number": 18,
+        "text": "A car uses $8.5$ litres per $100$ km. How much fuel for $350$ km?"
+      },
+      {
+        "id": "S4Q19",
+        "number": 19,
+        "text": "A rectangle has length $3\\dfrac{1}{2}$ cm and width $2.8$ cm. Find the area."
+      },
+      {
+        "id": "S4Q20",
+        "number": 20,
+        "text": "Fabric costs $\\$12.50$ per metre. How much for $3\\dfrac{3}{4}$ metres?"
+      },
+      {
+        "id": "S4Q21",
+        "number": 21,
+        "text": "Arrange: $\\dfrac{2}{3},\\ 0.67,\\ \\dfrac{5}{8}$ from smallest to largest."
+      },
+      {
+        "id": "S4Q22",
+        "number": 22,
+        "text": "A student scored $\\dfrac{17}{20}$. Express as a decimal and a percentage."
+      },
+      {
+        "id": "S4Q23",
+        "number": 23,
+        "text": "A car travels $135.6$ km in $2.4$ hours. Find the average speed."
+      },
+      {
+        "id": "S4Q24",
+        "number": 24,
+        "text": "Calculate $0.2 \\times 0.2 \\times 0.2$."
+      },
+      {
+        "id": "S4Q25",
+        "number": 25,
+        "text": "$3\\dfrac{1}{3} \\div 1\\dfrac{2}{3}$ then multiply the result by $\\dfrac{3}{4}$."
+      },
+      {
+        "id": "S4Q26",
+        "number": 26,
+        "text": "A tank holds $8\\dfrac{2}{3}$ L. Each bottle holds $1\\dfrac{1}{3}$ L. How many bottles can be filled?"
+      },
+      {
+        "id": "S4Q27",
+        "number": 27,
+        "text": "Sarah ran $\\dfrac{3}{4}$ km in $\\dfrac{1}{6}$ of an hour. Speed in km/h?"
+      },
+      {
+        "id": "S4Q28",
+        "number": 28,
+        "text": "$\\dfrac{3}{5}$ of a number is $42$. What is $\\dfrac{7}{8}$ of that number?"
+      },
+      {
+        "id": "S4Q29",
+        "number": 29,
+        "text": "$3.6^2 - 2 \\times 3.6 \\times 1.4 + 1.4^2$"
+      },
+      {
+        "id": "S4Q30",
+        "number": 30,
+        "text": "A pool is $12.5$ m long, $5.6$ m wide, $1.8$ m deep. Find its volume."
+      }
+    ],
+    "answers": [
+      {
+        "id": "S4Q1",
+        "number": 1,
+        "text": "$\\dfrac{1}{5}$"
+      },
+      {
+        "id": "S4Q2",
+        "number": 2,
+        "text": "$4\\dfrac{1}{5}$"
+      },
+      {
+        "id": "S4Q3",
+        "number": 3,
+        "text": "$\\dfrac{1}{3}$"
+      },
+      {
+        "id": "S4Q4",
+        "number": 4,
+        "text": "$1\\dfrac{1}{3}$"
+      },
+      {
+        "id": "S4Q5",
+        "number": 5,
+        "text": "$1$"
+      },
+      {
+        "id": "S4Q6",
+        "number": 6,
+        "text": "$0.583$"
+      },
+      {
+        "id": "S4Q7",
+        "number": 7,
+        "text": "$\\dfrac{2}{3}$"
+      },
+      {
+        "id": "S4Q8",
+        "number": 8,
+        "text": "$0.47$"
+      },
+      {
+        "id": "S4Q9",
+        "number": 9,
+        "text": "$4.51$"
+      },
+      {
+        "id": "S4Q10",
+        "number": 10,
+        "text": "$0.9997$"
+      },
+      {
+        "id": "S4Q11",
+        "number": 11,
+        "text": "$1.728$"
+      },
+      {
+        "id": "S4Q12",
+        "number": 12,
+        "text": "$1.3$"
+      },
+      {
+        "id": "S4Q13",
+        "number": 13,
+        "text": "$\\$120$"
+      },
+      {
+        "id": "S4Q14",
+        "number": 14,
+        "text": "$7$"
+      },
+      {
+        "id": "S4Q15",
+        "number": 15,
+        "text": "$315$"
+      },
+      {
+        "id": "S4Q16",
+        "number": 16,
+        "text": "$\\dfrac{15}{16}$"
+      },
+      {
+        "id": "S4Q17",
+        "number": 17,
+        "text": "$1500$ g"
+      },
+      {
+        "id": "S4Q18",
+        "number": 18,
+        "text": "$29.75$ litres"
+      },
+      {
+        "id": "S4Q19",
+        "number": 19,
+        "text": "$9.8\\ \\text{cm}^2$"
+      },
+      {
+        "id": "S4Q20",
+        "number": 20,
+        "text": "$\\$46.875$"
+      },
+      {
+        "id": "S4Q21",
+        "number": 21,
+        "text": "$\\dfrac{5}{8},\\ \\dfrac{2}{3},\\ 0.67$"
+      },
+      {
+        "id": "S4Q22",
+        "number": 22,
+        "text": "$0.85$ and $85\\%$"
+      },
+      {
+        "id": "S4Q23",
+        "number": 23,
+        "text": "$56.5$ km/h"
+      },
+      {
+        "id": "S4Q24",
+        "number": 24,
+        "text": "$0.008$"
+      },
+      {
+        "id": "S4Q25",
+        "number": 25,
+        "text": "$1\\dfrac{1}{2}$"
+      },
+      {
+        "id": "S4Q26",
+        "number": 26,
+        "text": "$6\\dfrac{1}{2}$ (6 full)"
+      },
+      {
+        "id": "S4Q27",
+        "number": 27,
+        "text": "$4\\dfrac{1}{2}$ km/h"
+      },
+      {
+        "id": "S4Q28",
+        "number": 28,
+        "text": "$61\\dfrac{1}{4}$"
+      },
+      {
+        "id": "S4Q29",
+        "number": 29,
+        "text": "$4.84$"
+      },
+      {
+        "id": "S4Q30",
+        "number": 30,
+        "text": "$126\\ \\text{m}^3$"
+      }
+    ]
+  },
+  {
+    "set_name": "Set E — Advanced",
+    "set_number": 5,
+    "topic": "Y7 Week 5: Fractions & Decimals",
+    "total_questions": 30,
+    "questions": [
+      {
+        "id": "S5Q1",
+        "number": 1,
+        "text": "Simplify: $\\dfrac{\\dfrac{3}{4} \\times \\dfrac{8}{9}}{\\dfrac{2}{3} \\times \\dfrac{3}{5}}$"
+      },
+      {
+        "id": "S5Q2",
+        "number": 2,
+        "text": "Find the value of $\\left(2\\dfrac{1}{2}\\right)^2 - \\left(1\\dfrac{1}{2}\\right)^2$."
+      },
+      {
+        "id": "S5Q3",
+        "number": 3,
+        "text": "A price is increased by $\\dfrac{1}{5}$, then decreased by $\\dfrac{1}{5}$. Express the final price as a fraction of the original."
+      },
+      {
+        "id": "S5Q4",
+        "number": 4,
+        "text": "If $2.4 \\times 3.6 = 8.64$, find $0.24 \\times 0.036$ without a calculator."
+      },
+      {
+        "id": "S5Q5",
+        "number": 5,
+        "text": "$1 - \\dfrac{1}{2} + \\dfrac{1}{4} - \\dfrac{1}{8} + \\dfrac{1}{16} - \\dfrac{1}{32}$"
+      },
+      {
+        "id": "S5Q6",
+        "number": 6,
+        "text": "Solve: $\\dfrac{3}{5}$ of a number plus $\\dfrac{1}{4}$ of the same number equals $51$."
+      },
+      {
+        "id": "S5Q7",
+        "number": 7,
+        "text": "Three containers hold $2\\dfrac{1}{4}$ L, $1\\dfrac{5}{8}$ L, and $3\\dfrac{1}{2}$ L. Poured equally into 5 bottles. How much per bottle?"
+      },
+      {
+        "id": "S5Q8",
+        "number": 8,
+        "text": "A cyclist travels $\\dfrac{3}{5}$ of a journey in $45$ minutes. Total journey time at the same speed?"
+      },
+      {
+        "id": "S5Q9",
+        "number": 9,
+        "text": "$\\dfrac{3}{4}$ of a tin of paint covers $12.6\\ \\text{m}^2$. How many tins are needed for $50\\ \\text{m}^2$? (Cannot buy part-tins.)"
+      },
+      {
+        "id": "S5Q10",
+        "number": 10,
+        "text": "The product of two decimals is $0.84$. One is $1.2$. Find the other."
+      },
+      {
+        "id": "S5Q11",
+        "number": 11,
+        "text": "Tom completed $\\dfrac{5}{6}$ of a $120$-page book. He then read $\\dfrac{3}{5}$ of the remaining pages. Pages left unread?"
+      },
+      {
+        "id": "S5Q12",
+        "number": 12,
+        "text": "A shop offers $\\dfrac{1}{4}$ off, then an extra $\\dfrac{1}{3}$ off the reduced price. What fraction of the original do you pay?"
+      },
+      {
+        "id": "S5Q13",
+        "number": 13,
+        "text": "A square has perimeter $8\\dfrac{2}{3}$ cm. Find the side length."
+      },
+      {
+        "id": "S5Q14",
+        "number": 14,
+        "text": "If $x = 1\\dfrac{2}{3}$ and $y = 0.6$, find $\\dfrac{x - y}{x + y}$."
+      },
+      {
+        "id": "S5Q15",
+        "number": 15,
+        "text": "In a class of $40$, $\\dfrac{3}{8}$ walk to school and $0.4$ of the rest catch the bus. How many catch the bus?"
+      },
+      {
+        "id": "S5Q16",
+        "number": 16,
+        "text": "A tank is $\\dfrac{2}{5}$ full. After adding $6.3$ L it is $\\dfrac{3}{4}$ full. Find the capacity."
+      },
+      {
+        "id": "S5Q17",
+        "number": 17,
+        "text": "$9.8 \\times 7.5 + 9.8 \\times 2.5$"
+      },
+      {
+        "id": "S5Q18",
+        "number": 18,
+        "text": "Evaluate: $\\left(1\\dfrac{1}{3} + 2\\dfrac{1}{6}\\right) \\times \\left(3.5 - 1\\dfrac{3}{4}\\right)$"
+      },
+      {
+        "id": "S5Q19",
+        "number": 19,
+        "text": "If $\\dfrac{1}{a} = 0.125$, find $a^2 - 3a$."
+      },
+      {
+        "id": "S5Q20",
+        "number": 20,
+        "text": "$0.\\overline{36} = \\dfrac{a}{b}$ in simplest form. Find $a + b$."
+      },
+      {
+        "id": "S5Q21",
+        "number": 21,
+        "text": "Convert $\\dfrac{5}{12}$ to a decimal (3 d.p.)."
+      },
+      {
+        "id": "S5Q22",
+        "number": 22,
+        "text": "Round $3.9962$ to 2 decimal places."
+      },
+      {
+        "id": "S5Q23",
+        "number": 23,
+        "text": "The average of five decimals is $3.6$. Four are $2.8,\\ 4.1,\\ 3.2,\\ 3.5$. Find the fifth."
+      },
+      {
+        "id": "S5Q24",
+        "number": 24,
+        "text": "Two numbers differ by $0.45$. Their sum is $3\\dfrac{1}{5}$. Find both numbers."
+      },
+      {
+        "id": "S5Q25",
+        "number": 25,
+        "text": "A swimming pool is $25$ m long. Each lap is $2$ lengths. Swimmer completes $\\dfrac{3}{4}$ of $2.4$ km target. Laps completed?"
+      },
+      {
+        "id": "S5Q26",
+        "number": 26,
+        "text": "If $\\dfrac{1}{x} + \\dfrac{1}{y} = \\dfrac{5}{6}$ and $x = 2$, find $y$."
+      },
+      {
+        "id": "S5Q27",
+        "number": 27,
+        "text": "Find $\\dfrac{5}{8}$ of $\\$240$ and express the answer as a decimal."
+      },
+      {
+        "id": "S5Q28",
+        "number": 28,
+        "text": "Estimate $4.87 \\times 3.12$ by rounding each to 1 d.p."
+      },
+      {
+        "id": "S5Q29",
+        "number": 29,
+        "text": "$\\pi = 3.14159265\\ldots$ Round to 4 significant figures."
+      },
+      {
+        "id": "S5Q30",
+        "number": 30,
+        "text": "A number rounded to 1 d.p. gives $3.7$. What are the smallest and largest possible values?"
+      }
+    ],
+    "answers": [
+      {
+        "id": "S5Q1",
+        "number": 1,
+        "text": "$\\dfrac{5}{3} = 1\\dfrac{2}{3}$"
+      },
+      {
+        "id": "S5Q2",
+        "number": 2,
+        "text": "$4$"
+      },
+      {
+        "id": "S5Q3",
+        "number": 3,
+        "text": "$\\dfrac{24}{25}$"
+      },
+      {
+        "id": "S5Q4",
+        "number": 4,
+        "text": "$0.00864$"
+      },
+      {
+        "id": "S5Q5",
+        "number": 5,
+        "text": "$\\dfrac{21}{32}$"
+      },
+      {
+        "id": "S5Q6",
+        "number": 6,
+        "text": "$60$"
+      },
+      {
+        "id": "S5Q7",
+        "number": 7,
+        "text": "$1\\dfrac{19}{40}$ L"
+      },
+      {
+        "id": "S5Q8",
+        "number": 8,
+        "text": "$75$ minutes"
+      },
+      {
+        "id": "S5Q9",
+        "number": 9,
+        "text": "$3$ tins"
+      },
+      {
+        "id": "S5Q10",
+        "number": 10,
+        "text": "$0.7$"
+      },
+      {
+        "id": "S5Q11",
+        "number": 11,
+        "text": "$8$"
+      },
+      {
+        "id": "S5Q12",
+        "number": 12,
+        "text": "$\\dfrac{1}{2}$"
+      },
+      {
+        "id": "S5Q13",
+        "number": 13,
+        "text": "$2\\dfrac{1}{6}$ cm"
+      },
+      {
+        "id": "S5Q14",
+        "number": 14,
+        "text": "$\\dfrac{8}{17}$"
+      },
+      {
+        "id": "S5Q15",
+        "number": 15,
+        "text": "$10$"
+      },
+      {
+        "id": "S5Q16",
+        "number": 16,
+        "text": "$18$ L"
+      },
+      {
+        "id": "S5Q17",
+        "number": 17,
+        "text": "$98$"
+      },
+      {
+        "id": "S5Q18",
+        "number": 18,
+        "text": "$6\\dfrac{1}{8}$"
+      },
+      {
+        "id": "S5Q19",
+        "number": 19,
+        "text": "$40$"
+      },
+      {
+        "id": "S5Q20",
+        "number": 20,
+        "text": "$15$"
+      },
+      {
+        "id": "S5Q21",
+        "number": 21,
+        "text": "$0.417$"
+      },
+      {
+        "id": "S5Q22",
+        "number": 22,
+        "text": "$4.00$"
+      },
+      {
+        "id": "S5Q23",
+        "number": 23,
+        "text": "$4.4$"
+      },
+      {
+        "id": "S5Q24",
+        "number": 24,
+        "text": "$1.825$ and $1.375$"
+      },
+      {
+        "id": "S5Q25",
+        "number": 25,
+        "text": "$36$"
+      },
+      {
+        "id": "S5Q26",
+        "number": 26,
+        "text": "$y = 3$"
+      },
+      {
+        "id": "S5Q27",
+        "number": 27,
+        "text": "$\\$150.00$"
+      },
+      {
+        "id": "S5Q28",
+        "number": 28,
+        "text": "$\\approx 15.19$"
+      },
+      {
+        "id": "S5Q29",
+        "number": 29,
+        "text": "$3.142$"
+      },
+      {
+        "id": "S5Q30",
+        "number": 30,
+        "text": "$3.65 \\leq n < 3.75$"
+      }
+    ]
+  },
+  {
+    "set_name": "Set F — Selective Level",
+    "set_number": 6,
+    "topic": "Y7 Week 5: Fractions & Decimals",
+    "total_questions": 30,
+    "questions": [
+      {
+        "id": "S6Q1",
+        "number": 1,
+        "text": "Evaluate: $\\dfrac{1}{1\\times 2} + \\dfrac{1}{2\\times 3} + \\dfrac{1}{3\\times 4} + \\dfrac{1}{4\\times 5} + \\dfrac{1}{5\\times 6}$"
+      },
+      {
+        "id": "S6Q2",
+        "number": 2,
+        "text": "A tank is $\\dfrac{1}{3}$ full. After removing $15$ L, it is $\\dfrac{1}{5}$ full. Find the capacity."
+      },
+      {
+        "id": "S6Q3",
+        "number": 3,
+        "text": "A tap fills $\\dfrac{2}{5}$ of a tank per hour. A drain empties $\\dfrac{1}{6}$ per hour. Both running: fraction filled in 1 hour?"
+      },
+      {
+        "id": "S6Q4",
+        "number": 4,
+        "text": "Express $0.\\overline{142857}$ as a fraction. What is special about it?"
+      },
+      {
+        "id": "S6Q5",
+        "number": 5,
+        "text": "Convert $\\dfrac{5}{7}$ to a decimal. What digit is in the $100$th decimal place?"
+      },
+      {
+        "id": "S6Q6",
+        "number": 6,
+        "text": "If $a = 0.\\dot{3}$ and $b = 0.\\dot{6}$, find $a \\times b$ as a fraction."
+      },
+      {
+        "id": "S6Q7",
+        "number": 7,
+        "text": "A shopkeeper buys goods for $\\$480$ and sells $\\dfrac{3}{4}$ for $\\$432$. The rest are sold at $\\dfrac{2}{3}$ of the buying price. Find total profit."
+      },
+      {
+        "id": "S6Q8",
+        "number": 8,
+        "text": "$\\left(\\dfrac{5}{6} - \\dfrac{1}{3}\\right) \\div \\left(\\dfrac{2}{3} + \\dfrac{1}{4}\\right)$"
+      },
+      {
+        "id": "S6Q9",
+        "number": 9,
+        "text": "If $\\dfrac{3}{5}$ of a number is $42$, find $\\dfrac{5}{7}$ of the same number."
+      },
+      {
+        "id": "S6Q10",
+        "number": 10,
+        "text": "Three-quarters of a tin covers $12.6$ m$^2$. One tin covers how many m$^2$?"
+      },
+      {
+        "id": "S6Q11",
+        "number": 11,
+        "text": "A price rises by $20\\%$ then falls by $20\\%$. What percentage of the original is the final price?"
+      },
+      {
+        "id": "S6Q12",
+        "number": 12,
+        "text": "Find: $\\left(\\dfrac{1}{2}\\right)^2 + \\left(\\dfrac{1}{3}\\right)^2 + \\left(\\dfrac{1}{6}\\right)^2$"
+      },
+      {
+        "id": "S6Q13",
+        "number": 13,
+        "text": "$0.2 + 0.02 + 0.002 + 0.0002 + \\ldots$ (infinite sum)"
+      },
+      {
+        "id": "S6Q14",
+        "number": 14,
+        "text": "In the expression $\\dfrac{n}{n+1} \\times \\dfrac{n+1}{n+2}$ for $n = 5$, find the result."
+      },
+      {
+        "id": "S6Q15",
+        "number": 15,
+        "text": "A recipe for 8 serves uses $1\\dfrac{1}{3}$ cups of sugar. How much sugar for 6 serves?"
+      },
+      {
+        "id": "S6Q16",
+        "number": 16,
+        "text": "$\\dfrac{1}{2} \\times \\dfrac{2}{3} \\times \\dfrac{3}{4} \\times \\dfrac{4}{5} \\times \\dfrac{5}{6} \\times \\dfrac{6}{7}$"
+      },
+      {
+        "id": "S6Q17",
+        "number": 17,
+        "text": "A clock gains $1\\dfrac{1}{2}$ minutes every hour. After $8$ hours, how many minutes fast is it?"
+      },
+      {
+        "id": "S6Q18",
+        "number": 18,
+        "text": "Two pipes fill a tank. Pipe A fills $\\dfrac{1}{4}$ in 1 hour, pipe B fills $\\dfrac{1}{6}$ in 1 hour. Working together, how long to fill the tank?"
+      },
+      {
+        "id": "S6Q19",
+        "number": 19,
+        "text": "$\\dfrac{1 + \\dfrac{1}{2}}{1 - \\dfrac{1}{2}} \\times \\dfrac{1 + \\dfrac{1}{3}}{1 - \\dfrac{1}{3}} \\times \\dfrac{1 + \\dfrac{1}{4}}{1 - \\dfrac{1}{4}}$"
+      },
+      {
+        "id": "S6Q20",
+        "number": 20,
+        "text": "A car's fuel tank is $\\dfrac{3}{4}$ full. After a $180$ km trip using $0.08$ L/km, it is $\\dfrac{3}{8}$ full. Find tank capacity."
+      },
+      {
+        "id": "S6Q21",
+        "number": 21,
+        "text": "$\\left(3\\dfrac{3}{4}\\right)^2 - \\left(1\\dfrac{1}{4}\\right)^2$"
+      },
+      {
+        "id": "S6Q22",
+        "number": 22,
+        "text": "What fraction is exactly halfway between $\\dfrac{1}{3}$ and $\\dfrac{1}{2}$?"
+      },
+      {
+        "id": "S6Q23",
+        "number": 23,
+        "text": "$N$ is a whole number. $\\dfrac{N}{7}$ is between $3.5$ and $4.2$. Find all possible values of $N$."
+      },
+      {
+        "id": "S6Q24",
+        "number": 24,
+        "text": "A barrel is $\\dfrac{2}{3}$ full of water. After $12$ L are removed, it is $\\dfrac{5}{12}$ full. Find the barrel's capacity."
+      },
+      {
+        "id": "S6Q25",
+        "number": 25,
+        "text": "Simplify: $\\dfrac{1 - \\dfrac{1}{4}}{1 + \\dfrac{1}{4}} + \\dfrac{1 - \\dfrac{1}{3}}{1 + \\dfrac{1}{3}}$"
+      },
+      {
+        "id": "S6Q26",
+        "number": 26,
+        "text": "Evaluate: $0.1 \\times 0.2 \\times 0.3 \\times \\ldots \\times 0.9$. How many zeros after the decimal point before the first non-zero digit?"
+      },
+      {
+        "id": "S6Q27",
+        "number": 27,
+        "text": "Alex saves $\\dfrac{1}{5}$ of his pocket money. He spends $\\dfrac{2}{3}$ of the remainder on food. He has $\\$8$ left. Find his pocket money."
+      },
+      {
+        "id": "S6Q28",
+        "number": 28,
+        "text": "What is the sum $\\dfrac{1}{1 \\times 3} + \\dfrac{1}{3 \\times 5} + \\dfrac{1}{5 \\times 7} + \\dfrac{1}{7 \\times 9} + \\dfrac{1}{9 \\times 11}$?"
+      },
+      {
+        "id": "S6Q29",
+        "number": 29,
+        "text": "Find the value of $n$ if $\\dfrac{n}{n + 3} = 0.6$."
+      },
+      {
+        "id": "S6Q30",
+        "number": 30,
+        "text": "A tank has two taps. Tap A fills it in $3$ hours. Tap B fills it in $6$ hours. A drain empties it in $4$ hours. All three running: how long to fill the tank?"
+      }
+    ],
+    "answers": [
+      {
+        "id": "S6Q1",
+        "number": 1,
+        "text": "$\\dfrac{5}{6}$"
+      },
+      {
+        "id": "S6Q2",
+        "number": 2,
+        "text": "$112.5$ L"
+      },
+      {
+        "id": "S6Q3",
+        "number": 3,
+        "text": "$\\dfrac{7}{30}$"
+      },
+      {
+        "id": "S6Q4",
+        "number": 4,
+        "text": "$\\dfrac{1}{7}$ — simplest unit fraction with a 6-digit cycle"
+      },
+      {
+        "id": "S6Q5",
+        "number": 5,
+        "text": "$2$"
+      },
+      {
+        "id": "S6Q6",
+        "number": 6,
+        "text": "$\\dfrac{2}{9}$"
+      },
+      {
+        "id": "S6Q7",
+        "number": 7,
+        "text": "$\\$32$"
+      },
+      {
+        "id": "S6Q8",
+        "number": 8,
+        "text": "$\\dfrac{6}{11}$"
+      },
+      {
+        "id": "S6Q9",
+        "number": 9,
+        "text": "$50$"
+      },
+      {
+        "id": "S6Q10",
+        "number": 10,
+        "text": "$16.8\\ \\text{m}^2$"
+      },
+      {
+        "id": "S6Q11",
+        "number": 11,
+        "text": "$96\\%$"
+      },
+      {
+        "id": "S6Q12",
+        "number": 12,
+        "text": "$\\dfrac{7}{18}$"
+      },
+      {
+        "id": "S6Q13",
+        "number": 13,
+        "text": "$\\dfrac{2}{9}$"
+      },
+      {
+        "id": "S6Q14",
+        "number": 14,
+        "text": "$\\dfrac{5}{7}$"
+      },
+      {
+        "id": "S6Q15",
+        "number": 15,
+        "text": "$1$ cup"
+      },
+      {
+        "id": "S6Q16",
+        "number": 16,
+        "text": "$\\dfrac{1}{7}$"
+      },
+      {
+        "id": "S6Q17",
+        "number": 17,
+        "text": "$12$ minutes"
+      },
+      {
+        "id": "S6Q18",
+        "number": 18,
+        "text": "$2\\dfrac{2}{5}$ hours"
+      },
+      {
+        "id": "S6Q19",
+        "number": 19,
+        "text": "$10$"
+      },
+      {
+        "id": "S6Q20",
+        "number": 20,
+        "text": "$38.4$ L"
+      },
+      {
+        "id": "S6Q21",
+        "number": 21,
+        "text": "$12\\dfrac{1}{2}$"
+      },
+      {
+        "id": "S6Q22",
+        "number": 22,
+        "text": "$\\dfrac{5}{12}$"
+      },
+      {
+        "id": "S6Q23",
+        "number": 23,
+        "text": "$N = 25, 26, 27, 28, 29$"
+      },
+      {
+        "id": "S6Q24",
+        "number": 24,
+        "text": "$48$ L"
+      },
+      {
+        "id": "S6Q25",
+        "number": 25,
+        "text": "$1\\dfrac{1}{10}$"
+      },
+      {
+        "id": "S6Q26",
+        "number": 26,
+        "text": "$8$ zeros (result $= 0.000000036288\\ldots$)"
+      },
+      {
+        "id": "S6Q27",
+        "number": 27,
+        "text": "$\\$30$"
+      },
+      {
+        "id": "S6Q28",
+        "number": 28,
+        "text": "$\\dfrac{5}{11}$"
+      },
+      {
+        "id": "S6Q29",
+        "number": 29,
+        "text": "$n = \\dfrac{9}{2} = 4.5$"
+      },
+      {
+        "id": "S6Q30",
+        "number": 30,
+        "text": "$4$ hours"
+      }
+    ]
+  }
+]

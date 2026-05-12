@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solomon Thinking Skills</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1A3A5C;
+      --primary-light: #2A5080;
+      --accent: #F4A820;
+      --success: #22C55E;
+      --success-light: #DCFCE7;
+      --error: #EF4444;
+      --error-light: #FEE2E2;
+      --hint: #F59E0B;
+      --hint-light: #FEF3C7;
+      --bg: #F0F4F8;
+      --card: #FFFFFF;
+      --text: #1E293B;
+      --text-light: #64748B;
+      --border: #E2E8F0;
+      --type-LR: #6366F1;
+      --type-PR: #8B5CF6;
+      --type-SR: #0EA5E9;
+      --type-VR: #10B981;
+      --type-AR: #F97316;
+      --type-CT: #EC4899;
+      --type-NR: #EAB308;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 16px; line-height: 1.6; }
+    h1, h2, h3, .question-text { font-family: 'Poppins', sans-serif; }
+
+    /* SCREENS */
+    .screen { display: none; min-height: 100vh; flex-direction: column; }
+    .screen.active { display: flex; }
+
+    /* COMMON */
+    .container { max-width: 680px; margin: 0 auto; padding: 16px; width: 100%; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 14px 24px; border-radius: 12px; border: none;
+      font-family: 'Nunito', sans-serif; font-size: 16px; font-weight: 700;
+      cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .btn:active { transform: translateY(0); }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-accent { background: var(--accent); color: var(--primary); }
+    .btn-success { background: var(--success); color: white; }
+    .btn-outline { background: transparent; border: 2px solid var(--border); color: var(--text); }
+    .btn-danger { background: var(--error); color: white; }
+    .btn-full { width: 100%; }
+
+    /* HOME */
+    #screen-home { background: linear-gradient(135deg, var(--primary) 0%, #2A5080 100%); color: white; }
+    .home-header { text-align: center; padding: 48px 24px 32px; }
+    .home-header .logo { font-size: 56px; margin-bottom: 12px; }
+    .home-header h1 { font-size: 28px; color: white; margin-bottom: 6px; }
+    .home-header p { color: rgba(255,255,255,0.7); font-size: 14px; }
+    .track-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 0 16px 16px; max-width: 680px; margin: 0 auto; width: 100%; }
+    .track-card {
+      background: rgba(255,255,255,0.12); border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 16px; padding: 20px; cursor: pointer; transition: all 0.2s; text-align: left;
+    }
+    .track-card:hover { background: rgba(255,255,255,0.22); border-color: var(--accent); transform: translateY(-2px); }
+    .track-card .tc-emoji { font-size: 28px; margin-bottom: 8px; }
+    .track-card .tc-name { font-family: 'Poppins', sans-serif; font-size: 16px; font-weight: 700; color: white; margin-bottom: 4px; }
+    .track-card .tc-meta { font-size: 12px; color: rgba(255,255,255,0.65); }
+    .track-card .tc-progress { margin-top: 10px; font-size: 12px; color: var(--accent); font-weight: 700; }
+    .home-footer { text-align: center; padding: 16px; max-width: 680px; margin: 0 auto; width: 100%; }
+    .btn-settings { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 10px 20px; font-size: 14px; }
+    .btn-settings:hover { background: rgba(255,255,255,0.25); }
+
+    /* LOADING */
+    #screen-loading { background: var(--primary); color: white; align-items: center; justify-content: center; }
+    .loading-content { text-align: center; padding: 32px; }
+    .spinner { width: 60px; height: 60px; border: 4px solid rgba(255,255,255,0.2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 24px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-content h2 { font-size: 22px; margin-bottom: 12px; color: white; }
+    .loading-content p { color: rgba(255,255,255,0.7); font-size: 14px; }
+
+    /* QUIZ */
+    #screen-quiz { background: var(--bg); }
+    .quiz-header { background: var(--primary); color: white; padding: 16px; }
+    .quiz-header-content { max-width: 680px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .quiz-track-info .qt-label { font-size: 15px; font-weight: 800; color: white; display: block; }
+    .quiz-track-info .qt-week { font-size: 13px; color: rgba(255,255,255,0.75); }
+    .quiz-stats { display: flex; gap: 16px; }
+    .stat-item { text-align: center; }
+    .stat-item .sv { font-size: 18px; font-weight: 800; color: var(--accent); display: block; }
+    .stat-item .sl { font-size: 11px; color: rgba(255,255,255,0.65); }
+    .quiz-body { flex: 1; padding: 16px; }
+    .question-card { background: var(--card); border-radius: 16px; padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); animation: fadeInUp 0.3s ease; }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .type-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 700; color: white; margin-bottom: 16px; }
+    .question-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .question-counter { font-size: 14px; color: var(--text-light); font-weight: 600; }
+    .question-text { font-size: 18px; font-weight: 600; color: var(--text); margin-bottom: 24px; line-height: 1.6; white-space: pre-wrap; }
+    .options-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+    .option-btn {
+      display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-radius: 12px;
+      border: 2px solid var(--border); background: var(--card); cursor: pointer;
+      font-family: 'Nunito', sans-serif; font-size: 16px; font-weight: 600; color: var(--text);
+      text-align: left; transition: all 0.15s; min-height: 56px; width: 100%;
+    }
+    .option-btn:hover:not(:disabled):not(.greyed) { border-color: var(--primary); background: rgba(26,58,92,0.04); transform: scale(1.01); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .option-btn.selected { border-color: var(--primary); background: rgba(26,58,92,0.08); }
+    .option-btn.correct { border-color: var(--success); background: var(--success-light); }
+    .option-btn.wrong { border-color: var(--error); background: var(--error-light); animation: shake 0.4s ease; }
+    .option-btn.greyed { border-color: var(--border); background: #F8FAFC; color: var(--text-light); opacity: 0.5; cursor: not-allowed; }
+    .option-btn.revealed-correct { border-color: var(--success); background: var(--success-light); animation: pulseGreen 0.5s ease; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-5px)} 40%{transform:translateX(5px)} 60%{transform:translateX(-5px)} 80%{transform:translateX(3px)} }
+    @keyframes pulseGreen { 0%{transform:scale(1)} 50%{transform:scale(1.03)} 100%{transform:scale(1)} }
+    .option-letter { width: 32px; height: 32px; border-radius: 50%; background: var(--bg); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0; transition: all 0.15s; }
+    .option-btn.selected .option-letter { background: var(--primary); color: white; }
+    .option-btn.correct .option-letter { background: var(--success); color: white; }
+    .option-btn.wrong .option-letter { background: var(--error); color: white; }
+    .option-btn.revealed-correct .option-letter { background: var(--success); color: white; }
+    .submit-area { text-align: center; }
+    .feedback-box { border-radius: 12px; padding: 16px 20px; margin-top: 16px; display: none; animation: fadeInUp 0.3s ease; }
+    .feedback-box.correct-fb { background: var(--success-light); border: 2px solid var(--success); }
+    .feedback-box.wrong-fb { background: var(--error-light); border: 2px solid var(--error); }
+    .feedback-box.hint-fb { background: var(--hint-light); border: 2px solid var(--hint); }
+    .feedback-header { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 800; margin-bottom: 10px; color: var(--text); }
+    .feedback-text { font-size: 15px; line-height: 1.65; color: var(--text); }
+    .feedback-stars { font-size: 26px; margin-top: 10px; }
+    .feedback-stars .star-earned { display: inline-block; animation: starPop 0.4s ease forwards; }
+    .feedback-stars .star-earned:nth-child(2) { animation-delay: 0.15s; }
+    @keyframes starPop { 0%{transform:scale(0) rotate(-20deg);opacity:0} 70%{transform:scale(1.4) rotate(10deg);opacity:1} 100%{transform:scale(1) rotate(0deg);opacity:1} }
+    .feedback-actions { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .progress-bar-wrap { background: var(--primary); padding: 12px 16px; }
+    .progress-bar-inner { max-width: 680px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+    .progress-bar-bg { flex: 1; height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s ease; }
+    .progress-label { font-size: 13px; color: rgba(255,255,255,0.8); font-weight: 700; white-space: nowrap; }
+
+    /* ADAPTIVE MESSAGE */
+    .adaptive-msg { background: linear-gradient(135deg,#6366F1,#8B5CF6); color: white; border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; font-size: 14px; display: none; }
+    .adaptive-msg.show { display: block; }
+    .adaptive-msg strong { display: block; font-size: 16px; margin-bottom: 4px; }
+
+    /* COMPLETE */
+    #screen-complete { background: var(--bg); }
+    .complete-header { background: linear-gradient(135deg, var(--primary) 0%, #2A5080 100%); color: white; text-align: center; padding: 48px 24px 40px; }
+    .complete-emoji { font-size: 64px; margin-bottom: 16px; }
+    .complete-header h1 { font-size: 30px; color: white; margin-bottom: 8px; }
+    .complete-header p { color: rgba(255,255,255,0.75); font-size: 16px; }
+    .complete-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 20px; }
+    .stat-card { background: var(--card); border-radius: 12px; padding: 16px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .stat-card .sc-num { font-family: 'Poppins', sans-serif; font-size: 26px; font-weight: 700; color: var(--primary); }
+    .stat-card .sc-desc { font-size: 12px; color: var(--text-light); margin-top: 4px; }
+    .streak-banner { background: linear-gradient(135deg,#FF6B35,#F4A820); color: white; border-radius: 12px; padding: 16px 20px; display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .streak-banner .sb-num { font-family: 'Poppins', sans-serif; font-size: 28px; font-weight: 700; }
+    .weak-card { background: var(--card); border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .weak-card h3 { font-size: 15px; color: var(--text); margin-bottom: 8px; }
+    .weak-card p { font-size: 14px; color: var(--text-light); line-height: 1.6; }
+    .complete-actions { display: flex; flex-direction: column; gap: 10px; }
+
+    /* SETTINGS */
+    #screen-settings { background: var(--bg); }
+    .pw-gate { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: var(--primary); color: white; padding: 24px; }
+    .pw-gate h2 { font-size: 24px; margin-bottom: 8px; color: white; }
+    .pw-gate p { color: rgba(255,255,255,0.7); margin-bottom: 24px; font-size: 14px; }
+    .pw-gate input { padding: 14px 18px; border: none; border-radius: 12px; font-size: 18px; text-align: center; letter-spacing: 4px; margin-bottom: 12px; width: 100%; max-width: 300px; font-family: 'Nunito', sans-serif; }
+    .pw-gate input:focus { outline: none; }
+    .pw-error { color: #FCA5A5; font-size: 13px; margin-top: 8px; min-height: 20px; }
+    .settings-content { display: none; }
+    .settings-content.unlocked { display: block; }
+    .settings-header { background: var(--primary); color: white; padding: 20px 16px; }
+    .sh-inner { max-width: 680px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+    .sh-inner h2 { color: white; font-size: 20px; }
+    .btn-back { background: rgba(255,255,255,0.2); color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 20px; line-height: 1; transition: background 0.2s; }
+    .btn-back:hover { background: rgba(255,255,255,0.3); }
+    .settings-section { background: var(--card); border-radius: 16px; padding: 20px 20px 4px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .settings-section h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-light); margin-bottom: 12px; font-weight: 700; }
+    .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); gap: 12px; }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-row label { font-size: 15px; font-weight: 600; color: var(--text); }
+    .settings-row label small { display: block; font-size: 12px; color: var(--text-light); font-weight: 400; margin-top: 2px; }
+    .settings-row input[type="number"], .settings-row input[type="password"], .settings-row input[type="text"] {
+      padding: 8px 12px; border: 2px solid var(--border); border-radius: 8px; font-family: 'Nunito', sans-serif; font-size: 15px; width: 90px; color: var(--text);
+    }
+    .settings-row input:focus { outline: none; border-color: var(--primary); }
+    .api-row { flex-direction: column; align-items: flex-start; }
+    .api-row input { width: 100% !important; margin-top: 8px; font-family: monospace; font-size: 13px; }
+    .warning-box { background: #FEF3C7; border: 1px solid var(--hint); border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #92400E; margin-top: 8px; }
+    .warning-box a { color: #92400E; }
+    input[type="range"] { width: 130px; }
+    .slider-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+    .slider-wrap span { font-size: 13px; color: var(--text-light); }
+
+    /* REVIEW */
+    #screen-review { background: var(--bg); }
+    .review-header { background: var(--primary); color: white; padding: 20px 16px; }
+    .rh-inner { max-width: 680px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+    .rh-inner h2 { color: white; font-size: 20px; }
+    .review-item { background: var(--card); border-radius: 12px; padding: 18px 20px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .review-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+    .review-result { font-weight: 700; font-size: 14px; }
+    .r-first { color: var(--success); } .r-second { color: var(--hint); } .r-gaveup { color: var(--error); }
+    .review-q { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 8px; white-space: pre-wrap; }
+    .review-answer { font-size: 13px; color: var(--text-light); line-height: 1.7; }
+    .review-expl { font-size: 14px; color: var(--text); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); line-height: 1.65; }
+
+    /* CERTIFICATE */
+    .cert-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; padding: 24px; }
+    .cert-overlay.show { display: flex; }
+    .cert-card { background: white; border-radius: 24px; padding: 40px; text-align: center; max-width: 480px; width: 100%; border: 4px solid var(--accent); }
+    .cert-card .cert-emoji { font-size: 64px; }
+    .cert-card h2 { font-size: 28px; color: var(--primary); margin: 16px 0 8px; }
+    .cert-card p { color: var(--text-light); margin-bottom: 24px; line-height: 1.6; }
+
+    /* CONFETTI */
+    #confetti-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; }
+
+    /* MOBILE */
+    @media (max-width: 480px) {
+      .track-grid { gap: 10px; }
+      .track-card { padding: 14px; }
+      .track-card .tc-name { font-size: 14px; }
+      .complete-stats { grid-template-columns: 1fr 1fr; }
+      .quiz-stats { gap: 10px; }
+      .question-text { font-size: 16px; }
+      .option-btn { font-size: 15px; }
+    }
+    @media (max-width: 360px) { .track-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+<canvas id="confetti-canvas"></canvas>
+
+<!-- ====== HOME ====== -->
+<div id="screen-home" class="screen active">
+  <div class="home-header">
+    <div class="logo">🧠</div>
+    <h1>Solomon Thinking Skills</h1>
+    <p>Powered by AI · NSW OC &amp; Selective Exam Prep</p>
+  </div>
+  <div class="track-grid">
+    <div class="track-card" onclick="selectTrack('oc-foundation')">
+      <div class="tc-emoji">📚</div>
+      <div class="tc-name">OC Foundation</div>
+      <div class="tc-meta">Year 3 · 20 weeks</div>
+      <div class="tc-progress" id="prog-oc-foundation">Start →</div>
+    </div>
+    <div class="track-card" onclick="selectTrack('oc-intensive')">
+      <div class="tc-emoji">⚡</div>
+      <div class="tc-name">OC Intensive</div>
+      <div class="tc-meta">Year 4 · 16 weeks</div>
+      <div class="tc-progress" id="prog-oc-intensive">Start →</div>
+    </div>
+    <div class="track-card" onclick="selectTrack('sel-foundation')">
+      <div class="tc-emoji">🎯</div>
+      <div class="tc-name">SEL Foundation</div>
+      <div class="tc-meta">Year 5 · 40 weeks</div>
+      <div class="tc-progress" id="prog-sel-foundation">Start →</div>
+    </div>
+    <div class="track-card" onclick="selectTrack('sel-intensive')">
+      <div class="tc-emoji">🏆</div>
+      <div class="tc-name">SEL Intensive</div>
+      <div class="tc-meta">Year 6 · 16 weeks</div>
+      <div class="tc-progress" id="prog-sel-intensive">Start →</div>
+    </div>
+  </div>
+  <div class="home-footer">
+    <button class="btn btn-settings" onclick="showSettings()">⚙️ Teacher Settings</button>
+  </div>
+</div>
+
+<!-- ====== LOADING ====== -->
+<div id="screen-loading" class="screen">
+  <div class="loading-content">
+    <div class="spinner"></div>
+    <h2>Preparing your questions…</h2>
+    <p id="loading-msg">Generating personalised questions with AI 🧠</p>
+  </div>
+</div>
+
+<!-- ====== QUIZ ====== -->
+<div id="screen-quiz" class="screen">
+  <div class="quiz-header">
+    <div class="quiz-header-content">
+      <div class="quiz-track-info">
+        <span class="qt-label" id="quiz-track-label">OC Foundation</span>
+        <span class="qt-week" id="quiz-week-label">Week 1 · Day 1</span>
+      </div>
+      <div class="quiz-stats">
+        <div class="stat-item">
+          <span class="sv" id="quiz-streak">0</span>
+          <span class="sl">🔥 Streak</span>
+        </div>
+        <div class="stat-item">
+          <span class="sv" id="quiz-stars">0</span>
+          <span class="sl">⭐ Stars</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="quiz-body">
+    <div class="container" style="padding-left:0;padding-right:0;max-width:680px">
+      <div id="adaptive-msg" class="adaptive-msg"></div>
+      <div class="question-card" id="question-card">
+        <div class="type-badge" id="type-badge">🧩 Logical Reasoning</div>
+        <div class="question-meta">
+          <div class="question-counter" id="question-counter">Question 1 of 3</div>
+        </div>
+        <div class="question-text" id="question-text">Loading…</div>
+        <div class="options-list" id="options-list"></div>
+        <div class="submit-area">
+          <button class="btn btn-primary btn-full" id="submit-btn" onclick="submitAnswer()" disabled>Submit Answer</button>
+        </div>
+        <div class="feedback-box" id="feedback-box">
+          <div class="feedback-header" id="feedback-header"></div>
+          <div class="feedback-text" id="feedback-text"></div>
+          <div class="feedback-stars" id="feedback-stars"></div>
+          <div class="feedback-actions" id="feedback-actions"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-inner">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress-bar-fill" style="width:0%"></div>
+      </div>
+      <div class="progress-label" id="progress-label">0 / 3</div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== COMPLETE ====== -->
+<div id="screen-complete" class="screen">
+  <div class="complete-header">
+    <div class="complete-emoji" id="complete-emoji">🎉</div>
+    <h1 id="complete-title">Session Complete!</h1>
+    <p id="complete-subtitle">Great work today!</p>
+  </div>
+  <div class="container" style="padding-top:24px">
+    <div class="complete-stats">
+      <div class="stat-card"><div class="sc-num" id="stat-first">0</div><div class="sc-desc">⭐⭐ First Try</div></div>
+      <div class="stat-card"><div class="sc-num" id="stat-second">0</div><div class="sc-desc">⭐ Second Try</div></div>
+      <div class="stat-card"><div class="sc-num" id="stat-gaveup">0</div><div class="sc-desc">📖 Reviewed</div></div>
+    </div>
+    <div class="streak-banner">
+      <span style="font-size:32px">🔥</span>
+      <div>
+        <div class="sb-num" id="complete-streak">1</div>
+        <div style="font-size:13px;opacity:0.9" id="complete-streak-msg">day streak — keep it up!</div>
+      </div>
+      <div style="margin-left:auto;text-align:right">
+        <div style="font-size:20px;font-weight:800">+<span id="stars-earned">0</span> ⭐</div>
+        <div style="font-size:13px;opacity:0.9">Total: <span id="total-stars">0</span></div>
+      </div>
+    </div>
+    <div class="weak-card">
+      <h3>📊 Today's Performance</h3>
+      <p id="weak-areas-text">Loading…</p>
+    </div>
+    <div class="complete-actions">
+      <button class="btn btn-primary btn-full" onclick="startNextSession()">Start Tomorrow's Session →</button>
+      <button class="btn btn-outline btn-full" onclick="reviewAnswers()">📋 Review Today's Answers</button>
+      <button class="btn btn-outline btn-full" onclick="showScreen('screen-home')">← Back to Home</button>
+    </div>
+    <div style="height:32px"></div>
+  </div>
+</div>
+
+<!-- ====== SETTINGS ====== -->
+<div id="screen-settings" class="screen">
+  <div class="pw-gate" id="pw-gate">
+    <div style="font-size:48px;margin-bottom:16px">🔐</div>
+    <h2>Teacher Settings</h2>
+    <p>Enter your teacher password to continue</p>
+    <input type="password" id="pw-input" placeholder="Password" maxlength="20"
+           onkeypress="if(event.key==='Enter')checkPassword()">
+    <button class="btn btn-accent" onclick="checkPassword()" style="max-width:300px;width:100%;margin-top:4px">Unlock</button>
+    <div class="pw-error" id="pw-error"></div>
+    <button onclick="showScreen('screen-home')"
+      style="margin-top:12px;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.2);padding:10px 20px;border-radius:10px;cursor:pointer;font-family:Nunito,sans-serif;font-size:14px">
+      ← Back
+    </button>
+  </div>
+  <div class="settings-content" id="settings-content">
+    <div class="settings-header">
+      <div class="sh-inner">
+        <button class="btn-back" onclick="showScreen('screen-home')">←</button>
+        <h2>⚙️ Teacher Settings</h2>
+      </div>
+    </div>
+    <div class="container" style="padding-top:20px;padding-bottom:40px">
+      <div class="settings-section">
+        <h3>API Configuration</h3>
+        <div class="settings-row api-row">
+          <label>Anthropic API Key<small>Required for AI-generated questions</small></label>
+          <input type="password" id="api-key-input" placeholder="sk-ant-…" oninput="saveApiKey()">
+        </div>
+        <div class="warning-box">⚠️ API key is stored in browser localStorage and visible in DevTools. Set usage limits in the <a href="https://console.anthropic.com" target="_blank">Anthropic Console</a>.</div>
+      </div>
+      <div class="settings-section">
+        <h3>Questions Per Day</h3>
+        <div class="settings-row"><label>OC Foundation (Yr 3)<small>Default: 3</small></label><input type="number" id="qpd-oc-foundation" min="1" max="10" value="3" oninput="saveSettings()"></div>
+        <div class="settings-row"><label>OC Intensive (Yr 4)<small>Default: 4</small></label><input type="number" id="qpd-oc-intensive" min="1" max="10" value="4" oninput="saveSettings()"></div>
+        <div class="settings-row"><label>SEL Foundation (Yr 5)<small>Default: 5</small></label><input type="number" id="qpd-sel-foundation" min="1" max="10" value="5" oninput="saveSettings()"></div>
+        <div class="settings-row"><label>SEL Intensive (Yr 6)<small>Default: 6</small></label><input type="number" id="qpd-sel-intensive" min="1" max="10" value="6" oninput="saveSettings()"></div>
+      </div>
+      <div class="settings-section">
+        <h3>Difficulty Mix</h3>
+        <div class="settings-row">
+          <label>Hard question ratio<small>% of hard questions per session</small></label>
+          <div class="slider-wrap">
+            <input type="range" id="difficulty-hard-pct" min="0" max="50" value="20" oninput="updateDifficultyLabel()">
+            <span id="difficulty-label">20% hard</span>
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3>Week Override</h3>
+        <div class="settings-row"><label>OC Foundation<small>1–20</small></label><input type="number" id="week-oc-foundation" min="1" max="20" placeholder="auto" oninput="saveSettings()"></div>
+        <div class="settings-row"><label>OC Intensive<small>1–16</small></label><input type="number" id="week-oc-intensive" min="1" max="16" placeholder="auto" oninput="saveSettings()"></div>
+        <div class="settings-row"><label>SEL Foundation<small>1–40</small></label><input type="number" id="week-sel-foundation" min="1" max="40" placeholder="auto" oninput="saveSettings()"></div>
+        <div class="settings-row"><label>SEL Intensive<small>1–16</small></label><input type="number" id="week-sel-intensive" min="1" max="16" placeholder="auto" oninput="saveSettings()"></div>
+      </div>
+      <div class="settings-section">
+        <h3>Tools</h3>
+        <div class="settings-row"><label>Preview Mode<small>Generate questions without tracking</small></label><button class="btn btn-outline" style="padding:10px 16px;font-size:14px" onclick="enterPreviewMode()">Preview →</button></div>
+        <div class="settings-row"><label>Reset OC Foundation<small>Clear all progress</small></label><button class="btn btn-danger" style="padding:10px 16px;font-size:14px" onclick="resetTrack('oc-foundation')">Reset</button></div>
+        <div class="settings-row"><label>Reset OC Intensive<small>Clear all progress</small></label><button class="btn btn-danger" style="padding:10px 16px;font-size:14px" onclick="resetTrack('oc-intensive')">Reset</button></div>
+        <div class="settings-row"><label>Reset SEL Foundation<small>Clear all progress</small></label><button class="btn btn-danger" style="padding:10px 16px;font-size:14px" onclick="resetTrack('sel-foundation')">Reset</button></div>
+        <div class="settings-row"><label>Reset SEL Intensive<small>Clear all progress</small></label><button class="btn btn-danger" style="padding:10px 16px;font-size:14px" onclick="resetTrack('sel-intensive')">Reset</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== REVIEW ====== -->
+<div id="screen-review" class="screen">
+  <div class="review-header">
+    <div class="rh-inner">
+      <button class="btn-back" onclick="showScreen('screen-complete')">←</button>
+      <h2>📋 Review Answers</h2>
+    </div>
+  </div>
+  <div class="container" id="review-list" style="padding-top:20px;padding-bottom:40px"></div>
+</div>
+
+<!-- ====== CERTIFICATE ====== -->
+<div class="cert-overlay" id="cert-overlay">
+  <div class="cert-card">
+    <div class="cert-emoji">🎓</div>
+    <h2>Program Complete!</h2>
+    <p id="cert-text">Congratulations! You've completed the full program. You're ready for the exam!</p>
+    <button class="btn btn-accent btn-full" onclick="document.getElementById('cert-overlay').classList.remove('show')">✨ Close</button>
+  </div>
+</div>
+
+<script>
+// =====================================================================
+// CURRICULUM DATA
+// =====================================================================
+const CURRICULUM = {
+  'oc-foundation': {
+    name:'OC Foundation', grade:'Year 3', totalWeeks:20, defaultQPD:3,
+    weeks:[
+      {week:1,topics:[{type:'LR',name:'Logical Reasoning',topic:'True/False judgement, If-Then conditional statements'},{type:'PR',name:'Pattern Recognition',topic:'Number sequences: +2, +3, ×2 patterns'}]},
+      {week:2,topics:[{type:'SR',name:'Spatial Reasoning',topic:'Shape rotation 90°/180°'},{type:'VR',name:'Verbal Reasoning',topic:'Word analogies: cat:kitten = dog:?'}]},
+      {week:3,topics:[{type:'AR',name:'Abstract Reasoning',topic:'Odd one out (shape/size/colour)'},{type:'LR',name:'Logical Reasoning',topic:'Classification, basic Venn diagrams'}]},
+      {week:4,topics:[{type:'PR',name:'Pattern Recognition',topic:'Shape matrices 2×2'},{type:'NR',name:'Numerical Reasoning',topic:'Missing operators, simple functions'}]},
+      {week:5,topics:[{type:'CT',name:'Critical Thinking',topic:'Claim and evidence basics'},{type:'SR',name:'Spatial Reasoning',topic:'Paper folding, 2D↔3D nets'}]},
+      {week:6,topics:[{type:'VR',name:'Verbal Reasoning',topic:'Antonyms and synonyms in context'},{type:'LR',name:'Logical Reasoning',topic:'MOCK — Review mini-test 20 questions'}]},
+      {week:7,topics:[{type:'LR',name:'Logical Reasoning',topic:'Basic syllogisms: All A are B'},{type:'PR',name:'Pattern Recognition',topic:'3×3 matrix patterns (row/column/diagonal rules)'}]},
+      {week:8,topics:[{type:'AR',name:'Abstract Reasoning',topic:'Rotation/reflection/transformation rules'},{type:'NR',name:'Numerical Reasoning',topic:'Logic puzzles, magic squares'}]},
+      {week:9,topics:[{type:'VR',name:'Verbal Reasoning',topic:'Code/cipher decoding (A=1 type)'},{type:'SR',name:'Spatial Reasoning',topic:'Cube pieces, counting blocks, 3D front/side view'}]},
+      {week:10,topics:[{type:'CT',name:'Critical Thinking',topic:'Drawing conclusions, finding assumptions'},{type:'LR',name:'Logical Reasoning',topic:'Ordering and position reasoning'}]},
+      {week:11,topics:[{type:'PR',name:'Pattern Recognition',topic:'Alphabet/symbol sequences: A C E G?'},{type:'NR',name:'Numerical Reasoning',topic:'Ratio and multiples reasoning'}]},
+      {week:12,topics:[{type:'AR',name:'Abstract Reasoning',topic:'Shape composition and decomposition'},{type:'VR',name:'Verbal Reasoning',topic:'Category hierarchy: Poodle→Dog→Animal'}]},
+      {week:13,topics:[{type:'SR',name:'Spatial Reasoning',topic:'Mirror reflection and symmetry'},{type:'CT',name:'Critical Thinking',topic:'Sufficient and necessary conditions'}]},
+      {week:14,topics:[{type:'LR',name:'Logical Reasoning',topic:'MOCK — Mid-point mock test 30 questions, OC format 35 min'},{type:'AR',name:'Abstract Reasoning',topic:'Error analysis and weak topic review'}]},
+      {week:15,topics:[{type:'LR',name:'Logical Reasoning',topic:'Complex conditional reasoning (2–3 conditions)'},{type:'PR',name:'Pattern Recognition',topic:'Complex matrices (colour + shape + size)'}]},
+      {week:16,topics:[{type:'NR',name:'Numerical Reasoning',topic:'Logic maths puzzles (age, distance)'},{type:'AR',name:'Abstract Reasoning',topic:'Analogy completion: A:B = C:?'}]},
+      {week:17,topics:[{type:'CT',name:'Critical Thinking',topic:'Evaluating evidence, weakening arguments'},{type:'VR',name:'Verbal Reasoning',topic:'Compound analogies, hidden words'}]},
+      {week:18,topics:[{type:'LR',name:'Logical Reasoning',topic:'MOCK — Practice test 1 (40 questions, full OC format)'},{type:'PR',name:'Pattern Recognition',topic:'MOCK — Practice test 2 (40 questions, weak focus)'}]},
+      {week:19,topics:[{type:'LR',name:'Logical Reasoning',topic:'MOCK — Speed training (30 questions / 20 min)'},{type:'CT',name:'Critical Thinking',topic:'Exam strategy, time allocation, skip and return'}]},
+      {week:20,topics:[{type:'LR',name:'Logical Reasoning',topic:'MOCK — Final mock exam (OC full set)'},{type:'AR',name:'Abstract Reasoning',topic:'MOCK — Final confidence check, strengths review'}]}
+    ]
+  },
+  'oc-intensive': { name:'OC Intensive', grade:'Year 4', totalWeeks:16, defaultQPD:4, weeks:null },
+  'sel-foundation': {
+    name:'SEL Foundation', grade:'Year 5', totalWeeks:40, defaultQPD:5,
+    weeks:[
+      {week:1,topics:[{type:'LR',name:'Logical Reasoning',topic:'Deductive reasoning, syllogisms (valid vs sound)'},{type:'PR',name:'Pattern Recognition',topic:'Advanced sequences: Fibonacci, square numbers'}]},
+      {week:2,topics:[{type:'SR',name:'Spatial Reasoning',topic:'3D shapes and nets (cube, prism)'},{type:'VR',name:'Verbal Reasoning',topic:'Analogy types: Part-Whole, Cause-Effect, Function'}]},
+      {week:3,topics:[{type:'AR',name:'Abstract Reasoning',topic:'IQ matrices (4×4), multiple simultaneous rules'},{type:'NR',name:'Numerical Reasoning',topic:'Logic puzzles, simultaneous reasoning without algebra'}]},
+      {week:4,topics:[{type:'CT',name:'Critical Thinking',topic:'12 logical fallacies (straw man, slippery slope, circular)'},{type:'LR',name:'Logical Reasoning',topic:'Sets and Venn diagrams (3 circles)'}]},
+      {week:5,topics:[{type:'PR',name:'Pattern Recognition',topic:'Visual patterns: reflection + rotation + translation combined'},{type:'VR',name:'Verbal Reasoning',topic:'Advanced codes and ciphers'}]},
+      {week:6,topics:[{type:'SR',name:'Spatial Reasoning',topic:'Rotating solids, cross-sections'},{type:'NR',name:'Numerical Reasoning',topic:'Graph and data logical reasoning'}]},
+      {week:7,topics:[{type:'LR',name:'Logical Reasoning',topic:'Conditional reasoning: converse/inverse/contrapositive'},{type:'CT',name:'Critical Thinking',topic:'Identifying hidden assumptions'}]},
+      {week:8,topics:[{type:'AR',name:'Abstract Reasoning',topic:'Advanced analogy completion (3-step transformations)'},{type:'PR',name:'Pattern Recognition',topic:'Mixed sequence-shape patterns'}]},
+      {week:9,topics:[{type:'VR',name:'Verbal Reasoning',topic:'Word classification and hierarchy'},{type:'NR',name:'Numerical Reasoning',topic:'Basic probability logic'}]},
+      {week:10,topics:[{type:'LR',name:'Logical Reasoning',topic:'MOCK — Phase 1 mock (30 questions, 35 min)'},{type:'AR',name:'Abstract Reasoning',topic:'Weakness analysis and remediation'}]},
+      {week:11,topics:[{type:'LR',name:'Logical Reasoning',topic:'Truth-teller/liar puzzles (Knights and Knaves)'},{type:'SR',name:'Spatial Reasoning',topic:'Block matching, cube rotation (3D multi-view)'}]},
+      {week:12,topics:[{type:'PR',name:'Pattern Recognition',topic:'Interleaved sequences (odd/even term rules)'},{type:'CT',name:'Critical Thinking',topic:'Strengthening/weakening arguments'}]},
+      {week:13,topics:[{type:'NR',name:'Numerical Reasoning',topic:'Time/speed/distance (proportional reasoning, no equations)'},{type:'AR',name:'Abstract Reasoning',topic:'Interior shape rules, containment'}]},
+      {week:14,topics:[{type:'VR',name:'Verbal Reasoning',topic:'Compound analogy chains: A:B = B:C = C:?'},{type:'LR',name:'Logical Reasoning',topic:'Grid logic / constraint table completion'}]},
+      {week:15,topics:[{type:'LR',name:'Logical Reasoning',topic:'MOCK — Mid mock A (40 questions, Selective format, 40 min)'},{type:'SR',name:'Spatial Reasoning',topic:'Complex symmetry (2-axis, point symmetry)'}]},
+      {week:16,topics:[{type:'CT',name:'Critical Thinking',topic:'Correlation vs causation'},{type:'PR',name:'Pattern Recognition',topic:'Alphabet position sequences (A=1 mixed)'}]},
+      {week:17,topics:[{type:'LR',name:'Logical Reasoning',topic:'Schedule and arrangement reasoning'},{type:'NR',name:'Numerical Reasoning',topic:'Percentage and ratio logic'}]},
+      {week:18,topics:[{type:'AR',name:'Abstract Reasoning',topic:'Overlay and transparency rules'},{type:'VR',name:'Verbal Reasoning',topic:'Hidden words, connecting words'}]},
+      {week:19,topics:[{type:'CT',name:'Critical Thinking',topic:'Finding counterexamples, testing generalisations'},{type:'SR',name:'Spatial Reasoning',topic:'Paper folding with holes'}]},
+      {week:20,topics:[{type:'LR',name:'Logical Reasoning',topic:'Relationship reasoning (family/position)'},{type:'NR',name:'Numerical Reasoning',topic:'MOCK — Mid mock B (40 questions, error pattern analysis)'}]},
+      {week:21,topics:[{type:'PR',name:'Pattern Recognition',topic:'Fractal and self-similar patterns'},{type:'NR',name:'Numerical Reasoning',topic:'Cryptarithmetic puzzles'}]},
+      {week:22,topics:[{type:'AR',name:'Abstract Reasoning',topic:'Rotational symmetry (72°/120°)'},{type:'CT',name:'Critical Thinking',topic:'Bias and source credibility'}]},
+      {week:23,topics:[{type:'VR',name:'Verbal Reasoning',topic:'Polysemy and context reasoning'},{type:'SR',name:'Spatial Reasoning',topic:'Coordinate/direction/map reasoning'}]},
+      {week:24,topics:[{type:'LR',name:'Logical Reasoning',topic:'MOCK — Phase 2 comprehensive mock (50 questions, 45 min)'},{type:'AR',name:'Abstract Reasoning',topic:'Individual weak type remediation'}]},
+      {week:25,topics:[{type:'LR',name:'Logical Reasoning',topic:'Zebra Puzzle / Einstein Puzzle type'},{type:'NR',name:'Numerical Reasoning',topic:'Game theory, backward induction'}]},
+      {week:26,topics:[{type:'PR',name:'Pattern Recognition',topic:'Reverse-engineer sequence starting values'},{type:'CT',name:'Critical Thinking',topic:'Dilemma analysis, structured decision-making'}]},
+      {week:27,topics:[{type:'AR',name:'Abstract Reasoning',topic:'Multi-step transformation chains (5 steps)'},{type:'SR',name:'Spatial Reasoning',topic:'Isometric / axonometric 3D reconstruction'}]},
+      {week:28,topics:[{type:'VR',name:'Verbal Reasoning',topic:'Novel symbol system decoding'},{type:'LR',name:'Logical Reasoning',topic:'Multi-constraint (5+ conditions simultaneously)'}]},
+      {week:29,topics:[{type:'LR',name:'Logical Reasoning',topic:'MOCK — Hard mock 1 (50 questions, top-20% difficulty, 45 min)'},{type:'NR',name:'Numerical Reasoning',topic:'Combinatorial logic, systematic listing'}]},
+      {week:30,topics:[{type:'CT',name:'Critical Thinking',topic:'Systems thinking: cascading effects'},{type:'PR',name:'Pattern Recognition',topic:'Pattern within noise, irregular sequences'}]},
+      {week:31,topics:[{type:'SR',name:'Spatial Reasoning',topic:'4D concept intro / hypercube extension'},{type:'AR',name:'Abstract Reasoning',topic:'Duality and inverse transformation'}]},
+      {week:32,topics:[{type:'LR',name:'Logical Reasoning',topic:'Inductive vs deductive argument evaluation'},{type:'NR',name:'Numerical Reasoning',topic:'MOCK — Hard mock 2 (OC + Selective mixed)'}]},
+      {week:33,topics:[{type:'NR',name:'Numerical Reasoning',topic:'Conditional probability (Bayesian intuition)'},{type:'VR',name:'Verbal Reasoning',topic:'Long analogy chains (5–6 steps)'}]},
+      {week:34,topics:[{type:'LR',name:'Logical Reasoning',topic:'MOCK — Phase 3 comprehensive mock (60 questions, top-10% standard)'},{type:'CT',name:'Critical Thinking',topic:'Strategic reasoning, metacognition'}]},
+      {week:35,topics:[{type:'LR',name:'Logical Reasoning',topic:'MOCK — Full exam set 1 (60 questions, Selective format, 50 min)'},{type:'AR',name:'Abstract Reasoning',topic:'Zero-error campaign, error notebook'}]},
+      {week:36,topics:[{type:'LR',name:'Logical Reasoning',topic:'MOCK — Full exam set 2 (60 questions, variant set)'},{type:'CT',name:'Critical Thinking',topic:'Accuracy under time pressure (45 sec/question)'}]},
+      {week:37,topics:[{type:'LR',name:'Logical Reasoning',topic:'MOCK — Full exam set 3 (top-5% difficulty)'},{type:'NR',name:'Numerical Reasoning',topic:'Speed vs accuracy optimisation'}]},
+      {week:38,topics:[{type:'CT',name:'Critical Thinking',topic:'MOCK — Strategy review: maximise strengths, defend weaknesses'},{type:'LR',name:'Logical Reasoning',topic:'Mental management, anxiety techniques'}]},
+      {week:39,topics:[{type:'LR',name:'Logical Reasoning',topic:'MOCK — Final mock A (full Selective simulation)'},{type:'AR',name:'Abstract Reasoning',topic:'MOCK — Final mock B (second set, back-to-back days)'}]},
+      {week:40,topics:[{type:'LR',name:'Logical Reasoning',topic:'MOCK — Last review: one-page summary card'},{type:'CT',name:'Critical Thinking',topic:'Encouragement and pre-exam night routine'}]}
+    ]
+  },
+  'sel-intensive': { name:'SEL Intensive', grade:'Year 6', totalWeeks:16, defaultQPD:6, weeks:null }
+};
+
+// Build derived tracks
+CURRICULUM['oc-intensive'].weeks = CURRICULUM['oc-foundation'].weeks.slice(4).map((w,i)=>({...w,week:i+1}));
+CURRICULUM['sel-intensive'].weeks = CURRICULUM['sel-foundation'].weeks.slice(24).map((w,i)=>({...w,week:i+1}));
+
+// =====================================================================
+// FALLBACK QUESTIONS
+// =====================================================================
+const FALLBACK = {
+  LR:[
+    {question:"All cats are animals. Whiskers is a cat. Which conclusion must be true?",options:{A:"All animals are cats",B:"Whiskers is an animal",C:"Some cats are not animals",D:"Whiskers might not be an animal"},correct:"B",hint:"Think about what we know for certain about Whiskers from the two statements.",explanation:"From 'All cats are animals' and 'Whiskers is a cat', we can conclude Whiskers is an animal. We cannot reverse the logic to say all animals are cats. The other options contradict the given facts."},
+    {question:"If it is raining, Sam takes an umbrella. Today Sam did NOT take an umbrella. What can we conclude?",options:{A:"It is raining",B:"It is not raining",C:"Sam forgot his umbrella",D:"Sam likes getting wet"},correct:"B",hint:"Think about the contrapositive: if the result didn't happen, the condition must be false.",explanation:"This is contrapositive reasoning. 'Rain → umbrella' means 'no umbrella → no rain'. Since Sam has no umbrella, it must not be raining."},
+    {question:"Alex is taller than Ben. Ben is taller than Charlie. Who is the shortest?",options:{A:"Alex",B:"Ben",C:"Charlie",D:"Cannot tell"},correct:"C",hint:"Try ordering them from tallest to shortest using both clues together.",explanation:"Alex > Ben > Charlie in height, so Charlie is shortest. Alex is tallest, then Ben, then Charlie."},
+    {question:"In a row of 5 children, Maya is 2nd from the left. Jake is 2nd from the right. How many children are between Maya and Jake?",options:{A:"0",B:"1",C:"2",D:"3"},correct:"B",hint:"Number the positions 1 to 5 and locate each person.",explanation:"Maya is in position 2, Jake is in position 4. Between positions 2 and 4 there is only position 3, so exactly 1 child is between them."},
+    {question:"Some dogs are brown. Rover is a dog. What can we conclude about Rover?",options:{A:"Rover is definitely brown",B:"Rover is definitely not brown",C:"Rover might or might not be brown",D:"All dogs are brown"},correct:"C",hint:"'Some' means only a portion — not all and not none.",explanation:"Since only 'some' dogs are brown, we cannot determine Rover's colour. He might be brown or might not be. 'Some' does not mean all."}
+  ],
+  PR:[
+    {question:"What comes next?\n2, 4, 8, 16, ___",options:{A:"18",B:"24",C:"32",D:"36"},correct:"C",hint:"Look at how each number relates to the one before it.",explanation:"Each number doubles the previous: 2×2=4, 4×2=8, 8×2=16, 16×2=32. The pattern is ×2."},
+    {question:"What comes next?\n3, 6, 9, 12, ___",options:{A:"14",B:"15",C:"16",D:"18"},correct:"B",hint:"Find the difference between consecutive numbers.",explanation:"The pattern is +3 each time. 12+3=15."},
+    {question:"Find the missing number:\n1, 4, 9, 16, ___, 36",options:{A:"20",B:"24",C:"25",D:"30"},correct:"C",hint:"Try squaring 1, 2, 3, 4, 5, 6…",explanation:"These are perfect squares: 1²=1, 2²=4, 3²=9, 4²=16, 5²=25, 6²=36. Missing number is 25."},
+    {question:"What letter comes next?\nA, C, E, G, ___",options:{A:"H",B:"I",C:"J",D:"K"},correct:"B",hint:"Count the alphabet positions of each letter.",explanation:"A(1), C(3), E(5), G(7) — every other letter, skipping one each time. Next is I(9)."},
+    {question:"What comes next?\n1, 1, 2, 3, 5, 8, ___",options:{A:"11",B:"12",C:"13",D:"16"},correct:"C",hint:"Each number equals the sum of the two numbers before it.",explanation:"Fibonacci sequence: each term = previous two added. 5+8=13."}
+  ],
+  SR:[
+    {question:"A square is rotated 90° clockwise. Which direction does the top now face?",options:{A:"Up",B:"Down",C:"Right",D:"Left"},correct:"C",hint:"Imagine the top of a clock rotating to where 3 o'clock is.",explanation:"A 90° clockwise rotation moves the top to the right. Think: 12 o'clock moves to 3 o'clock position."},
+    {question:"A paper is folded in half and one hole is punched through the middle. When unfolded, how many holes are there?",options:{A:"1",B:"2",C:"3",D:"4"},correct:"B",hint:"The fold creates two layers — punching goes through both.",explanation:"Folding creates 2 layers. One punch goes through both, creating 2 holes when unfolded, placed symmetrically."},
+    {question:"How many faces does a cube have?",options:{A:"4",B:"5",C:"6",D:"8"},correct:"C",hint:"Think about a dice — count top, bottom, and all four sides.",explanation:"A cube has 6 faces: top, bottom, front, back, left, and right — same as a standard dice."},
+    {question:"A shape is reflected in a vertical mirror line. The original shape points RIGHT. After reflection it points:",options:{A:"Right",B:"Left",C:"Up",D:"Down"},correct:"B",hint:"A vertical mirror swaps left and right, like seeing yourself in a mirror.",explanation:"Vertical mirror reflection swaps left and right. Right becomes left. Top and bottom are unchanged."},
+    {question:"Looking at a cube from above, from the front, and from the side — what shape do you see each time?",options:{A:"Different shapes each time",B:"Square only from above",C:"Square from every direction",D:"Circle from the side"},correct:"C",hint:"All faces of a cube are identical.",explanation:"A cube has 6 identical square faces, so it looks like a square from every viewing angle — top, front, or side."}
+  ],
+  VR:[
+    {question:"Complete the analogy:\nBird : Feathers :: Fish : ___",options:{A:"Fins",B:"Scales",C:"Gills",D:"Water"},correct:"B",hint:"Think about what covers the outside of each animal's body.",explanation:"Birds are covered with feathers; fish are covered with scales. The relationship is animal : its body covering. Fins/gills are body parts, not coverings."},
+    {question:"Which word is the ODD ONE OUT?\nApple, Banana, Carrot, Mango",options:{A:"Apple",B:"Banana",C:"Carrot",D:"Mango"},correct:"C",hint:"Think about which food category each item belongs to.",explanation:"Apple, Banana, and Mango are fruits. Carrot is a vegetable — the odd one out."},
+    {question:"Decode using A=1, B=2, C=3…\n8-5-12-12-15",options:{A:"WORLD",B:"HELLO",C:"HELPS",D:"BELLS"},correct:"B",hint:"Convert each number to its matching letter in the alphabet.",explanation:"H=8, E=5, L=12, L=12, O=15. Together they spell HELLO."},
+    {question:"Complete the analogy:\nPuppy : Dog :: Kitten : ___",options:{A:"Tiger",B:"Lion",C:"Cat",D:"Rabbit"},correct:"C",hint:"What is the adult form of each baby animal?",explanation:"A puppy grows into a dog. A kitten grows into a cat. The relationship is young animal : adult animal."},
+    {question:"Which word is most similar in meaning to HAPPY?",options:{A:"Sad",B:"Angry",C:"Joyful",D:"Tired"},correct:"C",hint:"Look for the word that means the same or nearly the same.",explanation:"Joyful means full of joy and happiness — it is a synonym of happy. Sad is the opposite. Angry and tired are different emotional states."}
+  ],
+  AR:[
+    {question:"Which shape is the ODD ONE OUT?\nA) Large red circle   B) Large blue square   C) Small red triangle   D) Large green circle",options:{A:"Large red circle",B:"Large blue square",C:"Small red triangle",D:"Large green circle"},correct:"C",hint:"Look carefully at the SIZE of each shape.",explanation:"A, B, and D are all large shapes. C is the only small shape — it is the odd one out by size."},
+    {question:"Rule: Circle → Square → Triangle → repeats. What does Triangle transform to?",options:{A:"Circle",B:"Square",C:"Pentagon",D:"Hexagon"},correct:"A",hint:"The shapes cycle in order — what comes after the last one?",explanation:"The cycle is Circle → Square → Triangle → Circle. Following the cycle, Triangle transforms back to Circle."},
+    {question:"A 2×2 grid: top-left has 1 dot, top-right has 2 dots, bottom-left has 3 dots. What goes in the bottom-right?",options:{A:"3",B:"4",C:"5",D:"6"},correct:"B",hint:"Look for the pattern across each row.",explanation:"Top row: 1, 2 (increases by 1). Bottom row: 3, ? (also increases by 1). Bottom-right = 3+1 = 4."},
+    {question:"Shape A = small circle INSIDE large square. Applying the same rule to a triangle gives:",options:{A:"Small triangle inside large circle",B:"Small square inside large triangle",C:"Large triangle inside small circle",D:"Small circle inside large triangle"},correct:"B",hint:"The inner shape and outer shape swap roles when you switch to the new shape.",explanation:"Rule: small [shape 1] inside large [shape 2]. For triangle: small square inside large triangle."},
+    {question:"Pattern: Black circle, White circle, Black circle, White circle, ___",options:{A:"Black square",B:"White circle",C:"Black circle",D:"White square"},correct:"C",hint:"This alternates between two values — what is the pattern?",explanation:"The pattern alternates Black, White, Black, White… After White, the next must be Black circle."}
+  ],
+  CT:[
+    {question:"Tom says: 'All my friends like chocolate ice cream. Therefore everyone in the world likes it.' What is wrong?",options:{A:"Chocolate ice cream is not tasty",B:"He is generalising too broadly from a small group",C:"His friends don't actually like chocolate",D:"There is nothing wrong"},correct:"B",hint:"Think about how large Tom's sample group is compared to 'everyone in the world'.",explanation:"Tom makes a hasty generalisation — drawing a conclusion about 'everyone' from just his own friends, who are a tiny, unrepresentative sample."},
+    {question:"'Every crow I have observed is black. Therefore all crows are black.' This is:",options:{A:"Certainly correct",B:"Valid deductive reasoning",C:"Inductive reasoning — probably true but not certain",D:"Completely wrong"},correct:"C",hint:"Has the scientist seen every crow in the world?",explanation:"This is inductive reasoning: a general conclusion from specific observations. It gives a probable — not certain — conclusion. There may be unobserved non-black crows (rare white crows do exist)."},
+    {question:"Which is the STRONGEST evidence that exercise improves exam scores?",options:{A:"One student who exercises got an A",B:"A study of 10,000 students showed exercisers scored 15% higher on average",C:"A famous athlete says exercise helps thinking",D:"A teacher believes sporty students are more focused"},correct:"B",hint:"Think about which source has the most reliable, large-scale data.",explanation:"A large study of 10,000 participants provides strong statistical evidence. A single student's result could be coincidence. Celebrity opinions and teacher beliefs are anecdotal."},
+    {question:"'We should ban all video games because some people become addicted.' What is the weakness?",options:{A:"Video games are good for you",B:"The conclusion is too extreme — banning all because of some misuse",C:"Addiction is not a real problem",D:"The speaker doesn't play games"},correct:"B",hint:"Think whether a problem affecting 'some' justifies action against 'all'.",explanation:"This overgeneralises: using an extreme solution (ban all) to address a problem affecting only some. A more reasonable response targets addiction specifically."},
+    {question:"An ad claims '9 out of 10 dentists recommend SmileBright'. What is MOST important to ask?",options:{A:"What flavour is it?",B:"How many dentists were surveyed and how were they selected?",C:"Is it expensive?",D:"Do dentists brush their teeth?"},correct:"B",hint:"Think about whether the '10 dentists' represent all dentists fairly.",explanation:"Sample size and selection method are critical. If only 10 dentists were asked, this is a tiny possibly biased sample. A legitimate claim needs a large, randomly selected group."}
+  ],
+  NR:[
+    {question:"A bag has 3 red balls and 2 blue balls. Which colour are you MORE likely to pick at random?",options:{A:"Blue",B:"Red",C:"Both equally likely",D:"Cannot tell"},correct:"B",hint:"Compare the count of red vs blue balls.",explanation:"3 red vs 2 blue out of 5 total. P(red)=3/5, P(blue)=2/5. Red is more likely."},
+    {question:"If 3 apples cost $1.50, how much do 6 apples cost?",options:{A:"$2.50",B:"$3.00",C:"$3.50",D:"$4.00"},correct:"B",hint:"Find the cost of one apple first, then multiply.",explanation:"1 apple = $1.50 ÷ 3 = $0.50. 6 apples = 6 × $0.50 = $3.00."},
+    {question:"Find the missing number:\n? × 4 = 3 × 8",options:{A:"4",B:"6",C:"8",D:"12"},correct:"B",hint:"Calculate the right side first, then divide by 4.",explanation:"3 × 8 = 24. So ? = 24 ÷ 4 = 6."},
+    {question:"A magic square top row is: 2, 9, 4 (sums to 15). Middle row starts with 7. What is the middle number of the middle row?",options:{A:"3",B:"5",C:"6",D:"8"},correct:"B",hint:"The middle row must also sum to 15. It starts with 7.",explanation:"Middle row is 7, 5, 3 (7+5+3=15) in the classic 3×3 magic square. The middle number is 5."},
+    {question:"James is 3 times as old as his sister. His sister is 4 years old. How old will James be in 5 years?",options:{A:"12",B:"15",C:"17",D:"19"},correct:"C",hint:"Find James's current age first, then add 5 years.",explanation:"James is 3 × 4 = 12 years old now. In 5 years he will be 12 + 5 = 17."}
+  ]
+};
+
+// =====================================================================
+// CONFIG
+// =====================================================================
+const API_URL = "https://api.anthropic.com/v1/messages";
+const TEACHER_PW = "solomon2024";
+const TYPE_CFG = {
+  LR:{name:'Logical Reasoning',   emoji:'🧩',color:'var(--type-LR)'},
+  PR:{name:'Pattern Recognition', emoji:'🔢',color:'var(--type-PR)'},
+  SR:{name:'Spatial Reasoning',   emoji:'🎲',color:'var(--type-SR)'},
+  VR:{name:'Verbal Reasoning',    emoji:'📝',color:'var(--type-VR)'},
+  AR:{name:'Abstract Reasoning',  emoji:'🔷',color:'var(--type-AR)'},
+  CT:{name:'Critical Thinking',   emoji:'💭',color:'var(--type-CT)'},
+  NR:{name:'Numerical Reasoning', emoji:'➗',color:'var(--type-NR)'}
+};
+const GRADE_MAP = {
+  'oc-foundation':'Year 3 (age 8-9)',
+  'oc-intensive':'Year 4 (age 9-10)',
+  'sel-foundation':'Year 5 (age 10-11)',
+  'sel-intensive':'Year 6 (age 11-12)'
+};
+
+// =====================================================================
+// STATE
+// =====================================================================
+let S = {
+  track: null,
+  questions: [],
+  qIdx: 0,
+  attempts: 0,
+  selected: null,
+  results: [],
+  preview: false
+};
+
+// =====================================================================
+// STORAGE
+// =====================================================================
+function loadProgress(track) {
+  const d = localStorage.getItem(`ts_progress_${track}`);
+  if (d) return JSON.parse(d);
+  return {currentWeek:1,currentDay:1,streak:0,lastSessionDate:null,totalStars:0,typeStats:{},sessionHistory:[]};
+}
+function saveProgress(track, p) { localStorage.setItem(`ts_progress_${track}`, JSON.stringify(p)); }
+
+function loadSettings() {
+  const d = localStorage.getItem('solomon_settings');
+  if (d) return JSON.parse(d);
+  return {qpd:{'oc-foundation':3,'oc-intensive':4,'sel-foundation':5,'sel-intensive':6},weekOverride:{},difficultyHardPct:20};
+}
+function saveSettings() {
+  const s = {
+    qpd:{
+      'oc-foundation': parseInt(document.getElementById('qpd-oc-foundation').value)||3,
+      'oc-intensive':  parseInt(document.getElementById('qpd-oc-intensive').value)||4,
+      'sel-foundation':parseInt(document.getElementById('qpd-sel-foundation').value)||5,
+      'sel-intensive': parseInt(document.getElementById('qpd-sel-intensive').value)||6
+    },
+    weekOverride:{
+      'oc-foundation': document.getElementById('week-oc-foundation').value ? parseInt(document.getElementById('week-oc-foundation').value) : null,
+      'oc-intensive':  document.getElementById('week-oc-intensive').value  ? parseInt(document.getElementById('week-oc-intensive').value)  : null,
+      'sel-foundation':document.getElementById('week-sel-foundation').value? parseInt(document.getElementById('week-sel-foundation').value): null,
+      'sel-intensive': document.getElementById('week-sel-intensive').value ? parseInt(document.getElementById('week-sel-intensive').value) : null
+    },
+    difficultyHardPct: parseInt(document.getElementById('difficulty-hard-pct').value)||20
+  };
+  localStorage.setItem('solomon_settings', JSON.stringify(s));
+}
+function saveApiKey() {
+  const k = document.getElementById('api-key-input').value.trim();
+  if (k) localStorage.setItem('solomon_api_key', k);
+  else localStorage.removeItem('solomon_api_key');
+}
+function getApiKey() { return localStorage.getItem('solomon_api_key')||''; }
+function getQPD(track) { return (loadSettings().qpd||{})[track] || CURRICULUM[track].defaultQPD; }
+function getCurrentWeek(track) {
+  const s = loadSettings();
+  return (s.weekOverride&&s.weekOverride[track]) || loadProgress(track).currentWeek;
+}
+
+// =====================================================================
+// STREAK & PROGRESSION
+// =====================================================================
+function updateStreak(p) {
+  const today = new Date().toISOString().slice(0,10);
+  if (!p.lastSessionDate) { p.streak = 1; }
+  else if (p.lastSessionDate === today) { /* no change */ }
+  else {
+    const diff = Math.round((new Date(today) - new Date(p.lastSessionDate)) / 86400000);
+    p.streak = diff === 1 ? (p.streak||0)+1 : 1;
+  }
+  p.lastSessionDate = today;
+  return p;
+}
+function advanceDay(track, p) {
+  p.currentDay = (p.currentDay||1)+1;
+  if (p.currentDay > 5) {
+    p.currentDay = 1;
+    p.currentWeek = (p.currentWeek||1)+1;
+    if (p.currentWeek > CURRICULUM[track].totalWeeks) {
+      p.currentWeek = CURRICULUM[track].totalWeeks;
+      p.completed = true;
+    }
+  }
+  return p;
+}
+
+// =====================================================================
+// DIFFICULTY ARRAY
+// =====================================================================
+function buildDifficultyArray(track, total) {
+  const hardPct = (loadSettings().difficultyHardPct||20)/100;
+  const hard = Math.round(total*hardPct);
+  const easy = Math.ceil((total-hard)/2);
+  const med  = total-hard-easy;
+  const arr = [...Array(easy).fill('easy'), ...Array(med).fill('medium'), ...Array(hard).fill('hard')];
+  for (let i=arr.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+  return arr.slice(0,total);
+}
+
+// =====================================================================
+// API
+// =====================================================================
+function buildPrompt(track, week, qType, topic, difficulty) {
+  return `You are a NSW Thinking Skills exam question writer for ${GRADE_MAP[track]} students preparing for the OC/Selective exam in Sydney, Australia.
+
+Generate ONE multiple-choice question for:
+- Question Type: ${qType}
+- Topic: ${topic}
+- Difficulty: ${difficulty} (easy/medium/hard)
+- Week: ${week} of the program
+
+Requirements:
+- Age-appropriate for ${GRADE_MAP[track]}
+- 4 options (A, B, C, D) — only ONE correct answer
+- For pattern/sequence questions, present the pattern clearly in text
+- Difficulty: easy=single-step, medium=2-step, hard=multi-step combining rules
+
+Respond ONLY with valid JSON, no markdown:
+{"question":"...","options":{"A":"...","B":"...","C":"...","D":"..."},"correct":"B","hint":"One sentence hint without giving away the answer","explanation":"3-4 sentence explanation of why the correct answer is right and others are wrong"}`;
+}
+
+async function generateQuestion(track, week, qType, topic, difficulty) {
+  const key = getApiKey();
+  if (!key) throw new Error('No API key');
+  const resp = await fetch(API_URL, {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key': key,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body: JSON.stringify({
+      model:'claude-opus-4-5',
+      max_tokens:1000,
+      messages:[{role:'user',content:buildPrompt(track,week,qType,topic,difficulty)}]
+    })
+  });
+  if (!resp.ok) throw new Error(`API ${resp.status}`);
+  const data = await resp.json();
+  const text = data.content[0].text.trim().replace(/^```(?:json)?\n?/,'').replace(/\n?```$/,'');
+  return JSON.parse(text);
+}
+
+function getFallback(type) {
+  const pool = FALLBACK[type]||FALLBACK.LR;
+  return {...pool[Math.floor(Math.random()*pool.length)]};
+}
+
+// =====================================================================
+// SESSION START
+// =====================================================================
+async function selectTrack(track) {
+  S.track = track;
+  S.preview = false;
+  const progress = loadProgress(track);
+  const week = getCurrentWeek(track);
+  const totalQ = getQPD(track);
+  const cacheKey = `ts_q_${track}_${week}_${progress.currentDay}`;
+  const cached = sessionStorage.getItem(cacheKey);
+  if (cached) {
+    S.questions = JSON.parse(cached);
+    S.qIdx = 0; S.results = [];
+    startQuiz(); return;
+  }
+  showScreen('screen-loading');
+  const topics = (CURRICULUM[track].weeks.find(w=>w.week===week)||CURRICULUM[track].weeks[0]).topics;
+  const difficulties = buildDifficultyArray(track, totalQ);
+  const questions = [];
+  for (let i=0;i<totalQ;i++) {
+    document.getElementById('loading-msg').textContent = `Generating question ${i+1} of ${totalQ}… 🧠`;
+    const td = topics[i%topics.length];
+    try {
+      const q = await generateQuestion(track, week, td.type, td.topic, difficulties[i]);
+      q._type=td.type; q._typeName=td.name; q._diff=difficulties[i];
+      questions.push(q);
+    } catch(e) {
+      const q = getFallback(td.type);
+      q._type=td.type; q._typeName=td.name; q._diff=difficulties[i];
+      questions.push(q);
+    }
+  }
+  sessionStorage.setItem(cacheKey, JSON.stringify(questions));
+  S.questions=questions; S.qIdx=0; S.results=[];
+  startQuiz();
+}
+
+function enterPreviewMode() {
+  S.preview=true; S.track='oc-foundation';
+  showScreen('screen-home');
+  selectTrack('oc-foundation');
+}
+
+// =====================================================================
+// QUIZ
+// =====================================================================
+function startQuiz() {
+  const p = loadProgress(S.track);
+  const week = getCurrentWeek(S.track);
+  const cd = CURRICULUM[S.track];
+  document.getElementById('quiz-track-label').textContent = cd.name;
+  document.getElementById('quiz-week-label').textContent = `Week ${week} · Day ${p.currentDay}`;
+  document.getElementById('quiz-streak').textContent = p.streak;
+  document.getElementById('quiz-stars').textContent = p.totalStars;
+  checkAdaptive(S.track, p);
+  showScreen('screen-quiz');
+  renderQ();
+}
+
+function renderQ() {
+  const q = S.questions[S.qIdx];
+  const total = S.questions.length;
+  S.attempts=0; S.selected=null;
+  const tc = TYPE_CFG[q._type]||TYPE_CFG.LR;
+  const badge = document.getElementById('type-badge');
+  badge.textContent = `${tc.emoji} ${tc.name}`;
+  badge.style.background = tc.color;
+  document.getElementById('question-counter').textContent = `Question ${S.qIdx+1} of ${total}`;
+  document.getElementById('question-text').textContent = q.question;
+  const ol = document.getElementById('options-list');
+  ol.innerHTML='';
+  ['A','B','C','D'].forEach(l=>{
+    const btn = document.createElement('button');
+    btn.className='option-btn'; btn.id=`opt-${l}`;
+    btn.onclick=()=>selectOpt(l);
+    btn.innerHTML=`<span class="option-letter">${l}</span><span>${q.options[l]}</span>`;
+    ol.appendChild(btn);
+  });
+  const sb = document.getElementById('submit-btn');
+  sb.textContent='Submit Answer'; sb.disabled=true; sb.style.display='block'; sb.onclick=submitAnswer;
+  const fb = document.getElementById('feedback-box');
+  fb.style.display='none'; fb.className='feedback-box';
+  document.getElementById('progress-bar-fill').style.width=(S.qIdx/total*100)+'%';
+  document.getElementById('progress-label').textContent=`${S.qIdx} / ${total}`;
+  const card = document.getElementById('question-card');
+  card.style.animation='none';
+  requestAnimationFrame(()=>{ card.style.animation='fadeInUp 0.3s ease'; });
+}
+
+function selectOpt(l) {
+  if (S.attempts>=2) return;
+  const btn = document.getElementById(`opt-${l}`);
+  if (btn.classList.contains('greyed')||btn.disabled) return;
+  ['A','B','C','D'].forEach(x=>{
+    const b=document.getElementById(`opt-${x}`);
+    if (!b.classList.contains('greyed')) b.classList.remove('selected');
+  });
+  btn.classList.add('selected');
+  S.selected=l;
+  document.getElementById('submit-btn').disabled=false;
+}
+
+function submitAnswer() {
+  if (!S.selected) return;
+  const q = S.questions[S.qIdx];
+  const sel = S.selected;
+  const ok = sel===q.correct;
+  S.attempts++;
+  ['A','B','C','D'].forEach(l=>{ document.getElementById(`opt-${l}`).onclick=null; });
+  document.getElementById('submit-btn').disabled=true;
+  const fb=document.getElementById('feedback-box');
+  const fbH=document.getElementById('feedback-header');
+  const fbT=document.getElementById('feedback-text');
+  const fbSt=document.getElementById('feedback-stars');
+  const fbA=document.getElementById('feedback-actions');
+
+  if (ok) {
+    document.getElementById(`opt-${sel}`).classList.remove('selected');
+    document.getElementById(`opt-${sel}`).classList.add('correct');
+    const stars = S.attempts===1?2:1;
+    const res = S.attempts===1?'correct_first':'correct_second';
+    S.results.push({questionType:q._type,difficulty:q._diff,result:res,starsEarned:stars,
+      question:q.question,selectedOption:sel,correctOption:q.correct,options:q.options,explanation:q.explanation});
+    fb.className='feedback-box correct-fb';
+    fbH.textContent = S.attempts===1?'✅ Great job! 🎉':'✅ Well done! 💪';
+    fbT.textContent = q.explanation;
+    fbSt.innerHTML = stars===2
+      ? '<span class="star-earned">⭐</span><span class="star-earned">⭐</span>'
+      : '<span class="star-earned">⭐</span>';
+    fbA.innerHTML='';
+    const nb=document.createElement('button');
+    nb.className='btn btn-success';
+    nb.textContent=S.qIdx+1<S.questions.length?'Next Question →':'Finish Session 🎉';
+    nb.onclick=nextQ;
+    fbA.appendChild(nb);
+    document.getElementById('submit-btn').style.display='none';
+    fb.style.display='block';
+    if (S.attempts===1) launchConfetti();
+
+  } else {
+    const selBtn = document.getElementById(`opt-${sel}`);
+    selBtn.classList.remove('selected'); selBtn.classList.add('wrong');
+
+    if (S.attempts===1) {
+      setTimeout(()=>{ selBtn.classList.remove('wrong'); selBtn.classList.add('greyed'); selBtn.disabled=true; },600);
+      fb.className='feedback-box hint-fb';
+      fbH.textContent='💡 So close! Try again 💪';
+      fbT.textContent=q.hint;
+      fbSt.innerHTML=''; fbA.innerHTML='';
+      const rb=document.createElement('button');
+      rb.className='btn btn-accent'; rb.textContent='Try Again';
+      rb.onclick=()=>{
+        fb.style.display='none';
+        document.getElementById('submit-btn').disabled=true;
+        document.getElementById('submit-btn').style.display='block';
+        S.selected=null;
+        ['A','B','C','D'].forEach(l=>{
+          const b=document.getElementById(`opt-${l}`);
+          if (!b.classList.contains('greyed')) b.onclick=()=>selectOpt(l);
+        });
+        document.getElementById('submit-btn').onclick=submitAnswer;
+      };
+      fbA.appendChild(rb);
+      document.getElementById('submit-btn').style.display='none';
+      fb.style.display='block';
+
+    } else {
+      S.results.push({questionType:q._type,difficulty:q._diff,result:'gave_up',starsEarned:0,
+        question:q.question,selectedOption:sel,correctOption:q.correct,options:q.options,explanation:q.explanation});
+      document.getElementById(`opt-${q.correct}`).classList.add('revealed-correct');
+      fb.className='feedback-box wrong-fb';
+      fbH.textContent="❌ Let's learn from this one 📖";
+      fbT.textContent=q.explanation;
+      fbSt.innerHTML=''; fbA.innerHTML='';
+      const ub=document.createElement('button');
+      ub.className='btn btn-primary';
+      ub.textContent=S.qIdx+1<S.questions.length?'I understand, next question →':'I understand, finish session 🎉';
+      ub.onclick=nextQ;
+      fbA.appendChild(ub);
+      document.getElementById('submit-btn').style.display='none';
+      fb.style.display='block';
+    }
+  }
+}
+
+function nextQ() {
+  S.qIdx++;
+  if (S.qIdx>=S.questions.length) completeSession();
+  else renderQ();
+}
+
+// =====================================================================
+// SESSION COMPLETE
+// =====================================================================
+function completeSession() {
+  if (S.preview) { showScreen('screen-home'); return; }
+  const track=S.track;
+  let p=loadProgress(track);
+  p=updateStreak(p);
+  const res=S.results;
+  const fc=res.filter(r=>r.result==='correct_first').length;
+  const sc=res.filter(r=>r.result==='correct_second').length;
+  const gc=res.filter(r=>r.result==='gave_up').length;
+  const se=res.reduce((s,r)=>s+r.starsEarned,0);
+  res.forEach(r=>{
+    if (!p.typeStats[r.questionType]) p.typeStats[r.questionType]={attempts:0,correct:0};
+    p.typeStats[r.questionType].attempts++;
+    if (r.result!=='gave_up') p.typeStats[r.questionType].correct++;
+  });
+  p.totalStars=(p.totalStars||0)+se;
+  if (!p.sessionHistory) p.sessionHistory=[];
+  p.sessionHistory.push({date:new Date().toISOString().slice(0,10),firstTryRate:res.length>0?fc/res.length:0});
+  if (p.sessionHistory.length>5) p.sessionHistory.shift();
+  p=advanceDay(track,p);
+  saveProgress(track,p);
+  localStorage.setItem('ts_session_today',JSON.stringify({questions:res}));
+  document.getElementById('stat-first').textContent=`${fc}/${res.length}`;
+  document.getElementById('stat-second').textContent=`${sc}/${res.length}`;
+  document.getElementById('stat-gaveup').textContent=`${gc}/${res.length}`;
+  document.getElementById('complete-streak').textContent=p.streak;
+  document.getElementById('complete-streak-msg').textContent=p.streak===1?'day streak — great start!':'day streak — keep it up!';
+  document.getElementById('stars-earned').textContent=se;
+  document.getElementById('total-stars').textContent=p.totalStars;
+  const weakTypes=[...new Set(res.filter(r=>r.result==='gave_up').map(r=>r.questionType))];
+  document.getElementById('weak-areas-text').textContent=weakTypes.length===0
+    ?'🎉 Excellent! No weak areas today. Keep it up!'
+    :`Focus tomorrow on: ${weakTypes.map(t=>TYPE_CFG[t]?.name||t).join(', ')}`;
+  if (p.completed) {
+    document.getElementById('cert-text').textContent=
+      `Congratulations! You've completed the ${CURRICULUM[track].name} program. You're ready for the exam!`;
+    document.getElementById('cert-overlay').classList.add('show');
+  }
+  updateHomeLabels();
+  showScreen('screen-complete');
+}
+
+function startNextSession() { selectTrack(S.track); }
+
+function reviewAnswers() {
+  const stored=localStorage.getItem('ts_session_today');
+  if (!stored) return;
+  const {questions}=JSON.parse(stored);
+  const list=document.getElementById('review-list');
+  list.innerHTML='';
+  questions.forEach((q,i)=>{
+    const tc=TYPE_CFG[q.questionType]||TYPE_CFG.LR;
+    const rl=q.result==='correct_first'?'⭐⭐ First Try':q.result==='correct_second'?'⭐ Second Try':'📖 Reviewed';
+    const rc=q.result==='correct_first'?'r-first':q.result==='correct_second'?'r-second':'r-gaveup';
+    const div=document.createElement('div');
+    div.className='review-item';
+    div.innerHTML=`
+      <div class="review-meta">
+        <span style="background:${tc.color};color:white;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700">${tc.emoji} ${tc.name}</span>
+        <span class="review-result ${rc}">${rl}</span>
+      </div>
+      <div class="review-q">Q${i+1}. ${q.question}</div>
+      <div class="review-answer">
+        <strong>Your answer:</strong> ${q.selectedOption}: ${(q.options||{})[q.selectedOption]||'—'}<br>
+        <strong>Correct answer:</strong> ${q.correctOption}: ${(q.options||{})[q.correctOption]||'—'}
+      </div>
+      <div class="review-expl">${q.explanation}</div>`;
+    list.appendChild(div);
+  });
+  showScreen('screen-review');
+}
+
+// =====================================================================
+// ADAPTIVE
+// =====================================================================
+function checkAdaptive(track, p) {
+  const h=p.sessionHistory||[];
+  const msg=document.getElementById('adaptive-msg');
+  msg.classList.remove('show');
+  if (h.length>=3&&h.slice(-3).every(s=>s.firstTryRate>=0.9)) {
+    msg.innerHTML='<strong>🚀 You\'re on fire!</strong> 90%+ correct on first try 3 sessions in a row! Ask your teacher to increase the difficulty.';
+    msg.classList.add('show');
+  } else if (h.length>=2&&h.slice(-2).every(s=>s.firstTryRate<0.4)) {
+    msg.innerHTML='<strong>💙 Keep going!</strong> These questions are challenging. Ask your teacher to adjust the difficulty if you\'d like.';
+    msg.classList.add('show');
+  }
+}
+
+// =====================================================================
+// CONFETTI
+// =====================================================================
+function launchConfetti() {
+  const canvas=document.getElementById('confetti-canvas');
+  const ctx=canvas.getContext('2d');
+  canvas.width=window.innerWidth; canvas.height=window.innerHeight;
+  const colors=['#F4A820','#22C55E','#6366F1','#EC4899','#0EA5E9','#F97316'];
+  const particles=Array.from({length:90},()=>({
+    x:Math.random()*canvas.width, y:-10,
+    vx:(Math.random()-0.5)*5, vy:Math.random()*3+2,
+    size:Math.random()*8+4,
+    color:colors[Math.floor(Math.random()*colors.length)],
+    rot:Math.random()*Math.PI*2, rs:(Math.random()-0.5)*0.2
+  }));
+  let frame=0;
+  function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    particles.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=0.06; p.rot+=p.rs;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+      ctx.fillStyle=p.color; ctx.fillRect(-p.size/2,-p.size*0.3,p.size,p.size*0.6);
+      ctx.restore();
+    });
+    if (++frame<90) requestAnimationFrame(draw);
+    else ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+  draw();
+}
+
+// =====================================================================
+// SETTINGS
+// =====================================================================
+function showSettings() {
+  document.getElementById('pw-gate').style.display='flex';
+  document.getElementById('settings-content').classList.remove('unlocked');
+  document.getElementById('pw-input').value='';
+  document.getElementById('pw-error').textContent='';
+  showScreen('screen-settings');
+}
+function checkPassword() {
+  if (document.getElementById('pw-input').value===TEACHER_PW) {
+    document.getElementById('pw-gate').style.display='none';
+    document.getElementById('settings-content').classList.add('unlocked');
+    loadSettingsUI();
+  } else {
+    document.getElementById('pw-error').textContent='Incorrect password. Please try again.';
+    document.getElementById('pw-input').value='';
+  }
+}
+function loadSettingsUI() {
+  const s=loadSettings();
+  document.getElementById('qpd-oc-foundation').value=s.qpd['oc-foundation']||3;
+  document.getElementById('qpd-oc-intensive').value=s.qpd['oc-intensive']||4;
+  document.getElementById('qpd-sel-foundation').value=s.qpd['sel-foundation']||5;
+  document.getElementById('qpd-sel-intensive').value=s.qpd['sel-intensive']||6;
+  const o=s.weekOverride||{};
+  document.getElementById('week-oc-foundation').value=o['oc-foundation']||'';
+  document.getElementById('week-oc-intensive').value=o['oc-intensive']||'';
+  document.getElementById('week-sel-foundation').value=o['sel-foundation']||'';
+  document.getElementById('week-sel-intensive').value=o['sel-intensive']||'';
+  document.getElementById('difficulty-hard-pct').value=s.difficultyHardPct||20;
+  document.getElementById('difficulty-label').textContent=`${s.difficultyHardPct||20}% hard`;
+  document.getElementById('api-key-input').value=getApiKey();
+}
+function updateDifficultyLabel() {
+  const v=document.getElementById('difficulty-hard-pct').value;
+  document.getElementById('difficulty-label').textContent=`${v}% hard`;
+  saveSettings();
+}
+function resetTrack(track) {
+  if (!confirm(`Reset all progress for ${CURRICULUM[track].name}? This cannot be undone.`)) return;
+  localStorage.removeItem(`ts_progress_${track}`);
+  for (let i=sessionStorage.length-1;i>=0;i--) {
+    const k=sessionStorage.key(i);
+    if (k&&k.startsWith(`ts_q_${track}`)) sessionStorage.removeItem(k);
+  }
+  alert(`${CURRICULUM[track].name} progress has been reset.`);
+  updateHomeLabels();
+}
+
+// =====================================================================
+// HOME LABELS
+// =====================================================================
+function updateHomeLabels() {
+  ['oc-foundation','oc-intensive','sel-foundation','sel-intensive'].forEach(track=>{
+    const el=document.getElementById(`prog-${track}`);
+    if (!el) return;
+    const p=loadProgress(track);
+    el.textContent=p.lastSessionDate?`Week ${p.currentWeek} · ⭐ ${p.totalStars}`:'Start →';
+  });
+}
+
+// =====================================================================
+// SCREEN NAV
+// =====================================================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// =====================================================================
+// INIT
+// =====================================================================
+document.addEventListener('DOMContentLoaded',()=>{
+  updateHomeLabels();
+  document.getElementById('pw-input').addEventListener('keypress',e=>{ if(e.key==='Enter') checkPassword(); });
+});
+
+// Firebase scaffold (v2 — leave commented out for v1)
+/*
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.x.x/firebase-app.js';
+import { getFirestore, doc, setDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.x.x/firebase-firestore.js';
+
+const firebaseConfig = { apiKey:'...', authDomain:'...', projectId:'...' };
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+async function cloudSaveProgress(userId, track, progress) {
+  await setDoc(doc(db, 'users', userId, 'progress', track), progress);
+}
+async function cloudLoadProgress(userId, track) {
+  const snap = await getDoc(doc(db, 'users', userId, 'progress', track));
+  return snap.exists() ? snap.data() : null;
+}
+*/
+</script>
+
+<!-- To embed in solomonacademy.com.au homepage:
+<a href="/thinking-skills.html" class="ts-launch-btn">
+  🧠 Start Thinking Skills
+</a>
+
+OR as iframe:
+<iframe src="/thinking-skills.html"
+  width="100%" height="900px"
+  style="border:none; border-radius:12px;">
+</iframe>
+-->
+</body>
+</html>
