@@ -12180,6 +12180,7 @@ async function autoBackupToFirebase() {
     const backupKey = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}`;
     const students = (store.users || []).filter(u => u.role === 'student');
     const hwSetCount = Object.keys(store.homeworkSets || {}).length;
+    const submissionCount = Object.keys(store.submissions || {}).length;
     // [Security 2026-05] 백업 데이터에서 API 키 제거
     const safeStore = JSON.parse(JSON.stringify(store));
     if (safeStore.claudeApiKey) delete safeStore.claudeApiKey;
@@ -12187,15 +12188,30 @@ async function autoBackupToFirebase() {
       timestamp: now.toISOString(),
       studentCount: students.length,
       hwSetCount: hwSetCount,
+      submissionCount: submissionCount,
       data: safeStore
     };
+
+    // [Safety 2026-05-16] 의심 슬롯 가드 — 5/15 사고(submissions 37%, hwSets 25% 손실) catch용.
+    // 직전 정상 백업 대비 20% 또는 절대값 10개 이상 감소 시 suspect_ 슬롯에 분리.
+    const anomaly = await _detectBackupAnomaly(hwSetCount, submissionCount);
+    if (anomaly) {
+      const suspectKey = `suspect_${backupKey}`;
+      await getBackupRef().child(suspectKey).set({ ...backupEntry, suspectReason: anomaly.reason });
+      console.warn('[Backup] 의심 슬롯에 격리:', suspectKey, anomaly.reason);
+      showBackupToast('⚠️ 백업 데이터 급감 감지 — 의심 슬롯으로 분리');
+      return;
+    }
+
     await getBackupRef().child(backupKey).set(backupEntry);
-    // 오래된 백업 자동 삭제 (최근 30개만 보관)
+    // 오래된 백업 자동 삭제 (정상 슬롯만 30개 유지, suspect_는 별도 보존)
     const snapshot = await getBackupRef().orderByKey().once('value');
-    const allKeys = [];
-    snapshot.forEach(child => { allKeys.push(child.key); });
-    if (allKeys.length > BACKUP_MAX_COUNT) {
-      const toDelete = allKeys.slice(0, allKeys.length - BACKUP_MAX_COUNT);
+    const normalKeys = [];
+    snapshot.forEach(child => {
+      if (!child.key.startsWith('suspect_')) normalKeys.push(child.key);
+    });
+    if (normalKeys.length > BACKUP_MAX_COUNT) {
+      const toDelete = normalKeys.slice(0, normalKeys.length - BACKUP_MAX_COUNT);
       const updates = {};
       toDelete.forEach(k => { updates[k] = null; });
       await getBackupRef().update(updates);
@@ -12205,6 +12221,43 @@ async function autoBackupToFirebase() {
   } catch(e) {
     console.error('[Backup] 자동 백업 실패:', e);
     showBackupToast('⚠️ 자동 백업 실패');
+  }
+}
+
+// [2026-05-16] 직전 정상 백업과 비교해 급감 여부 판정 (의심 슬롯 가드용)
+// 임계값: 20% 이상 감소 OR 10개 이상 절대 감소 (5/15 사고 손실률 37%/25% catch)
+// 첫 백업이거나 직전 정상 백업이 없으면 게이트 통과 (false positive 방지)
+async function _detectBackupAnomaly(currentHwSets, currentSubmissions) {
+  try {
+    const snap = await getBackupRef().orderByKey().limitToLast(10).once('value');
+    const all = snap.val();
+    if (!all) return null;
+    const sortedKeys = Object.keys(all).sort();
+    let lastNormal = null;
+    for (let i = sortedKeys.length - 1; i >= 0; i--) {
+      const key = sortedKeys[i];
+      if (!key.startsWith('suspect_')) {
+        lastNormal = all[key];
+        break;
+      }
+    }
+    if (!lastNormal) return null;
+    const prevHw = lastNormal.hwSetCount || 0;
+    const prevSub = lastNormal.submissionCount || 0;
+    const hwDrop = prevHw - currentHwSets;
+    const subDrop = prevSub - currentSubmissions;
+    const hwDropPct = prevHw > 0 ? hwDrop / prevHw : 0;
+    const subDropPct = prevSub > 0 ? subDrop / prevSub : 0;
+    if (hwDropPct >= 0.20 || hwDrop >= 10) {
+      return { reason: `hwSets ${prevHw}→${currentHwSets} (${(hwDropPct*100).toFixed(0)}% / ${hwDrop}개 감소)` };
+    }
+    if (subDropPct >= 0.20 || subDrop >= 10) {
+      return { reason: `submissions ${prevSub}→${currentSubmissions} (${(subDropPct*100).toFixed(0)}% / ${subDrop}개 감소)` };
+    }
+    return null;
+  } catch (e) {
+    console.warn('[Backup] suspect 체크 실패, 정상 진행:', e);
+    return null;
   }
 }
 
