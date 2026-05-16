@@ -2632,6 +2632,33 @@ function fbSetSubmissions(submissions) {
   fbWrite({ submissions: submissions });
 }
 
+// ── Auth Helpers (Operator Elevation, 2026-05-16) ──────────
+// 압축형 인증 모델: 원장 1명만 Firebase Auth(email/password) 도입.
+// 학생/학부모는 익명 Auth + 앱 ID/PW 그대로.
+// Rules에서 auth.uid === OPERATOR_UID로 권한 부여.
+const OPERATOR_UID = '62bxWubzDLMrhHjjv2oNfAQiyaD2';
+
+function teacherEmail(teacherId) {
+  return `${teacherId}@solomon-academy.local`;
+}
+
+// 원장 Firebase Auth로 전환 (app-level 인증 성공 후 호출)
+async function elevateToOperatorAuth(teacherId, plainPw) {
+  try {
+    await firebase.auth().signOut();
+    const cred = await firebase.auth().signInWithEmailAndPassword(
+      teacherEmail(teacherId), plainPw
+    );
+    console.log('[Auth] 원장 인증 전환 완료, uid:', cred.user.uid);
+    return true;
+  } catch (e) {
+    console.error('[Auth] 원장 인증 전환 실패:', e.message);
+    try { await firebase.auth().signInAnonymously(); } catch(_){}
+    alert('⚠️ Firebase Auth 전환 실패. 일부 작업이 권한 부족으로 막힐 수 있습니다.\n오류: ' + e.message);
+    return false;
+  }
+}
+
 // ── AI Cache Helpers (2026-05) ────────────────────────────
 // 학생이 직접 AI를 호출하지 않도록, 교사가 미리 생성한 결과를 Firebase에 캐시.
 // 경로: solomon_hw_v3/aiCache/{hwKey}/{setIdx}/round_{roundIdx}/
@@ -3861,6 +3888,8 @@ async function doLogin() {
   document.getElementById('loginError').style.display = 'none';
   try {
     if (user.role==='teacher') {
+      // [Auth 2026-05-16] Firebase Auth를 원장 계정으로 전환 (Rules 권한 획득)
+      await elevateToOperatorAuth(user.id, pw);
       document.getElementById('btnBackupDownload').style.display = '';
       const todayPeriod = getTodayPeriod();
       const _s = getStore();
@@ -3898,6 +3927,14 @@ async function doLogin() {
 }
 
 function doLogout() {
+  // [Auth 2026-05-16] 원장이었다면 익명 Auth로 복귀 (다음 사용자 위해, fire-and-forget)
+  try {
+    if (firebase.auth().currentUser?.uid === OPERATOR_UID) {
+      firebase.auth().signOut()
+        .then(() => firebase.auth().signInAnonymously())
+        .catch(e => console.warn('[Auth] 로그아웃 복귀 실패:', e));
+    }
+  } catch(e) { console.warn('[Auth] doLogout 처리 실패:', e); }
   window.isPreviewMode = false;
   _originalTeacher = null;
   document.getElementById('previewBanner')?.remove();
