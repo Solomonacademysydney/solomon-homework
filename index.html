@@ -2638,8 +2638,14 @@ function fbSetSubmissions(submissions) {
 // Rules에서 auth.uid === OPERATOR_UID로 권한 부여.
 const OPERATOR_UID = '62bxWubzDLMrhHjjv2oNfAQiyaD2';
 
+// 앱 차원 teacher ID → Firebase Auth email 매핑
+// 신규 원장 계정 추가 시 여기에 매핑 추가
+const OPERATOR_EMAIL_MAP = {
+  't1': 'teacher@solomon-academy.local'
+};
+
 function teacherEmail(teacherId) {
-  return `${teacherId}@solomon-academy.local`;
+  return OPERATOR_EMAIL_MAP[teacherId] || `${teacherId}@solomon-academy.local`;
 }
 
 // 원장 Firebase Auth로 전환 (app-level 인증 성공 후 호출)
