@@ -2617,7 +2617,11 @@ function fbDeleteSubmission(key) {
 }
 
 function fbSetUsers(users) {
-  fbWrite({ users: users });
+  // users 배열 전체를 한 번에 쓰면 users/.write:false에 막힘.
+  // 개별 인덱스 경로로 분해해서 users/$id 규칙을 통과시킴.
+  const updates = {};
+  users.forEach((u, i) => { updates[`users/${i}`] = u; });
+  fbWrite(updates);
 }
 
 function fbSetPeriod(period) {
