@@ -5329,11 +5329,16 @@ async function saveStudentEdit(oldId) {
     alert('This ID already exists.'); return;
   }
   // update submission record keys when ID changes
+  const subUpdates = {};
   if (newId !== oldId) {
     Object.keys(store.submissions).forEach(k => {
       if (k.startsWith(oldId + '_')) {
-        store.submissions[k.replace(oldId + '_', newId + '_')] = store.submissions[k];
+        const newKey = k.replace(oldId + '_', newId + '_');
+        store.submissions[newKey] = store.submissions[k];
         delete store.submissions[k];
+        // [Safety 2026-05] wholesale fbSetSubmissions 대신 변경된 키만 surgical update
+        subUpdates['submissions/' + k]      = null;
+        subUpdates['submissions/' + newKey] = store.submissions[newKey];
       }
     });
     // update parent's childIds
@@ -5355,7 +5360,7 @@ async function saveStudentEdit(oldId) {
   if (seSchoolGroupEl) u.school_group = seSchoolGroupEl.value;
   saveStore(store);
   fbSetUsers(store.users);
-  if (newId !== oldId) fbSetSubmissions(store.submissions);
+  if (newId !== oldId && Object.keys(subUpdates).length > 0) fbWrite(subUpdates);
   showBackupToast(`✅ ${u.name}'s info updated.`);
   renderTeacher();
 }
@@ -7071,14 +7076,19 @@ async function saveMyAccount() {
   const u = store.users.find(u => u.id === oldId);
   if (!u) return;
 
+  const subUpdates = {};
   if (newId && newId !== oldId) {
     if (store.users.find(x => x.id === newId)) { alert('This ID already exists.'); return; }
     // 학생이면 제출 기록 키도 업데이트
     if (currentUser.role === 'student') {
       Object.keys(store.submissions).forEach(k => {
         if (k.startsWith(oldId + '_')) {
-          store.submissions[k.replace(oldId + '_', newId + '_')] = store.submissions[k];
+          const newKey = k.replace(oldId + '_', newId + '_');
+          store.submissions[newKey] = store.submissions[k];
           delete store.submissions[k];
+          // [Safety 2026-05] wholesale fbSetSubmissions 대신 변경된 키만 surgical update
+          subUpdates['submissions/' + k]      = null;
+          subUpdates['submissions/' + newKey] = store.submissions[newKey];
         }
       });
       // 부모 childIds 업데이트
@@ -7096,7 +7106,7 @@ async function saveMyAccount() {
   if (newPw) { u.pw = await hashPw(newPw); currentUser.pw = u.pw; }
   saveStore(store);
   fbSetUsers(store.users);
-  if (newId && newId !== oldId && currentUser.role === 'student') fbSetSubmissions(store.submissions);
+  if (newId && newId !== oldId && currentUser.role === 'student' && Object.keys(subUpdates).length > 0) fbWrite(subUpdates);
 
   // 상단 바 이름 즉시 업데이트
   document.getElementById('topbarUser').textContent =
