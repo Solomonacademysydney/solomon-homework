@@ -5828,6 +5828,7 @@ function renderStudent() {
         <div class="progress-lbl"><span>Q${qIdx+1} / ${total}</span><span>${pct}%</span></div>
       </div>
     </div>
+    ${typeof gm_renderBadges === 'function' ? gm_renderBadges() : ''}
 
     <div class="q-nav">`;
 
@@ -5861,7 +5862,7 @@ function renderStudent() {
     q.options.forEach((opt,i) => {
       const letter = letters[i];
       const sel = userAns===letter ? 'sel' : '';
-      html += `<button class="opt-btn ${sel}" onclick="answerMC('${q.id}','${letter}')">
+      html += `<button class="opt-btn ${sel}" onclick="answerMC('${q.id}','${letter}', this)">
         <span class="opt-circle">${letter}</span>${renderMath(opt)}
       </button>`;
     });
@@ -6101,6 +6102,13 @@ function renderSetList(hw, store, p) {
 function startSet(idx) {
   currentSetIdx = idx;
   qIdx = 0;
+  // gamify-lab Tier 4: 각 셋 시작 시 gm state 리셋 (세션 휘발, Firebase 무영향)
+  if (typeof _gmState !== 'undefined') {
+    _gmState.score = 0;
+    _gmState.streak = 0;
+    _gmState.streakShield = 0;
+    _gmStreakIconNext = '👏';
+  }
   try {
     renderStudent();
   } catch(e) {
@@ -6169,8 +6177,55 @@ function saveAnswer(qid, val) {
   fbSetSubmission(key, store.submissions[key]);
 }
 
-function answerMC(qid, letter) {
+function answerMC(qid, letter, btnEl) {
   saveAnswer(qid, letter);
+  // gamify-lab Tier 3: 정답 시 별 폭발 + Correct! 팝업 (btnEl·gm_burstStars 모두 있을 때만, try/catch 보호)
+  if (btnEl && typeof gm_burstStars === 'function') {
+    try {
+      const _s = getStore();
+      const _p = studentPeriod || _s.currentPeriod;
+      const _hw = _s.homeworkSets[hwKey(currentUser.year, currentUser.country||'AU', _p)];
+      const _qs = _hw?.sets?.[currentSetIdx]?.questions || [];
+      const _q = _qs.find(function(x){ return x.id === qid; });
+      if (_q && normAns(letter) === normAns(_q.answer)) {
+        gm_burstStars(btnEl);
+      }
+    } catch (e) { /* visual feedback 실패는 흐름을 막지 않음 */ }
+  }
+  // gamify-lab Tier 4: state 갱신 + 배지/streak/shield 시각 효과 (세션 휘발, Firebase 무영향)
+  if (typeof _gmState !== 'undefined') {
+    try {
+      const _s2 = getStore();
+      const _p2 = studentPeriod || _s2.currentPeriod;
+      const _hw2 = _s2.homeworkSets[hwKey(currentUser.year, currentUser.country||'AU', _p2)];
+      const _qs2 = _hw2?.sets?.[currentSetIdx]?.questions || [];
+      const _q2 = _qs2.find(function(x){ return x.id === qid; });
+      if (_q2) {
+        const _isCorrect = normAns(letter) === normAns(_q2.answer);
+        if (_isCorrect) {
+          _gmState.score += 1;
+          _gmState.streak += 1;
+          if ((_gmState.streak === 3 || _gmState.streak === 6 || _gmState.streak === 9) && _gmState.streakShield === 0) {
+            _gmState.streakShield = 1;
+          }
+          if (typeof gm_updateScoreDisplay === 'function') gm_updateScoreDisplay();
+          if (typeof gm_updateStreakDisplay === 'function') gm_updateStreakDisplay();
+          if (_gmState.streak > 0 && _gmState.streak % 3 === 0 && typeof gm_streakCelebration === 'function') {
+            gm_streakCelebration();
+          }
+        } else {
+          if (_gmState.streakShield > 0) {
+            _gmState.streakShield = 0;
+            if (typeof gm_updateStreakDisplay === 'function') gm_updateStreakDisplay({ shieldBroken: true });
+            if (typeof gm_showShieldProtectedPopup === 'function') gm_showShieldProtectedPopup();
+          } else {
+            _gmState.streak = 0;
+            if (typeof gm_updateStreakDisplay === 'function') gm_updateStreakDisplay();
+          }
+        }
+      }
+    } catch (e) { /* state 갱신 실패는 흐름을 막지 않음 */ }
+  }
   // Auto-advance after short delay
   setTimeout(()=>{ qIdx++; renderStudent(); }, 300);
 }
@@ -6245,6 +6300,15 @@ function doSubmit() {
     const score = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
     const wrongQs = autoQs.filter(q=>normAns(sub.answers[q.id])!==normAns(q.answer));
     const weakAreas = detectWeakAreas(wrongQs);
+    // gamify-lab Tier 5: 정답률 80%+ 시 5.1초 후 완료 셀러브레이션 (모달 닫힌 직후, 흐름 무영향)
+    if (score >= 80 && typeof gm_showCompleteCelebration === 'function') {
+      setTimeout(function(){
+        const _m = document.getElementById('submitConfirmModal');
+        if (!_m && typeof gm_showCompleteCelebration === 'function') {
+          gm_showCompleteCelebration();
+        }
+      }, 5100);
+    }
     sub.reportData = {
       studentId: currentUser.id,
       studentName: currentUser.name,
@@ -14015,5 +14079,953 @@ function completeTSDay() {
   });
 })();
 </script>
+
+<!-- ===== gamify-lab v1.0 Solomon library (Tier 1: defs only, no call sites) ===== -->
+<style id="gm-lab-styles">
+    /* SVG 공통 애니메이션 (default·thinking·cheering·...) */
+    @keyframes gm-question-wiggle {
+      0%, 100% { transform: rotate(-3deg); }
+      50%      { transform: rotate(3deg); }
+    }
+    @keyframes gm-arm-bounce {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-6px); }
+    }
+    @keyframes gm-star-sparkle {
+      0%, 100% { transform: scale(0.8); opacity: 0.6; }
+      50%      { transform: scale(1.2); opacity: 1; }
+    }
+    @keyframes gm-body-shake {
+      0%, 100% { transform: rotate(-2deg); }
+      50%      { transform: rotate(2deg); }
+    }
+
+    .mallow-question {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: gm-question-wiggle 1.5s ease-in-out infinite;
+    }
+    .mallow-arm-left,
+    .mallow-arm-right {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: gm-arm-bounce 0.8s ease-in-out infinite;
+    }
+    .mallow-arm-right { animation-delay: 0.2s; }
+    .mallow-star {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: gm-star-sparkle 1.2s ease-in-out infinite;
+    }
+    .mallow-star-2 { animation-delay: 0.4s; }
+    .mallow-star-3 { animation-delay: 0.8s; }
+    .mallow-svg-surprised {
+      animation: gm-body-shake 2s ease-in-out infinite;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+
+    /* 오버레이 + dim layer */
+    #gm-solomon-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      pointer-events: none;
+    }
+    #gm-solomon-overlay .gm-solomon-dim {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.25);
+      opacity: 0;
+      animation: gm-dim-fade-in 0.4s ease forwards;
+      pointer-events: auto;
+    }
+    @keyframes gm-dim-fade-in {
+      to { opacity: 1; }
+    }
+    #gm-solomon-overlay.closing .gm-solomon-dim {
+      animation: gm-dim-fade-out 0.35s ease forwards;
+    }
+    @keyframes gm-dim-fade-out {
+      from { opacity: 1; }
+      to   { opacity: 0; }
+    }
+
+    /* Halo (한 번 펄스) */
+    .gm-solomon-halo {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 520px;
+      height: 520px;
+      background: radial-gradient(circle, rgba(212,175,55,0.42) 0%, rgba(212,175,55,0) 65%);
+      transform: translate(-50%, -50%) scale(0.55);
+      opacity: 0;
+      pointer-events: none;
+      animation: gm-halo-pulse 1.6s ease-out 1 forwards;
+    }
+    @keyframes gm-halo-pulse {
+      0%   { transform: translate(-50%, -50%) scale(0.55); opacity: 0; }
+      35%  { opacity: 0.6; }
+      100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+    }
+
+    /* 솔로몬 카드 */
+    .gm-solomon-card {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: min(360px, calc(100vw - 40px));
+      padding: 30px 30px 26px;
+      background: linear-gradient(135deg, #FAEEDA 0%, #F5E0C0 100%);
+      border: 1.5px solid #BA7517;
+      border-radius: 22px;
+      box-shadow: 0 22px 60px rgba(0, 0, 0, 0.32),
+                  0 0 0 1px rgba(186, 117, 23, 0.15) inset;
+      pointer-events: auto;
+      animation: gm-card-arrive 1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    @keyframes gm-card-arrive {
+      0%   { opacity: 0; transform: translate(-50%, calc(-50% + 80px)) scale(0.88); }
+      55%  { opacity: 1; transform: translate(-50%, calc(-50% - 14px)) scale(1.04); }
+      80%  { transform: translate(-50%, calc(-50% + 3px)) scale(0.995); }
+      100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+    #gm-solomon-overlay.closing .gm-solomon-card {
+      animation: gm-card-leave 0.35s ease-in forwards;
+    }
+    @keyframes gm-card-leave {
+      to { opacity: 0; transform: translate(-50%, calc(-50% + 24px)) scale(0.92); }
+    }
+
+    /* v0.4 hotfix: X 닫기 버튼 제거 — 카드 전체 클릭으로 닫음. .gm-solomon-close CSS는 제거. */
+    /* 카드 자체에 cursor: pointer */
+    .gm-solomon-card {
+      cursor: pointer;
+    }
+    .gm-solomon-message {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 18px;
+      line-height: 2.3;   /* v0.4 hotfix: \dfrac 줄 겹침 해결 — display-style 분수 높이(~1.8em) 수용 */
+      color: #3A2410;
+      font-weight: 500;
+    }
+    /* v0.4 hotfix: \dfrac 분수가 줄 위/아래 텍스트를 침범하지 않도록 inline-block + 수직 정렬 */
+    .gm-solomon-message .katex {
+      vertical-align: middle;
+    }
+    .gm-solomon-divider {
+      border: none;
+      border-top: 1.5px dashed rgba(186, 117, 23, 0.4);
+      margin: 18px 0 12px;
+    }
+    .gm-solomon-footer {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #8C6A3E;
+      font-style: italic;
+      text-align: center;
+    }
+
+    /* 솔로몬 캐릭터 - 카드 모서리 배치 */
+    .gm-solomon-character {
+      position: absolute;
+      width: 130px;
+      height: 130px;
+      pointer-events: none;
+      transition: none;
+    }
+    /* v0.4 hotfix: 마시멜로가 좌측에 있을 때 메시지 텍스트를 오른쪽으로 밀어 가림 방지 */
+    .gm-solomon-card.has-mallow-tl .gm-solomon-message,
+    .gm-solomon-card.has-mallow-bl .gm-solomon-message {
+      padding-left: 60px;
+    }
+    .gm-solomon-card.has-mallow-tr .gm-solomon-message,
+    .gm-solomon-card.has-mallow-br .gm-solomon-message {
+      padding-right: 60px;
+    }
+    .gm-solomon-character.gm-pos-tl {
+      top: -50px;
+      left: -25px;
+      transform: rotate(-12deg);
+    }
+    .gm-solomon-character.gm-pos-tr {
+      top: -50px;
+      right: -25px;
+      transform: rotate(12deg);
+    }
+    .gm-solomon-character.gm-pos-bl {
+      bottom: 60px;
+      left: -50px;
+      transform: rotate(-8deg);
+    }
+    .gm-solomon-character.gm-pos-br {
+      bottom: 60px;
+      right: -50px;
+      transform: rotate(8deg);
+    }
+
+    /* 모바일: 솔로몬 위치를 카드 안쪽으로 살짝 당겨 화면을 안 넘게 */
+    @media (max-width: 480px) {
+      .gm-solomon-character {
+        width: 100px;
+        height: 100px;
+      }
+      .gm-solomon-character.gm-pos-tl { top: -38px; left: -10px; }
+      .gm-solomon-character.gm-pos-tr { top: -38px; right: -10px; }
+      .gm-solomon-character.gm-pos-bl { bottom: 50px; left: -30px; }
+      .gm-solomon-character.gm-pos-br { bottom: 50px; right: -30px; }
+      .gm-solomon-card { padding: 28px 22px 22px; }
+      .gm-solomon-message { font-size: 16px; }
+      /* v0.4 hotfix mobile: 100px 마시멜로 폭 + 카드 padding 보정 */
+      .gm-solomon-card.has-mallow-tl .gm-solomon-message,
+      .gm-solomon-card.has-mallow-bl .gm-solomon-message {
+        padding-left: 50px;
+      }
+      .gm-solomon-card.has-mallow-tr .gm-solomon-message,
+      .gm-solomon-card.has-mallow-br .gm-solomon-message {
+        padding-right: 50px;
+      }
+    }
+
+    /* === gamify-lab Tier 2 (2026-05-21) === */
+    /* C-1: KaTeX 분수만 15% 키워 가독성 보정 (inline \frac의 \tfrac 스타일 보정) */
+    .katex .mfrac { font-size: 1.15em; }
+
+    /* C-2: 활성 문제 본문 박스 강조 — 옅은 베이지 + 좌측 골드 보더 */
+    .qc-text {
+      background: #FEF8E1;
+      border-left: 5px solid #D4AF37;
+      border-radius: 10px;
+      padding: 22px 24px;
+      box-shadow: 0 2px 8px rgba(212, 175, 55, 0.12) inset;
+    }
+
+    /* === gamify-lab Tier 3 (2026-05-21) — 정답 시 별 폭발 + Correct! 팝업 === */
+    .gm-burst-container {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9100;
+      width: 0;
+      height: 0;
+    }
+    .gm-burst-star {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 16px;
+      height: 16px;
+      margin-left: -8px;
+      margin-top: -8px;
+      background: #F0D060;
+      clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+      animation: gm-burst-fly 0.8s cubic-bezier(0.2, 0.6, 0.4, 1) forwards;
+    }
+    @keyframes gm-burst-fly {
+      0%   { transform: translate(0, 0) scale(0.4) rotate(0deg); opacity: 1; }
+      30%  { transform: translate(calc(var(--dx) * 0.55), calc(var(--dy) * 0.55 - 8px)) scale(1.15) rotate(160deg); opacity: 1; }
+      100% { transform: translate(var(--dx), calc(var(--dy) - 18px)) scale(0.45) rotate(340deg); opacity: 0; }
+    }
+    .gm-score-popup {
+      position: absolute;
+      left: 0;
+      top: 0;
+      pointer-events: none;
+      z-index: 9102;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      color: #16A34A;
+      text-shadow: 0 2px 8px rgba(255, 255, 255, 0.9), 0 0 16px rgba(212, 175, 55, 0.45);
+      white-space: nowrap;
+      animation: gm-score-rise 1.0s ease-out forwards;
+    }
+    @keyframes gm-score-rise {
+      0%   { transform: translate(-50%, 0) scale(0.6); opacity: 0; }
+      20%  { transform: translate(-50%, -10px) scale(1.15); opacity: 1; }
+      100% { transform: translate(-50%, -50px) scale(1); opacity: 0; }
+    }
+
+    /* === gamify-lab Tier 4 (2026-05-21) — Correct N 배지 + Streak (4-tier) + Shield === */
+    .gm-badges-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    /* ✓ Correct 배지 (녹색 톤) */
+    .gm-score-display {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 17px;
+      font-weight: 800;
+      color: #166534;
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.18), rgba(22, 163, 74, 0.10));
+      border: 1.5px solid rgba(22, 163, 74, 0.45);
+      padding: 8px 16px;
+      border-radius: 14px;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(22, 163, 74, 0.15);
+    }
+    .gm-score-display #gm-score-num {
+      font-size: 22px;
+      color: #16A34A;
+      font-weight: 900;
+      transition: color 0.3s;
+    }
+    .gm-score-display.bump {
+      animation: gm-score-bump 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes gm-score-bump {
+      0%   { transform: scale(1);    box-shadow: 0 2px 8px rgba(22, 163, 74, 0.15); }
+      35%  { transform: scale(1.35); box-shadow: 0 4px 14px rgba(22, 163, 74, 0.30), 0 0 28px 4px rgba(34, 197, 94, 0.5); }
+      100% { transform: scale(1);    box-shadow: 0 2px 8px rgba(22, 163, 74, 0.15); }
+    }
+    /* 🔥 Streak 배지 + 4단계 tier */
+    .gm-streak-display {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 17px;
+      font-weight: 800;
+      padding: 8px 14px;
+      border-radius: 14px;
+      white-space: nowrap;
+      transition: background 0.35s, color 0.35s, box-shadow 0.35s, border-color 0.35s;
+      will-change: transform;
+    }
+    .gm-streak-display #gm-streak-num {
+      font-size: 22px;
+      font-weight: 900;
+      transition: color 0.35s;
+    }
+    .gm-streak-display.tier-1 {
+      background: linear-gradient(135deg, #FED7AA, #FDBA74);
+      color: #9A3412;
+      border: 1.5px solid rgba(234, 88, 12, 0.4);
+    }
+    .gm-streak-display.tier-2 {
+      background: linear-gradient(135deg, #FB923C, #F97316);
+      color: #FFFFFF;
+      border: 1.5px solid rgba(234, 88, 12, 0.6);
+      box-shadow: 0 4px 14px rgba(249, 115, 22, 0.4);
+    }
+    .gm-streak-display.tier-3 {
+      background: linear-gradient(135deg, #EF4444, #DC2626);
+      color: #FFFFFF;
+      border: 1.5px solid rgba(220, 38, 38, 0.7);
+      box-shadow: 0 4px 18px rgba(220, 38, 38, 0.5);
+      animation: gm-streak-pulse 2s ease-in-out infinite;
+    }
+    .gm-streak-display.tier-4 {
+      background: linear-gradient(135deg, #A855F7 0%, #D4AF37 50%, #EF4444 100%);
+      background-size: 200% 200%;
+      color: #FFFFFF;
+      border: 1.5px solid rgba(212, 175, 55, 0.8);
+      box-shadow: 0 6px 28px rgba(212, 175, 55, 0.6);
+      animation: gm-streak-shimmer 3s linear infinite, gm-streak-pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes gm-streak-pulse {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.06); }
+    }
+    @keyframes gm-streak-shimmer {
+      0%   { background-position: 0% 0%; }
+      100% { background-position: 200% 200%; }
+    }
+    .gm-streak-display.bump {
+      animation: gm-streak-bump 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes gm-streak-bump {
+      0%   { transform: scale(1)    rotate(0deg); }
+      30%  { transform: scale(1.35) rotate(-6deg); }
+      60%  { transform: scale(1.05) rotate(3deg); }
+      100% { transform: scale(1)    rotate(0deg); }
+    }
+    /* 🛡️ Shield 아이콘 + 흔들기 + 보호 팝업 */
+    .gm-streak-shield {
+      margin-left: 4px;
+      display: inline-block;
+      font-size: 16px;
+      animation: gm-shield-glow 2s ease-in-out infinite;
+      vertical-align: middle;
+    }
+    @keyframes gm-shield-glow {
+      0%, 100% { transform: scale(1);    filter: drop-shadow(0 0 2px rgba(212, 175, 55, 0.5)); }
+      50%      { transform: scale(1.12); filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.9)); }
+    }
+    .gm-streak-display.shield-broken {
+      animation: gm-shield-broken-shake 0.55s ease-out !important;
+    }
+    @keyframes gm-shield-broken-shake {
+      0%   { transform: translateX(0)    rotate(0deg); }
+      20%  { transform: translateX(-9px) rotate(-4deg); }
+      40%  { transform: translateX(9px)  rotate(4deg); }
+      60%  { transform: translateX(-6px) rotate(-2deg); }
+      80%  { transform: translateX(4px)  rotate(1deg); }
+      100% { transform: translateX(0)    rotate(0deg); }
+    }
+    .gm-shield-protected-popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      background: linear-gradient(135deg, #FED7AA, #FB923C);
+      color: #7C2D12;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 26px;
+      font-weight: 800;
+      padding: 20px 32px;
+      border-radius: 18px;
+      box-shadow: 0 12px 36px rgba(234, 88, 12, 0.45);
+      border: 2px solid rgba(234, 88, 12, 0.4);
+      pointer-events: none;
+      z-index: 9400;
+      white-space: nowrap;
+      text-align: center;
+      line-height: 1.3;
+      animation: gm-shield-popup-anim 1.4s ease-out forwards;
+    }
+    .gm-shield-protected-popup .shield-icon {
+      font-size: 56px;
+      display: block;
+      margin-bottom: 4px;
+      line-height: 1;
+    }
+    @keyframes gm-shield-popup-anim {
+      0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.55); }
+      15%  { opacity: 1; transform: translate(-50%, -50%) scale(1.18); }
+      35%  { transform: translate(-50%, -50%) scale(1); }
+      85%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, calc(-50% - 28px)) scale(0.95); }
+    }
+    /* Streak celebration: 화면 중앙 큰 이모지 3개 (👏 / 👍 교대) */
+    .gm-streak-celebration {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      pointer-events: none;
+      z-index: 9300;
+    }
+    .gm-streak-icon {
+      font-size: 110px;
+      line-height: 1;
+      opacity: 0;
+      transform: scale(0);
+      animation: gm-streak-pop 1.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      filter: drop-shadow(0 6px 24px rgba(212, 175, 55, 0.7));
+    }
+    @keyframes gm-streak-pop {
+      0%   { opacity: 0; transform: scale(0) rotate(-15deg); }
+      25%  { opacity: 1; transform: scale(1.35) rotate(10deg); }
+      45%  { transform: scale(1) rotate(-3deg); }
+      65%  { transform: scale(1.05) rotate(0deg); }
+      85%  { opacity: 1; transform: scale(1) rotate(0deg); }
+      100% { opacity: 0; transform: scale(1.1) rotate(0deg); }
+    }
+    @media (max-width: 768px) {
+      .gm-streak-icon { font-size: 72px; }
+      .gm-streak-celebration { gap: 18px; }
+    }
+
+    /* === gamify-lab Tier 5 (2026-05-21) — 완료 풀스크린 50개 별 === */
+    .gm-complete-celebration-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9500;
+      overflow: hidden;
+    }
+    .gm-complete-star {
+      position: absolute;
+      top: -30px;
+      width: 20px;
+      height: 20px;
+      background: #F0D060;
+      clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+      animation: gm-complete-star-fall 3s linear forwards;
+    }
+    @keyframes gm-complete-star-fall {
+      0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(110vh) rotate(360deg); opacity: 0.3; }
+    }
+</style>
+<script id="gm-lab-script">
+    // ====================================================== //
+    //  === v0.2 추가: 솔로몬 라이브러리 ==                  //
+    // ====================================================== //
+    const GM_SOLOMON_SVG = {
+      default: `<svg viewBox="0 0 125 125" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;">
+        <defs>
+          <radialGradient id="mb-default-body" cx="35%" cy="30%" r="80%">
+            <stop offset="0%" stop-color="#FFFFFF"/>
+            <stop offset="60%" stop-color="#F8F4ED"/>
+            <stop offset="100%" stop-color="#E8E0D0"/>
+          </radialGradient>
+          <radialGradient id="mb-default-top" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#FFFFFF"/>
+            <stop offset="100%" stop-color="#F0EADC"/>
+          </radialGradient>
+          <radialGradient id="mb-default-cheek" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#FFCBD8"/>
+            <stop offset="100%" stop-color="#F5B5C5" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <ellipse cx="62" cy="108" rx="38" ry="10" fill="#7A5530" opacity="0.18"/>
+        <path d="M 22 45 L 22 95 Q 22 105 32 107 L 92 107 Q 102 105 102 95 L 102 45 Q 102 35 92 33 L 32 33 Q 22 35 22 45 Z" fill="url(#mb-default-body)"/>
+        <ellipse cx="62" cy="35" rx="40" ry="7" fill="url(#mb-default-top)"/>
+        <ellipse cx="62" cy="33" rx="35" ry="4" fill="#FFFFFF" opacity="0.6"/>
+        <ellipse cx="62" cy="105" rx="40" ry="6" fill="#E0D5C0" opacity="0.5"/>
+        <ellipse cx="38" cy="75" rx="11" ry="7" fill="url(#mb-default-cheek)"/>
+        <ellipse cx="86" cy="75" rx="11" ry="7" fill="url(#mb-default-cheek)"/>
+        <g class="mallow-eyes">
+          <ellipse cx="48" cy="65" rx="6" ry="8" fill="#FFFFFF"/>
+          <ellipse cx="76" cy="65" rx="6" ry="8" fill="#FFFFFF"/>
+          <ellipse cx="49" cy="67" rx="4.5" ry="6" fill="#2A1A2A"/>
+          <ellipse cx="77" cy="67" rx="4.5" ry="6" fill="#2A1A2A"/>
+          <circle cx="50.5" cy="65" r="1.8" fill="#FFFFFF"/>
+          <circle cx="78.5" cy="65" r="1.8" fill="#FFFFFF"/>
+        </g>
+        <path d="M 52 82 Q 62 90 72 82" stroke="#2A1A2A" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <ellipse cx="20" cy="78" rx="6" ry="9" fill="url(#mb-default-body)"/>
+        <ellipse cx="104" cy="78" rx="6" ry="9" fill="url(#mb-default-body)"/>
+      </svg>`,
+
+      thinking: `<svg viewBox="0 0 125 125" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;overflow:visible;">
+        <defs>
+          <radialGradient id="mb-thinking-body" cx="35%" cy="30%" r="80%">
+            <stop offset="0%" stop-color="#FFFFFF"/>
+            <stop offset="60%" stop-color="#F8F4ED"/>
+            <stop offset="100%" stop-color="#E8E0D0"/>
+          </radialGradient>
+          <radialGradient id="mb-thinking-top" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#FFFFFF"/>
+            <stop offset="100%" stop-color="#F0EADC"/>
+          </radialGradient>
+          <radialGradient id="mb-thinking-cheek" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#FFCBD8"/>
+            <stop offset="100%" stop-color="#F5B5C5" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <ellipse cx="62" cy="108" rx="38" ry="10" fill="#7A5530" opacity="0.18"/>
+        <path d="M 22 45 L 22 95 Q 22 105 32 107 L 92 107 Q 102 105 102 95 L 102 45 Q 102 35 92 33 L 32 33 Q 22 35 22 45 Z" fill="url(#mb-thinking-body)"/>
+        <ellipse cx="62" cy="35" rx="40" ry="7" fill="url(#mb-thinking-top)"/>
+        <ellipse cx="62" cy="33" rx="35" ry="4" fill="#FFFFFF" opacity="0.6"/>
+        <ellipse cx="62" cy="105" rx="40" ry="6" fill="#E0D5C0" opacity="0.5"/>
+        <ellipse cx="38" cy="75" rx="11" ry="7" fill="url(#mb-thinking-cheek)"/>
+        <ellipse cx="86" cy="75" rx="11" ry="7" fill="url(#mb-thinking-cheek)"/>
+        <ellipse cx="48" cy="65" rx="6" ry="8" fill="#FFFFFF"/>
+        <ellipse cx="76" cy="65" rx="6" ry="8" fill="#FFFFFF"/>
+        <ellipse cx="49" cy="63" rx="3.5" ry="5" fill="#2A1A2A"/>
+        <ellipse cx="77" cy="63" rx="3.5" ry="5" fill="#2A1A2A"/>
+        <circle cx="50.2" cy="61" r="1.5" fill="#FFFFFF"/>
+        <circle cx="78.2" cy="61" r="1.5" fill="#FFFFFF"/>
+        <path d="M 56 84 Q 62 86 68 84" stroke="#2A1A2A" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <ellipse cx="20" cy="78" rx="6" ry="9" fill="url(#mb-thinking-body)"/>
+        <ellipse cx="104" cy="78" rx="6" ry="9" fill="url(#mb-thinking-body)"/>
+        <g class="mallow-question">
+          <circle cx="105" cy="20" r="13" fill="#FFFFFF" stroke="#D4AF37" stroke-width="2"/>
+          <text x="105" y="27" text-anchor="middle" font-family="Noto Serif KR, serif" font-size="18" font-weight="900" fill="#D4AF37">?</text>
+        </g>
+      </svg>`,
+
+      cheering: `<svg viewBox="0 0 125 125" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;">
+        <defs>
+          <radialGradient id="mb-cheering-body" cx="35%" cy="30%" r="80%">
+            <stop offset="0%" stop-color="#FFFFFF"/>
+            <stop offset="60%" stop-color="#F8F4ED"/>
+            <stop offset="100%" stop-color="#E8E0D0"/>
+          </radialGradient>
+          <radialGradient id="mb-cheering-top" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#FFFFFF"/>
+            <stop offset="100%" stop-color="#F0EADC"/>
+          </radialGradient>
+          <radialGradient id="mb-cheering-cheek" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#FFB5C8"/>
+            <stop offset="100%" stop-color="#F09BB0" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <ellipse cx="62" cy="108" rx="38" ry="10" fill="#7A5530" opacity="0.18"/>
+        <path d="M 22 45 L 22 95 Q 22 105 32 107 L 92 107 Q 102 105 102 95 L 102 45 Q 102 35 92 33 L 32 33 Q 22 35 22 45 Z" fill="url(#mb-cheering-body)"/>
+        <ellipse cx="62" cy="35" rx="40" ry="7" fill="url(#mb-cheering-top)"/>
+        <ellipse cx="62" cy="33" rx="35" ry="4" fill="#FFFFFF" opacity="0.6"/>
+        <ellipse cx="62" cy="105" rx="40" ry="6" fill="#E0D5C0" opacity="0.5"/>
+        <ellipse cx="38" cy="75" rx="11" ry="7" fill="url(#mb-cheering-cheek)"/>
+        <ellipse cx="86" cy="75" rx="11" ry="7" fill="url(#mb-cheering-cheek)"/>
+        <path d="M 42 56 Q 48 51 54 56" stroke="#2A1A2A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M 70 56 Q 76 51 82 56" stroke="#2A1A2A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <ellipse cx="48" cy="65" rx="6" ry="8" fill="#FFFFFF"/>
+        <ellipse cx="76" cy="65" rx="6" ry="8" fill="#FFFFFF"/>
+        <ellipse cx="49" cy="67" rx="4.5" ry="6" fill="#2A1A2A"/>
+        <ellipse cx="77" cy="67" rx="4.5" ry="6" fill="#2A1A2A"/>
+        <circle cx="50.5" cy="65" r="1.8" fill="#FFFFFF"/>
+        <circle cx="78.5" cy="65" r="1.8" fill="#FFFFFF"/>
+        <path d="M 50 80 Q 62 93 74 80" stroke="#2A1A2A" stroke-width="2.5" fill="#3B0814" stroke-linecap="round" stroke-linejoin="round"/>
+        <ellipse cx="62" cy="88" rx="5" ry="1.8" fill="#F5B5C5"/>
+        <g class="mallow-arm-left">
+          <ellipse cx="20" cy="78" rx="6" ry="9" fill="url(#mb-cheering-body)"/>
+        </g>
+        <g class="mallow-arm-right">
+          <ellipse cx="104" cy="78" rx="6" ry="9" fill="url(#mb-cheering-body)"/>
+        </g>
+      </svg>`,
+
+      celebrating: `<svg viewBox="0 0 125 125" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;overflow:visible;">
+        <defs>
+          <radialGradient id="mb-celebrating-body" cx="35%" cy="30%" r="80%">
+            <stop offset="0%" stop-color="#FFFFFF"/>
+            <stop offset="60%" stop-color="#F8F4ED"/>
+            <stop offset="100%" stop-color="#E8E0D0"/>
+          </radialGradient>
+          <radialGradient id="mb-celebrating-top" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#FFFFFF"/>
+            <stop offset="100%" stop-color="#F0EADC"/>
+          </radialGradient>
+          <radialGradient id="mb-celebrating-cheek" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#FFB5C8"/>
+            <stop offset="100%" stop-color="#F09BB0" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <ellipse cx="62" cy="108" rx="38" ry="10" fill="#7A5530" opacity="0.18"/>
+        <path d="M 22 45 L 22 95 Q 22 105 32 107 L 92 107 Q 102 105 102 95 L 102 45 Q 102 35 92 33 L 32 33 Q 22 35 22 45 Z" fill="url(#mb-celebrating-body)"/>
+        <ellipse cx="62" cy="35" rx="40" ry="7" fill="url(#mb-celebrating-top)"/>
+        <ellipse cx="62" cy="33" rx="35" ry="4" fill="#FFFFFF" opacity="0.6"/>
+        <ellipse cx="62" cy="105" rx="40" ry="6" fill="#E0D5C0" opacity="0.5"/>
+        <ellipse cx="38" cy="75" rx="11" ry="7" fill="url(#mb-celebrating-cheek)"/>
+        <ellipse cx="86" cy="75" rx="11" ry="7" fill="url(#mb-celebrating-cheek)"/>
+        <path d="M 40 54 Q 48 48 56 54" stroke="#2A1A2A" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+        <path d="M 68 54 Q 76 48 84 54" stroke="#2A1A2A" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+        <ellipse cx="48" cy="65" rx="6" ry="8" fill="#FFFFFF"/>
+        <ellipse cx="76" cy="65" rx="6" ry="8" fill="#FFFFFF"/>
+        <ellipse cx="49" cy="67" rx="4.5" ry="6" fill="#2A1A2A"/>
+        <ellipse cx="77" cy="67" rx="4.5" ry="6" fill="#2A1A2A"/>
+        <circle cx="50.5" cy="65" r="1.8" fill="#FFFFFF"/>
+        <circle cx="78.5" cy="65" r="1.8" fill="#FFFFFF"/>
+        <!-- v0.4 hotfix: 이빨 3개(rect) 제거 — 부드러운 미소만 남김. 입 색도 살짝 부드럽게. -->
+        <path d="M 48 78 Q 62 92 76 78" stroke="#2A1A2A" stroke-width="2.5" fill="#7B2A38" stroke-linejoin="round"/>
+        <ellipse cx="62" cy="88" rx="5" ry="1.8" fill="#F5B5C5"/>
+        <g class="mallow-arm-left">
+          <ellipse cx="20" cy="78" rx="6" ry="9" fill="url(#mb-celebrating-body)"/>
+        </g>
+        <g class="mallow-arm-right">
+          <ellipse cx="104" cy="78" rx="6" ry="9" fill="url(#mb-celebrating-body)"/>
+        </g>
+        <g class="mallow-star mallow-star-1">
+          <path d="M 17 16 L 19 12 L 21 16 L 25 18 L 21 20 L 19 24 L 17 20 L 13 18 Z" fill="#D4AF37"/>
+        </g>
+        <g class="mallow-star mallow-star-2">
+          <path d="M 105 14 L 108 7 L 111 14 L 118 17 L 111 20 L 108 27 L 105 20 L 98 17 Z" fill="#D4AF37"/>
+        </g>
+        <g class="mallow-star mallow-star-3">
+          <path d="M 13 95 L 15 91 L 17 95 L 21 97 L 17 99 L 15 103 L 13 99 L 9 97 Z" fill="#D4AF37"/>
+        </g>
+      </svg>`,
+
+      sad: `<svg viewBox="0 0 125 125" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;">
+        <defs>
+          <radialGradient id="mb-sad-body" cx="35%" cy="30%" r="80%">
+            <stop offset="0%" stop-color="#FFFFFF"/>
+            <stop offset="60%" stop-color="#F8F4ED"/>
+            <stop offset="100%" stop-color="#E8E0D0"/>
+          </radialGradient>
+          <radialGradient id="mb-sad-top" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#FFFFFF"/>
+            <stop offset="100%" stop-color="#F0EADC"/>
+          </radialGradient>
+          <radialGradient id="mb-sad-cheek" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#FFE0E8"/>
+            <stop offset="100%" stop-color="#F5D5DC" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <ellipse cx="62" cy="108" rx="38" ry="10" fill="#7A5530" opacity="0.18"/>
+        <path d="M 22 45 L 22 95 Q 22 105 32 107 L 92 107 Q 102 105 102 95 L 102 45 Q 102 35 92 33 L 32 33 Q 22 35 22 45 Z" fill="url(#mb-sad-body)"/>
+        <ellipse cx="62" cy="35" rx="40" ry="7" fill="url(#mb-sad-top)"/>
+        <ellipse cx="62" cy="33" rx="35" ry="4" fill="#FFFFFF" opacity="0.6"/>
+        <ellipse cx="62" cy="105" rx="40" ry="6" fill="#E0D5C0" opacity="0.5"/>
+        <ellipse cx="38" cy="75" rx="11" ry="7" fill="url(#mb-sad-cheek)"/>
+        <ellipse cx="86" cy="75" rx="11" ry="7" fill="url(#mb-sad-cheek)"/>
+        <path d="M 40 64 Q 47 58 54 56" stroke="#2A1A2A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M 70 56 Q 77 58 84 64" stroke="#2A1A2A" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <ellipse cx="48" cy="66" rx="5" ry="7" fill="#FFFFFF"/>
+        <ellipse cx="76" cy="66" rx="5" ry="7" fill="#FFFFFF"/>
+        <ellipse cx="49" cy="67" rx="3.8" ry="5" fill="#2A1A2A"/>
+        <ellipse cx="77" cy="67" rx="3.8" ry="5" fill="#2A1A2A"/>
+        <circle cx="50" cy="65" r="1.5" fill="#FFFFFF"/>
+        <circle cx="78" cy="65" r="1.5" fill="#FFFFFF"/>
+        <path d="M 41 75 Q 38 80 41 84 Q 44 80 41 75 Z" fill="#A8D8F5" opacity="0.9"/>
+        <path d="M 83 75 Q 80 80 83 84 Q 86 80 83 75 Z" fill="#A8D8F5" opacity="0.9"/>
+        <path d="M 54 88 Q 62 82 70 88" stroke="#2A1A2A" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <ellipse cx="20" cy="78" rx="6" ry="9" fill="url(#mb-sad-body)"/>
+        <ellipse cx="104" cy="78" rx="6" ry="9" fill="url(#mb-sad-body)"/>
+      </svg>`,
+
+      surprised: `<svg class="mallow-svg-surprised" viewBox="0 0 125 125" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;overflow:visible;">
+        <defs>
+          <radialGradient id="mb-surprised-body" cx="35%" cy="30%" r="80%">
+            <stop offset="0%" stop-color="#FFFFFF"/>
+            <stop offset="60%" stop-color="#F8F4ED"/>
+            <stop offset="100%" stop-color="#E8E0D0"/>
+          </radialGradient>
+          <radialGradient id="mb-surprised-top" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#FFFFFF"/>
+            <stop offset="100%" stop-color="#F0EADC"/>
+          </radialGradient>
+          <radialGradient id="mb-surprised-cheek" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#FFC0CC"/>
+            <stop offset="100%" stop-color="#F5B5C5" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <ellipse cx="62" cy="108" rx="38" ry="10" fill="#7A5530" opacity="0.18"/>
+        <path d="M 22 45 L 22 95 Q 22 105 32 107 L 92 107 Q 102 105 102 95 L 102 45 Q 102 35 92 33 L 32 33 Q 22 35 22 45 Z" fill="url(#mb-surprised-body)"/>
+        <ellipse cx="62" cy="35" rx="40" ry="7" fill="url(#mb-surprised-top)"/>
+        <ellipse cx="62" cy="33" rx="35" ry="4" fill="#FFFFFF" opacity="0.6"/>
+        <ellipse cx="62" cy="105" rx="40" ry="6" fill="#E0D5C0" opacity="0.5"/>
+        <ellipse cx="38" cy="75" rx="11" ry="7" fill="url(#mb-surprised-cheek)"/>
+        <ellipse cx="86" cy="75" rx="11" ry="7" fill="url(#mb-surprised-cheek)"/>
+        <ellipse cx="48" cy="64" rx="7" ry="9" fill="#FFFFFF"/>
+        <ellipse cx="76" cy="64" rx="7" ry="9" fill="#FFFFFF"/>
+        <ellipse cx="49" cy="66" rx="5" ry="6" fill="#2A1A2A"/>
+        <ellipse cx="77" cy="66" rx="5" ry="6" fill="#2A1A2A"/>
+        <circle cx="50.5" cy="64" r="2" fill="#FFFFFF"/>
+        <circle cx="78.5" cy="64" r="2" fill="#FFFFFF"/>
+        <ellipse cx="62" cy="86" rx="4" ry="5" fill="#2A1A2A"/>
+        <ellipse cx="62" cy="86" rx="2.5" ry="3.5" fill="#F5B5C5"/>
+        <ellipse cx="20" cy="78" rx="6" ry="9" fill="url(#mb-surprised-body)"/>
+        <ellipse cx="104" cy="78" rx="6" ry="9" fill="url(#mb-surprised-body)"/>
+        <circle cx="105" cy="20" r="13" fill="#FFFFFF" stroke="#D4AF37" stroke-width="2"/>
+        <rect x="103" y="14" width="4" height="9" rx="1.2" fill="#D4AF37"/>
+        <circle cx="105" cy="26" r="1.6" fill="#D4AF37"/>
+      </svg>`
+    };
+
+    // v0.4 hotfix: 'tr' 제거 — 우상단 X 닫기 버튼을 마시멜로가 덮는 문제 해결 (CSS는 보존, 명시적으로만 사용)
+    const GM_SOLOMON_POSITIONS = ['tl', 'bl', 'br'];
+    let gm_solomon_lastPosition = null;
+
+    function gm_solomon_pickPosition(requested) {
+      if (requested && requested !== 'random' && GM_SOLOMON_POSITIONS.indexOf(requested) >= 0) {
+        return requested;
+      }
+      const candidates = GM_SOLOMON_POSITIONS.filter(p => p !== gm_solomon_lastPosition);
+      return candidates[Math.floor(Math.random() * candidates.length)];
+    }
+
+    function gm_showSolomon(options) {
+      const opts       = options || {};
+      const expression = (opts.expression && GM_SOLOMON_SVG[opts.expression]) ? opts.expression : 'default';
+      const message    = opts.message != null ? opts.message : '';
+      const footer     = opts.footer  != null ? opts.footer  : 'Tap when you understand';
+      const onClose    = typeof opts.onClose === 'function' ? opts.onClose : null;
+
+      // 기존 오버레이 즉시 제거 (애니메이션 없이 — 새 카드와 겹치지 않도록)
+      const prev = document.getElementById('gm-solomon-overlay');
+      if (prev) prev.remove();
+
+      // 위치 결정 (직전 위치 제외)
+      const position = gm_solomon_pickPosition(opts.position);
+      gm_solomon_lastPosition = position;
+
+      const overlay = document.createElement('div');
+      overlay.id = 'gm-solomon-overlay';
+      overlay.innerHTML =
+        '<div class="gm-solomon-dim"></div>' +
+        '<div class="gm-solomon-halo"></div>' +
+        '<div class="gm-solomon-card has-mallow-' + position + '" role="dialog" aria-modal="true" tabindex="0">' +
+          '<div class="gm-solomon-character gm-pos-' + position + '">' + GM_SOLOMON_SVG[expression] + '</div>' +
+          '<div class="gm-solomon-message">' + message + '</div>' +
+          '<hr class="gm-solomon-divider">' +
+          '<div class="gm-solomon-footer">' + footer + '</div>' +
+        '</div>';
+
+      overlay._onCloseCb = onClose;
+      overlay._readyAt = Date.now() + 300;   // v0.4 hotfix: 300ms 보호 시간 (오작동 클릭 방지)
+
+      // 카드 + dim 모두 클릭하면 닫힘. 단 보호 시간 내 클릭은 무시.
+      const tryClose = function () {
+        if (Date.now() < overlay._readyAt) return;
+        gm_hideSolomon();
+      };
+      overlay.querySelector('.gm-solomon-card').addEventListener('click', tryClose);
+      overlay.querySelector('.gm-solomon-dim').addEventListener('click', tryClose);
+
+      document.body.appendChild(overlay);
+    }
+
+    function gm_hideSolomon() {
+      const overlay = document.getElementById('gm-solomon-overlay');
+      if (!overlay) return;
+      if (overlay.classList.contains('closing')) return;
+      overlay.classList.add('closing');
+      const cb = overlay._onCloseCb;
+      setTimeout(() => {
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        if (cb) { try { cb(); } catch (e) {} }
+      }, 360);
+    }
+
+    // gamify-lab Tier 3 — 정답 시 별 폭발 헬퍼
+    function gm_burstStars(buttonEl) {
+      const rect = buttonEl.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+
+      const container = document.createElement('div');
+      container.className = 'gm-burst-container';
+      container.style.left = cx + 'px';
+      container.style.top = cy + 'px';
+
+      const N = 12;
+      const baseDistance = 80;
+      for (let i = 0; i < N; i++) {
+        const angle = (i / N) * Math.PI * 2 - Math.PI / 2;
+        const dist = baseDistance + (Math.random() * 20 - 10);
+        const star = document.createElement('div');
+        star.className = 'gm-burst-star';
+        star.style.setProperty('--dx', (Math.cos(angle) * dist).toFixed(1) + 'px');
+        star.style.setProperty('--dy', (Math.sin(angle) * dist).toFixed(1) + 'px');
+        container.appendChild(star);
+      }
+
+      const popup = document.createElement('div');
+      popup.className = 'gm-score-popup';
+      popup.textContent = (typeof gm_pickPhrase === 'function') ? gm_pickPhrase('popup') : 'Correct!';
+      container.appendChild(popup);
+
+      document.body.appendChild(container);
+      setTimeout(function(){ container.remove(); }, 1100);
+    }
+
+    // === gamify-lab Tier 4 (2026-05-21) — state + 6 helpers ===
+    // 세션 휘발 (페이지 reload 시 0, Firebase / localStorage 미접근)
+    let _gmState = { score: 0, streak: 0, streakShield: 0 };
+    let _gmStreakIconNext = '👏';
+
+    function gm_streakTier(n) {
+      if (n >= 9) return 'tier-4';
+      if (n >= 6) return 'tier-3';
+      if (n >= 3) return 'tier-2';
+      if (n >= 1) return 'tier-1';
+      return '';
+    }
+
+    function gm_renderBadges() {
+      if (typeof _gmState === 'undefined') return '';
+      const tier = gm_streakTier(_gmState.streak);
+      const streakHidden = _gmState.streak <= 0 ? 'style="display:none;"' : '';
+      const shieldHidden = _gmState.streakShield <= 0 ? 'style="display:none;"' : '';
+      return '<div class="gm-badges-row">' +
+        '<div id="gm-streak-display" class="gm-streak-display ' + tier + '" ' + streakHidden + '>🔥 <span id="gm-streak-num">' + _gmState.streak + '</span>' +
+        '<span id="gm-streak-shield" class="gm-streak-shield" ' + shieldHidden + '>🛡️</span></div>' +
+        '<div id="gm-score-display" class="gm-score-display">✓ Correct <span id="gm-score-num">' + _gmState.score + '</span></div>' +
+        '</div>';
+    }
+
+    function gm_updateScoreDisplay() {
+      const numEl = document.getElementById('gm-score-num');
+      if (numEl) numEl.textContent = _gmState.score;
+      const wrap = document.getElementById('gm-score-display');
+      if (wrap) {
+        wrap.classList.remove('bump');
+        void wrap.offsetWidth;
+        wrap.classList.add('bump');
+        setTimeout(function(){ wrap.classList.remove('bump'); }, 600);
+      }
+    }
+
+    function gm_updateStreakDisplay(opts) {
+      opts = opts || {};
+      const el = document.getElementById('gm-streak-display');
+      if (!el) return;
+      const numEl = document.getElementById('gm-streak-num');
+      if (numEl) numEl.textContent = _gmState.streak;
+      const shieldEl = document.getElementById('gm-streak-shield');
+      if (shieldEl) shieldEl.style.display = (_gmState.streakShield > 0) ? '' : 'none';
+      el.classList.remove('tier-1', 'tier-2', 'tier-3', 'tier-4', 'bump', 'shield-broken');
+      if (_gmState.streak <= 0) {
+        el.style.display = 'none';
+        return;
+      }
+      el.style.display = '';
+      el.classList.add(gm_streakTier(_gmState.streak));
+      void el.offsetWidth;
+      if (opts.shieldBroken) {
+        el.classList.add('shield-broken');
+        setTimeout(function(){ el.classList.remove('shield-broken'); }, 600);
+      } else {
+        el.classList.add('bump');
+        setTimeout(function(){ el.classList.remove('bump'); }, 600);
+      }
+    }
+
+    function gm_showShieldProtectedPopup() {
+      const popup = document.createElement('div');
+      popup.className = 'gm-shield-protected-popup';
+      popup.innerHTML = '<span class="shield-icon">🛡️</span>Shield protected!';
+      document.body.appendChild(popup);
+      setTimeout(function(){ popup.remove(); }, 1500);
+    }
+
+    function gm_streakCelebration() {
+      const icon = _gmStreakIconNext;
+      _gmStreakIconNext = (_gmStreakIconNext === '👏') ? '👍' : '👏';
+      const container = document.createElement('div');
+      container.className = 'gm-streak-celebration';
+      for (let i = 0; i < 3; i++) {
+        const item = document.createElement('div');
+        item.className = 'gm-streak-icon';
+        item.style.animationDelay = (i * 0.15) + 's';
+        item.textContent = icon;
+        container.appendChild(item);
+      }
+      document.body.appendChild(container);
+      setTimeout(function(){ container.remove(); }, 1700);
+    }
+
+    // === gamify-lab Tier 5 (2026-05-21) — 칭찬 풀 + 완료 셀러브레이션 ===
+    const GM_PHRASES = {
+      popup: ['Correct!', 'Well done!', 'Great!', 'Nice!', 'Awesome!', 'Perfect!']
+    };
+    const gm_lastPhrase = {};
+    function gm_pickPhrase(key) {
+      const arr = GM_PHRASES[key];
+      if (!arr || arr.length === 0) return '';
+      if (arr.length === 1) return arr[0];
+      let pick;
+      let attempts = 0;
+      do {
+        pick = arr[Math.floor(Math.random() * arr.length)];
+        attempts++;
+      } while (pick === gm_lastPhrase[key] && attempts < 5);
+      gm_lastPhrase[key] = pick;
+      return pick;
+    }
+
+    function gm_showCompleteCelebration() {
+      const overlay = document.createElement('div');
+      overlay.className = 'gm-complete-celebration-overlay';
+      for (let i = 0; i < 50; i++) {
+        const s = document.createElement('div');
+        s.className = 'gm-complete-star';
+        s.style.left = (Math.random() * 100) + '%';
+        s.style.animationDelay = (Math.random() * 2.5) + 's';
+        s.style.animationDuration = (2 + Math.random() * 2) + 's';
+        const size = 10 + Math.random() * 18;
+        s.style.width = size + 'px';
+        s.style.height = size + 'px';
+        overlay.appendChild(s);
+      }
+      document.body.appendChild(overlay);
+      setTimeout(function(){ overlay.remove(); }, 6000);
+    }
+</script>
+<!-- ===== /gamify-lab library ===== -->
 </body>
 </html>
