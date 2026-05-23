@@ -6083,14 +6083,14 @@ function renderSetList(hw, store, p) {
     }
 
     html += `
-      <div class="set-card ${cardClass}" ${!isLocked ? `onclick="startSet(${idx})"` : ''}>
+      <div class="set-card ${cardClass}" ${!isLocked ? `onclick="startSet(${idx}, {withCountdown:true})"` : ''}>
         <div class="set-icon ${iconClass}" style="color:${isLocked?'#94a3b8':isSubmitted?'#fff':'var(--gold)'};">${iconEmoji}</div>
         <div class="set-info">
           ${!isLocked ? statusBadge : ''}
           <div class="set-name">${set.title}</div>
           <div class="set-meta">${statusText}${scoreHtml}</div>
         </div>
-        ${!isLocked && !isSubmitted ? `<button class="btn-sm btn-navy" onclick="event.stopPropagation();startSet(${idx})">${answered>0?'Continue →':'Start →'}</button>` : ''}
+        ${!isLocked && !isSubmitted ? `<button class="btn-sm btn-navy" onclick="event.stopPropagation();startSet(${idx}, {withCountdown:true})">${answered>0?'Continue →':'Start →'}</button>` : ''}
         ${isSubmitted ? `<button class="btn-sm" style="background:#dcfce7;color:#166534;" onclick="event.stopPropagation();startSet(${idx})">View Results</button>` : ''}
       </div>`;
   });
@@ -6099,7 +6099,8 @@ function renderSetList(hw, store, p) {
   document.getElementById('mainContent').innerHTML = html + renderMyAccountCard();
 }
 
-function startSet(idx) {
+function startSet(idx, opts) {
+  opts = opts || {};
   currentSetIdx = idx;
   qIdx = 0;
   // gamify-lab Tier 4: 각 셋 시작 시 gm state 리셋 (세션 휘발, Firebase 무영향)
@@ -6109,21 +6110,30 @@ function startSet(idx) {
     _gmState.streakShield = 0;
     _gmStreakIconNext = '👏';
   }
-  try {
-    renderStudent();
-  } catch(e) {
-    const mc2 = document.getElementById('mainContent');
-    mc2.innerHTML = '';
-    const errWrap = document.createElement('div');
-    errWrap.style.cssText = 'padding:40px;color:red;font-weight:800;';
-    errWrap.textContent = '⚠️ Loading error: ' + e.message;
-    const backBtn = document.createElement('button');
-    backBtn.textContent = '← Back to Set List';
-    backBtn.style.cssText = 'margin-top:16px;padding:10px 20px;background:#162040;color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:800;';
-    backBtn.onclick = () => { currentSetIdx=null; renderStudent(); };
-    errWrap.appendChild(document.createElement('br'));
-    errWrap.appendChild(backBtn);
-    mc2.appendChild(errWrap);
+  // gamify-lab Tier 6 (2026-05-23): 카운트다운 후 렌더 (Start/Continue·셋 카드 클릭 시).
+  // View Results는 opts.withCountdown 없이 호출 → 즉시 렌더.
+  const _runRender = function() {
+    try {
+      renderStudent();
+    } catch(e) {
+      const mc2 = document.getElementById('mainContent');
+      mc2.innerHTML = '';
+      const errWrap = document.createElement('div');
+      errWrap.style.cssText = 'padding:40px;color:red;font-weight:800;';
+      errWrap.textContent = '⚠️ Loading error: ' + e.message;
+      const backBtn = document.createElement('button');
+      backBtn.textContent = '← Back to Set List';
+      backBtn.style.cssText = 'margin-top:16px;padding:10px 20px;background:#162040;color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:800;';
+      backBtn.onclick = () => { currentSetIdx=null; renderStudent(); };
+      errWrap.appendChild(document.createElement('br'));
+      errWrap.appendChild(backBtn);
+      mc2.appendChild(errWrap);
+    }
+  };
+  if (opts.withCountdown === true && typeof startCountdown === 'function') {
+    startCountdown(_runRender);
+  } else {
+    _runRender();
   }
 }
 
@@ -14557,6 +14567,56 @@ function completeTSDay() {
       0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
       100% { transform: translateY(110vh) rotate(360deg); opacity: 0.3; }
     }
+    /* gamify-lab Tier 6 (2026-05-23): 3-2-1-Go! 카운트다운 (셋 시작 시) */
+    .countdown-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9000;
+      background: linear-gradient(135deg, #162040, #0B1220);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      transition: opacity 0.4s ease;
+    }
+    .countdown-number {
+      font-family: 'Noto Serif KR', serif;
+      font-size: 180px;
+      font-weight: 700;
+      color: #D4AF37;
+      line-height: 1;
+      animation: gm-countdown-pop 1s ease;
+    }
+    .countdown-number.countdown-go {
+      font-size: 120px;
+      animation: gm-countdown-go 0.8s ease;
+    }
+    @keyframes gm-countdown-pop {
+      0%   { transform: scale(0.3); opacity: 0; }
+      30%  { transform: scale(1.1); opacity: 1; }
+      70%  { transform: scale(1); opacity: 1; }
+      100% { transform: scale(0.6); opacity: 0; }
+    }
+    @keyframes gm-countdown-go {
+      0%   { transform: scale(0.4); opacity: 0; }
+      30%  { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .countdown-solomon {
+      width: 200px;
+      height: 200px;
+      margin-top: 20px;
+      animation: gm-countdown-jump 0.8s ease infinite;
+    }
+    @keyframes gm-countdown-jump {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-14px); }
+    }
+    @media (max-width: 768px) {
+      .countdown-number { font-size: 130px; }
+      .countdown-number.countdown-go { font-size: 80px; }
+      .countdown-solomon { width: 140px; height: 140px; }
+    }
 </style>
 <script id="gm-lab-script">
     // ====================================================== //
@@ -15024,6 +15084,44 @@ function completeTSDay() {
       }
       document.body.appendChild(overlay);
       setTimeout(function(){ overlay.remove(); }, 6000);
+    }
+
+    // === gamify-lab Tier 6 (2026-05-23) — 3-2-1-Go! 카운트다운 ===
+    // lab의 startCountdown 이식. 끝부분 firstAttempt() → onComplete 콜백으로 교체.
+    // 호출처: startSet(idx, {withCountdown:true}) 에서 사용.
+    function startCountdown(onComplete) {
+      const existing = document.getElementById('gm-countdown-overlay');
+      if (existing) existing.remove();
+
+      const overlay = document.createElement('div');
+      overlay.id = 'gm-countdown-overlay';
+      overlay.className = 'countdown-overlay';
+      document.body.appendChild(overlay);
+
+      const sequence = ['3', '2', '1', 'Go!'];
+      let i = 0;
+
+      function showNext() {
+        if (i >= sequence.length) {
+          overlay.style.opacity = '0';
+          setTimeout(function(){ if (overlay.parentNode) overlay.remove(); }, 400);
+          if (typeof onComplete === 'function') {
+            try { onComplete(); } catch(e) { console.error('startCountdown onComplete error:', e); }
+          }
+          return;
+        }
+        const isGo = sequence[i] === 'Go!';
+        overlay.innerHTML = '<div class="countdown-number' + (isGo ? ' countdown-go' : '') + '">' + sequence[i] + '</div>';
+        if (isGo && typeof GM_SOLOMON_SVG !== 'undefined' && GM_SOLOMON_SVG.celebrating) {
+          const sw = document.createElement('div');
+          sw.className = 'countdown-solomon';
+          sw.innerHTML = GM_SOLOMON_SVG.celebrating;
+          overlay.appendChild(sw);
+        }
+        i++;
+        setTimeout(showNext, isGo ? 800 : 1000);
+      }
+      showNext();
     }
 </script>
 <!-- ===== /gamify-lab library ===== -->
