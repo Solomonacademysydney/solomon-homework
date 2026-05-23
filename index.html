@@ -11445,15 +11445,35 @@ function answerHintRetry(setIdx, roundIdx, qId, selectedAnswer) {
   const correct = origQ?.answer?.toString().toUpperCase();
 
   if (ans === correct) {
+    // gamify-lab Tier 8 (2026-05-23): Phase 2 재시도 정답 → 마시멜로 celebrating + 랜덤 칭찬
     round.hintAttempts[qId] = 99;
     saveStore(store);
     fbSetSubmission(key, store.submissions[key]);
-    renderRemediationExplanation(setIdx, roundIdx);
+    if (typeof gm_showSolomon === 'function' && typeof gm_pickPhrase === 'function') {
+      gm_showSolomon({
+        expression: 'celebrating',
+        message: gm_pickPhrase('phase2Correct'),
+        footer: 'Tap to continue',
+        onClose: function() { renderRemediationExplanation(setIdx, roundIdx); }
+      });
+    } else {
+      renderRemediationExplanation(setIdx, roundIdx);
+    }
   } else {
+    // gamify-lab Tier 8 (2026-05-23): Phase 2 재시도 오답 → 마시멜로 thinking + 랜덤 격려
     round.hintAttempts[qId] = 2;
     saveStore(store);
     fbSetSubmission(key, store.submissions[key]);
-    renderRemediationExplanation(setIdx, roundIdx);
+    if (typeof gm_showSolomon === 'function' && typeof gm_pickPhrase === 'function') {
+      gm_showSolomon({
+        expression: 'thinking',
+        message: gm_pickPhrase('phase2Wrong'),
+        footer: 'Tap to see',
+        onClose: function() { renderRemediationExplanation(setIdx, roundIdx); }
+      });
+    } else {
+      renderRemediationExplanation(setIdx, roundIdx);
+    }
   }
 }
 
@@ -15117,7 +15137,17 @@ function completeTSDay() {
 
     // === gamify-lab Tier 5 (2026-05-21) — 칭찬 풀 + 완료 셀러브레이션 ===
     const GM_PHRASES = {
-      popup: ['Correct!', 'Well done!', 'Great!', 'Nice!', 'Awesome!', 'Perfect!']
+      popup: ['Correct!', 'Well done!', 'Great!', 'Nice!', 'Awesome!', 'Perfect!'],
+      // gamify-lab Tier 8 (2026-05-23): Phase 2 재시도 정답·오답 메시지 풀 (반복 피로 차단)
+      phase2Correct: ['You got it! 🎉', 'Nailed it! 🎉', 'Spot on! ✨', 'You did it!', 'Brilliant!', 'Excellent!'],
+      phase2Wrong: [
+        "Don't worry — here's the explanation",
+        "It's okay! Let's look at the solution",
+        "No worries — here's how it works",
+        "Almost! Let's see the explanation",
+        "Good try! Here's the answer",
+        "Close one — let's review"
+      ]
     };
     const gm_lastPhrase = {};
     function gm_pickPhrase(key) {
