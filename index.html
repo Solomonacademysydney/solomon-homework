@@ -5641,7 +5641,7 @@ function renderStudent() {
   // submitted → show results + review screen
   if (sub.submitted) {
     const autoQs  = qs.filter(q=>q.type!=='written');
-    const correct = autoQs.filter(q=>normAns(sub.answers[q.id])===normAns(q.answer)).length;
+    const correct = autoQs.filter(q=>normAns(sub.answers?.[q.id])===normAns(q.answer)).length;
     const score   = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
     const scoreMsg = score>=90?'🎉 Outstanding!':score>=70?'👍 Well done!':score>=50?'💪 Keep going!':'📚 Let\'s review together!';
     const letters = ['A','B','C','D','E'];
@@ -5665,7 +5665,7 @@ function renderStudent() {
       // 점수 계산(line 2413, 양쪽 정규화)과 결과 화면(여기, 한쪽만)이
       // 다른 결과를 내는 버그가 있었다. 예: "b" vs "B"는 점수에서는
       // 정답이지만 화면에서는 오답으로 빨갛게 표시됐다.
-      const userAnsRaw = sub.answers[q.id];          // 화면 표시용 — 학생 입력 원본 보존
+      const userAnsRaw = sub.answers?.[q.id];          // 화면 표시용 — 학생 입력 원본 보존
       const userAns    = userAnsRaw === undefined ? undefined : normAns(userAnsRaw);
       const correctAns = normAns(q.answer);
       const isCorrect  = userAnsRaw !== undefined && userAns === correctAns;
@@ -5737,7 +5737,7 @@ function renderStudent() {
 
     // ── REMEDIATION FLOW ──────────────────────
     const wrongQs = qs.filter(q => {
-      const ans = sub.answers[q.id];
+      const ans = sub.answers?.[q.id];
       return ans === undefined || normAns(ans) !== normAns(q.answer);
     });
     // [Phase 2A] 모든 호출 Cloud Functions 경유 — 항상 사용 가능
@@ -5805,7 +5805,7 @@ function renderStudent() {
 
   // quiz screen
   const q = qs[qIdx];
-  const userAns = sub.answers[q.id];
+  const userAns = sub.answers?.[q.id];
   const letters = ['A','B','C','D','E'];
 
   let html = `<div class="exam-wrap">
@@ -5833,7 +5833,7 @@ function renderStudent() {
     <div class="q-nav">`;
 
   qs.forEach((qq,i) => {
-    const done = sub.answers[qq.id]!==undefined;
+    const done = sub.answers?.[qq.id]!==undefined;
     const cur  = i===qIdx;
     let cls='qn-btn';
     if(cur) cls+=' cur';
@@ -5886,7 +5886,7 @@ function renderStudent() {
       <button class="btn-nav" onclick="goQ(${qIdx-1})" ${qIdx===0?'disabled':''}>← Previous</button>`;
 
   if (qIdx===total-1) {
-    const allDone = qs.every(qq=>sub.answers[qq.id]!==undefined);
+    const allDone = qs.every(qq=>sub.answers?.[qq.id]!==undefined);
     html += `<button class="btn-submit-all" onclick="doSubmit()" ${allDone?'':'disabled'}>
       Submit ✓
     </button>`;
@@ -6071,7 +6071,7 @@ function renderSetList(hw, store, p) {
       statusText='Complete the previous set to unlock';
     } else if (isSubmitted) {
       const autoQs = set.questions.filter(q=>q.type!=='written');
-      const correct = autoQs.filter(q=>normAns(sub.answers[q.id])===normAns(q.answer)).length;
+      const correct = autoQs.filter(q=>normAns(sub.answers?.[q.id])===normAns(q.answer)).length;
       const pct = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
       const cls = pct>=80?'pill-a':pct>=60?'pill-b':'pill-c';
       iconClass='set-icon-done'; iconEmoji='✅'; cardClass='done';
@@ -6296,9 +6296,9 @@ function doSubmit() {
   if (set) {
     const qs = set.questions;
     const autoQs = qs.filter(q=>q.type!=='written');
-    const correct = autoQs.filter(q=>normAns(sub.answers[q.id])===normAns(q.answer)).length;
+    const correct = autoQs.filter(q=>normAns(sub.answers?.[q.id])===normAns(q.answer)).length;
     const score = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
-    const wrongQs = autoQs.filter(q=>normAns(sub.answers[q.id])!==normAns(q.answer));
+    const wrongQs = autoQs.filter(q=>normAns(sub.answers?.[q.id])!==normAns(q.answer));
     const weakAreas = detectWeakAreas(wrongQs);
     // gamify-lab Tier 5: 정답률 80%+ 시 5.1초 후 완료 셀러브레이션 (모달 닫힌 직후, 흐름 무영향)
     if (score >= 80 && typeof gm_showCompleteCelebration === 'function') {
@@ -6321,7 +6321,7 @@ function doSubmit() {
       wrongQuestions: wrongQs.map((q,i) => ({
         num: i+1,
         text: q.text.substring(0,80),
-        studentAnswer: sub.answers[q.id] || '(no answer)',
+        studentAnswer: sub.answers?.[q.id] || '(no answer)',
         correctAnswer: q.answer,
         type: q.type
       })),
@@ -6616,12 +6616,12 @@ function renderParent() {
       </div>`;
     } else {
       const autoQs = set.questions.filter(q=>q.type!=='written');
-      const correct = autoQs.filter(q=>normAns(sub.answers[q.id])===normAns(q.answer)).length;
+      const correct = autoQs.filter(q=>normAns(sub.answers?.[q.id])===normAns(q.answer)).length;
       const pct = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
       const cls = pct>=80?'pill-a':pct>=60?'pill-b':'pill-c';
       const scoreMsg = pct>=80?'🎉 Excellent!':pct>=60?'👍 Good job!':'💪 Keep it up!';
       const wrongCount = autoQs.length - correct;
-      const wrongQs = autoQs.filter(q=>normAns(sub.answers[q.id])!==normAns(q.answer));
+      const wrongQs = autoQs.filter(q=>normAns(sub.answers?.[q.id])!==normAns(q.answer));
       html += `<div style="background:#fff;border-radius:12px;padding:16px 18px;margin-bottom:14px;border:2px solid ${pct>=80?'var(--green)':pct>=60?'var(--gold)':'var(--red)'};box-shadow:0 2px 8px rgba(0,0,0,.05);">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:${wrongCount>0?'12px':'0'};">
           <div style="font-weight:800;color:var(--navy);font-size:15px;">${set.title}</div>
@@ -6863,7 +6863,7 @@ function renderParentHistory(child, store, currentPeriod) {
         const sub = store.submissions[subKey(child.id, p, idx)];
         if (sub?.submitted) {
           const autoQs = set.questions.filter(q=>q.type!=='written');
-          totalCorrect += autoQs.filter(q=>normAns(sub.answers[q.id])===normAns(q.answer)).length;
+          totalCorrect += autoQs.filter(q=>normAns(sub.answers?.[q.id])===normAns(q.answer)).length;
           totalQs += autoQs.length;
           totalSets++;
         }
@@ -7415,11 +7415,11 @@ function buildReportDataForStudent(studentId, period, store) {
     const sub = store.submissions[key];
     if (!sub?.submitted) return;
     const autoQs = set.questions.filter(q=>q.type!=='written');
-    const correct = autoQs.filter(q=>normAns(sub.answers[q.id])===normAns(q.answer)).length;
+    const correct = autoQs.filter(q=>normAns(sub.answers?.[q.id])===normAns(q.answer)).length;
     const score = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
-    const wrongQs = autoQs.filter(q=>normAns(sub.answers[q.id])!==normAns(q.answer));
+    const wrongQs = autoQs.filter(q=>normAns(sub.answers?.[q.id])!==normAns(q.answer));
     const attempted = autoQs.filter(q=>{
-      const ans = sub.answers[q.id];
+      const ans = sub.answers?.[q.id];
       return ans !== undefined && ans !== null && String(ans).trim() !== '';
     }).length;
     const completionRate = autoQs.length>0 ? Math.round(attempted/autoQs.length*100) : 0;
@@ -7488,8 +7488,8 @@ function buildReportDataForStudent(studentId, period, store) {
         text: q.text,
         type: q.type,
         answer: q.answer,
-        studentAnswer: sub.answers[q.id] || '(no answer)',
-        ok: normAns(sub.answers[q.id]) === normAns(q.answer)
+        studentAnswer: sub.answers?.[q.id] || '(no answer)',
+        ok: normAns(sub.answers?.[q.id]) === normAns(q.answer)
       })),
       weakAreas: sub.reportData?.weakAreas || detectWeakAreas(wrongQs),
       remediation: remRounds,
@@ -8298,7 +8298,7 @@ function viewYearResults(yr) {
           const sub = store.submissions[subKey(s.id, p, setIdx)];
           if (!sub?.submitted) return `<span style="font-size:11px;color:var(--muted);">Set${setIdx+1}:⏳</span>`;
           const autoQs = set.questions.filter(q => q.type !== 'written');
-          const correct = autoQs.filter(q => normAns(sub.answers[q.id]) === normAns(q.answer)).length;
+          const correct = autoQs.filter(q => normAns(sub.answers?.[q.id]) === normAns(q.answer)).length;
           correctTotal += correct;
           totalTotal += autoQs.length;
           const pct = autoQs.length > 0 ? Math.round(correct / autoQs.length * 100) : 0;
