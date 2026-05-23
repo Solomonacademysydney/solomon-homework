@@ -6310,13 +6310,33 @@ function doSubmit() {
     const score = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
     const wrongQs = autoQs.filter(q=>normAns(sub.answers?.[q.id])!==normAns(q.answer));
     const weakAreas = detectWeakAreas(wrongQs);
-    // gamify-lab Tier 5: 정답률 80%+ 시 5.1초 후 완료 셀러브레이션 (모달 닫힌 직후, 흐름 무영향)
-    if (score >= 80 && typeof gm_showCompleteCelebration === 'function') {
+    // gamify-lab Tier 5 + Tier 7 (2026-05-23): 5.1초 후 (제출 모달 닫힌 직후) 마시멜로 등장.
+    // 80%+ → celebrating + onClose에 별 50개 묶음 (시각 충돌 차단). 80% 미만 → cheering 마시멜로만.
+    // 기존 setTimeout 안의 별 50개 직접 호출 → 마시멜로 onClose로 이동 (이중 발동 차단).
+    if (typeof gm_showSolomon === 'function' && !sub.celebrationShown) {
       setTimeout(function(){
         const _m = document.getElementById('submitConfirmModal');
-        if (!_m && typeof gm_showCompleteCelebration === 'function') {
-          gm_showCompleteCelebration();
+        if (_m) return;   // 제출 모달 아직 있으면 안전망 — 다음 visit엔 celebrationShown 없으니 재시도 불가, OK
+        if (score >= 80) {
+          gm_showSolomon({
+            expression: 'celebrating',
+            message: 'Excellent! ' + correct + '/' + autoQs.length + ' correct!',
+            footer: 'Tap to continue',
+            onClose: function() {
+              if (typeof gm_showCompleteCelebration === 'function') gm_showCompleteCelebration();
+            }
+          });
+        } else {
+          gm_showSolomon({
+            expression: 'cheering',
+            message: 'Good effort! ' + correct + '/' + autoQs.length + ' correct. Let\'s review the missed ones!',
+            footer: 'Tap to see results'
+          });
         }
+        // 1회만 트리거 — Firebase 저장 필수 (v4.1)
+        sub.celebrationShown = true;
+        saveStore(store);
+        fbSetSubmission(key, store.submissions[key]);
       }, 5100);
     }
     sub.reportData = {
@@ -11226,6 +11246,18 @@ function renderRemediationExplanation(setIdx, roundIdx) {
   if (!round.hintAttempts) round.hintAttempts = {};
   if (!round.hintAnswers) round.hintAnswers = {};
 
+  // gamify-lab Tier 7-3 (2026-05-23): Phase 2 진입 시 마시멜로 인사 (round 첫 진입 + 첫 문제 위치)
+  if (!round?.greetingShown && hintQIdx === 0 && typeof gm_showSolomon === 'function') {
+    round.greetingShown = true;
+    saveStore(store);
+    fbSetSubmission(key, store.submissions[key]);
+    gm_showSolomon({
+      expression: 'cheering',
+      message: "Let's review what you missed!",
+      footer: 'Tap to start'
+    });
+  }
+
   const qs = round.wrongQuestions;
   const total = qs.length;
 
@@ -11964,6 +11996,24 @@ function renderStudentVisualReport(setIdx) {
 }
 
 function renderFinalReport(setIdx) {
+  // gamify-lab Tier 7-4 (2026-05-23): Phase 2 최종 완료 시 마시멜로 축하 (1회만)
+  try {
+    const store = getStore();
+    const p = studentPeriod || store.currentPeriod;
+    const key = subKey(currentUser.id, p, setIdx);
+    const sub = store.submissions[key];
+    const rem = sub?.remediation;
+    if (rem && !rem.finalGreetingShown && typeof gm_showSolomon === 'function') {
+      rem.finalGreetingShown = true;
+      saveStore(store);
+      fbSetSubmission(key, store.submissions[key]);
+      gm_showSolomon({
+        expression: 'celebrating',
+        message: "Well done! You've mastered them!",
+        footer: 'Tap to see your final report'
+      });
+    }
+  } catch(e) { console.warn('Tier 7-4 greeting error:', e); }
   renderStudentVisualReport(setIdx);
 }
 
@@ -14884,6 +14934,8 @@ function completeTSDay() {
       const message    = opts.message != null ? opts.message : '';
       const footer     = opts.footer  != null ? opts.footer  : 'Tap when you understand';
       const onClose    = typeof opts.onClose === 'function' ? opts.onClose : null;
+      // gamify-lab Tier 7 (2026-05-23): 자동 닫기 옵션 (기본 0 = 미사용). 호출자가 명시할 때만 동작.
+      const autoCloseMs = (typeof opts.autoCloseMs === 'number' && opts.autoCloseMs > 0) ? opts.autoCloseMs : 0;
 
       // 기존 오버레이 즉시 제거 (애니메이션 없이 — 새 카드와 겹치지 않도록)
       const prev = document.getElementById('gm-solomon-overlay');
@@ -14917,12 +14969,26 @@ function completeTSDay() {
       overlay.querySelector('.gm-solomon-dim').addEventListener('click', tryClose);
 
       document.body.appendChild(overlay);
+
+      // Tier 7: 자동 닫기 타이머 (옵션 명시 시만 동작)
+      if (autoCloseMs > 0) {
+        overlay._autoCloseTimer = setTimeout(function(){
+          if (overlay.isConnected && !overlay.classList.contains('closing')) {
+            gm_hideSolomon();
+          }
+        }, autoCloseMs);
+      }
     }
 
     function gm_hideSolomon() {
       const overlay = document.getElementById('gm-solomon-overlay');
       if (!overlay) return;
       if (overlay.classList.contains('closing')) return;
+      // Tier 7: 자동 닫기 타이머 정리 (학생이 직접 닫는 경우 이중 호출 방지)
+      if (overlay._autoCloseTimer) {
+        clearTimeout(overlay._autoCloseTimer);
+        overlay._autoCloseTimer = null;
+      }
       overlay.classList.add('closing');
       const cb = overlay._onCloseCb;
       setTimeout(() => {
