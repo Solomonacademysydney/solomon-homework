@@ -4262,7 +4262,7 @@ function renderTeacher() {
           const sub = store.submissions[subKey(s.id, p, idx)];
           if (!sub?.submitted) return `<span style="color:var(--muted);font-size:12px;">Set${idx+1}:⏳</span>`;
           const autoQs = set.questions.filter(q=>q.type!=='written');
-          const correct = autoQs.filter(q=>normAns(sub.answers[q.id])===normAns(q.answer)).length;
+          const correct = autoQs.filter(q=>normAns(sub.answers?.[q.id])===normAns(q.answer)).length;
           const pct = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
           const cls = pct>=80?'pill-a':pct>=60?'pill-b':'pill-c';
           return `<span style="font-size:12px;">Set${idx+1}:</span><span class="score-pill ${cls}" style="font-size:11px;">${pct}%</span>`;
