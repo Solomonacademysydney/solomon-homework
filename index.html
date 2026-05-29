@@ -2582,9 +2582,117 @@ function saveStore(d) {
   localStorage.setItem(STORE_KEY, json);
 }
 
+// ═══════════════════════════════════════════
+// [Safety 2026-05-29] Silent Fail Retry Queue
+// ═══════════════════════════════════════════
+// 학생/학부모 client에서 fbWrite가 silent skip(fbReady=false) 또는 실패할 때
+// 답이 영구 손실되는 사고 방지(5월 민아 사고 대응).
+// 화이트리스트: 학생 자기 자녀 submissions/ 경로 updates만 queue 진입.
+//   - users/period/homeworkSets/reports/teacherMemos 등 wholesale write 위험 경로는 차단(5/15 패턴 봉쇄)
+// flush: fbReady=true 시점에 fb 현재값과 비교 후 queue가 더 채워졌을 때만 push.
+const FB_RETRY_QUEUE_KEY = 'solomon_fb_retry_queue';
+const FB_RETRY_MAX_AGE_MS = 15 * 60 * 1000;
+const FB_RETRY_CAP = 20;
+
+function _isStudentOwnedSubmissionUpdate(updates) {
+  if (!currentUser) return false;
+  if (currentUser.role !== 'student' && currentUser.role !== 'parent') return false;
+  const keys = Object.keys(updates).filter(k => k !== 'lastModified');
+  if (keys.length === 0) return false;
+  const allowedStudentIds = currentUser.role === 'student'
+    ? [currentUser.id]
+    : (currentUser.childIds || []);
+  if (allowedStudentIds.length === 0) return false;
+  return keys.every(k => {
+    if (!k.startsWith('submissions/')) return false;
+    const subKey = k.substring('submissions/'.length);
+    return allowedStudentIds.some(sid => subKey.startsWith(sid + '_'));
+  });
+}
+
+function _addToRetryQueue(updates) {
+  try {
+    if (!_isStudentOwnedSubmissionUpdate(updates)) return;
+    const raw = localStorage.getItem(FB_RETRY_QUEUE_KEY);
+    const queue = raw ? JSON.parse(raw) : [];
+    queue.push({ updates: updates, queuedAt: Date.now() });
+    while (queue.length > FB_RETRY_CAP) queue.shift();
+    localStorage.setItem(FB_RETRY_QUEUE_KEY, JSON.stringify(queue));
+  } catch (e) { console.warn('[fbRetry] queue save failed:', e); }
+}
+
+function _notifyStudentSaveFailure() {
+  if (!currentUser) return;
+  if (currentUser.role !== 'student' && currentUser.role !== 'parent') return;
+  if (document.getElementById('fbSaveErrorBanner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'fbSaveErrorBanner';
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#dc2626;color:#fff;padding:14px 20px;text-align:center;font-weight:800;font-size:15px;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,.25);font-family:\'Noto Sans KR\',sans-serif;line-height:1.5;';
+  banner.textContent = '⚠️ 저장 실패 — 인터넷 확인 후 새로고침하지 마세요. 자동 재시도 중입니다.';
+  document.body.appendChild(banner);
+}
+
+function _clearStudentSaveFailure() {
+  document.getElementById('fbSaveErrorBanner')?.remove();
+}
+
+async function _flushRetryQueue() {
+  if (!window.fbReady || !window.FB_REF) return;
+  try {
+    const raw = localStorage.getItem(FB_RETRY_QUEUE_KEY);
+    if (!raw) return;
+    let queue;
+    try { queue = JSON.parse(raw); } catch (_) {
+      localStorage.removeItem(FB_RETRY_QUEUE_KEY);
+      return;
+    }
+    if (!Array.isArray(queue) || queue.length === 0) {
+      localStorage.removeItem(FB_RETRY_QUEUE_KEY);
+      return;
+    }
+    const now = Date.now();
+    const remaining = [];
+    for (const item of queue) {
+      if (now - (item.queuedAt || 0) > FB_RETRY_MAX_AGE_MS) continue;
+      if (!_isStudentOwnedSubmissionUpdate(item.updates)) continue;
+      try {
+        const updateKeys = Object.keys(item.updates).filter(k => k !== 'lastModified');
+        for (const path of updateKeys) {
+          const queueVal = item.updates[path];
+          if (queueVal === null) continue;
+          const snap = await window.FB_REF.child(path).once('value');
+          const fbVal = snap.val() || {};
+          const fbAnsCount = Object.keys(fbVal.answers || {}).length;
+          const queueAnsCount = Object.keys(queueVal.answers || {}).length;
+          const fbSubmitted = !!fbVal.submitted;
+          const queueSubmitted = !!queueVal.submitted;
+          // 안전 push: (a) queue가 submitted이고 fb는 미제출, (b) queue 답 개수가 fb보다 많음
+          // skip: fb가 더 채워졌거나 같음 (다른 디바이스 진행 추정)
+          const shouldPush = (queueSubmitted && !fbSubmitted) || (queueAnsCount > fbAnsCount);
+          if (!shouldPush) continue;
+          const ts = Date.now();
+          _lastFbWriteTs = ts;
+          await window.FB_REF.update({ [path]: queueVal, lastModified: ts });
+        }
+      } catch (e) {
+        remaining.push(item);
+      }
+    }
+    if (remaining.length > 0) {
+      localStorage.setItem(FB_RETRY_QUEUE_KEY, JSON.stringify(remaining));
+    } else {
+      localStorage.removeItem(FB_RETRY_QUEUE_KEY);
+      _clearStudentSaveFailure();
+    }
+  } catch (e) { console.warn('[fbRetry] flush failed:', e); }
+}
+
 // ── Firebase Granular Write Helpers ──
 function fbWrite(updates, onSuccess) {
   if (!window.fbReady || !window.FB_REF) {
+    // [Safety 2026-05-29] silent skip 방지 — 학생 자기 submission이면 queue + 알림
+    _addToRetryQueue(updates);
+    _notifyStudentSaveFailure();
     if (onSuccess) onSuccess(false);
     return;
   }
@@ -2592,10 +2700,14 @@ function fbWrite(updates, onSuccess) {
   _lastFbWriteTs = ts;
   updates.lastModified = ts;
   window.FB_REF.update(updates).then(() => {
+    _clearStudentSaveFailure();
     if (onSuccess) onSuccess(true);
   }).catch(err => {
     console.error('[Firebase] 업데이트 실패:', err);
     showBackupToast('⚠️ Firebase 저장 실패 — 로컬에만 저장됨');
+    // [Safety 2026-05-29] queue + 학생 알림
+    _addToRetryQueue(updates);
+    _notifyStudentSaveFailure();
     if (onSuccess) onSuccess(false);
   });
 }
@@ -12123,6 +12235,9 @@ const firebaseConfig = {
     const attachRealtimeListener = () => {
       window.FB_REF.on('value', (snapshot) => {
         if (!window.fbReady) return;
+        // [Safety 2026-05-29] 학생/학부모 client는 cross-client write echo로 자기 진행중 답이
+        // stale snapshot에 덮이는 race 차단. 학생/학부모 화면은 새로고침 시 once('value')로 최신 받음.
+        if (currentUser?.role === 'student' || currentUser?.role === 'parent') return;
         const data = snapshot.val();
         if (!data) return;
         if (!data.homeworkSets) return;
@@ -12166,6 +12281,8 @@ const firebaseConfig = {
 
         window.fbReady = true;
         loadTaxonomy();
+        // [Safety 2026-05-29] 이전 세션의 미저장 학생 답 자동 push (자기 submission 화이트리스트만)
+        _flushRetryQueue();
         finishInit();
       }, (err) => {
         console.warn('[Firebase] initial read failed:', err?.message || err);
