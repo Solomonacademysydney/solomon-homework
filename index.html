@@ -2636,6 +2636,40 @@ function _clearStudentSaveFailure() {
   document.getElementById('fbSaveErrorBanner')?.remove();
 }
 
+function _notifyTeacherWriteFail() {
+  if (!currentUser || currentUser.role !== 'teacher') return;
+  if (document.getElementById('teacherFbErrorBanner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'teacherFbErrorBanner';
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#dc2626;color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;font-weight:800;font-size:14px;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,.25);font-family:\'Noto Sans KR\',sans-serif;';
+  banner.innerHTML = '<span>⚠️ Firebase 저장 실패 — 학생이 숙제를 볼 수 없습니다. 인터넷 연결을 확인하고 아래 버튼을 눌러주세요.</span><button onclick="_retryTeacherHomeworkSync()" style="padding:8px 18px;background:#fff;color:#dc2626;border:none;border-radius:8px;font-family:\'Noto Sans KR\',sans-serif;font-weight:900;font-size:13px;cursor:pointer;white-space:nowrap;">🔄 지금 다시 저장</button>';
+  document.body.appendChild(banner);
+}
+
+function _clearTeacherWriteFail() {
+  document.getElementById('teacherFbErrorBanner')?.remove();
+}
+
+async function _retryTeacherHomeworkSync() {
+  const btn = document.querySelector('#teacherFbErrorBanner button');
+  if (btn) { btn.textContent = '⏳ 저장 중...'; btn.disabled = true; }
+  const store = getStore();
+  const keys = Object.keys(store.homeworkSets || {});
+  let failed = false;
+  for (const key of keys) {
+    await new Promise(resolve => {
+      fbSetHomeworkSet(key, store.homeworkSets[key]);
+      setTimeout(resolve, 80);
+    });
+  }
+  // currentPeriod도 재동기화
+  if (store.currentPeriod) fbSetPeriod(store.currentPeriod);
+  setTimeout(() => {
+    _clearTeacherWriteFail();
+    showBackupToast('✅ Firebase 재동기화 완료');
+  }, 500);
+}
+
 async function _flushRetryQueue() {
   if (!window.fbReady || !window.FB_REF) return;
   try {
@@ -2693,6 +2727,7 @@ function fbWrite(updates, onSuccess) {
     // [Safety 2026-05-29] silent skip 방지 — 학생 자기 submission이면 queue + 알림
     _addToRetryQueue(updates);
     _notifyStudentSaveFailure();
+    _notifyTeacherWriteFail();
     if (onSuccess) onSuccess(false);
     return;
   }
@@ -2701,6 +2736,7 @@ function fbWrite(updates, onSuccess) {
   updates.lastModified = ts;
   window.FB_REF.update(updates).then(() => {
     _clearStudentSaveFailure();
+    _clearTeacherWriteFail();
     if (onSuccess) onSuccess(true);
   }).catch(err => {
     console.error('[Firebase] 업데이트 실패:', err);
@@ -2708,6 +2744,7 @@ function fbWrite(updates, onSuccess) {
     // [Safety 2026-05-29] queue + 학생 알림
     _addToRetryQueue(updates);
     _notifyStudentSaveFailure();
+    _notifyTeacherWriteFail();
     if (onSuccess) onSuccess(false);
   });
 }
@@ -5275,20 +5312,14 @@ function renderStudentManagementSection(store) {
   const dayLabels = ['월','화','수','목','금','토','일'];
 
   function buildStudentRow(s, inactive) {
-    const days = s.days || [];
+    const daysVal = Array.isArray(s.days) ? s.days.join('/') : (s.days || '');
     const isTest = !!s.isTest;
     const yearRange = isTest ? Array.from({length:11},(_,i)=>i+2) : [3,4,5,6,7,8,9];
-    const dayCheckboxes = dayKeys.map((dk,i) =>
-      `<label style="display:inline-flex;align-items:center;gap:2px;font-size:12px;cursor:pointer;">
-        <input type="checkbox" ${days.includes(dk)?'checked':''} onchange="toggleStudentDay('${s.id}','${dk}')" style="cursor:pointer;"${inactive?' disabled':''}>
-        ${dayLabels[i]}
-      </label>`
-    ).join(' ');
     const testBadge = isTest ? ' <span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;">TEST</span>' : '';
     if (inactive) {
       return `<tr style="opacity:.5;background:#f5f5f5;">
         <td>${s.id}${testBadge}</td><td>${escHtml(s.name)}</td><td>Y${s.year}</td><td>${(s.country||'AU')==='AU'?'🇦🇺':'🇰🇷'}</td>
-        <td style="white-space:nowrap;">${dayCheckboxes}</td>
+        <td><span style="font-size:13px;">${escHtml(daysVal)}</span></td>
         <td><button class="btn-sm btn-green" style="padding:3px 8px;" onclick="reactivateStudent('${s.id}')">✅ 복원</button></td>
       </tr>`;
     }
@@ -5310,7 +5341,7 @@ function renderStudentManagementSection(store) {
         <option value="Catholic_Sydney"${s.school_group==='Catholic_Sydney'?'selected':''}>천주교계</option>
         <option value="Indep_Other"${s.school_group==='Indep_Other'?'selected':''}>기타 사립</option>
       </select></td>
-      <td style="white-space:nowrap;">${dayCheckboxes}</td>
+      <td><input id="se_days_${s.id}" value="${escHtml(daysVal)}" placeholder="예: 월/수" style="width:70px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:13px;"></td>
       <td style="white-space:nowrap;">
         <button class="btn-sm btn-green" style="padding:3px 8px;" onclick="saveStudentEdit('${s.id}')">Save</button>
         <button class="btn-sm btn-navy" style="padding:3px 8px;" onclick="resetStudentPassword('${s.id}')">🔑 PW</button>
@@ -5474,6 +5505,8 @@ async function saveStudentEdit(oldId) {
   const seSchoolGroupEl = document.getElementById(`se_school_group_${oldId}`);
   if (seSchoolNameEl)  u.school_name  = seSchoolNameEl.value.trim();
   if (seSchoolGroupEl) u.school_group = seSchoolGroupEl.value;
+  const seDaysEl = document.getElementById(`se_days_${oldId}`);
+  if (seDaysEl) u.days = seDaysEl.value.trim();
   saveStore(store);
   fbSetUsers(store.users);
   if (newId !== oldId && Object.keys(subUpdates).length > 0) fbWrite(subUpdates);
