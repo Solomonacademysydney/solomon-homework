@@ -12268,16 +12268,41 @@ const firebaseConfig = {
     const attachRealtimeListener = () => {
       window.FB_REF.on('value', (snapshot) => {
         if (!window.fbReady) return;
-        // [Safety 2026-05-29] 학생/학부모 client는 cross-client write echo로 자기 진행중 답이
-        // stale snapshot에 덮이는 race 차단. 학생/학부모 화면은 새로고침 시 once('value')로 최신 받음.
-        if (currentUser?.role === 'student' || currentUser?.role === 'parent') return;
         const data = snapshot.val();
         if (!data) return;
         if (!data.homeworkSets) return;
-        // 내가 직접 쓴 데이터의 echo는 무시 (타임스탬프 일치 시)
-        if (data.lastModified && data.lastModified === _lastFbWriteTs) return;
         // [Security 2026-05] Firebase에서 받는 데이터에서 API 키 항상 제거
         if (data.claudeApiKey) delete data.claudeApiKey;
+
+        // [Fix 2026-05-30] 학생/학부모: homeworkSets·currentPeriod만 선택적 업데이트
+        // submissions(진행중 답)은 절대 덮어쓰지 않음. 이후 renderStudent() 자동 호출.
+        if (currentUser?.role === 'student' || currentUser?.role === 'parent') {
+          const localRaw = localStorage.getItem(STORE_KEY);
+          const localData = localRaw ? JSON.parse(localRaw) : null;
+          if (!localData) return;
+          let changed = false;
+          // homeworkSets만 교체 (submissions 보존)
+          if (JSON.stringify(data.homeworkSets) !== JSON.stringify(localData.homeworkSets)) {
+            localData.homeworkSets = data.homeworkSets;
+            changed = true;
+          }
+          // currentPeriod 업데이트
+          if (data.currentPeriod && JSON.stringify(data.currentPeriod) !== JSON.stringify(localData.currentPeriod)) {
+            localData.currentPeriod = data.currentPeriod;
+            changed = true;
+          }
+          if (changed) {
+            localStorage.setItem(STORE_KEY, JSON.stringify(localData));
+            // 학생 화면이 열려 있을 때만 자동 갱신
+            if (typeof renderStudent === 'function' && document.getElementById('mainContent')) {
+              renderStudent();
+            }
+          }
+          return;
+        }
+
+        // 선생님: 내가 직접 쓴 데이터의 echo는 무시 (타임스탬프 일치 시)
+        if (data.lastModified && data.lastModified === _lastFbWriteTs) return;
         const localRaw = localStorage.getItem(STORE_KEY);
         const localData = localRaw ? JSON.parse(localRaw) : null;
         const fbTs = data.lastModified || 0;
