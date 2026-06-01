@@ -2575,11 +2575,69 @@ function visibleHw(hw) {
   return hw;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// [Safety 2026-06-01] localStorage quota 대응
+// ───────────────────────────────────────────────────────────────
+// 원인: solomon_hw_v3 노드 전체(fbData)를 localStorage에 미러링하는데,
+//   aiCache(AI 해설 캐시)·taxonomy_mr·taxonomy_feedback·lt_results 는
+//   로컬 store에서 절대 읽지 않고(getAICache/loadTaxonomy 등 모두 Firebase 직접 조회)
+//   용량만 잡아먹어 ~5MB 한도를 넘김 → setItem이 QuotaExceededError를 던지고
+//   doImportHwJson 등이 조용히 중단(등록 실패)됨.
+// 해법: 로컬 미러에서 위 Firebase 전용 캐시를 제외해 용량을 확보한다.
+//   원본은 Firebase에 그대로 남으므로 데이터 손실 없음.
+const FB_ONLY_LOCAL_DROP = ['aiCache', 'taxonomy_mr', 'taxonomy_feedback', 'lt_results'];
+
+function _isQuotaError(e) {
+  return !!e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22 || e.code === 1014);
+}
+
+// Firebase 전용 캐시를 제외한 얕은 복사본 반환(원본 d는 변형하지 않음)
+function _localMirror(d) {
+  if (!d || typeof d !== 'object') return d;
+  let stripped = null;
+  for (const k of FB_ONLY_LOCAL_DROP) {
+    if (d[k] !== undefined) {
+      if (!stripped) stripped = { ...d };
+      delete stripped[k];
+    }
+  }
+  return stripped || d;
+}
+
+// 모든 STORE_KEY 쓰기의 단일 통로. quota 초과 시 던지지 않고 false 반환 + 교사 경고.
+function _persistLocalStore(d) {
+  const mirror = _localMirror(d);
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(mirror));
+    _clearLocalStorageFull();
+    return true;
+  } catch (e) {
+    if (!_isQuotaError(e)) { console.error('[localStore] 저장 실패(비-quota):', e); throw e; }
+    // Firebase 전용 캐시를 이미 제외했는데도 초과 → 실제 데이터(submissions/reports)가 한도 초과.
+    console.error('[localStore] quota 초과 — 캐시 제외 후에도 한도 초과. 데이터 아카이빙 필요.');
+    _notifyLocalStorageFull();
+    return false;
+  }
+}
+
+function _notifyLocalStorageFull() {
+  if (!currentUser || currentUser.role !== 'teacher') return;
+  if (document.getElementById('localStorageFullBanner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'localStorageFullBanner';
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#b45309;color:#fff;padding:14px 20px;text-align:center;font-weight:800;font-size:14px;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,.25);font-family:\'Noto Sans KR\',sans-serif;line-height:1.5;';
+  banner.textContent = '⚠️ 이 브라우저의 저장 공간이 가득 찼습니다. 등록은 Firebase에 반영되지만, 화면 일부가 갱신되지 않을 수 있습니다. 정호님께 알려 오래된 데이터 정리가 필요합니다.';
+  document.body.appendChild(banner);
+}
+
+function _clearLocalStorageFull() {
+  document.getElementById('localStorageFullBanner')?.remove();
+}
+
 function saveStore(d) {
-  if (window.isPreviewMode) return;
+  if (window.isPreviewMode) return true;
   d.lastModified = Date.now();
-  const json = JSON.stringify(d);
-  localStorage.setItem(STORE_KEY, json);
+  return _persistLocalStore(d);
 }
 
 // ═══════════════════════════════════════════
@@ -3500,7 +3558,7 @@ function getStore() {
   // ─── [v3] 모바일 리포트용 신규 필드 (마이그레이션 안전) ───
   if (!d.monthlyReports) { d.monthlyReports = {}; migrated = true; }
   if (!d.teacherMemos) { d.teacherMemos = {}; migrated = true; }
-  if (migrated) localStorage.setItem(STORE_KEY, JSON.stringify(d));
+  if (migrated) _persistLocalStore(d);
   return d;
 }
 
@@ -7380,7 +7438,7 @@ function forceDownloadFromFirebase() {
     if (!data) { alert('Firebase에 데이터가 없습니다.'); return; }
     // [Security 2026-05] 다운로드 데이터에서 API 키 제거
     if (data.claudeApiKey) delete data.claudeApiKey;
-    localStorage.setItem(STORE_KEY, JSON.stringify(data));
+    _persistLocalStore(data);
     alert('✅ 다운로드 완료!');
     renderTeacher();
   });
@@ -12292,7 +12350,7 @@ const firebaseConfig = {
             changed = true;
           }
           if (changed) {
-            localStorage.setItem(STORE_KEY, JSON.stringify(localData));
+            _persistLocalStore(localData);
             // 학생 화면이 열려 있을 때만 자동 갱신
             if (typeof renderStudent === 'function' && document.getElementById('mainContent')) {
               renderStudent();
@@ -12308,7 +12366,7 @@ const firebaseConfig = {
         const fbTs = data.lastModified || 0;
         const localTs = localData?.lastModified || 0;
         if (fbTs > localTs) {
-          localStorage.setItem(STORE_KEY, JSON.stringify(data));
+          _persistLocalStore(data);
         }
       });
     };
@@ -12330,7 +12388,8 @@ const firebaseConfig = {
           // localTs > fbTs 분기의 update(Object.assign(...))가 stale localData를 통째 푸시해서
           // solomon_backups + 최신 submissions를 동시 소멸시킨 것으로 추정됨.
           // Firebase가 source of truth. 부팅은 download-only로 강제.
-          localStorage.setItem(STORE_KEY, JSON.stringify(fbData));
+          // [2026-06-01] aiCache 등 Firebase 전용 캐시는 로컬 미러에서 제외(quota 대응).
+          _persistLocalStore(fbData);
         } else if (localData) {
           // [Safety 2026-05-15] 자동 wholesale upload 금지. 콘솔 경고만.
           console.warn('[Safety] Firebase가 비어있음. 자동 업로드 비활성 — 수동 확인 필요.');
@@ -13525,6 +13584,7 @@ async function doImportHwJson(yr) {
     });
   }
 
+  try {
   const store = getStore();
   const p     = store.currentPeriod;
   const key   = hwKey(yr, selectedCountry, p);
@@ -13617,8 +13677,12 @@ async function doImportHwJson(yr) {
     addedIdxs.push(setIdx);
   }
 
-  saveStore(store);
+  // [2026-06-01] 등록 확정: Firebase(학생이 보는 원본)에 먼저 써서
+  //   로컬 localStorage 저장 결과와 무관하게 등록이 보장되게 한다.
+  //   (이전엔 saveStore가 quota로 던지면 그 다음 fbSetHomeworkSet이 실행 안 돼
+  //    로컬·Firebase 둘 다 등록 실패하고 조용히 멈췄음.)
   fbSetHomeworkSet(key, store.homeworkSets[key]);
+  const localOk = saveStore(store);   // quota 초과 시 false 반환(경고 배너) — 더 이상 throw 안 함
   renderTeacher();
 
   // [2026-05 lazy caching 전환] 다중 세트 자동 사전생성 제거
@@ -13626,9 +13690,11 @@ async function doImportHwJson(yr) {
   const totalQ = Object.values(setGroups).reduce((s, g) => s + g.questions.length, 0);
   const msg = document.createElement('div');
   msg.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#16a34a;color:#fff;padding:14px 28px;border-radius:12px;font-weight:800;font-size:15px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);';
-  msg.textContent = `✅ ${addedSets.length}개 세트 등록 완료! (${totalQ}문제)`;
+  msg.textContent = localOk
+    ? `✅ ${addedSets.length}개 세트 등록 완료! (${totalQ}문제)`
+    : `✅ ${addedSets.length}개 세트 Firebase 등록 완료 (${totalQ}문제) — ⚠️ 이 브라우저 저장 공간 부족`;
   document.body.appendChild(msg);
-  setTimeout(() => msg.remove(), 3000);
+  setTimeout(() => msg.remove(), 4000);
 
   // Phase C: show review modal for first set with tagged questions
   if (window.TAXONOMY_MR && addedIdxs.length > 0) {
@@ -13637,6 +13703,10 @@ async function doImportHwJson(yr) {
     if (firstSet?.questions?.some(q => q.taxonomy_id)) {
       showTaggingReviewModal(firstSet.questions, key, firstIdx, yr);
     }
+  }
+  } catch (e) {
+    console.error('[doImportHwJson] 등록 실패:', e);
+    alert('❌ 등록 중 오류가 발생했습니다:\n' + (e?.message || e) + '\n\n(콘솔 F12에서 자세한 내용을 확인할 수 있습니다.)');
   }
 }
 
