@@ -6061,11 +6061,12 @@ function renderStudent() {
       <div class="qc-text">${renderMath(q.text)}</div>`;
 
   if (q.type==='mc' && q.options) {
+    const locked = userAns !== undefined;   // [즉시 고정] 이 문제 이미 답함 → 보기 잠금 (MC 전용)
     html += `<div class="options">`;
     q.options.forEach((opt,i) => {
       const letter = letters[i];
       const sel = userAns===letter ? 'sel' : '';
-      html += `<button class="opt-btn ${sel}" onclick="answerMC('${q.id}','${letter}', this)">
+      html += `<button class="opt-btn ${sel}" ${locked?'disabled':''} onclick="answerMC('${q.id}','${letter}', this)">
         <span class="opt-circle">${letter}</span>${renderMath(opt)}
       </button>`;
     });
@@ -6391,6 +6392,11 @@ function saveAnswer(qid, val) {
 }
 
 function answerMC(qid, letter, btnEl) {
+  // [즉시 고정] 이미 답한 MC 문제는 변경 불가 — 정답 brute-force(매번 만점) + 점수·별·박수 부풀리기 동시 차단.
+  // saveAnswer(아래) 와 동일한 키 도출로 store에서 직접 확인. 판정 기준은 렌더(userAns)와 동일하게 !== undefined.
+  const _store = getStore();
+  const _key = subKey(currentUser.id, studentPeriod || _store.currentPeriod, currentSetIdx ?? 0);
+  if (_store.submissions[_key]?.answers?.[qid] !== undefined) return;
   saveAnswer(qid, letter);
   // gamify-lab Tier 3: 정답 시 별 폭발 + Correct! 팝업 (btnEl·gm_burstStars 모두 있을 때만, try/catch 보호)
   if (btnEl && typeof gm_burstStars === 'function') {
