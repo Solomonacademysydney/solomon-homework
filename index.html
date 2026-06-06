@@ -5782,6 +5782,7 @@ function renderStudent() {
   const store = getStore();
   const p     = studentPeriod || store.currentPeriod;
   _cachedStudentPeriod = p;
+  _migrateTSAnswers(store, p);
   const hw    = visibleHw(store.homeworkSets[hwKey(currentUser.year, currentUser.country||'AU', p)]);
 
   const hasSets = hw && hw.sets && hw.sets.length > 0;
@@ -12956,7 +12957,9 @@ function _mergeTsJsonFiles(results) {
       num,
       text: q.question_text || q.text || '',
       options: q.options || q.choices || null,
-      answer: (a && (a.answer_text || a.correct_text || a.correct_choice || a.answer))
+      answer: (a && ((q.options || q.choices) && a.correct_choice
+                       ? a.correct_choice
+                       : (a.correct_choice || a.answer_text || a.correct_text || a.answer)))
               || q.corrected_answer
               || q.answer
               || null,
@@ -13893,6 +13896,61 @@ function _renderTSExplanation(rawText) {
   return html;
 }
 
+// 정답 비교 버그(ansData.selected === q.answer)로 잘못 채점된 TS 답변을 자동 수정
+function _migrateTSAnswers(store, p) {
+  try {
+    const hw = store.homeworkSets[hwKey(currentUser.year, currentUser.country || 'AU', p)];
+    const ts = hw?.ts;
+    if (!ts || !ts.questions?.length) return;
+    const tsKey = tsSubKey(currentUser.id, p);
+    const tsProgress = store.submissions[tsKey];
+    if (!tsProgress) return;
+    let changed = false;
+    for (const dayKey of Object.keys(tsProgress)) {
+      const dayData = tsProgress[dayKey];
+      if (!dayData?.answers) continue;
+      for (const qKey of Object.keys(dayData.answers)) {
+        const ansData = dayData.answers[qKey];
+        if (ansData.correct !== false) continue;
+        const qIdx = parseInt(qKey.replace('q', ''));
+        const q = ts.questions[qIdx];
+        if (!q) continue;
+        const correctLetter = _tsAnsLetter(q);
+        if (!correctLetter) continue;
+        const wrongList = ansData.wrongAttempts || [];
+        if (wrongList.includes(correctLetter)) {
+          ansData.correct = true;
+          changed = true;
+        }
+      }
+    }
+    if (changed) {
+      saveStore(store);
+      fbSetTSProgress(tsKey, store.submissions[tsKey]);
+    }
+  } catch (e) {
+    console.warn('[TS migrate] failed:', e);
+  }
+}
+
+// q.answer가 글자("C") 또는 텍스트("12") 양쪽 형식으로 저장될 수 있어 항상 글자로 정규화
+function _tsAnsLetter(q) {
+  const letters = ['A', 'B', 'C', 'D', 'E'];
+  const raw = (q.answer === null || q.answer === undefined) ? '' : String(q.answer).trim();
+  if (!raw) return '';
+  if (letters.includes(raw.toUpperCase())) return raw.toUpperCase();
+  let optList = [];
+  if (q.options && typeof q.options === 'object' && !Array.isArray(q.options)) {
+    optList = letters.map(l => ({ letter: l, text: q.options[l] })).filter(o => o.text !== undefined && o.text !== null && o.text !== '');
+  } else if (Array.isArray(q.options)) {
+    optList = q.options.map((t, i) => ({ letter: letters[i], text: t }));
+  } else if (Array.isArray(q.choices)) {
+    optList = q.choices.map((t, i) => ({ letter: letters[i], text: t }));
+  }
+  const hit = optList.find(o => normAns(String(o.text)) === normAns(raw) || String(o.text).trim() === raw);
+  return hit ? hit.letter : raw.toUpperCase();
+}
+
 function renderTSDay() {
   const store = getStore();
   const p = studentPeriod || _cachedStudentPeriod || store.currentPeriod;
@@ -13936,6 +13994,9 @@ function renderTSDay() {
   } else if (Array.isArray(q.options)) {
     opts = q.options.map((t, i) => ({ letter: letters[i], text: t }));
   }
+  const correctLetter = _tsAnsLetter(q);
+  const correctOpt = opts.find(o => o.letter === correctLetter);
+  const correctText = correctOpt ? correctOpt.text : q.answer;
 
   let html = `<div class="ts-day-view" style="min-height:100vh;background:linear-gradient(180deg,#0f0a2e 0%,#1e1b4b 40%,#312e81 100%);padding:16px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
@@ -13962,7 +14023,7 @@ function renderTSDay() {
     const wrongList = ansData?.wrongAttempts || [];
     const isPreviousWrong = !isRevealed && wrongList.includes(opt.letter);
     if (isRevealed) {
-      if (opt.letter === normAns(q.answer)) { bg='rgba(34,197,94,.2)'; border='2px solid #4ade80'; textColor='#4ade80'; }
+      if (opt.letter === correctLetter) { bg='rgba(34,197,94,.2)'; border='2px solid #4ade80'; textColor='#4ade80'; }
       else if (wrongList.includes(opt.letter) || (opt.letter === userAns && !isCorrect)) { bg='rgba(239,68,68,.2)'; border='2px solid #f87171'; textColor='#f87171'; }
       else { bg='rgba(255,255,255,.05)'; border='1px solid rgba(255,255,255,.1)'; textColor='#94a3b8'; }
     } else if (opt.letter === userAns) {
@@ -13999,7 +14060,7 @@ function renderTSDay() {
   if (isRevealed) {
     html += `
       <div style="background:${isCorrect?'rgba(34,197,94,.15)':'rgba(239,68,68,.15)'};border:1px solid ${isCorrect?'rgba(34,197,94,.3)':'rgba(239,68,68,.3)'};border-radius:14px;padding:16px;margin-bottom:12px;">
-        <div style="font-size:16px;font-weight:900;color:#e0e7ff;">${isCorrect?'✅ Correct!':'❌ Incorrect — Answer: ' + q.answer}</div>
+        <div style="font-size:16px;font-weight:900;color:#e0e7ff;">${isCorrect?'✅ Correct!':'❌ Incorrect — Answer: ' + (correctText != null ? correctText : q.answer)}</div>
       </div>`;
     if (q.explanation) {
       html += _renderTSExplanation(q.explanation);
@@ -14058,7 +14119,7 @@ function submitTSAnswer(qKey) {
   if (!ansData || ansData.correct !== undefined) return;
   const qIdx2 = parseInt(qKey.replace('q', ''));
   const q = ts.questions[qIdx2];
-  const isCorrect = ansData.selected === q.answer;
+  const isCorrect = normAns(ansData.selected) === _tsAnsLetter(q);
   ansData.attempts = (ansData.attempts || 0) + 1;
 
   if (isCorrect) {
