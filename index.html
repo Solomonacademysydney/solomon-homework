@@ -2591,17 +2591,77 @@ function _isQuotaError(e) {
   return !!e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22 || e.code === 1014);
 }
 
-// Firebase 전용 캐시를 제외한 얕은 복사본 반환(원본 d는 변형하지 않음)
+// [2026-06-12] 로컬 저장공간(localStorage ~5MB) 보호: 최근 주차만 로컬 보관.
+//   homeworkSets/submissions가 매주 누적되며 한도 초과 → 부팅 시 로컬 쓰기 실패 →
+//   화면이 옛 캐시로 멈춤(6/1 quota 사고 재발, 6/12 이번주 숙제 "사라짐" 증상의 원인).
+//   ★ 트리밍은 localStorage 쓰기에만 적용. Firebase에는 전혀 영향 없음(모든 원본 보존).
+//   과거 주차는 조회 시 _ensurePeriodLoaded()가 Firebase에서 on-demand 로드(메모리 오버레이).
+const _LOCAL_KEEP_BACK = 5;   // 최근 5주 (현재 포함 ~8주 즉시 접근, 슬라이딩 윈도우라 크기 안정)
+const _LOCAL_KEEP_FWD  = 2;   // 향후 2주(미리 준비)
+function _periodCanon(p) { return `${p.year}_m${String(p.month).padStart(2,'0')}_w${p.week}`; }
+function _periodOfKey(k) { const m = String(k).match(/_(\d{4})_m(\d{2})_w(\d+)/); return m ? `${m[1]}_m${m[2]}_w${m[3]}` : null; }
+function _recentPeriodKeySet() {
+  const set = new Set();
+  let p = getTodayPeriod();
+  set.add(_periodCanon(p));
+  let f = p; for (let i = 0; i < _LOCAL_KEEP_FWD; i++) { f = nextPeriod(f); set.add(_periodCanon(f)); }
+  let b = p; for (let i = 0; i < _LOCAL_KEEP_BACK; i++) { b = prevPeriod(b); set.add(_periodCanon(b)); }
+  return set;
+}
+// 키가 최근 보관 윈도우에 드는가? (period 정보 없는 키는 항상 보존)
+function _keyInKeepWindow(k, keep) { const c = _periodOfKey(k); return c === null ? true : keep.has(c); }
+
+// Firebase 전용 캐시 제외 + 과거 주차 트리밍한 로컬 저장본 반환(원본 d는 변형하지 않음)
 function _localMirror(d) {
   if (!d || typeof d !== 'object') return d;
-  let stripped = null;
-  for (const k of FB_ONLY_LOCAL_DROP) {
-    if (d[k] !== undefined) {
-      if (!stripped) stripped = { ...d };
-      delete stripped[k];
+  const m = { ...d };
+  for (const k of FB_ONLY_LOCAL_DROP) delete m[k];
+  try {
+    const keep = _recentPeriodKeySet();
+    if (m.homeworkSets) {
+      const o = {}; for (const k of Object.keys(m.homeworkSets)) if (_keyInKeepWindow(k, keep)) o[k] = m.homeworkSets[k]; m.homeworkSets = o;
     }
+    if (m.submissions) {
+      const o = {}; for (const k of Object.keys(m.submissions)) if (_keyInKeepWindow(k, keep)) o[k] = m.submissions[k]; m.submissions = o;
+    }
+  } catch (e) { console.warn('[localMirror] 주차 트리밍 건너뜀(전체 보관):', e); }
+  return m;
+}
+
+// 보관 윈도우 밖(과거) 주차 데이터를 메모리 오버레이에 유지 — 로컬엔 안 쓰지만 현재 세션 조회/편집에 반영.
+function _captureOldPeriodOverlay(d) {
+  try {
+    if (!d) return;
+    const keep = _recentPeriodKeySet();
+    const exHw = {}, exSub = {};
+    for (const k of Object.keys(d.homeworkSets || {})) if (!_keyInKeepWindow(k, keep)) exHw[k] = d.homeworkSets[k];
+    for (const k of Object.keys(d.submissions || {})) if (!_keyInKeepWindow(k, keep)) exSub[k] = d.submissions[k];
+    if (Object.keys(exHw).length || Object.keys(exSub).length) {
+      window._extraPeriodData = { homeworkSets: exHw, submissions: exSub };
+    }
+  } catch (e) {}
+}
+
+// 과거 주차를 Firebase에서 on-demand 로드해 메모리 오버레이에 적재 (로컬 저장 안 함). 최근 주차면 오버레이 해제.
+async function _ensurePeriodLoaded(p) {
+  try {
+    if (_recentPeriodKeySet().has(_periodCanon(p))) { window._extraPeriodData = null; return; }
+    if (!window.FB_REF || !window.fbReady) { window._extraPeriodData = null; return; }
+    const canon = _periodCanon(p);
+    const re = new RegExp('_' + canon.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(_|$)');
+    const [hwSnap, subSnap] = await Promise.all([
+      window.FB_REF.child('homeworkSets').once('value'),
+      window.FB_REF.child('submissions').once('value')
+    ]);
+    const hwAll = hwSnap.val() || {}, subAll = subSnap.val() || {};
+    const hw = {}, sub = {};
+    for (const k of Object.keys(hwAll)) if (re.test(k)) hw[k] = hwAll[k];
+    for (const k of Object.keys(subAll)) if (re.test(k)) sub[k] = subAll[k];
+    window._extraPeriodData = { homeworkSets: hw, submissions: sub };
+  } catch (e) {
+    console.warn('[ensurePeriodLoaded] 과거 주차 로드 실패:', e);
+    window._extraPeriodData = null;
   }
-  return stripped || d;
 }
 
 // 모든 STORE_KEY 쓰기의 단일 통로. quota 초과 시 던지지 않고 false 반환 + 교사 경고.
@@ -2637,6 +2697,7 @@ function _clearLocalStorageFull() {
 function saveStore(d) {
   if (window.isPreviewMode) return true;
   d.lastModified = Date.now();
+  _captureOldPeriodOverlay(d);  // 과거 주차 편집분을 메모리 오버레이에 보존(로컬엔 트리밍됨)
   return _persistLocalStore(d);
 }
 
@@ -3193,7 +3254,10 @@ function navigateStudentPeriod(dir) {
   currentTSDay = null;
   studentView = null;
   qIdx = 0;
-  renderStudent();
+  window._extraPeriodData = null;
+  if (_recentPeriodKeySet().has(_periodCanon(studentPeriod))) { renderStudent(); return; }
+  // 과거 주차: Firebase에서 불러온 뒤 렌더
+  _ensurePeriodLoaded(studentPeriod).then(() => renderStudent());
 }
 function subKey(sid, p, setIdx=0) { return `${sid}_${p.year}_m${String(p.month).padStart(2,'0')}_w${p.week}_s${setIdx}`; }
 function tsSubKey(sid, p) { return `ts_${sid}_${p.year}_m${String(p.month).padStart(2,'0')}_w${p.week}`; }
@@ -3559,6 +3623,12 @@ function getStore() {
   if (!d.monthlyReports) { d.monthlyReports = {}; migrated = true; }
   if (!d.teacherMemos) { d.teacherMemos = {}; migrated = true; }
   if (migrated) _persistLocalStore(d);
+  // [2026-06-12] 과거 주차 조회용 메모리 오버레이 병합 (로컬엔 저장되지 않음, Firebase에서 로드된 임시 데이터)
+  if (window._extraPeriodData) {
+    const ex = window._extraPeriodData;
+    if (ex.homeworkSets) d.homeworkSets = Object.assign({}, d.homeworkSets, ex.homeworkSets);
+    if (ex.submissions)  d.submissions  = Object.assign({}, d.submissions,  ex.submissions);
+  }
   return d;
 }
 
@@ -4565,6 +4635,7 @@ function renderTeacher() {
 }
 
 function setPeriod() {
+  window._extraPeriodData = null;        // 이전 과거-주차 오버레이 해제 후 깨끗한 store 읽기
   const store = getStore();
   store.currentPeriod = {
     year:  parseInt(document.getElementById('selYear').value),
@@ -4574,7 +4645,11 @@ function setPeriod() {
   saveStore(store);
   fbSetPeriod(store.currentPeriod);
   selectedYear = null;
-  renderTeacher();
+  const p = store.currentPeriod;
+  if (_recentPeriodKeySet().has(_periodCanon(p))) { renderTeacher(); return; }
+  // 과거 주차: Firebase에서 불러온 뒤 렌더
+  showBackupToast('⏳ 과거 주차 불러오는 중...');
+  _ensurePeriodLoaded(p).then(() => renderTeacher());
 }
 
 function selectYear(yr) {
@@ -12346,9 +12421,10 @@ const firebaseConfig = {
           const localData = localRaw ? JSON.parse(localRaw) : null;
           if (!localData) return;
           let changed = false;
-          // homeworkSets만 교체 (submissions 보존)
-          if (JSON.stringify(data.homeworkSets) !== JSON.stringify(localData.homeworkSets)) {
-            localData.homeworkSets = data.homeworkSets;
+          // homeworkSets만 교체 (submissions 보존). [2026-06-12] 트리밍본끼리 비교(과거 주차 차이로 인한 매 이벤트 재렌더 방지)
+          const _trimmedHw = (_localMirror({ homeworkSets: data.homeworkSets }).homeworkSets) || {};
+          if (JSON.stringify(_trimmedHw) !== JSON.stringify(localData.homeworkSets)) {
+            localData.homeworkSets = _trimmedHw;
             changed = true;
           }
           // currentPeriod 업데이트
@@ -12612,10 +12688,30 @@ async function cleanupLegacyBackupKeys() {
 }
 
 // ── 1. Firebase 자동 백업 (선생님 로그인 시) ──
+// [2026-06-12] 백업은 트리밍된 로컬이 아니라 Firebase 전체(미트리밍) 트리를 담아야 함.
+//   getStore()는 최근 주차만 보관하므로 백업/다운로드에 쓰면 과거 데이터가 누락됨
+//   → 5/15 복구용 자동 백업 신뢰성 훼손 + 이상 감지 가드 오작동. 따라서 Firebase 원본을 직접 스냅샷.
+//   재생성 가능한 캐시(aiCache 등)만 제외해 기존 백업 내용과 동일하게 유지.
+async function _fullStoreForBackup() {
+  if (window.FB_REF && window.fbReady) {
+    try {
+      const snap = await window.FB_REF.once('value');
+      const fb = snap.val();
+      if (fb && typeof fb === 'object') {
+        const full = { ...fb };
+        for (const k of FB_ONLY_LOCAL_DROP) delete full[k];
+        if (full.claudeApiKey) delete full.claudeApiKey;
+        return full;
+      }
+    } catch (e) { console.warn('[backup] Firebase 전체 스냅샷 실패:', e); }
+  }
+  return null; // Firebase 불가 — 트리밍된 로컬로 백업하면 백업 무결성/이상감지 가드를 해치므로 보류
+}
+
 async function autoBackupToFirebase() {
   if (!window.FB_REF) return;
   try {
-    const store = getStore();
+    const store = await _fullStoreForBackup();
     if (!store) return;
     const now = new Date();
     const pad = (n) => String(n).padStart(2, '0');
@@ -12705,7 +12801,11 @@ async function _detectBackupAnomaly(currentHwSets, currentSubmissions) {
 
 // ── 2. 수동 다운로드 백업 ──
 async function manualBackupDownload() {
-  const store = getStore();
+  let store = await _fullStoreForBackup();  // [2026-06-12] 트리밍된 로컬이 아닌 Firebase 전체 트리로 백업
+  if (!store) {
+    if (!confirm('⚠️ Firebase에 연결되지 않아 전체 백업을 만들 수 없습니다.\n이 브라우저의 로컬 데이터(최근 주차만 포함, 불완전)로 부분 백업을 받으시겠어요?')) return;
+    store = getStore();
+  }
   if (!store) { alert('데이터가 없습니다.'); return; }
   // [Security 2026-05] 다운로드 데이터에서 API 키 제거
   const safeStore = JSON.parse(JSON.stringify(store));
