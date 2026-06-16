@@ -8595,6 +8595,10 @@ async function generateParentReportInline(studentId) {
     if (!s2.reports[pKey]) s2.reports[pKey] = {};
     if (!s2.reports[pKey][studentId]) s2.reports[pKey][studentId] = {};
     s2.reports[pKey][studentId].maths = saveData;
+    if (!window._reportOverlay) window._reportOverlay = {};
+    if (!window._reportOverlay[pKey]) window._reportOverlay[pKey] = {};
+    if (!window._reportOverlay[pKey][studentId]) window._reportOverlay[pKey][studentId] = {};
+    window._reportOverlay[pKey][studentId].maths = saveData;
     saveStore(s2);
     fbSetReport(pKey, studentId, 'maths', saveData);
     showBackupToast('✅ 리포트가 생성되었습니다!');
