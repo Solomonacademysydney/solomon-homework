@@ -6982,7 +6982,7 @@ function renderParent() {
           } else if (!round.practiceSubmitted && _rpq.length > 0) {
             html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:#fef3c7;border-radius:8px;margin-bottom:6px;">
               <span style="font-size:12px;font-weight:800;color:var(--navy);min-width:90px;">↳ Practice ${ri+1}</span>
-              <span style="font-size:12px;color:#92400e;font-weight:700;">🔄 In progress (${pt} questions)</span>
+              <span style="font-size:12px;color:#92400e;font-weight:700;">🔄 In progress (${_rpq.length} questions)</span>
             </div>`;
           } else if (round.explanationRead && _rpq.length === 0) {
             html += `<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:#fef3c7;border-radius:8px;margin-bottom:6px;">
