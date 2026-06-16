@@ -2624,6 +2624,10 @@ function _localMirror(d) {
     if (m.submissions) {
       const o = {}; for (const k of Object.keys(m.submissions)) if (_keyInKeepWindow(k, keep)) o[k] = m.submissions[k]; m.submissions = o;
     }
+    if (m.reports) {
+      // reports 키는 period canon 형식(YYYY_mMM_wW)이므로 keep 셋에서 직접 확인
+      const o = {}; for (const k of Object.keys(m.reports)) if (keep.has(k)) o[k] = m.reports[k]; m.reports = o;
+    }
   } catch (e) { console.warn('[localMirror] 주차 트리밍 건너뜀(전체 보관):', e); }
   return m;
 }
@@ -3628,6 +3632,16 @@ function getStore() {
     const ex = window._extraPeriodData;
     if (ex.homeworkSets) d.homeworkSets = Object.assign({}, d.homeworkSets, ex.homeworkSets);
     if (ex.submissions)  d.submissions  = Object.assign({}, d.submissions,  ex.submissions);
+  }
+  // localStorage 저장 실패(quota) 시에도 새로 생성된 리포트가 화면에 보이도록 메모리 오버레이 병합
+  if (window._reportOverlay) {
+    if (!d.reports) d.reports = {};
+    for (const [pk, students] of Object.entries(window._reportOverlay)) {
+      if (!d.reports[pk]) d.reports[pk] = {};
+      for (const [sid, subjs] of Object.entries(students)) {
+        d.reports[pk][sid] = Object.assign({}, d.reports[pk][sid], subjs);
+      }
+    }
   }
   return d;
 }
@@ -8154,6 +8168,11 @@ async function viewAsParent(studentId) {
       if (!s2.reports[pKey]) s2.reports[pKey] = {};
       if (!s2.reports[pKey][studentId]) s2.reports[pKey][studentId] = {};
       s2.reports[pKey][studentId].maths = saveData;
+      // quota 실패로 localStorage 저장이 안 돼도 renderParent가 새 리포트를 볼 수 있도록 메모리 오버레이 설정
+      if (!window._reportOverlay) window._reportOverlay = {};
+      if (!window._reportOverlay[pKey]) window._reportOverlay[pKey] = {};
+      if (!window._reportOverlay[pKey][studentId]) window._reportOverlay[pKey][studentId] = {};
+      window._reportOverlay[pKey][studentId].maths = saveData;
       saveStore(s2);
       fbSetReport(pKey, studentId, 'maths', saveData);
       showBackupToast('✅ 리포트 생성 완료!');
