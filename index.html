@@ -2705,6 +2705,16 @@ function saveStore(d) {
   return _persistLocalStore(d);
 }
 
+// [Fix 2026-06-23] 주간 리포트 저장 시 메모리 오버레이(_reportOverlay)도 동기화.
+// 안 하면 리포트 생성 때 박힌 낡은 오버레이가 getStore()에서 갓 저장한 코멘트를 덮어써
+// "코멘트 편집해도 반영 안 됨" 증상이 발생함. 항상 upsert해 quota/트리밍에도 살아남게 함.
+function _syncReportOverlay(pKey, studentId, mathsData) {
+  if (!window._reportOverlay) window._reportOverlay = {};
+  if (!window._reportOverlay[pKey]) window._reportOverlay[pKey] = {};
+  if (!window._reportOverlay[pKey][studentId]) window._reportOverlay[pKey][studentId] = {};
+  window._reportOverlay[pKey][studentId].maths = mathsData;
+}
+
 // ═══════════════════════════════════════════
 // [Safety 2026-05-29] Silent Fail Retry Queue
 // ═══════════════════════════════════════════
@@ -8372,6 +8382,7 @@ function renderTrpSummary() {
         if (!store.reports[pKey]) store.reports[pKey] = {};
         if (!store.reports[pKey][st.studentId]) store.reports[pKey][st.studentId] = {};
         store.reports[pKey][st.studentId].maths = saveData;
+        _syncReportOverlay(pKey, st.studentId, saveData);
         saveStore(store);
         fbSetReport(pKey, st.studentId, 'maths', saveData);
       } catch (e) { console.warn('report save failed:', e); }
@@ -8557,6 +8568,7 @@ function saveTrpComment() {
     const pKey = reportPeriodKey(st.period);
     if (store.reports?.[pKey]?.[st.studentId]?.maths) {
       store.reports[pKey][st.studentId].maths.comment = newComment;
+      _syncReportOverlay(pKey, st.studentId, store.reports[pKey][st.studentId].maths);  // 낡은 오버레이 덮어쓰기 방지
       saveStore(store);
       fbSetReport(pKey, st.studentId, 'maths', store.reports[pKey][st.studentId].maths);
     }
@@ -10060,6 +10072,7 @@ function saveReportEditor() {
         savedAt: Date.now()
       };
       store.reports[pKey][ctx.child.id].maths = merged;
+      _syncReportOverlay(pKey, ctx.child.id, merged);  // 낡은 오버레이가 새 코멘트 덮어쓰는 것 방지
       saveStore(store);
       fbSetReport(pKey, ctx.child.id, 'maths', merged);
     } else {
