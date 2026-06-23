@@ -12777,6 +12777,18 @@ async function autoBackupToFirebase() {
     const students = (store.users || []).filter(u => u.role === 'student');
     const hwSetCount = Object.keys(store.homeworkSets || {}).length;
     const submissionCount = Object.keys(store.submissions || {}).length;
+
+    // [Fix 2026-06-23 / A] 중복 백업 억제 — 직전 백업 이후 데이터 변경이 없으면 스냅샷 생략.
+    // 같은 날 여러 번 로그인해도 변경이 없으면 동일 스냅샷이 반복 적재되지 않음(용량 급증 방지).
+    // store.lastModified는 모든 fbWrite마다 갱신되므로 실제 변경 여부의 신뢰성 있는 지표.
+    // 서명을 localStorage에만 보관 → Firebase 노드 추가 없음(=pruning/이상감지 로직 무영향).
+    // 변경이 없으면 이상감지용 대용량 조회(_detectBackupAnomaly)까지 건너뛰어 다운로드도 절약.
+    const backupSig = `${hwSetCount}:${submissionCount}:${store.lastModified || 0}`;
+    if (localStorage.getItem('lastAutoBackupSig_v1') === backupSig) {
+      console.log('[Backup] 변경 없음 — 자동 백업 생략 (중복 억제)');
+      return;
+    }
+
     // [Security 2026-05] 백업 데이터에서 API 키 제거
     const safeStore = JSON.parse(JSON.stringify(store));
     if (safeStore.claudeApiKey) delete safeStore.claudeApiKey;
@@ -12812,6 +12824,8 @@ async function autoBackupToFirebase() {
       toDelete.forEach(k => { updates[k] = null; });
       await getBackupRef().update(updates);
     }
+    // [Fix 2026-06-23 / A] 정상 백업 성공 후에만 서명 저장 (suspect/실패 경로는 미저장 → 다음 로그인 재시도)
+    localStorage.setItem('lastAutoBackupSig_v1', backupSig);
     console.log('[Backup] 자동 백업 완료:', backupKey);
     showBackupToast('✅ 자동 백업 완료');
   } catch(e) {
