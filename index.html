@@ -2773,7 +2773,7 @@ function _clearTeacherWriteFail() {
   document.getElementById('teacherFbErrorBanner')?.remove();
 }
 
-function _retryTeacherHomeworkSync() {
+async function _retryTeacherHomeworkSync() {
   const btn = document.querySelector('#teacherFbErrorBanner button');
   if (btn) { btn.textContent = '⏳ 저장 중...'; btn.disabled = true; }
 
@@ -2784,6 +2784,24 @@ function _retryTeacherHomeworkSync() {
     _resetBtn();
     showBackupToast('⚠️ 아직 서버에 연결되지 않았습니다. 인터넷 확인 후 페이지를 새로고침(F5) 하세요.');
     return;
+  }
+
+  // [Auth 2026-06-23] 권한 재확보 — 익명으로 떨어진 상태면 원장 인증을 다시 전환한 뒤 저장.
+  // (이전 버전은 익명 상태 그대로 쓰기만 재시도 → 규칙에 막혀 무한 실패했음)
+  const _curUid = firebase.auth().currentUser && firebase.auth().currentUser.uid;
+  if (_curUid !== OPERATOR_UID) {
+    if (_operatorPwCache && currentUser && currentUser.role === 'teacher') {
+      const ok = await elevateToOperatorAuth(currentUser.id, _operatorPwCache);
+      if (!ok) {
+        _resetBtn();
+        showBackupToast('❌ 원장 권한 재전환 실패 — Firebase 비밀번호 불일치. (reset_operator_pw.js 필요)');
+        return;
+      }
+    } else {
+      _resetBtn();
+      showBackupToast('❌ 저장 권한이 없습니다 — 로그아웃 후 다시 로그인해 주세요.');
+      return;
+    }
   }
 
   // 전체 homeworkSets + currentPeriod를 한 번의 원자적 업데이트로 재전송
@@ -2928,6 +2946,10 @@ function fbSetSubmissions(submissions) {
 // Rules에서 auth.uid === OPERATOR_UID로 권한 부여.
 const OPERATOR_UID = '62bxWubzDLMrhHjjv2oNfAQiyaD2';
 
+// 세션 메모리 전용 원장 비밀번호 캐시 — 익명으로 떨어졌을 때 "재전환"에만 사용.
+// localStorage 등에 영속 저장하지 않음(보안).
+let _operatorPwCache = null;
+
 // 앱 차원 teacher ID → Firebase Auth email 매핑
 // 신규 원장 계정 추가 시 여기에 매핑 추가
 const OPERATOR_EMAIL_MAP = {
@@ -2940,17 +2962,44 @@ function teacherEmail(teacherId) {
 
 // 원장 Firebase Auth로 전환 (app-level 인증 성공 후 호출)
 async function elevateToOperatorAuth(teacherId, plainPw) {
+  if (plainPw) _operatorPwCache = plainPw;   // 재전환(재시도)용으로 세션 메모리에 보관
+  window.OPERATOR_AUTHED = false;
   try {
     await firebase.auth().signOut();
     const cred = await firebase.auth().signInWithEmailAndPassword(
       teacherEmail(teacherId), plainPw
     );
+    // 이메일/비번은 맞았지만 uid가 등록된 원장 uid와 다르면 보안 규칙상 쓰기 불가
+    if (cred.user.uid !== OPERATOR_UID) {
+      console.warn('[Auth] 로그인 uid가 OPERATOR_UID와 다름:', cred.user.uid);
+      alert('⚠️ 이 Firebase 계정의 uid가 등록된 원장 uid와 다릅니다.\n'
+          + '저장 권한이 없습니다 — 관리자에게 OPERATOR_UID 갱신을 요청하세요.');
+      return false;
+    }
+    window.OPERATOR_AUTHED = true;
     console.log('[Auth] 원장 인증 전환 완료, uid:', cred.user.uid);
     return true;
   } catch (e) {
-    console.error('[Auth] 원장 인증 전환 실패:', e.message);
+    console.error('[Auth] 원장 인증 전환 실패:', e.code, e.message);
     try { await firebase.auth().signInAnonymously(); } catch(_){}
-    alert('⚠️ Firebase Auth 전환 실패. 일부 작업이 권한 부족으로 막힐 수 있습니다.\n오류: ' + e.message);
+    let msg;
+    switch (e.code) {
+      case 'auth/invalid-credential':
+      case 'auth/wrong-password':
+      case 'auth/user-not-found':
+        msg = 'Firebase 원장 계정의 비밀번호가 로그인 비밀번호와 일치하지 않습니다.\n'
+            + '→ functions/reset_operator_pw.js 로 두 비밀번호를 6자 이상으로 일치시켜 주세요.';
+        break;
+      case 'auth/user-disabled':
+        msg = 'Firebase 원장 계정이 비활성화되어 있습니다. 콘솔 Authentication 에서 활성화하세요.';
+        break;
+      case 'auth/network-request-failed':
+        msg = '네트워크 오류 — 실제로 인터넷 연결을 확인하세요.';
+        break;
+      default:
+        msg = e.message;
+    }
+    alert('⚠️ Firebase Auth 전환 실패 — 저장 권한이 없습니다.\n\n' + msg);
     return false;
   }
 }
