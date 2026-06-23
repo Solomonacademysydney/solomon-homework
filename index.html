@@ -12492,8 +12492,13 @@ const firebaseConfig = {
     };
 
     // 시작 시 Firebase에서 데이터 불러오기 — 인증 완료 후에만 호출
+    // [Fix 2026-06-23] 재진입 방지 가드 (.info/connected 재시도와 중복 호출 차단)
+    let _loadInFlight = false;
     const loadInitialData = () => {
+      if (_loadInFlight || window.fbReady) return;
+      _loadInFlight = true;
       window.FB_REF.once('value', (snapshot) => {
+        _loadInFlight = false;
         clearTimeout(loadingTimeout);
         const fbData = snapshot.val();
         const localRaw = localStorage.getItem(STORE_KEY);
@@ -12523,9 +12528,12 @@ const firebaseConfig = {
         finishInit();
       }, (err) => {
         console.warn('[Firebase] initial read failed:', err?.message || err);
+        _loadInFlight = false;
         clearTimeout(loadingTimeout);
         window.fbReady = false;
         finishInit();
+        // [Fix 2026-06-23] 실패해도 fbReady가 false로 고착되지 않도록
+        // .info/connected 리스너가 재연결 시 자동 재시도함 (아래 참조)
       });
     };
 
@@ -12536,6 +12544,19 @@ const firebaseConfig = {
         console.log('[Auth] anonymous user:', cred.user.uid);
         attachRealtimeListener();
         loadInitialData();
+        // [Fix 2026-06-23] 연결 (재)수립 시 초기 로드 자동 재시도.
+        // 일시적 네트워크 끊김/대용량 트리 다운로드 실패로 fbReady가 false로
+        // 고착되면 이후 모든 저장이 실패(빨간 배너)하던 문제 해결.
+        // 다운로드 전용(_persistLocalStore) — 업로드/덮어쓰기 없음.
+        // 연결이 살아있는 한 .info/connected는 상태 변화 시에만 발화하므로 루프 없음.
+        try {
+          firebase.database().ref('.info/connected').on('value', (snap) => {
+            if (snap.val() === true && !window.fbReady) {
+              console.log('[Firebase] 연결 복구 감지 — 초기 로드 재시도');
+              loadInitialData();
+            }
+          });
+        } catch (e) { console.warn('[Firebase] .info/connected 리스너 등록 실패:', e?.message || e); }
       })
       .catch(e => {
         console.warn('[Auth] anonymous sign-in failed:', e.message);
