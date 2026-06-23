@@ -2773,24 +2773,38 @@ function _clearTeacherWriteFail() {
   document.getElementById('teacherFbErrorBanner')?.remove();
 }
 
-async function _retryTeacherHomeworkSync() {
+function _retryTeacherHomeworkSync() {
   const btn = document.querySelector('#teacherFbErrorBanner button');
   if (btn) { btn.textContent = '⏳ 저장 중...'; btn.disabled = true; }
-  const store = getStore();
-  const keys = Object.keys(store.homeworkSets || {});
-  let failed = false;
-  for (const key of keys) {
-    await new Promise(resolve => {
-      fbSetHomeworkSet(key, store.homeworkSets[key]);
-      setTimeout(resolve, 80);
-    });
+
+  const _resetBtn = () => { if (btn) { btn.textContent = '🔄 지금 다시 저장'; btn.disabled = false; } };
+
+  // 서버 연결(fbReady)이 아직 안 됐으면 저장 자체가 불가능 — 거짓 "완료" 표시 금지, 배너 유지
+  if (!window.fbReady || !window.FB_REF) {
+    _resetBtn();
+    showBackupToast('⚠️ 아직 서버에 연결되지 않았습니다. 인터넷 확인 후 페이지를 새로고침(F5) 하세요.');
+    return;
   }
-  // currentPeriod도 재동기화
-  if (store.currentPeriod) fbSetPeriod(store.currentPeriod);
-  setTimeout(() => {
-    _clearTeacherWriteFail();
-    showBackupToast('✅ Firebase 재동기화 완료');
-  }, 500);
+
+  // 전체 homeworkSets + currentPeriod를 한 번의 원자적 업데이트로 재전송
+  const store = getStore();
+  const updates = {};
+  for (const key of Object.keys(store.homeworkSets || {})) {
+    updates['homeworkSets/' + key] = store.homeworkSets[key];
+  }
+  if (store.currentPeriod) updates.currentPeriod = store.currentPeriod;
+
+  // 실제 성공 여부를 확인한 뒤에만 배너 제거/성공 표시
+  fbWrite(updates, (success) => {
+    _resetBtn();
+    if (success) {
+      _clearTeacherWriteFail();
+      showBackupToast('✅ Firebase 재동기화 완료 — 학생이 숙제를 볼 수 있습니다.');
+    } else {
+      // fbWrite 내부에서 이미 배너 재표시 + 재시도 큐 적재됨 → 배너 유지
+      showBackupToast('❌ 재동기화 실패 — 저장되지 않았습니다. 인터넷 확인 후 다시 시도하세요.');
+    }
+  });
 }
 
 async function _flushRetryQueue() {
