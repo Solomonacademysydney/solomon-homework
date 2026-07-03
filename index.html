@@ -10368,12 +10368,7 @@ function _extractSysCode(err) {
   return m ? m[0] : 'S-NET';
 }
 
-// 시스템 오류 코드 → 사용자 안내 문구
-function _sysCodeMessage(code) {
-  if (code === 'S-CREDIT') return 'AI 크레딧이 소진되어 잠시 이용할 수 없습니다. 관리자 충전 후 자동 정상화됩니다.';
-  return '잠시 후 다시 시도해 주세요.';
-}
-// S-CREDIT 여부
+// S-CREDIT 여부 (교사 화면에서만 크레딧 안내에 사용 — 학생/학부모에는 노출하지 않음)
 function _isCreditError(err) { return _extractSysCode(err) === 'S-CREDIT'; }
 
 function extractJSON(text) {
@@ -11527,7 +11522,7 @@ async function startRemediation(setIdx) {
   } catch(e) {
     const code = _extractSysCode(e);
     mainEl.innerHTML = '<div class="exam-wrap"><div style="padding:40px;text-align:center;"><div style="font-size:36px;margin-bottom:12px;">⚠️</div><div style="font-weight:800;color:#991b1b;font-size:16px;margin-bottom:8px;">시스템 일시 오류</div><div id="aiErrMsg" style="color:var(--muted);font-size:14px;margin-bottom:16px;"></div></div></div>';
-    document.getElementById('aiErrMsg').textContent = _sysCodeMessage(code) + ' (Code: ' + code + ')';
+    document.getElementById('aiErrMsg').textContent = '잠시 후 다시 시도해 주세요. (Code: ' + code + ')';
     const goBackBtn1 = document.createElement('button');
     goBackBtn1.className = 'btn-sm btn-navy';
     goBackBtn1.textContent = '← Go Back';
@@ -11915,7 +11910,7 @@ async function onExplanationRead(setIdx, roundIdx) {
   } catch (e) {
     const code = _extractSysCode(e);
     mainEl.innerHTML = '<div class="exam-wrap"><div style="padding:40px;text-align:center;"><div style="font-size:36px;margin-bottom:12px;">⚠️</div><div style="font-weight:800;color:#991b1b;font-size:16px;margin-bottom:8px;">시스템 일시 오류</div><div id="remErrMsg" style="color:var(--muted);font-size:14px;margin-bottom:16px;"></div></div></div>';
-    document.getElementById('remErrMsg').textContent = _sysCodeMessage(code) + ' (Code: ' + code + ')';
+    document.getElementById('remErrMsg').textContent = '잠시 후 다시 시도해 주세요. (Code: ' + code + ')';
     const goBackBtn2 = document.createElement('button');
     goBackBtn2.className = 'btn-sm btn-navy';
     goBackBtn2.style.marginTop = '16px';
