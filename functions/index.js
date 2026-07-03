@@ -223,6 +223,10 @@ exports.callClaudeForStudent = onCall({
   if (!res.ok) {
     const errText = await res.text().catch(() => '');
     console.error('[callClaudeForStudent] upstream error:', res.status, errText);
+    // 크레딧 소진(잔액 부족)은 별도 코드로 구분 — 클라이언트가 "AI 크레딧 소진" 안내로 표시
+    if (res.status === 400 && /credit balance is too low|Plans\s*&\s*Billing|insufficient (?:funds|credit)/i.test(errText)) {
+      throw new HttpsError('resource-exhausted', 'S-CREDIT');
+    }
     throw new HttpsError('internal', `S-${res.status}`);
   }
 
