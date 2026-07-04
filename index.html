@@ -3362,30 +3362,9 @@ function sha256js(str) {
 function isHashed(pw) { return typeof pw === 'string' && /^[0-9a-f]{64}$/.test(pw); }
 
 async function initStore() {
-  const pws = {
-    solomon2024: await hashPw('solomon2024'),
-    math2024:    await hashPw('math2024'),
-    parent2024:  await hashPw('parent2024'),
-  };
-  // 테스트 계정 비밀번호 생성
-  const testPws = {};
-  for (let y = 2; y <= 12; y++) testPws[y] = await hashPw('s' + y);
-  const testUsers = [];
-  for (let y = 2; y <= 12; y++) {
-    testUsers.push({ id:'t'+y, pw:testPws[y], role:'student', name:'Test Y'+y, year:y, country:'AU', status:'active', days:[], isTest:true });
-  }
+  /* seed accounts removed for production */
   const d = {
-    users: [
-      { id:'teacher',   pw:pws.solomon2024, role:'teacher', name:'Teacher' },
-      { id:'student01', pw:pws.math2024,    role:'student', name:'Alex',   year:5, country:'AU', status:'active', days:[] },
-      { id:'student02', pw:pws.math2024,    role:'student', name:'Sophie', year:7, country:'AU', status:'active', days:[] },
-      { id:'student03', pw:pws.math2024,    role:'student', name:'Liam',   year:3, country:'AU', status:'active', days:[] },
-      { id:'student04', pw:pws.math2024,    role:'student', name:'Mia',    year:9, country:'AU', status:'active', days:[] },
-      { id:'student05', pw:pws.math2024,    role:'student', name:'Ethan',  year:6, country:'AU', status:'active', days:[] },
-      { id:'parent01',  pw:pws.parent2024,  role:'parent',  name:"Alex's Parent",   childIds:['student01'], status:'active' },
-      { id:'parent02',  pw:pws.parent2024,  role:'parent',  name:"Sophie's Parent", childIds:['student02'], status:'active' },
-      ...testUsers,
-    ],
+    users: [],
     currentPeriod: { year: new Date().getFullYear(), month: new Date().getMonth()+1, week: 1 },
     homeworkSets: {},
     submissions: {}
@@ -4174,6 +4153,7 @@ async function ensureStore() {
       return;
     }
     store = await initStore();
+    if (!store || !Array.isArray(store.users)) return;
   } else {
     store = getStore();
     // migrate plaintext passwords → SHA-256 hashed
@@ -5730,7 +5710,7 @@ function renderStudentManagementSection(store) {
           <option value="AU">🇦🇺 Australian</option>
           <option value="KR">🇰🇷 Korean</option>
         </select></div>
-        <div class="field"><label>Password</label><input id="ns_pw" value="math2024"></div>
+        <div class="field"><label>Password</label><input id="ns_pw"></div>
       </div>
       <div class="field-row">
         <div class="field"><label>학교명 (선택)</label><input id="ns_school_name" placeholder="예: Marsden HS, Knox Grammar"></div>
@@ -5757,7 +5737,7 @@ function renderStudentManagementSection(store) {
         <h3 style="font-family:'Noto Serif KR',serif;color:var(--navy);margin-bottom:14px;">Add New Parent Account</h3>
         <div class="field-row">
           <div class="field"><label>Parent ID</label><input id="np_id" placeholder="e.g. parent03"></div>
-          <div class="field"><label>Password</label><input id="np_pw" value="parent2024"></div>
+          <div class="field"><label>Password</label><input id="np_pw"></div>
         </div>
         <div class="field">
           <label>First child's student ID</label>
