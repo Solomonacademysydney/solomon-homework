@@ -13413,7 +13413,8 @@ function _mergeHwJsonFiles(results) {
           type: q.type || 'SA',
           choices: q.choices || q.options || null,
           answer: q.answer || '',
-          explanation: q.explanation || ''
+          explanation: q.explanation || '',
+          ...(q.figure ? { figure: q.figure } : {})
         }));
       } else if (data[0]?.correct_choice || data[0]?.correct_text) {
         answers = data;
@@ -13432,7 +13433,8 @@ function _mergeHwJsonFiles(results) {
         type: q.type || 'SA',
         choices: q.choices || q.options || null,
         answer: q.answer || '',
-        explanation: q.explanation || ''
+        explanation: q.explanation || '',
+        ...(q.figure ? { figure: q.figure } : {})
       }));
     }
 
@@ -13490,6 +13492,7 @@ function _showHwJsonPreview(yr, questions) {
   const mcqCount = questions.filter(q => q.type === 'MCQ' || (q.choices && q.choices.length)).length;
   const saCount = totalQ - mcqCount;
   const hasAnswers = questions.filter(q => q.answer).length;
+  const figCount = questions.filter(q => q.figure).length;
 
   const previewEl = document.getElementById(`hwJsonPreview_${yr}`);
   if (!previewEl) return;
@@ -13501,7 +13504,7 @@ function _showHwJsonPreview(yr, questions) {
     html += `<li style="color:#15803d;font-size:13px;font-weight:600;">Set ${setKey}: ${info.questions.length}문제 — ${info.title}</li>`;
   });
   html += '</ul>';
-  html += `<div style="font-size:12px;color:#166534;margin-top:6px;">📊 MCQ: ${mcqCount}문제 · SA: ${saCount}문제 · 정답: ${hasAnswers}/${totalQ}개</div>`;
+  html += `<div style="font-size:12px;color:#166534;margin-top:6px;">📊 MCQ: ${mcqCount}문제 · SA: ${saCount}문제 · 정답: ${hasAnswers}/${totalQ}개${figCount > 0 ? ` · 🖼️ 그림: ${figCount}문제` : ''}</div>`;
   if (hasAnswers < totalQ) {
     html += `<div style="font-size:12px;color:#d97706;margin-top:4px;">⚠️ 정답이 없는 문제 ${totalQ - hasAnswers}개 — 정답 JSON 파일을 함께 선택하면 자동 매칭됩니다.</div>`;
   }
@@ -14015,7 +14018,8 @@ async function doImportHwJson(yr) {
           hint1: '',
           hint2: '',
           explanation: q.explanation || '',
-          options
+          options,
+          ...(q.figure ? { figure: q.figure } : {})
         };
       });
 
