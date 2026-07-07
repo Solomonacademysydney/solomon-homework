@@ -6791,6 +6791,23 @@ function answerSA(qid, val) {
     const s=getStore();
     if (s.submissions[key]) fbSetSubmission(key, s.submissions[key]);
   }, 400);
+  // [SA 입력 즉시 반영] 재렌더 없이 제출 버튼·카운터·진행바만 갱신
+  // (renderStudent() 재호출은 타이핑 중 입력 포커스를 파괴하므로 금지 — DOM 직접 갱신)
+  const _hw=store.homeworkSets[hwKey(currentUser.year,currentUser.country||'AU',studentPeriod||store.currentPeriod)];
+  const _qs=_hw?.sets?.[currentSetIdx]?.questions||[];
+  if(_qs.length===0) return;
+  const _ans=store.submissions[key].answers;
+  // 빈 문자열(답을 지운 상태)은 미답으로 취급 — 빈 답 제출 방지
+  const _answered=_qs.filter(q=>_ans[q.id]!==undefined&&_ans[q.id]!=='').length;
+  const _btn=document.querySelector('.btn-submit-all');
+  if(_btn) _btn.disabled = _answered !== _qs.length;
+  const _big=document.querySelector('.exam-counter .big');
+  if(_big) _big.textContent=`${_answered}/${_qs.length}`;
+  const _pct=Math.round(_answered/_qs.length*100);
+  const _fill=document.querySelector('.progress-fill');
+  if(_fill) _fill.style.width=_pct+'%';
+  const _pctLbl=document.querySelector('.progress-lbl span:last-child');
+  if(_pctLbl) _pctLbl.textContent=_pct+'%';
 }
 
 function showSubmitConfirmModal(state) {
