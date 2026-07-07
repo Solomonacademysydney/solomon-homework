@@ -4861,18 +4861,18 @@ function deleteSet(idx) {
   const hw = store.homeworkSets[key];
   if (!hw?.sets) return;
   const setTitle = hw.sets[idx]?.title || `Set ${idx+1}`;
-  if (!confirm(`Delete '${setTitle}'?\n(All student submissions for this set will also be deleted)`)) return;
-  const yrStudents = store.users.filter(u=>u.role==='student'&&u.status!=='inactive'&&!u.isTest&&u.year===selectedYear&&(u.country||'AU')===selectedCountry);
+  // 테스트·비활성 계정 포함 — 고아 제출 기록이 남지 않도록 전부 정리
+  const yrStudents = store.users.filter(u=>u.role==='student'&&u.year===selectedYear&&(u.country||'AU')===selectedCountry);
+  const _staleN = (() => { let n = 0; for (let i = idx; i < hw.sets.length; i++) n += _countSubmittedAt(store, yrStudents, p, i); return n; })();
+  if (!confirm(`Delete '${setTitle}'?\n` + (_staleN > 0
+    ? `이 세트 이후 자리에 제출 완료 기록 ${_staleN}개가 있습니다.\n보관함으로 옮기고 계속할까요? (나중에 복원 가능)`
+    : `(이 세트의 학생 제출 기록도 함께 삭제됩니다)`))) return;
   // Granular Firebase update — only touch keys that changed (race-safe)
   const fbUpdates = {};
-  // delete submissions from this set onwards
-  yrStudents.forEach(s => {
-    for (let i = idx; i < hw.sets.length; i++) {
-      const sk = subKey(s.id, p, i);
-      delete store.submissions[sk];
-      fbUpdates['submissions/' + sk] = null;
-    }
-  });
+  // delete submissions from this set onwards (submitted → 보관함으로 이동)
+  for (let i = idx; i < hw.sets.length; i++) {
+    _archiveAndClearSubmissions(store, yrStudents, p, i, 'set deleted', fbUpdates);
+  }
   hw.sets.splice(idx, 1);
   // re-index remaining sets
   hw.sets.forEach((s,i) => { s.setIdx=i; s.title=`Set ${i+1}`; });
@@ -5050,6 +5050,34 @@ function confirmMoveSet(fromIdx) {
   renderTeacher();
 }
 
+// [제출 정리 안전망] 특정 자리(주차 p + 세트번호 setIdx)의 제출 완료 기록 수
+function _countSubmittedAt(store, students, p, setIdx) {
+  return students.filter(s => store.submissions[subKey(s.id, p, setIdx)]?.submitted).length;
+}
+
+// [제출 정리 안전망] 특정 자리의 제출 기록 정리.
+// - submitted 기록: submissions_archive/{원래키}_{timestamp} 로 이동 (복원 가능)
+// - 미제출 기록: 그냥 삭제
+// 변경사항을 fbUpdates(multi-path update 객체)에 누적하고 로컬 store도 함께 정리.
+// 호출자가 마지막에 fbWrite(fbUpdates) 한 번으로 원자적으로 반영해야 한다.
+function _archiveAndClearSubmissions(store, students, p, setIdx, reason, fbUpdates) {
+  let archived = 0;
+  students.forEach(s => {
+    const sk = subKey(s.id, p, setIdx);
+    const sub = store.submissions[sk];
+    if (!sub) return;
+    if (sub.submitted) {
+      const now = Date.now();
+      fbUpdates['submissions_archive/' + sk + '_' + now] =
+        { ...sub, _origKey: sk, _archivedAt: now, _reason: reason };
+      archived++;
+    }
+    fbUpdates['submissions/' + sk] = null;
+    delete store.submissions[sk];
+  });
+  return archived;
+}
+
 function resetSubmission(sid, setIdx) {
   const store = getStore();
   const p = store.currentPeriod;
@@ -5061,6 +5089,42 @@ function resetSubmission(sid, setIdx) {
   saveStore(store);
   fbDeleteSubmission(sk);
   renderTeacher();
+}
+
+// [콘솔 전용] 보관된 제출 기록 복원 — 교사 UI 없음, 브라우저 콘솔에서 사용
+// 주의: 앱 데이터 루트는 window.FB_REF ( = solomon_hw_v3 노드 )다. DB 루트가 아님.
+// 사용법:
+//   1) 보관 키 목록 확인:
+//      window.FB_REF.child('submissions_archive').once('value')
+//        .then(s => console.table(Object.entries(s.val()||{}).map(([k,v]) =>
+//          ({ key: k, orig: v._origKey, reason: v._reason, at: new Date(v._archivedAt).toLocaleString() }))))
+//   2) 복원 실행: restoreSubmission('학생ID_2026_m07_w1_s0_1751856000000')
+// 원위치에 기록이 이미 있으면(학생이 새로 풀었으면) 복원을 거부한다.
+async function restoreSubmission(archiveKey) {
+  if (!window.fbReady || !window.FB_REF) { console.warn('Firebase 연결 안 됨 — 잠시 후 다시 시도'); return; }
+  const snap = await window.FB_REF.child('submissions_archive/' + archiveKey).once('value');
+  const data = snap.val();
+  if (!data) { console.warn('보관 기록 없음:', archiveKey); return; }
+  const origKey = data._origKey;
+  if (!origKey) { console.warn('_origKey 없음 — 수동 복원 필요. 데이터:', data); return; }
+  // 덮어쓰기 방지 가드: 원위치(Firebase·로컬)에 기록이 있으면 중단
+  const store = getStore();
+  const existing = await window.FB_REF.child('submissions/' + origKey).once('value');
+  if (existing.val() || store.submissions[origKey]) {
+    console.warn('⚠️ 원위치에 기록이 이미 있습니다. 복원하면 학생의 새 제출을 덮어씁니다 — 중단.',
+      { firebase: existing.val(), local: store.submissions[origKey] });
+    return;
+  }
+  const restored = { ...data };
+  delete restored._origKey; delete restored._archivedAt; delete restored._reason;
+  // 복원 + 보관함 제거를 원자적으로
+  await window.FB_REF.update({
+    ['submissions/' + origKey]: restored,
+    ['submissions_archive/' + archiveKey]: null
+  });
+  store.submissions[origKey] = restored;
+  saveStore(store);
+  console.log('✅ 복원 완료:', origKey);
 }
 
 function manualMarkSubmission(sid, setIdx) {
@@ -5354,17 +5418,36 @@ async function doSave() {
     const setTitle = `Set ${actualIdx + 1}`;
     const setObj = { setIdx: actualIdx, title: setTitle, questions: qs, createdAt: new Date().toLocaleDateString('en-US'), calculatorRanges: selectedYear >= 7 ? [...editingCalcRanges] : [] };
 
+    // [제출 정리 안전망] 이 자리의 기존 제출 기록 정리 — 세트 push 전에 실행 (confirm 취소 시 저장 전체 중단)
+    // 대상: 해당 학년+국가 전체 학생 (테스트·비활성 포함 — 고아 기록 방지)
+    const _allYrStudents = store.users.filter(u =>
+      u.role === 'student' && u.year === selectedYear && (u.country||'AU') === selectedCountry);
+    const _subFbUpdates = {};
+    if (isNew) {
+      // 새 세트: 제출 완료 기록은 보관 후 삭제, 미제출은 그냥 삭제
+      const _n = _countSubmittedAt(store, _allYrStudents, p, actualIdx);
+      if (_n > 0 && !confirm(
+        `이 자리에 제출 완료 기록 ${_n}개가 있습니다.\n보관함으로 옮기고 계속할까요? (나중에 복원 가능)`)) {
+        return;   // 저장 전체 중단
+      }
+      _archiveAndClearSubmissions(store, _allYrStudents, p, actualIdx, 'new set saved (text)', _subFbUpdates);
+    } else {
+      // 기존 세트 편집: 미제출 기록만 정리 (정당한 제출 보호) + Firebase에도 반영
+      _allYrStudents.forEach(s => {
+        const sk = subKey(s.id, p, actualIdx);
+        if (store.submissions[sk] && !store.submissions[sk].submitted) {
+          delete store.submissions[sk];
+          _subFbUpdates['submissions/' + sk] = null;
+        }
+      });
+    }
+    if (Object.keys(_subFbUpdates).length > 0) fbWrite(_subFbUpdates);
+
     if (isNew) {
       hw.sets.push(setObj);
     } else {
       hw.sets[actualIdx] = setObj;
     }
-
-    // reset unsubmitted entries for this set
-    yrStudents.forEach(s => {
-      const sk = subKey(s.id, p, actualIdx);
-      if (store.submissions[sk] && !store.submissions[sk].submitted) delete store.submissions[sk];
-    });
 
     saveStore(store);
     fbSetHomeworkSet(key, store.homeworkSets[key]);
@@ -13971,7 +14054,20 @@ async function doImportHwJson(yr) {
   const addedSets = [];
   const addedIdxs = [];
 
+  // [제출 정리 안전망] 새로 추가될 자리들의 기존 제출 기록 확인
+  // 대상: 해당 학년+국가 전체 학생 (테스트·비활성 포함 — 고아 기록 방지)
+  const _allYrStudents = store.users.filter(u =>
+    u.role === 'student' && u.year === yr && (u.country||'AU') === selectedCountry);
   const setEntries = Object.entries(setGroups);
+  let _totalStale = 0;
+  for (let k = 0; k < setEntries.length; k++) {
+    _totalStale += _countSubmittedAt(store, _allYrStudents, p, hw.sets.length + k);
+  }
+  if (_totalStale > 0 && !confirm(
+    `이 자리에 제출 완료 기록 ${_totalStale}개가 있습니다.\n보관함으로 옮기고 계속할까요? (나중에 복원 가능)`)) {
+    return;   // 등록 전체 중단
+  }
+  const _subFbUpdates = {};
   for (const [setKey, info] of setEntries) {
     const questions = info.questions
       .sort((a, b) => (a.number || a.num || 0) - (b.number || b.num || 0))
@@ -14032,6 +14128,9 @@ async function doImportHwJson(yr) {
       await tagQuestions(questions, yr);
     }
 
+    // [제출 정리 안전망] 이 자리의 기존 제출 기록 정리 (보관 후 삭제)
+    _archiveAndClearSubmissions(store, _allYrStudents, p, setIdx, 'new set imported (JSON)', _subFbUpdates);
+
     hw.sets.push({
       setIdx,
       title:            setTitle,
@@ -14048,6 +14147,7 @@ async function doImportHwJson(yr) {
   //   로컬 localStorage 저장 결과와 무관하게 등록이 보장되게 한다.
   //   (이전엔 saveStore가 quota로 던지면 그 다음 fbSetHomeworkSet이 실행 안 돼
   //    로컬·Firebase 둘 다 등록 실패하고 조용히 멈췄음.)
+  if (Object.keys(_subFbUpdates).length > 0) fbWrite(_subFbUpdates);
   fbSetHomeworkSet(key, store.homeworkSets[key]);
   const localOk = saveStore(store);   // quota 초과 시 false 반환(경고 배너) — 더 이상 throw 안 함
   renderTeacher();
