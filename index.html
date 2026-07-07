@@ -5157,6 +5157,9 @@ function manualMarkSubmission(sid, setIdx) {
 function questionsToText(qs) {
   return qs.map((q,i) => {
     let txt = `${i+1}. ${q.text}`;
+    if (q.figure) {
+      txt += `\n[[FIG]]${q.figure}[[/FIG]]`;
+    }
     if (q.type==='mc' && q.options) {
       const letters=['A','B','C','D','E'];
       txt += '\n' + q.options.map((o,j)=>`${letters[j]}) ${o}`).join('\n');
@@ -5246,6 +5249,7 @@ function doParse() {
         <div class="preview-num">${q.num}</div>
         <div class="preview-info">
           <div class="preview-text">${renderMath(q.text)}</div>
+          ${q.figure ? `<div class="qc-figure">${q.figure}</div>` : ''}
           ${optStr}
           <div class="preview-meta">
             <span class="type-badge ${badgeCls}">${typeLabel}</span>
@@ -6116,7 +6120,7 @@ function renderStudent() {
       html += `<div style="background:#f8f6ef;border-radius:14px;padding:20px;margin-bottom:16px;border:2px solid ${borderCol};">
         <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;">
           <div style="width:36px;height:36px;background:${numBg};color:#fff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;flex-shrink:0;">${i+1}</div>
-          <div style="font-size:15px;font-weight:700;color:var(--navy);line-height:1.5;flex:1;">${renderMath(q.text)}</div>
+          <div style="font-size:15px;font-weight:700;color:var(--navy);line-height:1.5;flex:1;">${renderMath(q.text)}${q.figure ? `<div class="qc-figure">${q.figure}</div>` : ''}</div>
         </div>`;
 
       if (q.type==='mc' && q.options) {
@@ -6296,7 +6300,8 @@ function renderStudent() {
             : '<span style="background:#fee2e2;color:#991b1b;font-size:12px;font-weight:800;padding:3px 10px;border-radius:20px;">🚫 No Calculator</span>';
         })()}
       </div>
-      <div class="qc-text">${renderMath(q.text)}</div>`;
+      <div class="qc-text">${renderMath(q.text)}</div>
+      ${q.figure ? `<div class="qc-figure">${q.figure}</div>` : ''}`;
 
   if (q.type==='mc' && q.options) {
     const locked = userAns !== undefined;   // [즉시 고정] 이 문제 이미 답함 → 보기 잠금 (MC 전용)
@@ -7405,8 +7410,16 @@ function hasMissingDataRisk(q) {
 }
 
 function parseQuestions(raw) {
+  // ── 0. Extract figures ([[FIG]]...[[/FIG]]) BEFORE normalization ──
+  const FIG_PLACEHOLDER = '@@FIGURE@@';
+  const figs = [];
+  const rawNoFig = raw.replace(/\[\[FIG\]\]([\s\S]*?)\[\[\/FIG\]\]/g, (_, svg) => {
+    figs.push(svg.trim());
+    return '\n' + FIG_PLACEHOLDER + '\n';
+  });
+
   // ── 1. Normalize ──────────────────────────────────────────
-  let text = raw
+  let text = rawNoFig
     .replace(/\r\n/g,'\n').replace(/\r/g,'\n')
     .replace(/[\u200B\u200C\u200D\uFEFF]/g,'')   // zero-width chars
     .replace(/\u00A0/g,' ')                        // non-breaking space
@@ -7474,7 +7487,11 @@ function parseQuestions(raw) {
       }
     }
 
-    if (qText) result.push({num:cur.num, text:qText.trim(), type, options, answer:null});
+    if (qText) {
+      const qObj = {num:cur.num, text:qText.trim(), type, options, answer:null};
+      if (cur.figure) qObj.figure = cur.figure;
+      result.push(qObj);
+    }
     cur = null; body = [];
   };
 
@@ -7482,6 +7499,11 @@ function parseQuestions(raw) {
   for (const line of lines) {
     const t = line.trim();
     if (!t) continue;                    // skip blank lines
+    if (t === FIG_PLACEHOLDER) {         // figure placeholder → attach to current question
+      const f = figs.shift();            // always shift to keep order aligned
+      if (cur && f) cur.figure = (cur.figure || '') + f;
+      continue;
+    }
     const m = t.match(RE_QSTART);
     if (m) {
       flush();
@@ -15025,6 +15047,10 @@ function completeTSDay() {
       padding: 22px 24px;
       box-shadow: 0 2px 8px rgba(212, 175, 55, 0.12) inset;
     }
+
+    /* 그림(figure) 문제 — 문제 텍스트 아래 SVG 도형 표시 */
+    .qc-figure { margin: 12px 0; text-align: center; }
+    .qc-figure svg { max-width: 100%; height: auto; }
 
     /* === gamify-lab Tier 3 (2026-05-21) — 정답 시 별 폭발 + Correct! 팝업 === */
     .gm-burst-container {
