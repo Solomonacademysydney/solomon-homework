@@ -6660,7 +6660,7 @@ function startSet(idx, opts) {
       mc2.appendChild(errWrap);
     }
   };
-  if (opts.withCountdown === true && typeof startCountdown === 'function') {
+  if (opts.withCountdown === true && typeof startCountdown === 'function' && (typeof gm_kidMode !== 'function' || gm_kidMode())) {
     startCountdown(_runRender);
   } else {
     _runRender();
@@ -6725,7 +6725,7 @@ function answerMC(qid, letter, btnEl) {
   if (_store.submissions[_key]?.answers?.[qid] !== undefined) return;
   saveAnswer(qid, letter);
   // gamify-lab Tier 3: 정답 시 별 폭발 + Correct! 팝업 (btnEl·gm_burstStars 모두 있을 때만, try/catch 보호)
-  if (btnEl && typeof gm_burstStars === 'function') {
+  if (btnEl && typeof gm_burstStars === 'function' && (typeof gm_kidMode !== 'function' || gm_kidMode())) {
     try {
       const _s = getStore();
       const _p = studentPeriod || _s.currentPeriod;
@@ -6738,7 +6738,8 @@ function answerMC(qid, letter, btnEl) {
     } catch (e) { /* visual feedback 실패는 흐름을 막지 않음 */ }
   }
   // gamify-lab Tier 4: state 갱신 + 배지/streak/shield 시각 효과 (세션 휘발, Firebase 무영향)
-  if (typeof _gmState !== 'undefined') {
+  // Y7 이상은 streak/score 미적용
+  if (typeof _gmState !== 'undefined' && (typeof gm_kidMode !== 'function' || gm_kidMode())) {
     try {
       const _s2 = getStore();
       const _p2 = studentPeriod || _s2.currentPeriod;
@@ -11831,7 +11832,7 @@ function renderRemediationExplanation(setIdx, roundIdx) {
   if (!round.hintAnswers) round.hintAnswers = {};
 
   // gamify-lab Tier 7-3 (2026-05-23): Phase 2 진입 시 마시멜로 인사 (round 첫 진입 + 첫 문제 위치)
-  if (!round?.greetingShown && hintQIdx === 0 && typeof gm_showSolomon === 'function') {
+  if (!round?.greetingShown && hintQIdx === 0 && typeof gm_showSolomon === 'function' && (typeof gm_kidMode !== 'function' || gm_kidMode())) {
     round.greetingShown = true;
     saveStore(store);
     fbSetSubmission(key, store.submissions[key]);
@@ -12033,7 +12034,7 @@ function answerHintRetry(setIdx, roundIdx, qId, selectedAnswer) {
     round.hintAttempts[qId] = 99;
     saveStore(store);
     fbSetSubmission(key, store.submissions[key]);
-    if (typeof gm_showSolomon === 'function' && typeof gm_pickPhrase === 'function') {
+    if (typeof gm_showSolomon === 'function' && typeof gm_pickPhrase === 'function' && (typeof gm_kidMode !== 'function' || gm_kidMode())) {
       gm_showSolomon({
         expression: 'celebrating',
         message: gm_pickPhrase('phase2Correct'),
@@ -12048,7 +12049,7 @@ function answerHintRetry(setIdx, roundIdx, qId, selectedAnswer) {
     round.hintAttempts[qId] = 2;
     saveStore(store);
     fbSetSubmission(key, store.submissions[key]);
-    if (typeof gm_showSolomon === 'function' && typeof gm_pickPhrase === 'function') {
+    if (typeof gm_showSolomon === 'function' && typeof gm_pickPhrase === 'function' && (typeof gm_kidMode !== 'function' || gm_kidMode())) {
       gm_showSolomon({
         expression: 'thinking',
         message: gm_pickPhrase('phase2Wrong'),
@@ -12607,7 +12608,7 @@ function renderFinalReport(setIdx) {
     const key = subKey(currentUser.id, p, setIdx);
     const sub = store.submissions[key];
     const rem = sub?.remediation;
-    if (rem && !rem.finalGreetingShown && typeof gm_showSolomon === 'function') {
+    if (rem && !rem.finalGreetingShown && typeof gm_showSolomon === 'function' && (typeof gm_kidMode !== 'function' || gm_kidMode())) {
       rem.finalGreetingShown = true;
       saveStore(store);
       fbSetSubmission(key, store.submissions[key]);
@@ -15845,6 +15846,12 @@ function completeTSDay() {
     let _gmState = { score: 0, streak: 0, streakShield: 0 };
     let _gmStreakIconNext = '👏';
 
+    // Y7 이상(Y7~Y12): 문제별 게이미피케이션 비활성. Y1~Y6·학년 미상은 유지.
+    function gm_kidMode() {
+      var y = (typeof currentUser !== 'undefined' && currentUser) ? Number(currentUser.year) : NaN;
+      return !(y >= 7);
+    }
+
     function gm_streakTier(n) {
       if (n >= 9) return 'tier-4';
       if (n >= 6) return 'tier-3';
@@ -15855,6 +15862,7 @@ function completeTSDay() {
 
     function gm_renderBadges() {
       if (typeof _gmState === 'undefined') return '';
+      if (typeof gm_kidMode === 'function' && !gm_kidMode()) return '';
       const tier = gm_streakTier(_gmState.streak);
       const streakHidden = _gmState.streak <= 0 ? 'style="display:none;"' : '';
       const shieldHidden = _gmState.streakShield <= 0 ? 'style="display:none;"' : '';
