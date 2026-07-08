@@ -6866,7 +6866,7 @@ function doSubmit() {
     // gamify-lab Tier 5 + Tier 7 (2026-05-23): 5.1초 후 (제출 모달 닫힌 직후) 마시멜로 등장.
     // 80%+ → celebrating + onClose에 별 50개 묶음 (시각 충돌 차단). 80% 미만 → cheering 마시멜로만.
     // 기존 setTimeout 안의 별 50개 직접 호출 → 마시멜로 onClose로 이동 (이중 발동 차단).
-    if (typeof gm_showSolomon === 'function' && !sub.celebrationShown) {
+    if (typeof gm_showSolomon === 'function' && !sub.celebrationShown && (typeof gm_kidMode !== 'function' || gm_kidMode())) {
       setTimeout(function(){
         const _m = document.getElementById('submitConfirmModal');
         if (_m) return;   // 제출 모달 아직 있으면 안전망 — 다음 visit엔 celebrationShown 없으니 재시도 불가, OK
