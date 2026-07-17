@@ -3285,24 +3285,32 @@ function renderMath(text) {
     return text.split('\n').map(line => renderMath(line)).join('<br>');
   }
   if (typeof katex === 'undefined') return text;
+
+  // [FIX 2026-07] 통화 \$ 를 placeholder로 보호 — $...$ 정규식이 수식 구분자로 오인하는 것 방지
+  text = text.replace(/\\\$/g, '\u0001');
+  const _restoreDollar = expr => expr.replace(/\u0001/g, '\\$');
+
   // block math: $$...$$ or \[...\]
   text = text.replace(/\$\$([\s\S]+?)\$\$/g, function(m, expr) {
-    try { return katex.renderToString(expr, { displayMode: true, throwOnError: false }); }
+    try { return katex.renderToString(_restoreDollar(expr), { displayMode: true, throwOnError: false }); }
     catch(e) { return m; }
   });
   text = text.replace(/\\\[([\s\S]+?)\\\]/g, function(m, expr) {
-    try { return katex.renderToString(expr, { displayMode: true, throwOnError: false }); }
+    try { return katex.renderToString(_restoreDollar(expr), { displayMode: true, throwOnError: false }); }
     catch(e) { return m; }
   });
   // inline math: $...$ or \(...\)
   text = text.replace(/\$([^\$]+?)\$/g, function(m, expr) {
-    try { return katex.renderToString(expr, { displayMode: false, throwOnError: false }); }
+    try { return katex.renderToString(_restoreDollar(expr), { displayMode: false, throwOnError: false }); }
     catch(e) { return m; }
   });
   text = text.replace(/\\\(([\s\S]+?)\\\)/g, function(m, expr) {
-    try { return katex.renderToString(expr, { displayMode: false, throwOnError: false }); }
+    try { return katex.renderToString(_restoreDollar(expr), { displayMode: false, throwOnError: false }); }
     catch(e) { return m; }
   });
+
+  // [FIX 2026-07] 수식 밖에 남은 통화 기호는 일반 $ 로 표시
+  text = text.replace(/\u0001/g, '$');
   return text;
 }
 
