@@ -13484,6 +13484,8 @@ function _mergeTsJsonFiles(results) {
       hint1: q.hint1 || (a && a.hint1) || '',
       hint2: q.hint2 || (a && a.hint2) || '',
       explanation: q.explanation || (a && a.explanation) || '',
+      figure: q.figure || (a && a.figure) || '',
+      taxonomy_id: q.taxonomy_id || (a && a.taxonomy_id) || '',
       type: q.type || 'general'
     };
   });
@@ -14575,6 +14577,7 @@ function renderTSDay() {
     </div>
     <div style="background:#fef9e7;border-radius:18px;padding:28px 24px;border:1px solid rgba(251,191,36,.4);margin-bottom:16px;">
       <div style="font-size:17px;font-weight:400;color:#1e1b4b;line-height:1.9;letter-spacing:0.01em;">${renderMath(_formatTSQuestion(q.text))}</div>
+      ${q.figure ? `<div class="qc-figure">${q.figure}</div>` : ''}
     </div>
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">`;
 
