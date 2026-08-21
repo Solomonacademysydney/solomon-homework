@@ -7781,17 +7781,19 @@ function renderGameCard() {
   if (!currentUser || currentUser.role !== 'student') return '';
   const y = String(currentUser.year).toUpperCase();
   if (y !== 'K' && !(parseInt(y) <= 6)) return '';
-  return `
-    <div onclick="window.open('game/gugudan-rain.html','_blank')" style="max-width:560px;margin:20px auto 0;background:#fff;border-radius:20px;padding:16px 22px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.08);border:2px solid transparent;transition:transform .15s,border-color .15s;"
+  const card = (url, icon, name, desc) => `
+    <div onclick="window.open('${url}','_blank')" style="max-width:560px;margin:20px auto 0;background:#fff;border-radius:20px;padding:16px 22px;display:flex;align-items:center;gap:14px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.08);border:2px solid transparent;transition:transform .15s,border-color .15s;"
          onmouseover="this.style.transform='translateY(-3px)';this.style.borderColor='var(--navy)';"
          onmouseout="this.style.transform='none';this.style.borderColor='transparent';">
-      <div style="font-size:30px;">🎮</div>
+      <div style="font-size:30px;">${icon}</div>
       <div style="text-align:left;">
-        <div style="font-size:15px;font-weight:900;color:var(--navy);">Times Table Defense</div>
-        <div style="font-size:12px;color:var(--muted);">구구단 게임 · 최고 기록에 도전하세요!</div>
+        <div style="font-size:15px;font-weight:900;color:var(--navy);">${name}</div>
+        <div style="font-size:12px;color:var(--muted);">${desc}</div>
       </div>
       <div style="margin-left:auto;font-size:13px;font-weight:800;color:var(--navy);">Play →</div>
     </div>`;
+  return card('game/gugudan-rain.html', '🎮', 'Times Table Defense', '구구단 게임 · 최고 기록에 도전하세요!')
+       + card('game/clock-master.html', '⏰', 'Clock Master', '시계 읽기 · 경과 시간 · 기록에 도전하세요!');
 }
 
 function renderMyAccountCard() {

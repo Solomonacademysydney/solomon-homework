@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>시계 마스터 · Clock Master</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: #FEFAE0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 16px 30px;
+      background-image:
+        radial-gradient(circle at 15% 15%, rgba(20,163,152,0.10) 0%, transparent 45%),
+        radial-gradient(circle at 85% 85%, rgba(20,163,152,0.10) 0%, transparent 45%);
+    }
+
+    .header { text-align: center; margin-bottom: 14px; }
+    .title {
+      font-size: clamp(1.6rem, 5vw, 2.2rem);
+      font-weight: 900;
+      color: #0F5E5A;
+      letter-spacing: -0.5px;
+    }
+    .title-en { font-size: 0.95rem; color: #4A9A94; margin-top: 2px; font-weight: 700; letter-spacing: 1px; }
+
+    .stats-bar {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      background: white;
+      border-radius: 20px;
+      padding: 9px 22px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 16px rgba(20,163,152,0.18);
+      border: 2px solid #C8EAE7;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .stat { display: flex; align-items: center; gap: 6px; font-size: 1.05rem; font-weight: 800; color: #0F5E5A; }
+    .stat-icon { font-size: 1.15rem; }
+    #streak-stat { color: #E8850C; }
+
+    .stage-wrap { position: relative; }
+    .stage {
+      position: relative;
+      width: min(92vw, 720px);
+      min-height: 520px;
+      background: linear-gradient(180deg, #DDF5F3 0%, #F4FCFB 100%);
+      border: 3px solid #7ECCC5;
+      border-radius: 22px;
+      box-shadow: 0 8px 28px rgba(20,163,152,0.25);
+      padding: 18px 16px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .question {
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: #0F5E5A;
+      text-align: center;
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+    .question .en { font-size: 0.88rem; font-weight: 700; color: #4A9A94; }
+
+    #clock-box { margin-bottom: 14px; }
+    #clock-box svg { display: block; }
+
+    .opt-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      width: min(88vw, 380px);
+    }
+    .opt-btn {
+      padding: 14px 0;
+      background: white;
+      border: 2.5px solid #7ECCC5;
+      border-radius: 16px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #0F5E5A;
+      cursor: pointer;
+      transition: all 0.12s;
+      touch-action: manipulation;
+    }
+    .opt-btn:hover { background: #E8F8F6; }
+    .opt-btn:disabled { cursor: default; }
+    .opt-btn.right { background: #7EC850; border-color: #4F9030; color: white; }
+    .opt-btn.wrong { background: #F08080; border-color: #C0392B; color: white; animation: shake 0.3s; }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
+    /* ── Overlay ── */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(240, 251, 250, 0.96);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      border-radius: 19px;
+      padding: 20px;
+      text-align: center;
+    }
+    .overlay.hidden { display: none; }
+    .ov-emoji { font-size: 3.2rem; margin-bottom: 8px; }
+    .ov-title { font-size: 1.9rem; font-weight: 900; color: #0F5E5A; margin-bottom: 2px; }
+    .ov-title-en { font-size: 1.05rem; font-weight: 800; color: #4A9A94; margin-bottom: 8px; letter-spacing: 0.5px; }
+    .ov-desc  { font-size: 1rem; font-weight: 700; color: #4A9A94; margin-bottom: 16px; line-height: 1.55; }
+    .ov-label { font-size: 0.82rem; font-weight: 800; color: #4A9A94; letter-spacing: 1px; margin-bottom: 8px; }
+
+    .pick-grid { display: flex; gap: 8px; justify-content: center; margin-bottom: 18px; flex-wrap: wrap; }
+    .pick-btn {
+      padding: 9px 18px;
+      border: 2.5px solid #7ECCC5;
+      background: white;
+      color: #0F5E5A;
+      border-radius: 14px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1rem;
+      font-weight: 900;
+      cursor: pointer;
+      transition: all 0.13s;
+    }
+    .pick-btn:hover  { background: #E8F8F6; }
+    .pick-btn.active { background: #14A398; color: white; border-color: #14A398; }
+
+    .big-btn {
+      padding: 13px 42px;
+      background: #7EC850;
+      color: white;
+      border: none;
+      border-radius: 18px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #4F9030;
+      transition: all 0.12s;
+    }
+    .big-btn:hover  { background: #6DB840; transform: translateY(-1px); }
+    .big-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #4F9030; }
+
+    .record-badge {
+      display: none;
+      background: #FFF4D6;
+      color: #E8850C;
+      border: 2px solid #F5C36A;
+      border-radius: 20px;
+      padding: 5px 18px;
+      font-size: 1rem;
+      font-weight: 900;
+      margin-bottom: 12px;
+    }
+    .record-badge.show { display: inline-block; animation: badgePop 0.5s cubic-bezier(.34,1.56,.64,1); }
+    @keyframes badgePop {
+      0%   { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1);   opacity: 1; }
+    }
+
+    .result-box {
+      background: white;
+      border: 2.5px solid #C8EAE7;
+      border-radius: 18px;
+      padding: 14px 30px;
+      margin-bottom: 18px;
+      box-shadow: 0 4px 14px rgba(20,163,152,0.15);
+    }
+    .result-row { display: flex; justify-content: space-between; gap: 30px; font-size: 1.1rem; font-weight: 800; color: #0F5E5A; padding: 3px 0; }
+    .result-row span:last-child { color: #E8850C; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="title">시계 마스터</div>
+    <div class="title-en">Clock Master</div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat"><span class="stat-icon">⭐</span><span id="score">0</span></div>
+    <div class="stat"><span class="stat-icon">🧾</span><span id="round">1</span>/10</div>
+    <div class="stat" id="streak-stat"><span class="stat-icon">🔥</span><span id="streak">0</span></div>
+  </div>
+
+  <div class="stage-wrap">
+    <div class="stage" id="stage">
+      <div id="round-area" style="display:flex;flex-direction:column;align-items:center;width:100%;"></div>
+
+      <!-- Start overlay -->
+      <div class="overlay" id="start-overlay">
+        <div class="ov-emoji">⏰</div>
+        <div class="ov-title">시계 마스터</div>
+        <div class="ov-title-en">Clock Master</div>
+        <div class="ov-desc">시계를 보고 알맞은 시각을 골라보세요<br>Read the clock and pick the right time</div>
+        <div class="ov-label">놀이 방법 · Mode</div>
+        <div class="pick-grid" id="mode-grid">
+          <button class="pick-btn active" data-mode="read">시각 읽기 Read</button>
+          <button class="pick-btn" data-mode="elapsed">몇 분 후? Later</button>
+        </div>
+        <div class="ov-label">난이도 · Level</div>
+        <div class="pick-grid" id="level-grid">
+          <button class="pick-btn active" data-level="easy">쉬움 Easy</button>
+          <button class="pick-btn" data-level="medium">보통 Medium</button>
+          <button class="pick-btn" data-level="hard">어려움 Hard</button>
+        </div>
+        <button class="big-btn" id="start-btn">시작 · Start</button>
+      </div>
+
+      <!-- End overlay -->
+      <div class="overlay hidden" id="over-overlay">
+        <div class="ov-emoji" id="over-emoji">⏰</div>
+        <div class="ov-title" id="over-title">시간 끝!</div>
+        <div class="ov-title-en" id="over-title-en">Time's Up</div>
+        <div class="record-badge" id="record-badge">신기록! New Record!</div>
+        <div class="result-box">
+          <div class="result-row"><span>모드 · Mode</span><span id="final-mode"></span></div>
+          <div class="result-row"><span>점수 · Score</span><span id="final-score">0</span></div>
+          <div class="result-row"><span>맞힌 문제 · Correct</span><span id="final-correct">0</span></div>
+          <div class="result-row"><span>내 최고 기록 · Best</span><span id="final-best">0</span></div>
+          <div class="result-row"><span>누적 맞힌 문제 · Total</span><span id="final-total">0</span></div>
+        </div>
+        <button class="big-btn" id="retry-btn">다시 하기 · Retry 🔄</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+
+  const roundArea = document.getElementById('round-area');
+  const startOverlay = document.getElementById('start-overlay');
+  const overOverlay  = document.getElementById('over-overlay');
+
+  const TOTAL_ROUNDS = 10;
+  const irnd = n => Math.floor(Math.random() * n);
+  const pick = arr => arr[irnd(arr.length)];
+
+  /* ── 사운드 ── */
+  let audioCtx = null;
+  function beep(freq, dur, type = 'sine', gain = 0.15) {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = type; o.frequency.value = freq;
+      g.gain.setValueAtTime(gain, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(); o.stop(audioCtx.currentTime + dur);
+    } catch (e) { /* 무시 */ }
+  }
+  const sndOk = () => { beep(660, 0.12, 'triangle'); beep(990, 0.18, 'triangle', 0.1); };
+  const sndNo = () => beep(220, 0.2, 'square', 0.08);
+
+  /* ── 기록 저장 ── */
+  const STORE_KEY = 'clockStats';
+  function loadStats() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch (e) { return {}; }
+  }
+  function saveStats(s) {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(s)); } catch (e) { /* 무시 */ }
+  }
+
+  /* ── 상태 ── */
+  let mode = 'read', level = 'easy';
+  let round = 0, score = 0, correctCount = 0, streak = 0;
+
+  const MODE_LABEL  = { read: '시각 읽기 Read', elapsed: '몇 분 후 Later' };
+  const LEVEL_LABEL = { easy: '쉬움', medium: '보통', hard: '어려움' };
+
+  document.querySelectorAll('#mode-grid .pick-btn').forEach(b => b.addEventListener('click', () => {
+    mode = b.dataset.mode;
+    document.querySelectorAll('#mode-grid .pick-btn').forEach(x => x.classList.toggle('active', x === b));
+  }));
+  document.querySelectorAll('#level-grid .pick-btn').forEach(b => b.addEventListener('click', () => {
+    level = b.dataset.level;
+    document.querySelectorAll('#level-grid .pick-btn').forEach(x => x.classList.toggle('active', x === b));
+  }));
+
+  /* ── 시각 유틸 (분 단위 0~719, 12시간) ── */
+  const fmtT = t => {
+    const h = Math.floor(t / 60) % 12 || 12;
+    const m = t % 60;
+    return `${h}:${String(m).padStart(2, '0')}`;
+  };
+  const randTime = () => {
+    const h = irnd(12);
+    let m;
+    if (level === 'easy')        m = pick([0, 30]);
+    else if (level === 'medium') m = irnd(12) * 5;
+    else                         m = irnd(60);
+    return h * 60 + m;
+  };
+
+  /* ── 아날로그 시계 SVG ── */
+  function clockSvg(t, size) {
+    const h = Math.floor(t / 60) % 12;
+    const m = t % 60;
+    const hourDeg = h * 30 + m * 0.5;
+    const minDeg  = m * 6;
+    let ticks = '';
+    for (let i = 0; i < 60; i++) {
+      const a = i * 6 * Math.PI / 180;
+      const big = i % 5 === 0;
+      const r1 = big ? 80 : 84, r2 = 88;
+      ticks += `<line x1="${100 + r1 * Math.sin(a)}" y1="${100 - r1 * Math.cos(a)}"
+        x2="${100 + r2 * Math.sin(a)}" y2="${100 - r2 * Math.cos(a)}"
+        stroke="#0F5E5A" stroke-width="${big ? 3 : 1}" stroke-linecap="round"/>`;
+    }
+    let nums = '';
+    for (let n = 1; n <= 12; n++) {
+      const a = n * 30 * Math.PI / 180;
+      nums += `<text x="${100 + 66 * Math.sin(a)}" y="${100 - 66 * Math.cos(a)}"
+        text-anchor="middle" dominant-baseline="central"
+        font-family="Nunito" font-size="17" font-weight="900" fill="#0F5E5A">${n}</text>`;
+    }
+    return `<svg width="${size}" height="${size}" viewBox="0 0 200 200">
+      <circle cx="100" cy="100" r="94" fill="white" stroke="#14A398" stroke-width="7"/>
+      ${ticks}${nums}
+      <line x1="100" y1="100" x2="100" y2="52" stroke="#0F5E5A" stroke-width="7" stroke-linecap="round"
+        transform="rotate(${hourDeg} 100 100)"/>
+      <line x1="100" y1="100" x2="100" y2="28" stroke="#E8850C" stroke-width="5" stroke-linecap="round"
+        transform="rotate(${minDeg} 100 100)"/>
+      <circle cx="100" cy="100" r="6" fill="#0F5E5A"/>
+    </svg>`;
+  }
+
+  /* ── 보기 생성 ── */
+  function makeOptions(answer, base) {
+    const opts = new Set([answer]);
+    const tryAdd = t => {
+      const tt = ((t % 720) + 720) % 720;
+      if (!opts.has(tt)) opts.add(tt);
+    };
+    const m = answer % 60, h = Math.floor(answer / 60) % 12;
+    // 바늘을 서로 바꿔 읽은 오답 (분침이 5분 단위일 때)
+    if (m % 5 === 0) tryAdd((Math.floor(m / 5) % 12) * 60 + (h % 12) * 5);
+    if (base !== undefined) tryAdd(base);                         // 경과 문제: 원래 시각도 오답 후보
+    while (opts.size < 4) {
+      const kind = irnd(3);
+      if (kind === 0) tryAdd(answer + 60);                        // 시만 다름
+      else if (kind === 1) tryAdd(answer - 60);
+      else {
+        const step = level === 'easy' ? 30 : level === 'medium' ? 5 : 1 + irnd(9);
+        tryAdd(answer + (irnd(2) ? step : -step) * (1 + irnd(2)));
+      }
+    }
+    // 정답은 맨 처음 추가되므로 앞 4개에 항상 포함됨 → 섞어서 반환
+    return [...opts].slice(0, 4).sort(() => Math.random() - 0.5);
+  }
+
+  /* ── 라운드 ── */
+  let answer = 0, judged = false;
+
+  function renderRound() {
+    judged = false;
+    const base = randTime();
+    let qKo, qEn, shown;
+
+    if (mode === 'read') {
+      answer = base;
+      shown = base;
+      qKo = '시계가 가리키는 시각은?';
+      qEn = 'What time is it?';
+    } else {
+      let delta;
+      if (level === 'easy')        delta = pick([15, 30, 60]);
+      else if (level === 'medium') delta = (1 + irnd(11)) * 5;
+      else                         delta = 1 + irnd(59);
+      answer = (base + delta) % 720;
+      shown = base;
+      qKo = `${delta}분 후는 몇 시일까요?`;
+      qEn = `What time will it be in ${delta} minutes?`;
+    }
+
+    const opts = makeOptions(answer, mode === 'elapsed' ? shown : undefined);
+
+    roundArea.innerHTML = `
+      <div class="question">${qKo}<br><span class="en">${qEn}</span></div>
+      <div id="clock-box">${clockSvg(shown, Math.min(250, window.innerWidth * 0.55))}</div>
+      <div class="opt-grid">
+        ${opts.map(t => `<button class="opt-btn" data-t="${t}">${fmtT(t)}</button>`).join('')}
+      </div>`;
+
+    roundArea.querySelectorAll('.opt-btn').forEach(b => b.addEventListener('click', () => {
+      if (judged) return;
+      judged = true;
+      const t = parseInt(b.dataset.t, 10);
+      roundArea.querySelectorAll('.opt-btn').forEach(x => {
+        x.disabled = true;
+        if (parseInt(x.dataset.t, 10) === answer) x.classList.add('right');
+      });
+      if (t === answer) {
+        streak++;
+        const gain = 10 + (streak >= 3 ? streak : 0);
+        score += gain;
+        correctCount++;
+        sndOk();
+      } else {
+        b.classList.add('wrong');
+        streak = 0;
+        sndNo();
+      }
+      updateStats();
+      setTimeout(nextRound, 1400);
+    }));
+  }
+
+  function nextRound() {
+    round++;
+    if (round >= TOTAL_ROUNDS) { gameOver(); return; }
+    document.getElementById('round').textContent = round + 1;
+    renderRound();
+  }
+
+  function updateStats() {
+    document.getElementById('score').textContent = score;
+    document.getElementById('streak').textContent = streak;
+  }
+
+  /* ── 시작/종료 ── */
+  function startGame() {
+    round = 0; score = 0; correctCount = 0; streak = 0;
+    updateStats();
+    document.getElementById('round').textContent = 1;
+    startOverlay.classList.add('hidden');
+    overOverlay.classList.add('hidden');
+    renderRound();
+  }
+
+  function gameOver() {
+    const key = `${mode}_${level}`;
+    const stats = loadStats();
+    stats.best = stats.best || {};
+    const prevBest  = stats.best[key] || 0;
+    const newRecord = correctCount > 0 && score > prevBest;
+    if (newRecord) stats.best[key] = score;
+    stats.totalCorrect = (stats.totalCorrect || 0) + correctCount;
+    stats.totalGames   = (stats.totalGames   || 0) + 1;
+    saveStats(stats);
+
+    document.getElementById('final-mode').textContent    = `${MODE_LABEL[mode]} · ${LEVEL_LABEL[level]}`;
+    document.getElementById('final-score').textContent   = score;
+    document.getElementById('final-correct').textContent = correctCount + ' / ' + TOTAL_ROUNDS;
+    document.getElementById('final-best').textContent    = Math.max(prevBest, score);
+    document.getElementById('final-total').textContent   = stats.totalCorrect + '개';
+    document.getElementById('record-badge').classList.toggle('show', newRecord);
+
+    const emoji = correctCount >= 9 ? '🏆' : correctCount >= 6 ? '🌟' : '⏰';
+    const title = correctCount >= 9 ? '시계 마스터!' : correctCount >= 6 ? '잘했어요!' : '시간 끝!';
+    const titleEn = correctCount >= 9 ? 'Clock Master!' : correctCount >= 6 ? 'Great Job!' : "Time's Up";
+    document.getElementById('over-emoji').textContent    = emoji;
+    document.getElementById('over-title').textContent    = title;
+    document.getElementById('over-title-en').textContent = titleEn;
+    roundArea.innerHTML = '';
+    overOverlay.classList.remove('hidden');
+  }
+
+  document.getElementById('start-btn').addEventListener('click', startGame);
+  document.getElementById('retry-btn').addEventListener('click', () => {
+    overOverlay.classList.add('hidden');
+    startOverlay.classList.remove('hidden');
+  });
+})();
+</script>
+</body>
+</html>
