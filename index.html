@@ -3690,6 +3690,24 @@ function getStore() {
     if (u.role === 'student' && /^t\d+$/.test(u.id) && !u.isTest) u.isTest = true;
   });
   if (!d.currentPeriod) d.currentPeriod = { year: new Date().getFullYear(), month: new Date().getMonth()+1, week: 1 };
+  // [2026-08-25] 기간 정규화 — 모든 읽기가 getStore()를 거치므로 여기 한 곳이면 충분하다.
+  //   그 달에 없는 주차(예: 4주까지인 8월의 5주차)는 마지막 주로 보정한다.
+  //   setPeriod()의 보정만으로는 부족했다: 이미 잘못 저장된 기간으로 화면이 열리면
+  //   주 드롭다운은 1주차를 보여주는데 실제 저장값은 5주차라 화면이 거짓말을 하고,
+  //   Apply를 누르지 않고 바로 숙제를 올리면 도달 불가능한 주차로 들어갔다.
+  //   출처(다른 기기·옛 백업 복원·향후 달력 규칙 변경)와 무관하게 여기서 걸린다.
+  {
+    const _p = d.currentPeriod;
+    const _t = getTodayPeriod();
+    if (!(_p.year >= 2000))        _p.year  = _t.year;
+    if (!(_p.month >= 1 && _p.month <= 12)) _p.month = _t.month;
+    const _mx = weeksInMonth(_p.year, _p.month);
+    if (!(_p.week >= 1)) _p.week = 1;
+    if (_p.week > _mx) {
+      console.warn(`[period] ${_p.year}년 ${_p.month}월에 없는 ${_p.week}주차 → ${_mx}주차로 보정`);
+      _p.week = _mx;
+    }
+  }
   // migrate old currentWeek → currentPeriod
   if (d.currentWeek !== undefined && !d.currentPeriod) {
     d.currentPeriod = { year: new Date().getFullYear(), month: new Date().getMonth()+1, week: d.currentWeek };
@@ -4446,6 +4464,80 @@ let parsedQuestions = [];
 let editingSetIdx = null;      // -1=new set, 0+=editing existing set
 let editingCalcRanges = [];   // [{from, to, allowed}]
 
+// [2026-08-25] "만들었는데 아무도 볼 수 없는 숙제" 감지.
+//   검증(막기)은 '있을 수 없는 값'만 걸러낸다. 반이 안 맞거나 그 학년에 재원생이 없는 경우처럼
+//   '가능하지만 틀린' 상태는 막을 수 없고 감지만 가능하다. 이 검사는 원인을 따지지 않고
+//   결과만 본다 — 볼 사람이 0명이면 걸린다. 아직 모르는 경로도 여기 걸릴 가능성이 높다.
+//   실제 사고: AU_y7_2026_m08_w5 (120문항이 넉 달간 묻혀 있었고 우연히 발견됨).
+function findUnseenHomework(store) {
+  const KEY = /^([A-Z]{2})_y(\d+)(?:-(.+))?_(\d{4})_m(\d{2})_w(\d+)$/;
+  const today = getTodayPeriod();
+  const actives = (store.users || []).filter(u =>
+    u.role === 'student' && u.status !== 'inactive' && !u.isTest);
+  const out = [];
+
+  for (const [key, hw] of Object.entries(store.homeworkSets || {})) {
+    if (!hw) continue;
+    const qCount = (hw.sets || []).reduce((n, s) => n + (s.questions || []).length, 0)
+                 + ((hw.ts && hw.ts.questions) || []).length;
+    if (qCount === 0) continue;                       // 빈 껍데기는 경고하지 않는다
+
+    // ★ 키가 진실이다. 학생에게 보이는지는 hwLookup()이 만드는 키로만 결정되므로
+    //   버킷 안의 필드가 아니라 키를 파싱한다. 실제로 4/3 ISO 마이그레이션이 키만 옮기고
+    //   안의 period 필드는 그대로 둬서 7개 버킷이 어긋나 있다(예: 키는 2026 m04 w1,
+    //   필드는 2026 m03 w5). 필드를 믿으면 멀쩡한 숙제를 고장났다고 보고하게 된다.
+    const m = KEY.exec(key);
+    const country = m ? m[1] : (hw.country || 'AU');
+    const yr      = m ? parseInt(m[2]) : (hw.year != null ? hw.year : null);
+    const group   = m ? (m[3] || '') : (hw.group || '');
+    const per     = m ? { year:+m[4], month:+m[5], week:+m[6] } : (hw.period || null);
+    if (yr == null || !per) continue;
+
+    const maxW = weeksInMonth(per.year, per.month);
+    if (per.week > maxW) {
+      out.push({ key, yr, group, per, qCount,
+                 why: `${per.month}월은 ${maxW}주까지인데 ${per.week}주차에 있습니다 — 아무도 열 수 없습니다` });
+      continue;                                        // 주차가 깨졌으면 나머지는 볼 필요 없다
+    }
+    if (!periodGte(per, today)) continue;              // 지난 주차는 경고하지 않는다(정상적인 과거 기록)
+
+    const sameYC = actives.filter(s => s.year === yr && (s.country || 'AU') === country);
+    if (sameYC.length === 0) {
+      out.push({ key, yr, group, per, qCount,
+                 why: `Year ${yr}${country === 'KR' ? ' (한국)' : ''} 재원생이 없습니다` });
+    } else if (group && !sameYC.some(s => (s.group || '') === group)) {
+      out.push({ key, yr, group, per, qCount,
+                 why: `'${group}' 반에 배정된 Year ${yr} 학생이 없습니다` });
+    }
+  }
+  out.sort((a, b) => b.per.year - a.per.year || b.per.month - a.per.month || b.per.week - a.per.week);
+  return out;
+}
+
+function unseenHomeworkBanner(store) {
+  let items;
+  try { items = findUnseenHomework(store); }
+  catch (e) { console.warn('[unseenHomework] 검사 실패:', e); return ''; }   // 검사가 실패해도 화면은 떠야 한다
+  if (items.length === 0) return '';
+  const rows = items.map(it => `
+    <div style="display:flex;gap:10px;align-items:baseline;padding:6px 0;border-top:1px solid #fecaca;">
+      <b style="color:#991b1b;white-space:nowrap;">Year ${it.yr}${it.group ? ` · ${escHtml(it.group)}반` : ''}</b>
+      <span style="color:#7f1d1d;white-space:nowrap;">${periodLabel(it.per)}</span>
+      <span style="color:#7f1d1d;white-space:nowrap;">${it.qCount}문항</span>
+      <span style="color:#b91c1c;">${escHtml(it.why)}</span>
+    </div>`).join('');
+  return `
+    <div style="background:#fef2f2;border:2px solid #dc2626;border-radius:12px;padding:14px 18px;margin-bottom:18px;">
+      <div style="font-weight:900;color:#991b1b;font-size:15px;margin-bottom:4px;">
+        ⚠️ 아무도 볼 수 없는 숙제가 ${items.length}건 있습니다
+      </div>
+      <div style="font-size:12px;color:#b91c1c;margin-bottom:6px;">
+        올리셨지만 학생 화면에 뜨지 않는 숙제입니다. 기간이나 반 배정을 확인해 주세요.
+      </div>
+      ${rows}
+    </div>`;
+}
+
 function renderTeacher() {
   closeModal();
   var _ovr = document.getElementById('loadingOverlay');
@@ -4470,6 +4562,7 @@ function renderTeacher() {
 
   let html = `
     <div class="page-title">📋 Weekly Homework Management</div>
+    ${unseenHomeworkBanner(store)}
     <div style="display:flex;gap:10px;margin-bottom:20px;">
       <button class="btn-sm ${selectedCountry==='AU'?'btn-navy':'btn-blue'}" onclick="selectCountryTab('AU')">🇦🇺 Australian (${auCount})</button>
       <button class="btn-sm ${selectedCountry==='KR'?'btn-navy':'btn-blue'}" onclick="selectCountryTab('KR')">🇰🇷 Korean (${krCount})</button>
@@ -5055,7 +5148,7 @@ function updatePeriodWeekOpts() {
   const cur = parseInt(sel.value) || 1;
   sel.innerHTML = Array.from({length: maxW}, (_, i) => i + 1).map(w => {
     const lbl = periodLabelShort({year:y, month:m, week:w});
-    return `<option value="${w}"${w === Math.min(cur, maxW) ? 'selected' : ''}>${lbl}</option>`;
+    return `<option value="${w}"${w === Math.min(cur, maxW) ? ' selected' : ''}>${lbl}</option>`;
   }).join('');
 }
 
