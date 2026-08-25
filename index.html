@@ -4464,6 +4464,26 @@ let parsedQuestions = [];
 let editingSetIdx = null;      // -1=new set, 0+=editing existing set
 let editingCalcRanges = [];   // [{from, to, allowed}]
 
+// [2026-08-25] 트리밍된 로컬 미러에는 '도달 불가능한 주차'가 원리상 절대 들어오지 않는다.
+//   보관 창(_recentPeriodKeySet)은 정상 주차만 걸어서 만들기 때문에, 8월 5주차 같은 키는
+//   어떤 창 길이에서도 제외된다. 그래서 findUnseenHomework()가 로컬 store만 보면
+//   정작 찾아야 할 것을 영영 못 본다(첫 배포에서 실제로 경고가 0건으로 떴다).
+//   Firebase 전체 스냅샷이 손에 있는 지점에서 '키 + 문항 수'만 기록해 둔다.
+//   값은 보관하지 않으므로 메모리 부담이 없고, 저장 경로는 건드리지 않는다.
+function _noteAllHomeworkKeys(data) {
+  try {
+    const hs = data && data.homeworkSets;
+    if (!hs) return;
+    const meta = {};
+    for (const [k, hw] of Object.entries(hs)) {
+      if (!hw) continue;
+      meta[k] = (hw.sets || []).reduce((n, s) => n + ((s.questions || []).length), 0)
+              + (((hw.ts && hw.ts.questions) || []).length);
+    }
+    window._allHwMeta = meta;
+  } catch (e) { console.warn('[unseenHomework] 키 기록 실패:', e); }
+}
+
 // [2026-08-25] 반 이름을 A/B/C 고정에서 자유 입력으로.
 //   학생 한 명만 들어있는 반 = 그 학생 전용 숙제. hwLookup()의 폴백(반 키 없으면 공통 키)이
 //   이미 있으므로, 개인 숙제를 만들지 않은 학생은 자동으로 학년 공통 숙제를 그대로 본다.
@@ -4507,10 +4527,17 @@ function findUnseenHomework(store) {
     u.role === 'student' && u.status !== 'inactive' && !u.isTest);
   const out = [];
 
-  for (const [key, hw] of Object.entries(store.homeworkSets || {})) {
-    if (!hw) continue;
-    const qCount = (hw.sets || []).reduce((n, s) => n + (s.questions || []).length, 0)
-                 + ((hw.ts && hw.ts.questions) || []).length;
+  // Firebase 전체에서 기록해 둔 키 목록을 우선 쓴다(_noteAllHomeworkKeys 참조).
+  // 로컬 store는 최근 4주만 담고 있어 여기서 찾으려는 것이 애초에 들어있지 않다.
+  const local = store.homeworkSets || {};
+  const meta = window._allHwMeta;
+  const entries = meta
+    ? Object.keys(meta).map(k => ({ key: k, qCount: meta[k], hw: local[k] || null }))
+    : Object.entries(local).map(([k, hw]) => ({ key: k, hw,
+        qCount: !hw ? 0 : (hw.sets || []).reduce((n, s) => n + (s.questions || []).length, 0)
+                        + ((hw.ts && hw.ts.questions) || []).length }));
+
+  for (const { key, hw, qCount } of entries) {
     if (qCount === 0) continue;                       // 빈 껍데기는 경고하지 않는다
 
     // ★ 키가 진실이다. 학생에게 보이는지는 hwLookup()이 만드는 키로만 결정되므로
@@ -4518,10 +4545,10 @@ function findUnseenHomework(store) {
     //   안의 period 필드는 그대로 둬서 7개 버킷이 어긋나 있다(예: 키는 2026 m04 w1,
     //   필드는 2026 m03 w5). 필드를 믿으면 멀쩡한 숙제를 고장났다고 보고하게 된다.
     const m = KEY.exec(key);
-    const country = m ? m[1] : (hw.country || 'AU');
-    const yr      = m ? parseInt(m[2]) : (hw.year != null ? hw.year : null);
-    const group   = m ? (m[3] || '') : (hw.group || '');
-    const per     = m ? { year:+m[4], month:+m[5], week:+m[6] } : (hw.period || null);
+    const country = m ? m[1] : ((hw && hw.country) || 'AU');
+    const yr      = m ? parseInt(m[2]) : (hw && hw.year != null ? hw.year : null);
+    const group   = m ? (m[3] || '') : ((hw && hw.group) || '');
+    const per     = m ? { year:+m[4], month:+m[5], week:+m[6] } : ((hw && hw.period) || null);
     if (yr == null || !per) continue;
 
     const maxW = weeksInMonth(per.year, per.month);
@@ -12952,6 +12979,7 @@ const firebaseConfig = {
         if (!data.homeworkSets) return;
         // [Security 2026-05] Firebase에서 받는 데이터에서 API 키 항상 제거
         if (data.claudeApiKey) delete data.claudeApiKey;
+        _noteAllHomeworkKeys(data);   // 트리밍 전에 전체 키 기록 (읽기만, 저장 경로 영향 없음)
 
         // [Fix 2026-05-30] 학생/학부모: homeworkSets·currentPeriod만 선택적 업데이트
         // submissions(진행중 답)은 절대 덮어쓰지 않음. 이후 renderStudent() 자동 호출.
@@ -13009,6 +13037,7 @@ const firebaseConfig = {
         // [Security 2026-05] Firebase 수신/송신 데이터 양쪽에서 API 키 제거
         if (fbData?.claudeApiKey) delete fbData.claudeApiKey;
         if (localData?.claudeApiKey) delete localData.claudeApiKey;
+        _noteAllHomeworkKeys(fbData);   // 트리밍 전에 전체 키 기록 (읽기만, 저장 경로 영향 없음)
 
         if (fbData) {
           // [Safety 2026-05-15] 데이터 손실 사고 후 부팅 시 wholesale upload 경로 제거.
