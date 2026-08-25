@@ -6,6 +6,7 @@
 <title>Solomon Academy – Free Level Test</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{--navy:#0a1628;--navy2:#112240;--gold:#c9a84c;--gold2:#f0d080;--white:#f8f6f0;--gray:#8a9bb0;--red:#e05252;--green:#4caf7d;--orange:#f59e0b;}
@@ -423,6 +424,19 @@ const firebaseConfig = {
 try { firebase.initializeApp(firebaseConfig); } catch(e) {}
 let LT_REF = null;
 try { LT_REF = firebase.database().ref('lt_results'); } catch(e) {}
+
+// [2026-08-25] 이 페이지는 firebase-auth 를 아예 불러오지 않아서, 2026-05-12 에 DB 규칙이
+//   auth != null 로 조여진 뒤로 lt_results 쓰기가 전부 거부되고 있었다. 남아 있는 유일한
+//   기록이 5/6(규칙 변경 6일 전)인 이유다. 응시자 화면에는 점수가 정상으로 떠서 본인은
+//   제출된 줄 알고, 원장 알림은 영영 뜨지 않았다 — 3개월 반 동안 아무도 몰랐다.
+//   index.html 과 같은 익명 인증을 붙인다.
+let LT_AUTH = null;
+try {
+  LT_AUTH = firebase.auth().signInAnonymously();
+  LT_AUTH.catch(e => console.error('[LT] 익명 인증 실패:', e));
+} catch (e) {
+  console.error('[LT] firebase-auth 사용 불가:', e);
+}
 
 let LT_TEMPLATES = null;
 
@@ -1406,8 +1420,80 @@ function saveResult(pct, grade, correct, total, topics, weakAreas) {
     phone_format:     state.phoneFormat     ?? 'unknown',
     email_common:     state.emailCommon     ?? false,
   };
-  try { LT_REF.push(record); } catch(e) {}
+  _ltSend(record);
 }
+
+// [2026-08-25] 예전 코드는 `try { LT_REF.push(record); } catch(e) {}` 였다.
+//   권한 거부는 여기서 던져지지 않고 나중에 따로 오기 때문에 catch 에 안 걸린다.
+//   그래서 3개월 반 동안 한 건도 저장되지 않는데도 화면엔 아무 표시가 없었다.
+//   이제는 (1) 인증을 기다리고 (2) 실패를 응시자에게 보여주고 (3) 기기에 남겨 재시도한다.
+const LT_PENDING_KEY = 'sa_lt_pending';
+
+async function _ltSend(record) {
+  try {
+    if (!LT_REF) throw new Error('DB 연결 없음');
+    if (LT_AUTH) await LT_AUTH;
+    await LT_REF.push(record);
+    _ltClearPending(record);
+    return true;
+  } catch (e) {
+    console.error('[LT] 결과 저장 실패:', e);
+    _ltStashPending(record);
+    _ltShowSaveFailure();
+    return false;
+  }
+}
+
+function _ltStashPending(record) {
+  try {
+    const list = JSON.parse(localStorage.getItem(LT_PENDING_KEY) || '[]');
+    if (!list.some(r => r.timestamp === record.timestamp)) list.push(record);
+    localStorage.setItem(LT_PENDING_KEY, JSON.stringify(list.slice(-5)));
+  } catch (e) {}
+}
+
+function _ltClearPending(record) {
+  try {
+    const list = JSON.parse(localStorage.getItem(LT_PENDING_KEY) || '[]');
+    const rest = list.filter(r => r.timestamp !== record.timestamp);
+    if (rest.length) localStorage.setItem(LT_PENDING_KEY, JSON.stringify(rest));
+    else localStorage.removeItem(LT_PENDING_KEY);
+    if (!rest.length) document.getElementById('lt-save-failed')?.remove();
+  } catch (e) {}
+}
+
+// 페이지를 다시 열면 밀린 결과를 조용히 재전송한다.
+async function _ltFlushPending() {
+  let list;
+  try { list = JSON.parse(localStorage.getItem(LT_PENDING_KEY) || '[]'); } catch (e) { return; }
+  if (!Array.isArray(list) || !list.length) return;
+  for (const r of list.slice()) await _ltSend(r);
+}
+
+function _ltShowSaveFailure() {
+  if (document.getElementById('lt-save-failed')) return;
+  const host = document.getElementById('screen-result') || document.body;
+  const box = document.createElement('div');
+  box.id = 'lt-save-failed';
+  box.style.cssText = 'background:#fef2f2;border:2px solid #dc2626;border-radius:12px;padding:14px 18px;margin-bottom:16px;color:#991b1b;font-size:14px;line-height:1.6;';
+  box.innerHTML =
+    '<b>⚠️ 결과가 학원으로 전송되지 않았습니다.</b><br>' +
+    '점수는 위에 그대로 나와 있습니다. 아래 버튼을 눌러 다시 시도해 주세요.<br>' +
+    '계속 안 되면 <b>0424 743 564</b> 로 연락 주시면 됩니다.' +
+    '<div style="margin-top:10px;"><button id="lt-retry-btn" style="padding:8px 18px;background:#dc2626;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">🔄 다시 전송</button></div>';
+  host.insertBefore(box, host.firstChild);
+  box.querySelector('#lt-retry-btn').onclick = async (ev) => {
+    ev.target.disabled = true;
+    ev.target.textContent = '전송 중...';
+    await _ltFlushPending();
+    if (document.getElementById('lt-save-failed')) {
+      ev.target.disabled = false;
+      ev.target.textContent = '🔄 다시 전송';
+    }
+  };
+}
+
+window.addEventListener('load', () => { _ltFlushPending(); });
 
 /* ── SCREEN SWITCH ── */
 function showScreen(id) {
