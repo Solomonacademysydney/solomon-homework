@@ -4464,6 +4464,37 @@ let parsedQuestions = [];
 let editingSetIdx = null;      // -1=new set, 0+=editing existing set
 let editingCalcRanges = [];   // [{from, to, allowed}]
 
+// [2026-08-25] 반 이름을 A/B/C 고정에서 자유 입력으로.
+//   학생 한 명만 들어있는 반 = 그 학생 전용 숙제. hwLookup()의 폴백(반 키 없으면 공통 키)이
+//   이미 있으므로, 개인 숙제를 만들지 않은 학생은 자동으로 학년 공통 숙제를 그대로 본다.
+//
+//   ★ 반 이름은 숙제 키의 일부다: hwKey() → `AU_y7-<반>_2026_m08_w4`.
+//     '_'는 키의 칸 구분자라 반 이름에 들어가면 키를 되읽을 때 칸이 밀린다. 그래서 제거한다.
+function sanitizeGroup(v) {
+  return String(v == null ? '' : v)
+    .replace(/[_\r\n\t]/g, ' ')     // 키 구분자와 제어문자 제거
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 20);
+}
+
+// 실제로 학생에게 배정되어 있는 반 목록. 반은 따로 저장하지 않고 학생 배정에서 유도한다
+// (쓰지 않는 유령 반이 남지 않는다). country를 주면 그 나라 학생만 본다.
+function allGroups(store, country) {
+  const gs = (store.users || [])
+    .filter(u => u.role === 'student' && u.status !== 'inactive' && !u.isTest)
+    .filter(u => !country || (u.country || 'AU') === country)
+    .map(u => sanitizeGroup(u.group))
+    .filter(g => g !== '');
+  return [...new Set(gs)].sort((a, b) => a.localeCompare(b, 'ko'));
+}
+
+function groupDatalistHtml(store) {
+  return `<datalist id="groupNameList">${
+    allGroups(store).map(g => `<option value="${escHtml(g)}"></option>`).join('')
+  }</datalist>`;
+}
+
 // [2026-08-25] "만들었는데 아무도 볼 수 없는 숙제" 감지.
 //   검증(막기)은 '있을 수 없는 값'만 걸러낸다. 반이 안 맞거나 그 학년에 재원생이 없는 경우처럼
 //   '가능하지만 틀린' 상태는 막을 수 없고 감지만 가능하다. 이 검사는 원인을 따지지 않고
@@ -4546,6 +4577,10 @@ function renderTeacher() {
   const store      = getStore();
   const p          = store.currentPeriod;
   const allStudents = store.users.filter(u => u.role==='student' && u.status !== 'inactive');
+  // 반 탭은 실제 학생 배정에서 만들어진다. 보고 있던 반의 마지막 학생이 빠지면 탭이 사라지므로
+  // 공통(미지정)으로 되돌린다 — 아니면 아무 탭도 선택되지 않은 화면이 된다.
+  const _groupTabs = allGroups(store, selectedCountry);
+  if (selectedGroup && !_groupTabs.includes(selectedGroup)) selectedGroup = '';
   const students   = allStudents.filter(s => (s.country||'AU') === selectedCountry && (s.group||'') === selectedGroup && !s.isTest);
   const years      = [...new Set(students.map(s=>s.year))].sort((a,b)=>a-b);
 
@@ -4569,7 +4604,10 @@ function renderTeacher() {
     </div>
     <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;">
       <span style="font-size:13px;color:var(--muted);font-weight:700;">반:</span>
-      ${['','A','B','C'].map(g=>`<button class="btn-sm ${selectedGroup===g?'btn-navy':'btn-blue'}" onclick="selectGroupTab('${g}')">${g===''?'미지정(공통)':g}</button>`).join('')}
+      ${['', ..._groupTabs].map(g=>`<button class="btn-sm ${selectedGroup===g?'btn-navy':'btn-blue'}" onclick="selectGroupTab(${JSON.stringify(g).replace(/"/g,'&quot;')})">${g===''?'미지정(공통)':escHtml(g)}</button>`).join('')}
+      ${_groupTabs.length === 0
+        ? `<span style="font-size:12px;color:var(--muted);">— 반은 <b>Students</b> 탭에서 학생에게 이름을 적어주면 여기에 생깁니다 (학생 한 명만 넣으면 그 학생 전용 숙제)</span>`
+        : ''}
     </div>
     <div class="page-sub">Select a year group to assign the same homework to all students in that year.</div>
     <div class="week-bar">
@@ -5875,12 +5913,7 @@ function renderStudentManagementSection(store) {
         <option value="AU"${(s.country||'AU')==='AU'?'selected':''}>🇦🇺 AU</option>
         <option value="KR"${s.country==='KR'?'selected':''}>🇰🇷 KR</option>
       </select></td>
-      <td><select id="se_group_${s.id}" style="border:1px solid var(--border);border-radius:6px;padding:3px 4px;font-size:13px;">
-        <option value=""${!s.group?'selected':''}>미지정</option>
-        <option value="A"${s.group==='A'?'selected':''}>A</option>
-        <option value="B"${s.group==='B'?'selected':''}>B</option>
-        <option value="C"${s.group==='C'?'selected':''}>C</option>
-      </select></td>
+      <td><input id="se_group_${s.id}" list="groupNameList" value="${escHtml(s.group||'')}" placeholder="미지정" title="비워두면 학년 공통 숙제를 봅니다. 이 학생만 쓰는 이름을 적으면 그 학생 전용 숙제가 됩니다." style="width:84px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:13px;"></td>
       <td><input id="se_school_name_${s.id}" value="${s.school_name||''}" placeholder="학교명" style="width:110px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:13px;"></td>
       <td><select id="se_school_group_${s.id}" style="border:1px solid var(--border);border-radius:6px;padding:3px 4px;font-size:13px;">
         <option value=""${!s.school_group?'selected':''}>미설정</option>
@@ -5921,6 +5954,7 @@ function renderStudentManagementSection(store) {
   const inactiveRows = inactiveStudents.map(s => buildStudentRow(s, true)).join('');
 
   return `
+    ${groupDatalistHtml(store)}
     <div class="settings-card" style="margin-top:8px;">
       <h2>👨‍🎓 Student Management</h2>
       <div style="overflow-x:auto;">
@@ -5972,12 +6006,7 @@ function renderStudentManagementSection(store) {
           <option value="Catholic_Sydney">천주교계</option>
           <option value="Indep_Other">기타 사립</option>
         </select></div>
-        <div class="field"><label>반 그룹</label><select id="ns_group" style="width:100%;padding:10px 13px;border:2px solid var(--border);border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-size:14px;outline:none;">
-          <option value="">미지정</option>
-          <option value="A">A</option>
-          <option value="B">B</option>
-          <option value="C">C</option>
-        </select></div>
+        <div class="field"><label>반 그룹</label><input id="ns_group" list="groupNameList" placeholder="미지정 (비우면 학년 공통 숙제)" style="width:100%;padding:10px 13px;border:2px solid var(--border);border-radius:10px;font-family:'Noto Sans KR',sans-serif;font-size:14px;outline:none;"></div>
       </div>
       <div id="ns_school_calendar_override_section" style="display:none;margin-bottom:10px;">
         <div class="field-row">
@@ -6059,6 +6088,7 @@ async function saveStudentEdit(oldId) {
   if (seSchoolNameEl)  u.school_name  = seSchoolNameEl.value.trim();
   if (seSchoolGroupEl) u.school_group = seSchoolGroupEl.value;
   const seGroupEl = document.getElementById(`se_group_${oldId}`);
+  if (seGroupEl) seGroupEl.value = sanitizeGroup(seGroupEl.value);   // 반 이름은 숙제 키의 일부다
   if (seGroupEl && seGroupEl.value !== (u.group || '')) {
     // [가드] 이번 주 제출기록이 있는 학생의 그룹을 바꾸면 제출 상태가 새 그룹 세트에 잘못 승계됨
     const _p = store.currentPeriod;
@@ -6238,7 +6268,7 @@ async function addStudent() {
       if (t3) schoolCalendarOverride.term3 = { start: t3 };
     }
   }
-  const group = document.getElementById('ns_group')?.value || '';
+  const group = sanitizeGroup(document.getElementById('ns_group')?.value || '');
   store.users.push({id,pw:hpw,role:'student',name,year,country,group,status:'active',days:[],
     school_name:schoolName, school_group:schoolGroup, school_calendar_override:schoolCalendarOverride});
   saveStore(store);
