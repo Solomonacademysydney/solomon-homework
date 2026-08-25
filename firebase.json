@@ -1,4 +1,8 @@
 {
+  "database": {
+    "// 주의": "이 저장소는 공개(PUBLIC)다. 규칙 파일에는 원장 계정 uid와 어느 경로가 열려 있는지가 그대로 담기므로 저장소에 올리지 않는다. backup/ 은 .gitignore 대상이라 여기 둔다. 배포 전 현재 규칙은 backup/database.rules.CURRENT_*.json 으로 받아둘 것 (firebase database:get /.settings/rules).",
+    "rules": "backup/database.rules.json"
+  },
   "hosting": {
     "public": ".",
     "ignore": [
