@@ -4880,7 +4880,7 @@ function renderTeacher() {
     html += `<div style="margin-bottom:16px;">
       <div style="font-weight:800;color:var(--navy);font-size:14px;margin-bottom:6px;">Year ${yr}</div>
       <table class="results-table">
-        <thead><tr><th>Name</th><th>ID</th><th>Status</th><th>Score per Set</th><th>Report</th><th>Reset</th><th>수동 완료</th></tr></thead><tbody>`;
+        <thead><tr><th>Name</th><th>ID</th><th>Status</th><th>Score per Set</th><th>🧠 TS</th><th>Report</th><th>Reset</th><th>수동 완료</th></tr></thead><tbody>`;
     yrStudentsAll.forEach(s => {
       let status = sets.length > 0 ? 'Not submitted' : 'No homework';
       let scoreHtml = '-';
@@ -4904,6 +4904,30 @@ function renderTeacher() {
         }
         scoreHtml = `<div style="display:flex;gap:6px;flex-wrap:wrap;">${setResults.join('')}</div>`;
       }
+      // [2026-08-28] TS(띵킹) 진도 열. 이 표는 MR만 세고 있어서, 띵킹만 한 학생은
+      //   "No homework"로 보였다 — 실제로는 하경이가 8월 3주 6일치를 다 푼 상태였다.
+      //   ★ 위쪽 sets/hw는 selectedGroup 기준인데 yrStudentsAll은 반을 안 가린다.
+      //     TS는 학생 자기 반(s.group)으로 다시 조회해야 개인 반 학생이 옳게 나온다.
+      const tsHw = hwLookup(store, s.year, s.country || 'AU', p, s.group);
+      const tsAssigned = !!(tsHw?.ts?.enabled && tsHw.ts.questions?.length > 0);
+      let tsHtml = '<span style="color:var(--muted);font-size:12px;">-</span>';
+      if (tsAssigned) {
+        const tsTotalDays = tsHw.ts.day_config?.total_days || 0;
+        const tsD = buildTSReportData(s.id, p, store);
+        if (!tsD) {
+          // 배정은 됐는데 기록이 아직 없다 — "미배정(-)"과 반드시 구별해서 보여준다.
+          tsHtml = `<span style="color:var(--muted);font-size:12px;white-space:nowrap;">⏳ 0/${tsTotalDays}일</span>`;
+        } else {
+          const done = tsD.completedDays;
+          const tot  = tsD.totalDays || tsTotalDays;
+          const allDone = tot > 0 && done >= tot;
+          const rateCls = tsD.firstTryRate >= 80 ? 'pill-a' : tsD.firstTryRate >= 60 ? 'pill-b' : 'pill-c';
+          const ratePill = tsD.totalQuestions > 0
+            ? ` <span class="score-pill ${rateCls}" style="font-size:11px;" title="한 번에 정답 ${tsD.firstTryCorrect}/${tsD.totalQuestions}문항">${tsD.firstTryRate}%</span>`
+            : '';
+          tsHtml = `<span style="font-size:12px;font-weight:800;white-space:nowrap;color:${allDone?'#16a34a':'#4c1d95'};">${allDone?'✅':'🧠'} ${done}/${tot}일</span>${ratePill}`;
+        }
+      }
       const reportBtn = anySubmitted ? `<button class="btn-report" onclick="viewAsParent('${s.id}')">📊 결과 리포트</button>` : '-';
       const resetBtns = sets.map((_,idx) => {
         const sk = subKey(s.id, p, idx);
@@ -4920,7 +4944,7 @@ function renderTeacher() {
         const btnTitle = isManual ? '수동 처리됨 (다시 처리 가능)' : '수동 완료 처리';
         return `<button class="btn-sm" style="padding:2px 7px;font-size:11px;background:${isManual?'#a78bfa':'#7c3aed'};color:#fff;" onclick="manualMarkSubmission('${s.id}',${idx})" title="${btnTitle}">${btnLabel}</button>`;
       }).join('');
-      html += `<tr><td><b>${escHtml(s.name)}</b>${s.isTest?' <span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;">TEST</span>':''}</td><td>${s.id}</td><td>${status}</td><td>${scoreHtml}</td><td>${reportBtn}</td><td style="white-space:nowrap;">${resetBtns||'-'}</td><td style="white-space:nowrap;">${manualBtns||'-'}</td></tr>`;
+      html += `<tr><td><b>${escHtml(s.name)}</b>${s.isTest?' <span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;">TEST</span>':''}</td><td>${s.id}</td><td>${status}</td><td>${scoreHtml}</td><td>${tsHtml}</td><td>${reportBtn}</td><td style="white-space:nowrap;">${resetBtns||'-'}</td><td style="white-space:nowrap;">${manualBtns||'-'}</td></tr>`;
     });
     html += `</tbody></table></div>`;
   });
