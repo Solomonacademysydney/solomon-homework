@@ -72,6 +72,14 @@ const MAX_CONTENT_BLOCKS = 4;  // cached + fresh + 여유분
 const RATE_LIMIT_PER_DAY = 60;           // 브라우저(uid) 하나가 하루에
 const RATE_LIMIT_GLOBAL_PER_DAY = 500;   // 학원 전체가 하루에
 
+// [2026-08-30] 교사(원장) 계정만 uid 당 상한을 건너뛴다. 전체 상한은 그대로 받는다.
+//   일괄 사전생성은 **세트 하나당 AI 를 4번** 부른다(2라운드 × 해설·연습문제).
+//   한 주 전체를 돌리면 세트 40개 ≈ **160번** — 60 으로는 중간에 끊긴다.
+//   실측에서 하루 28회를 쓴 uid 가 바로 이 계정이었다(≈ 7세트 한 번).
+//   아이들(익명)은 한 문제에 몇 번이면 충분하므로 60 을 그대로 둔다.
+//   ⚠ 이 uid 는 비밀이 아니다(index.html 에 이미 공개되어 있다). 알아도 그 계정이 되지는 못한다.
+const OPERATOR_UID = '62bxWubzDLMrhHjjv2oNfAQiyaD2';
+
 // ============================================================
 // Phase 1.5: Rate Limit 헬퍼
 // 트랜잭션으로 원자적 증가 + 한도 검증 (race condition 방지)
@@ -92,9 +100,11 @@ async function checkAndIncrementRateLimit(uid) {
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC 기준)
 
   // ① 브라우저 하나짜리 한도를 먼저 본다.
-  //   순서가 중요하다 — 자기 한도를 넘긴 사람이 계속 되둘이하면서
+  //   순서가 중요하다 — 자기 한도를 넘긴 사람이 계속 되풀이하면서
   //   전체 상한까지 깎아먹는 일을 막는다.
-  if (!(await _bump(`rate_limits/${uid}_${today}`, RATE_LIMIT_PER_DAY))) {
+  //   교사(원장)만 이 칸을 건너뛴다 — 일괄 사전생성 때문. 세는 것은 그대로 센다.
+  const perDayLimit = (uid === OPERATOR_UID) ? Infinity : RATE_LIMIT_PER_DAY;
+  if (!(await _bump(`rate_limits/${uid}_${today}`, perDayLimit))) {
     throw new HttpsError('resource-exhausted', 'R-DAILY');
   }
 
