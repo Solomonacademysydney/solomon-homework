@@ -2801,7 +2801,15 @@ function _clearLocalStorageFull() {
 }
 
 function saveStore(d) {
-  if (window.isPreviewMode) return true;
+  // ★ [묶음 B-1 · 2026-08-30] 미리보기 전용 「임시 서랍」.
+  //   예전에는 그냥 true 를 돌려주고 버렸다. 그래서 답을 눌러도 다음 화면에서
+  //   사라졌고, TS 는 Day1 1번에서 멈췄다(④).
+  //   이제는 메모리 사본에만 쌓는다 — 나가거나 새로고침하면 저절로 사라진다.
+  if (window.isPreviewMode) {
+    d.lastModified = Date.now();
+    window._previewStore = d;
+    return true;
+  }
   d.lastModified = Date.now();
   _captureOldPeriodOverlay(d);  // 과거 주차 편집분을 메모리 오버레이에 보존(로컬엔 트리밍됨)
   return _persistLocalStore(d);
@@ -2990,6 +2998,16 @@ async function _flushRetryQueue() {
 
 // ── Firebase Granular Write Helpers ──
 function fbWrite(updates, onSuccess) {
+  // ★ [묶음 B-1 · 2026-08-30] 미리보기 중에는 **인터넷에 한 글자도 안 쓴다.**
+  //   예전에는 문이 둘인데 하나만 닫혀 있었다 — 내 컴퓨터 저장(saveStore)은
+  //   막혔는데 이쪽은 열려 있어서 「미리보기인데 진짜 기록이 남는」 일이 생겼다.
+  //   fbWrite 는 파이어베이스 쓰기의 단 하나인 길목이라(부르는 곳 20) 여기서 막는다.
+  //   ⇒ 준비된 뒤 목록(retry queue)에도 안 들어간다. 자국 0.
+  if (window.isPreviewMode) {
+    console.info('[preview] Firebase 쓰기 건너뜀:', Object.keys(updates || {}));
+    if (onSuccess) onSuccess(true);   // 화면은 저장된 것처럼 그대로 돌아간다
+    return;
+  }
   if (!window.fbReady || !window.FB_REF) {
     // [Safety 2026-05-29] silent skip 방지 — 학생 자기 submission이면 queue + 알림
     _addToRetryQueue(updates);
@@ -3712,6 +3730,23 @@ function getTodayPeriod() {
 })();
 
 function getStore() {
+  // ★ [묶음 B-1 · 2026-08-30] 미리보기 중이면 임시 서랍이 진실이다.
+  //   ⛔ **조건이 둘 다 필요하다.** isPreviewMode 만 보면 미리보기를 켜자마자
+  //   아직 안 채운 빈 서랍을 보게 되고, _previewStore 만 보면 미리보기를 나간
+  //   뒤에도 계속 임시 서랍을 보게 된다 — **평상시가 망가지는 최악.**
+  //   서랍은 startPreviewMode() 에서 진짜 store 사본으로 한 번 채우고,
+  //   exitPreviewMode()/doLogout() 에서 비운다.
+  if (window.isPreviewMode && window._previewStore) {
+    const pd = window._previewStore;
+    // 지난 주차를 열면 _ensurePeriodLoaded() 가 인터넷에서 받아 온다.
+    // 임시 서랍에 **아직 없는 칸만** 채운다 — 미리보기에서 만진 칸은 안 건드린다.
+    const ex = window._extraPeriodData;
+    if (ex) {
+      if (ex.homeworkSets) for (const k of Object.keys(ex.homeworkSets)) if (!(k in pd.homeworkSets)) pd.homeworkSets[k] = ex.homeworkSets[k];
+      if (ex.submissions)  for (const k of Object.keys(ex.submissions))  if (!(k in pd.submissions))  pd.submissions[k]  = ex.submissions[k];
+    }
+    return pd;
+  }
   const raw = localStorage.getItem(STORE_KEY);
   if (!raw) return { users:[], homeworkSets:{}, submissions:{}, currentPeriod:{ year:new Date().getFullYear(), month:new Date().getMonth()+1, week:1 } };
   const d = JSON.parse(raw);
@@ -4466,6 +4501,7 @@ function doLogout() {
     }
   } catch(e) { console.warn('[Auth] doLogout 처리 실패:', e); }
   window.isPreviewMode = false;
+  window._previewStore = null;   // [묶음 B-1] 임시 서랍을 비운다
   _originalTeacher = null;
   document.getElementById('previewBanner')?.remove();
   document.querySelector('.main')?.style.removeProperty('padding-top');
@@ -13185,6 +13221,10 @@ function startPreviewMode() {
   const student = store.users.find(u => u.id === sel.value);
   if (!student) return;
   _originalTeacher = currentUser;
+  // ★ [묶음 B-1] 임시 서랍을 진짜 store 사본으로 채우고 들어간다.
+  //   지난 미리보기의 찌꺼기가 남지 않도록 항상 새로 만든다.
+  //   사본이라 여기서 무엇을 하든 진짜 store 에는 닿지 않는다.
+  window._previewStore = JSON.parse(JSON.stringify(store));
   window.isPreviewMode = true;
   currentUser = { ...student };
   studentPeriod = store.currentPeriod;
@@ -13218,6 +13258,7 @@ function renderPreviewBanner() {
 
 function exitPreviewMode() {
   window.isPreviewMode = false;
+  window._previewStore = null;   // [묶음 B-1] 임시 서랍을 비운다
   currentUser = _originalTeacher;
   _originalTeacher = null;
   currentSetIdx = null;
