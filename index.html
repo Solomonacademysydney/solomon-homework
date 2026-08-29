@@ -14966,6 +14966,135 @@ function completeTSDay() {
 }
 
 
+
+// ═══════════════════════════════════════════════════════════════════════
+//  만기 알림판  (2026-08-29 추가 · ⑬)
+// ───────────────────────────────────────────────────────────────────────
+//  날짜가 박힌 집안일이 다가오면 교사 화면에 알린다. 원장님만 본다.
+//  기존 코드는 하나도 건드리지 않는다 — 여기서만 붙였다 뗐다 한다.
+//
+//  ⛔ 판 번호와 날짜는 반드시 한 줄에 나란히 적을 것.
+//     따로 두면 갈아탄 뒤 날짜를 안 고쳐 「거짓말하는 알림」이 된다.
+//     알림이 한 번 거짓말하면 그때부터 아무도 안 본다.
+//
+//  계단: 1년 전 회색 · 6개월 노랑 · 2개월 노란 띠 ·
+//        1개월 주황 띠(오늘 그만 눌러도 다음 날 또) · 1주·지남 빨강(안 없어짐)
+// ═══════════════════════════════════════════════════════════════════════
+const UPKEEP_ITEMS = [
+  { what: '심부름꾼 판 (Node 20)', due: '2026-10-30',
+    todo: 'Node 24 로 올리기',
+    note: '올린 뒤 이 줄을 「심부름꾼 판 (Node 24) · 2028-10-31」 로 고칠 것' },
+  // 새 집안일은 여기에 한 줄씩 더한다.
+  // { what: '무엇 (판·번호까지)', due: 'YYYY-MM-DD', todo: '무엇을 하나', note: '' },
+];
+
+const _UPKEEP_DISMISS_KEY = 'solomon_upkeep_dismissed_on';
+
+function _upkeepDaysLeft(due) {
+  const d = new Date(due + 'T23:59:59');
+  if (isNaN(d)) return null;
+  return Math.ceil((d - new Date()) / 86400000);
+}
+
+function _upkeepLevel(days) {
+  if (days === null) return null;
+  if (days <= 7) return 'red';
+  if (days <= 30) return 'orange';
+  if (days <= 60) return 'yellow';
+  if (days <= 180) return 'chipY';
+  if (days <= 365) return 'chipG';
+  return null;
+}
+
+function _upkeepDismissedToday() {
+  try {
+    return localStorage.getItem(_UPKEEP_DISMISS_KEY) === new Date().toDateString();
+  } catch (e) { return false; }
+}
+
+function _upkeepDismissToday() {
+  try { localStorage.setItem(_UPKEEP_DISMISS_KEY, new Date().toDateString()); } catch (e) {}
+  document.getElementById('upkeepBanner')?.remove();
+}
+
+function _upkeepText(it, days) {
+  if (days < 0) return `${it.what} — 기한이 ${-days}일 지났습니다 (${it.due}) · ${it.todo}`;
+  if (days === 0) return `${it.what} — 오늘이 기한입니다 (${it.due}) · ${it.todo}`;
+  return `${it.what} — ${days}일 남았습니다 (${it.due}) · ${it.todo}`;
+}
+
+function renderUpkeepNotice() {
+  try {
+    document.getElementById('upkeepBanner')?.remove();
+    document.getElementById('upkeepChip')?.remove();
+    if (typeof currentUser === 'undefined' || !currentUser) return;
+    if (currentUser.role !== 'teacher') return;
+    if (window.isPreviewMode) return;
+
+    // 급한 것부터 고른다
+    const rows = (UPKEEP_ITEMS || [])
+      .map(it => ({ it, days: _upkeepDaysLeft(it.due) }))
+      .filter(r => r.days !== null && _upkeepLevel(r.days))
+      .sort((a, b) => a.days - b.days);
+    if (!rows.length) return;
+
+    const top = rows[0];
+    const lv = _upkeepLevel(top.days);
+    const more = rows.length > 1 ? ` (그 밖 ${rows.length - 1}건)` : '';
+
+    // ── 아직 여유가 있을 때: 오른쪽 아래 작은 칩
+    if (lv === 'chipG' || lv === 'chipY') {
+      const chip = document.createElement('div');
+      chip.id = 'upkeepChip';
+      chip.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:9998;'
+        + 'background:' + (lv === 'chipY' ? '#fef3c7' : '#eef1f4') + ';'
+        + 'color:' + (lv === 'chipY' ? '#92400e' : '#5b6572') + ';'
+        + 'border:1px solid ' + (lv === 'chipY' ? '#fcd34d' : '#d6dbe1') + ';'
+        + 'padding:7px 12px;border-radius:8px;font-size:12px;line-height:1.5;'
+        + 'font-family:\'Noto Sans KR\',sans-serif;max-width:320px;'
+        + 'box-shadow:0 2px 8px rgba(0,0,0,.08);';
+      chip.textContent = '🗓 ' + _upkeepText(top.it, top.days) + more;
+      document.body.appendChild(chip);
+      return;
+    }
+
+    // ── 가까워졌을 때: 위쪽 띠
+    if ((lv === 'yellow' || lv === 'orange') && _upkeepDismissedToday()) return;
+
+    const bg = lv === 'red' ? '#b91c1c' : (lv === 'orange' ? '#c2410c' : '#b45309');
+    // 저장공간 경고 띠가 이미 있으면 그 아래로 내린다
+    const offset = document.getElementById('localStorageFullBanner') ? 52 : 0;
+
+    const b = document.createElement('div');
+    b.id = 'upkeepBanner';
+    b.style.cssText = 'position:fixed;top:' + offset + 'px;left:0;right:0;background:' + bg + ';'
+      + 'color:#fff;padding:12px 20px;text-align:center;font-weight:800;font-size:14px;'
+      + 'z-index:99998;box-shadow:0 4px 12px rgba(0,0,0,.25);'
+      + 'font-family:\'Noto Sans KR\',sans-serif;line-height:1.5;';
+
+    const span = document.createElement('span');
+    span.textContent = (lv === 'red' ? '⛔ ' : '⚠️ ') + _upkeepText(top.it, top.days) + more;
+    b.appendChild(span);
+
+    if (lv !== 'red') {
+      const btn = document.createElement('button');
+      btn.textContent = '오늘은 그만 보기';
+      btn.style.cssText = 'margin-left:14px;padding:4px 12px;border:none;border-radius:6px;'
+        + 'background:rgba(255,255,255,.9);color:#333;font-weight:700;font-size:12px;'
+        + 'cursor:pointer;font-family:\'Noto Sans KR\',sans-serif;';
+      btn.onclick = _upkeepDismissToday;
+      b.appendChild(btn);
+    }
+    document.body.appendChild(b);
+  } catch (e) {
+    console.warn('[upkeep] 알림판 건너뜀:', e);
+  }
+}
+
+// 화면이 바뀌어도 알아서 따라붙게 — 기존 코드를 안 건드리려고 시계로 돈다
+setInterval(renderUpkeepNotice, 20000);
+setTimeout(renderUpkeepNotice, 3000);
+
 </script>
 
 <!-- ════════════════════════════════════════════════════════════════════ -->
