@@ -2,7 +2,7 @@
   "name": "functions",
   "description": "Cloud Functions for Solomon - Anthropic API proxy for student-side AI calls",
   "engines": {
-    "node": "20"
+    "node": "24"
   },
   "main": "index.js",
   "dependencies": {
