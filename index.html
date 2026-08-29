@@ -13718,7 +13718,16 @@ function _mergeTsJsonFiles(results) {
       explanation: q.explanation || (a && a.explanation) || '',
       figure: q.figure || (a && a.figure) || '',
       taxonomy_id: q.taxonomy_id || (a && a.taxonomy_id) || '',
-      type: q.type || 'general'
+      type: q.type || 'general',
+      // [묶음 B-3 · 2026-08-30] 오답 딱지를 살린다.
+      // 학생 화면은 고른 **글자**(selected · wrongAttempts)만 저장하므로,
+      // 이 둘이 없으면 나중에 「글자 → 보기 id → 오개념」을 짝지으려면
+      // 만들 때 쓴 주간 파일을 반드시 찾아야 한다(잃으면 그때는 끝이다).
+      // 넣어 두면 숙제 칸만으로 혼자 서게 된다.
+      // ⚠ 무게 — 재 보았다: TS 세트 기준 **+8~10%**(Y6 한 주 99,435B → +8,468B).
+      //    압축하지 않고 원본 그대로 둔다 — 압축하면 나중에 못 푸는 위험이 생긴다.
+      ...(q._item_id ? { _item_id: q._item_id } : {}),
+      ...(q._label_to_id ? { _label_to_id: q._label_to_id } : {})
     };
   });
 
