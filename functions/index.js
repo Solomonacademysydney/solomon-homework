@@ -57,29 +57,53 @@ const MAX_MESSAGES = 5;        // 1~2개가 일반적, 5개면 충분
 const MAX_CONTENT_BLOCKS = 4;  // cached + fresh + 여유분
 
 // Phase 1.5: 사용자(uid)별 일일 호출 제한
-// 1인 운영 + 학원 30명 기준 충분 (학생 30명 × 호출 10회 = 300, 교사 일괄 작업 여유분 200)
-// 익명 인증 UID는 브라우저별로 stable, 한도 초과 시 다음날 자정에 리셋
-const RATE_LIMIT_PER_DAY = 500;
+// 익명 인증 UID는 브라우저별로 stable, 한도 초과 시 다음날 자정(UTC)에 리셋
+//
+// [2026-08-30] 두 가지를 고쳤다.
+//   ① uid 당 한도를 500 → 60 으로 낮춤.
+//     실측(rate_limits 최근 7일): 하루 최대 28회 · 평균 16회 · 브라우저 1~3개.
+//     500 은 실제 최대의 18배였다. 60 이면 여전히 2배 여유.
+//   ② **학원 전체 하루 상한을 신설.**
+//     uid 당 한도만으로는 상한이 아니다 — 익명 계정은 공짜로 무한히 만들 수 있고,
+//     이 저장소는 공개(PUBLIC)라 index.html 의 브라우저 열쇠를 누구나 읽는다.
+//     실제로 브라우저 없이 스크립트로 「익명 로그인 → 호출」이 되는 것을 확인했다.
+//     ⇒ 진짜 자물쇠는 App Check 이고(콘솔 작업 필요), 이것은 **피해 상한**이다.
+//   ⚠ 전체 상한에 걸리면 **모두가 동시에** AI 를 못 쓴다. 실측 최대의 18배로 잡았다.
+const RATE_LIMIT_PER_DAY = 60;           // 브라우저(uid) 하나가 하루에
+const RATE_LIMIT_GLOBAL_PER_DAY = 500;   // 학원 전체가 하루에
 
 // ============================================================
 // Phase 1.5: Rate Limit 헬퍼
 // 트랜잭션으로 원자적 증가 + 한도 검증 (race condition 방지)
 // 한도 초과 시 'R-DAILY' HttpsError throw
 // ============================================================
-async function checkAndIncrementRateLimit(uid) {
-  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC 기준)
-  const ref = admin.database().ref(`rate_limits/${uid}_${today}`);
-
-  const result = await ref.transaction((current) => {
+async function _bump(path, limit) {
+  const res = await admin.database().ref(path).transaction((current) => {
     const next = (current || 0) + 1;
-    if (next > RATE_LIMIT_PER_DAY) {
+    if (next > limit) {
       return; // abort: 트랜잭션 미커밋
     }
     return next;
   });
+  return res.committed;
+}
 
-  if (!result.committed) {
+async function checkAndIncrementRateLimit(uid) {
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC 기준)
+
+  // ① 브라우저 하나짜리 한도를 먼저 본다.
+  //   순서가 중요하다 — 자기 한도를 넘긴 사람이 계속 되둘이하면서
+  //   전체 상한까지 깎아먹는 일을 막는다.
+  if (!(await _bump(`rate_limits/${uid}_${today}`, RATE_LIMIT_PER_DAY))) {
     throw new HttpsError('resource-exhausted', 'R-DAILY');
+  }
+
+  // ② 학원 전체 하루 상한.
+  //   키는 `_global_<날짜>` — cleanupRateLimits 가 key.split('_').pop() 으로
+  //   날짜를 떼므로 이 이름도 7일 뒤 같이 치워진다.
+  if (!(await _bump(`rate_limits/_global_${today}`, RATE_LIMIT_GLOBAL_PER_DAY))) {
+    console.warn(`[rateLimit] 학원 전체 하루 상한 ${RATE_LIMIT_GLOBAL_PER_DAY} 초과 — ${today} (uid ${uid})`);
+    throw new HttpsError('resource-exhausted', 'R-GLOBAL');
   }
 }
 
