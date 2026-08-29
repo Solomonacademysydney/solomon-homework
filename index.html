@@ -3044,13 +3044,33 @@ function fbSetPeriod(period) {
   fbWrite({ currentPeriod: period });
 }
 
-function fbSetHomeworkSets(homeworkSets) {
-  fbWrite({ homeworkSets: homeworkSets });
+// ── [묶음 B-2 · 2026-08-30] 죽은 함수 지뢰 제거 ─────
+// 아래 넷(fbSetHomeworkSets · fbSetSubmissions · getAIKey · setAIKey)은
+// 부르는 곳이 한 군데도 없다(index.html 전수 확인 2026-08-30).
+// 그렇다고 지우면 「불렸는지 아닌지」를 모르게 되므로,
+// 먼저 **부르면 큰 소리로 멈추게** 막아 둔다. 한두 주 뒤에 함수를 지운다.
+//   확인   _deadCallLog()       ← 교사 화면 콘솔에서
+//   비우기 _deadCallLog(true)
+function _deadCall(name, why) {
+  const msg = '[DEAD] ' + name + '() 는 폐기된 함수입니다 — ' + why;
+  try {
+    const k = 'solomon_dead_calls';
+    const log = JSON.parse(localStorage.getItem(k) || '{}');
+    log[name] = { n: ((log[name] && log[name].n) || 0) + 1, last: new Date().toISOString() };
+    localStorage.setItem(k, JSON.stringify(log));
+  } catch (e) { /* 서랍이 꽉 차도 멈추는 일이 우선 */ }
+  console.error(msg, new Error(msg).stack);
+  throw new Error(msg);
+}
+function _deadCallLog(clear) {
+  if (clear) { localStorage.removeItem('solomon_dead_calls'); return '비웠습니다'; }
+  try { return JSON.parse(localStorage.getItem('solomon_dead_calls') || '{}'); } catch (e) { return {}; }
 }
 
-function fbSetSubmissions(submissions) {
-  fbWrite({ submissions: submissions });
-}
+// ⛔ 통째 덮어쓰기 — 부르면 전교생 숙제/제출이 한 번에 날아간다(5/8·5/15 사고의 모양).
+//    쓸 일이 생기면 「바뀐 열쇠만」 surgical update 로 쓸 것.
+function fbSetHomeworkSets() { _deadCall('fbSetHomeworkSets', '통째 덮어쓰기 금지 · 바뀐 열쇠만 update 할 것'); }
+function fbSetSubmissions()  { _deadCall('fbSetSubmissions',  '통째 덮어쓰기 금지 · 바뀐 열쇠만 update 할 것'); }
 
 // ── Auth Helpers (Operator Elevation, 2026-05-16) ──────────
 // 압축형 인증 모델: 원장 1명만 Firebase Auth(email/password) 도입.
@@ -10774,11 +10794,12 @@ function copyKakaoMsg(resultIdx) {
 // ═══════════════════════════════════════
 //  AI INTEGRATION (Phase 2A: all calls via Cloud Functions)
 // ═══════════════════════════════════════
-// [Phase 2A — Phase 5 stub] getAIKey/setAIKey는 더 이상 사용하지 않음.
-// 외부 코드에서 호출하던 잔여 호출을 1주간 console.warn으로 감지 후 완전 제거 예정.
-// 또한 페이지 로드 시 옛 잔여 solomon_teacher_api_key를 1회 청소.
-function getAIKey() { console.warn('[deprecated] getAIKey called'); return ''; }
-function setAIKey() { console.warn('[deprecated] setAIKey called'); }
+// [Phase 2A — 2026-08-30 묶음 B-2] getAIKey/setAIKey 는 폐기됐다.
+// 열쇠는 브라우저에 없고 Functions 의 ANTHROPIC_KEY 하나뿐이다.
+// 조용히 ''를 돌려주면 「열쇠가 없다」로 잘못 읽힐 수 있어 **부르면 멈춘다**.
+// (예전 잔여 solomon_teacher_api_key 청소는 페이지 로드 쪽에 그대로 있다.)
+function getAIKey() { _deadCall('getAIKey', '브라우저에 열쇠 없음 · AI 는 callAI() 로만'); }
+function setAIKey() { _deadCall('setAIKey', '브라우저에 열쇠 없음 · Functions 설정으로만'); }
 
 async function callAI(input) {
   // [Phase 2A] 모든 호출 Cloud Functions 경유 — 브라우저에 키 0
