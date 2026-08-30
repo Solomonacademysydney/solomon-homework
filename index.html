@@ -13408,6 +13408,54 @@ async function _fullStoreForBackup() {
   return null; // Firebase 불가 — 트리밍된 로컬로 백업하면 백업 무결성/이상감지 가드를 해치므로 보류
 }
 
+// ── [묶음 D-6 · 2026-08-30] 새 저장 길(sol_v4)도 백업에 담는다 ─────────────
+//   왜 필요한가: _fullStoreForBackup() 은 FB_REF(=solomon_hw_v3) 한 뿌리만 뜬다.
+//   새 길은 그 밖의 최상위 뿌리라 **아예 안 담긴다** — 그대로 두면 새 길 자료는 백업이 한 벌도 없다.
+//   ⛔ 여기서 반드시 지키는 것 — **새 길을 읽다 실패해도 기존 백업은 그대로 간다.**
+//      실패하면 null 을 돌려주고, 부르는 쪽은 v4 없이 평소대로 백업한다.
+//      (새 길의 사고가 옛 길의 안전망을 끊으면 안 된다)
+const V4_REF_PATH = 'sol_v4';
+//   자동 백업(30칸)에 담을 가지 — **대체 불가능한 것만.**
+//   bank·fig 는 C:\TS작업 창고에서 다시 올릴 수 있으므로 뺀다
+//   (FB_ONLY_LOCAL_DROP 이 「재생성 가능한 캐시는 뺀다」고 한 것과 같은 원칙).
+//   수동 다운로드는 sol_v4 를 **전부** 받는다.
+const V4_AUTOBACKUP_BRANCHES = ['assign', 'work'];
+//   ⛔ **뿌리를 통째로 읽으면 안 된다** — 규칙이 sol_v4 자체에 .read:false 를 걸어 두었다
+//   (아이 브라우저가 새 길을 통째로 받는 것을 막으려고 일부러 그렇게 했다 · D-2).
+//   그래서 「전부」도 뿌리 한 번이 아니라 **가지를 하나씩** 읽는다.
+const V4_ALL_BRANCHES = ['bank', 'fig', 'assign', 'work'];
+
+// branches 를 안 주면 sol_v4 전부(가지별로). 실패하면 null(= 담지 못함).
+async function _v4ForBackup(branches) {
+  if (!window.fbReady) return null;
+  try {
+    const root = firebase.database().ref(V4_REF_PATH);
+    const out = {};
+    for (const b of (branches || V4_ALL_BRANCHES)) {
+      const snap = await root.child(b).once('value');
+      const v = snap.val();
+      if (v) out[b] = v;
+    }
+    return out;
+  } catch (e) {
+    console.error('[backup] 새 길(sol_v4) 스냅샷 실패 — 기존 백업은 그대로 진행:', e);
+    return null;
+  }
+}
+
+// 새 길의 「아이가 푼 날」 칸이 몇인지 센다 — work/{학생}/{주차}/{날} 세 겹.
+// 이상 감지(급감 가드)가 옛 길의 submissions 를 세는 것과 같은 자리.
+function _countV4Work(v4) {
+  let cnt = 0;
+  const work = (v4 && v4.work) || {};
+  for (const sid of Object.keys(work)) {
+    for (const wk of Object.keys(work[sid] || {})) {
+      cnt += Object.keys(work[sid][wk] || {}).length;
+    }
+  }
+  return cnt;
+}
+
 async function autoBackupToFirebase() {
   if (!window.FB_REF) return;
   try {
@@ -13420,12 +13468,21 @@ async function autoBackupToFirebase() {
     const hwSetCount = Object.keys(store.homeworkSets || {}).length;
     const submissionCount = Object.keys(store.submissions || {}).length;
 
+    // [묶음 D-6] 새 저장 길도 함께 뜬다. 실패하면 v4 = null 이고, 그때는 옛 길만 담아 평소대로 간다.
+    const v4 = await _v4ForBackup(V4_AUTOBACKUP_BRANCHES);
+    const v4WorkCount = v4 ? _countV4Work(v4) : null;
+    if (!v4) console.warn('[Backup] 새 길을 못 담았다 — 옛 길만 백업한다');
+
     // [Fix 2026-06-23 / A] 중복 백업 억제 — 직전 백업 이후 데이터 변경이 없으면 스냅샷 생략.
     // 같은 날 여러 번 로그인해도 변경이 없으면 동일 스냅샷이 반복 적재되지 않음(용량 급증 방지).
     // store.lastModified는 모든 fbWrite마다 갱신되므로 실제 변경 여부의 신뢰성 있는 지표.
     // 서명을 localStorage에만 보관 → Firebase 노드 추가 없음(=pruning/이상감지 로직 무영향).
     // 변경이 없으면 이상감지용 대용량 조회(_detectBackupAnomaly)까지 건너뛰어 다운로드도 절약.
-    const backupSig = `${hwSetCount}:${submissionCount}:${store.lastModified || 0}`;
+    // [묶음 D-6] 서명에 새 길을 더한다. 안 더하면 **새 길만 바뀐 날은 백업이 통째로 생략된다**
+    //   (store.lastModified 는 옛 길 쓰기에서만 갱신되므로 새 길 변화를 모른다).
+    //   길이(JSON 글자수)까지 넣어 칸 수가 같은 변화도 잡는다.
+    const v4Sig = v4 ? `${v4WorkCount}/${JSON.stringify(v4).length}` : 'x';
+    const backupSig = `${hwSetCount}:${submissionCount}:${store.lastModified || 0}:v4=${v4Sig}`;
     if (localStorage.getItem('lastAutoBackupSig_v1') === backupSig) {
       console.log('[Backup] 변경 없음 — 자동 백업 생략 (중복 억제)');
       return;
@@ -13439,12 +13496,16 @@ async function autoBackupToFirebase() {
       studentCount: students.length,
       hwSetCount: hwSetCount,
       submissionCount: submissionCount,
-      data: safeStore
+      data: safeStore,
+      // [묶음 D-6] ⛔ data 안에 **섞지 않는다.** 뿌리가 다르므로 칸도 나란히 둔다 —
+      //   나중에 복구 도구가 data 를 solomon_hw_v3 에 되돌릴 때 새 길이 딸려 들어가면 안 된다.
+      //   v4WorkCount 가 없으면 「그 날은 새 길을 못 읽었다」는 뜻이다(0 과 구별된다).
+      ...(v4 ? { dataV4: v4, v4WorkCount: v4WorkCount } : {})
     };
 
     // [Safety 2026-05-16] 의심 슬롯 가드 — 5/15 사고(submissions 37%, hwSets 25% 손실) catch용.
     // 직전 정상 백업 대비 20% 또는 절대값 10개 이상 감소 시 suspect_ 슬롯에 분리.
-    const anomaly = await _detectBackupAnomaly(hwSetCount, submissionCount);
+    const anomaly = await _detectBackupAnomaly(hwSetCount, submissionCount, v4WorkCount);
     if (anomaly) {
       const suspectKey = `suspect_${backupKey}`;
       await getBackupRef().child(suspectKey).set({ ...backupEntry, suspectReason: anomaly.reason });
@@ -13479,7 +13540,7 @@ async function autoBackupToFirebase() {
 // [2026-05-16] 직전 정상 백업과 비교해 급감 여부 판정 (의심 슬롯 가드용)
 // 임계값: 20% 이상 감소 OR 10개 이상 절대 감소 (5/15 사고 손실률 37%/25% catch)
 // 첫 백업이거나 직전 정상 백업이 없으면 게이트 통과 (false positive 방지)
-async function _detectBackupAnomaly(currentHwSets, currentSubmissions) {
+async function _detectBackupAnomaly(currentHwSets, currentSubmissions, currentV4Work) {
   try {
     const snap = await getBackupRef().orderByKey().limitToLast(10).once('value');
     const all = snap.val();
@@ -13506,6 +13567,17 @@ async function _detectBackupAnomaly(currentHwSets, currentSubmissions) {
     if (subDropPct >= 0.20 || subDrop >= 10) {
       return { reason: `submissions ${prevSub}→${currentSubmissions} (${(subDropPct*100).toFixed(0)}% / ${subDrop}개 감소)` };
     }
+    // [묶음 D-6] 새 저장 길의 「아이가 푼 날」 급감.
+    // ⛔ **이번에 못 읽었거나(null) 직전 백업에 수가 없으면 아예 따지지 않는다** —
+    //   읽기 실패를 「급감」으로 오해하면 멀쩡한 옛 길 백업까지 의심 슬롯으로 격리된다.
+    if (typeof currentV4Work === 'number' && typeof lastNormal.v4WorkCount === 'number') {
+      const prevW = lastNormal.v4WorkCount;
+      const wDrop = prevW - currentV4Work;
+      const wDropPct = prevW > 0 ? wDrop / prevW : 0;
+      if (wDropPct >= 0.20 || wDrop >= 10) {
+        return { reason: `새 길 work ${prevW}→${currentV4Work} (${(wDropPct*100).toFixed(0)}% / ${wDrop}개 감소)` };
+      }
+    }
     return null;
   } catch (e) {
     console.warn('[Backup] suspect 체크 실패, 정상 진행:', e);
@@ -13528,7 +13600,26 @@ async function manualBackupDownload() {
   const pad = (n) => String(n).padStart(2, '0');
   const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
   const fileName = `solomon_backup_${dateStr}.json`;
-  const jsonStr = JSON.stringify(safeStore, null, 2);
+
+  const r1 = await _saveBackupFile(safeStore, fileName);
+  if (r1 === 'cancelled') return;
+  showBackupToast(r1 === 'saved' ? '✅ 백업 완료! 파일이 저장되었습니다.' : '✅ 백업 완료! 다운로드 폴더를 확인하세요.');
+
+  // [묶음 D-6 · 2026-08-30] 새 저장 길은 뿌리가 달라 위 파일에 안 들어간다.
+  //   ⛔ 한 파일에 섞지 않는다 — 뿌리를 갈라 놓은 뜻이 무너진다. 두 번째 파일로 따로 받는다.
+  //   새 길이 비어 있으면(오늘이 그렇다) 두 번째 파일은 아예 안 만든다 → 지금 동작과 똑같다.
+  const v4 = await _v4ForBackup(null);
+  if (v4 && Object.keys(v4).length) {
+    const r2 = await _saveBackupFile(v4, `solomon_backup_sol_v4_${dateStr}.json`);
+    if (r2 !== 'cancelled') showBackupToast('✅ 새 저장 길 백업도 받았습니다.');
+  }
+}
+
+// [묶음 D-6 · 2026-08-30] 파일 한 벌 저장 — manualBackupDownload 안에 있던 것을 그대로 떼어냈다.
+//   두 벌(옛 길·새 길)을 받아야 해서 나눴을 뿐, 하는 일은 전과 같다.
+//   돌려주는 값: 'saved'(파일 선택창으로 저장) | 'cancelled'(사용자 취소) | 'downloaded'(다운로드 폴더)
+async function _saveBackupFile(obj, fileName) {
+  const jsonStr = JSON.stringify(obj, null, 2);
   const blob = new Blob([jsonStr], { type: 'application/json' });
 
   // showSaveFilePicker 지원 시 사용, 아니면 fallback
@@ -13544,10 +13635,9 @@ async function manualBackupDownload() {
       const writable = await handle.createWritable();
       await writable.write(blob);
       await writable.close();
-      showBackupToast('✅ 백업 완료! 파일이 저장되었습니다.');
-      return;
+      return 'saved';
     } catch(e) {
-      if (e.name === 'AbortError') return; // 사용자가 취소
+      if (e.name === 'AbortError') return 'cancelled'; // 사용자가 취소
     }
   }
   // fallback: 기존 다운로드 방식
@@ -13559,7 +13649,7 @@ async function manualBackupDownload() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showBackupToast('✅ 백업 완료! 다운로드 폴더를 확인하세요.');
+  return 'downloaded';
 }
 
 function showBackupToast(msg) {
