@@ -5974,6 +5974,10 @@ function loadLevelTestResults() {
         return;
       }
       const gradeColor = {A:'#4caf7d', B:'#c9a84c', C:'#f59e0b', D:'#e05252'};
+      // [2026-09-05] 표의 줄을 바로 눌러 상세를 열 수 있게 키로 찾아 쓴다.
+      //   (전에는 "결과 리포트" 드롭다운을 거쳐야만 열려서 여기 상세가 있는 줄 몰랐다)
+      window._ltRowsByKey = {};
+      results.forEach(r => { window._ltRowsByKey[r.key] = r; });
       const rows = results.map(r => {
         const topicBars = r.topics ? Object.entries(r.topics)
           .sort((a,b) => a[1]-b[1])
@@ -5987,11 +5991,16 @@ function loadLevelTestResults() {
           : '<span style="color:#4caf7d;font-size:11px;">없음</span>';
         const grade = r.grade || '-';
         const gc = gradeColor[grade] || '#64748b';
-        return `<tr style="border-bottom:1px solid #f1f5f9;">
+        const kakaoLine = r.kakao
+          ? `<div style="font-size:11px;color:#64748b;margin-top:2px;">💬 ${escHtml(r.kakao)}</div>` : '';
+        return `<tr style="border-bottom:1px solid #f1f5f9;cursor:pointer;"
+          onclick="openLtResultRow('${r.key}')"
+          onmouseover="this.style.background='#f8fafc';"
+          onmouseout="this.style.background='';">
           <td style="padding:10px 8px;font-weight:700;">${escHtml(r.date || '-')}</td>
           <td style="padding:10px 8px;">${escHtml(r.name || '-')}</td>
           <td style="padding:10px 8px;">${escHtml(r.phone || '-')}</td>
-          <td style="padding:10px 8px;">${escHtml(r.email || '-')}</td>
+          <td style="padding:10px 8px;">${escHtml(r.email || '-')}${kakaoLine}</td>
           <td style="padding:10px 8px;text-align:center;font-weight:700;">Year ${escHtml(r.year || '-')}</td>
           <td style="padding:10px 8px;text-align:center;">
             <span style="display:inline-block;padding:3px 12px;border-radius:12px;background:${gc};color:#fff;font-weight:700;font-size:13px;">${grade}</span>
@@ -6004,7 +6013,7 @@ function loadLevelTestResults() {
       container.innerHTML = `
         <div style="margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
           <div style="font-size:15px;font-weight:700;color:var(--navy);">총 ${results.length}명 응시</div>
-          <div style="font-size:13px;color:#64748b;">최신순 · 최대 200건</div>
+          <div style="font-size:13px;color:#64748b;">👆 줄을 클릭하면 상세가 열립니다 &nbsp;·&nbsp; 최신순 · 최대 200건</div>
         </div>
         <div style="overflow-x:auto;border-radius:12px;border:1px solid var(--border);">
           <table style="width:100%;border-collapse:collapse;font-size:13px;font-family:'Noto Sans KR',sans-serif;">
@@ -9345,6 +9354,13 @@ function openReportFromShortcut() {
   showTeacherReport(id);
 }
 
+// [2026-09-05] 표의 줄에서 바로 상세 열기. onclick 에 객체를 못 실으므로 키로 찾는다.
+function openLtResultRow(key) {
+  const r = window._ltRowsByKey && window._ltRowsByKey[key];
+  if (!r) { console.warn('[lt] 상세를 찾지 못함:', key); return; }
+  openLtResultModal(r);
+}
+
 function openLtResultModal(r) {
   const gradeColor = {A:'#4caf7d', B:'#c9a84c', C:'#f59e0b', D:'#e05252'};
   const gc = gradeColor[r.grade] || '#64748b';
@@ -9370,15 +9386,16 @@ function openLtResultModal(r) {
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #f1f5f9;">
         <div style="width:56px;height:56px;border-radius:50%;background:${gc};display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#fff;">${r.grade||'-'}</div>
         <div>
-          <div style="font-size:20px;font-weight:900;color:var(--navy);">${r.name||'-'} <span style="font-size:14px;font-weight:400;color:#64748b;">Year ${r.year||'?'}</span></div>
-          <div style="font-size:13px;color:#64748b;margin-top:2px;">${r.date||''} · 총점 <b style="color:${gc};">${r.score||0}%</b> (${r.correct||0}/${r.total||0}문제)</div>
+          <div style="font-size:20px;font-weight:900;color:var(--navy);">${escHtml(r.name||'-')} <span style="font-size:14px;font-weight:400;color:#64748b;">Year ${escHtml(r.year||'?')}</span></div>
+          <div style="font-size:13px;color:#64748b;margin-top:2px;">${escHtml(r.date||'')} · 총점 <b style="color:${gc};">${r.score||0}%</b> (${r.correct||0}/${r.total||0}문제)</div>
         </div>
       </div>
       <div style="margin-bottom:16px;">
         <div style="font-size:12px;font-weight:700;color:#94a3b8;letter-spacing:.05em;margin-bottom:8px;">연락처</div>
-        <div style="display:flex;gap:16px;font-size:13px;">
-          <span>📞 ${r.phone||'-'}</span>
-          <span>✉️ ${r.email||'-'}</span>
+        <div style="display:flex;gap:16px;font-size:13px;flex-wrap:wrap;">
+          <span>📞 ${escHtml(r.phone||'-')}</span>
+          <span>✉️ ${escHtml(r.email||'-')}</span>
+          ${r.kakao ? `<span>💬 ${escHtml(r.kakao)}</span>` : ''}
         </div>
       </div>
       <div style="margin-bottom:16px;">
