@@ -3456,6 +3456,42 @@ function hwLookup(store, yearLevel, country, p, group) {
   const g = group || '';
   return sets[hwKey(yearLevel, country, p, g)] || (g ? sets[hwKey(yearLevel, country, p)] : undefined);
 }
+
+// ★★★ [2026-09-05 션 사고] 「어긋난 제출」 감지 ─────────────────────────────
+// 사고: 션이 9/2~3 에 공통 숙제를 풀었는데 9/5 에 션반 숙제가 같은 자리에 들어와,
+//   같은 답이 다른 정답표로 다시 채점되어 20/53/40/33/33/47% → 5/20/25/25/15/5% 가
+//   되었고, 여섯 칸이 전부 '제출 완료'로 잠겨 새 숙제를 열 수조차 없었다.
+//   뿌리는 hwKey 에는 반이 붙는데 subKey 에는 안 붙는 것(자리가 학생×주차×세트번호 하나뿐).
+//   여기서 고치는 것은 뿌리가 아니라 **증상 둘** — 조용히 틀린 점수를 보여주는 것과,
+//   아이가 갇히는 것. 뿌리(subKey 에 반 넣기)는 다음 단계.
+// ⛔ 옛 기록에는 hwKey 가 없다(그때는 안 적었다). 알 수 없는 것은 '어긋남 아님'으로 본다 —
+//   멀쩡한 옛 기록에 경고를 띄우면 그게 더 나쁜 거짓말이다.
+
+// hwLookup 이 실제로 고른 버킷의 열쇠(폴백이면 공통 열쇠)를 돌려준다. 없으면 null.
+function hwLookupKey(store, yearLevel, country, p, group) {
+  const sets = store.homeworkSets || {};
+  const g = group || '';
+  const k1 = hwKey(yearLevel, country, p, g);
+  if (sets[k1]) return k1;
+  const k2 = g ? hwKey(yearLevel, country, p) : null;
+  return (k2 && sets[k2]) ? k2 : null;
+}
+
+// 이 제출 기록은 '지금 이 자리에 있는 숙제'가 아닌 다른 숙제를 푼 것인가?
+function subIsStale(store, sub, yearLevel, country, p, group) {
+  if (!sub || !sub.hwKey) return false;        // 옛 기록 → 알 수 없음 → 경고 안 함
+  const now = hwLookupKey(store, yearLevel, country, p, group);
+  return !!now && sub.hwKey !== now;
+}
+
+// 어긋났을 때 보여줄 '제출 순간에 찍힌 진짜 점수'. 없으면 null.
+function subTrueScore(sub) {
+  const s = sub && sub.reportData && sub.reportData.score;
+  return (typeof s === 'number') ? s : null;
+}
+function subTrueTitle(sub) {
+  return (sub && sub.reportData && sub.reportData.setTitle) || '';
+}
 function prevPeriod(p) {
   if (p.week > 1) return { year: p.year, month: p.month, week: p.week - 1 };
   const pm = p.month > 1 ? { year: p.year, month: p.month - 1 } : { year: p.year - 1, month: 12 };
@@ -4963,6 +4999,13 @@ function renderTeacher() {
         const setResults = sets.map((set, idx) => {
           const sub = store.submissions[subKey(s.id, p, idx)];
           if (!sub?.submitted) return `<span style="color:var(--muted);font-size:12px;">Set${idx+1}:⏳</span>`;
+          // ★ [2026-09-05] 다른 숙제를 푼 기록이면 다시 채점하지 않는다 — 그때의 진짜 점수를 보여준다.
+          if (subIsStale(store, sub, s.year, s.country||'AU', p, s.group)) {
+            const _ts = subTrueScore(sub);
+            return `<span style="font-size:12px;">Set${idx+1}:</span>`
+                 + `<span class="score-pill pill-b" style="font-size:11px;" title="다른 숙제(${escHtml(subTrueTitle(sub))})를 푼 기록 — 다시 채점하지 않음">`
+                 + `⚠️${_ts === null ? '?' : _ts + '%'}</span>`;
+          }
           const autoQs = set.questions.filter(q=>q.type!=='written');
           const correct = autoQs.filter(q=>normAns(sub.answers?.[q.id])===normAns(q.answer)).length;
           const pct = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
@@ -6507,6 +6550,13 @@ function renderStudent() {
   const total    = qs.length;
   const pct      = Math.round((qIdx+1)/total*100);
 
+  // ★ [2026-09-05] 이 칸의 기록이 '다른 숙제'를 푼 것이면 결과 화면 대신 안내 화면을 띄운다.
+  //   옛 답을 새 숙제에 미리 채워 넣어서도 안 되고, 조용히 지워서도 안 된다.
+  if (subIsStale(store, sub, currentUser.year, currentUser.country||'AU', p, currentUser.group)) {
+    renderStaleSlot(sub, set, p, currentSetIdx);
+    return;
+  }
+
   // submitted → show results + review screen
   if (sub.submitted) {
     const autoQs  = qs.filter(q=>q.type!=='written');
@@ -6910,7 +6960,9 @@ function renderSetList(hw, store, p) {
     const sub     = store.submissions[key];
     const prevKey = idx > 0 ? subKey(currentUser.id, p, idx-1) : null;
     const prevOk  = idx === 0 || store.submissions[prevKey]?.submitted;
-    const isSubmitted = !!sub?.submitted;
+    // ★ [2026-09-05] 어긋난 기록은 '제출 완료'로 잠그지 않는다 — 아이가 갇히면 안 된다.
+    const _stale  = subIsStale(store, sub, currentUser.year, currentUser.country||'AU', p, currentUser.group);
+    const isSubmitted = !!sub?.submitted && !_stale;
     const _answered = sub?.answers ? Object.keys(sub.answers).length : 0;
     const _total = set.questions.filter(q=>q.type!=='written').length;
 
@@ -6933,8 +6985,13 @@ function renderSetList(hw, store, p) {
       statusBadge = `<div style="background:#fee2e2;color:#b91c1c;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:800;display:inline-block;margin-bottom:8px;animation:pulse 2s infinite;">⚠️ 답 다 썼어요! 제출하세요</div>`;
     }
 
+    // ★ [2026-09-05] 어긋난 기록이면 딱지를 갈아 끼운다(옛 답 개수도 세지 않는다).
+    if (_stale) {
+      statusBadge = `<div style="background:#fef3c7;color:#b45309;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;margin-bottom:8px;">⚠️ 예전 숙제 기록이 있어요 — 새 숙제를 풀 수 있어요</div>`;
+    }
+
     const isLocked    = !prevOk && !isSubmitted;
-    const answered    = sub ? Object.keys(sub.answers||{}).length : 0;
+    const answered    = (sub && !_stale) ? Object.keys(sub.answers||{}).length : 0;
 
     let iconClass, iconEmoji, cardClass, statusText, scoreHtml='';
     if (isLocked) {
@@ -6968,6 +7025,65 @@ function renderSetList(hw, store, p) {
 
   html += `</div></div>`;
   document.getElementById('mainContent').innerHTML = html + renderGameCard() + renderMyAccountCard();
+}
+
+// ★★★ [2026-09-05 션 사고] 어긋난 칸 안내 화면 ────────────────────────────
+//   이 자리에 남아 있는 기록이 '지금 걸려 있는 숙제'와 다른 숙제를 푼 것일 때.
+//   ㉠ 진짜 점수(제출 순간 스냅샷)를 보여주고 ㉡ 새 숙제를 열어 준다.
+function renderStaleSlot(sub, set, p, idx) {
+  const oldTitle = subTrueTitle(sub) || '(제목 없음)';
+  const oldScore = subTrueScore(sub);
+  document.getElementById('mainContent').innerHTML = `
+    <div class="exam-wrap">
+      ${renderPeriodNav(p, getStore().currentPeriod)}
+      <div class="exam-header-card" style="margin-bottom:20px;border:2px solid #f59e0b;">
+        <div class="exam-title">⚠️ 이 칸에 예전 숙제 기록이 있어요</div>
+        <div class="exam-sub" style="margin-top:8px;line-height:1.7;">
+          예전에 푼 숙제: <b>${escHtml(oldTitle)}</b>
+          ${oldScore !== null ? ` · 그때 점수 <b>${oldScore}%</b>` : ''}<br>
+          지금 걸려 있는 숙제: <b>${escHtml(set.title || '')}</b>
+        </div>
+      </div>
+      <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:12px;padding:16px;margin-bottom:20px;line-height:1.8;">
+        두 숙제가 서로 달라서 <b>점수를 다시 매기지 않았습니다.</b> 위에 보이는 것이 그때 받은 진짜 점수예요.<br>
+        새 숙제를 풀려면 아래 단추를 누르세요. <b>예전 기록은 지워지지 않고 그대로 보관</b>됩니다.
+      </div>
+      <div style="text-align:center;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+        <button class="btn-nav" onclick="startFreshSet(${idx})">📖 새 숙제 시작하기</button>
+        <button class="btn-nav" onclick="currentSetIdx=null;renderStudent()">← 목록으로</button>
+      </div>
+    </div>`;
+}
+
+// 어긋난 칸을 비우고 새 숙제를 시작한다. 옛 기록은 같은 칸 안 `_prev` 에 쌓아 보관한다.
+// (학생 계정은 submissions_archive 에 쓸 권한이 없다 — 규칙상 원장 uid 전용)
+function startFreshSet(idx) {
+  const store = getStore();
+  const p = studentPeriod || store.currentPeriod;
+  const key = subKey(currentUser.id, p, idx);
+  const sub = store.submissions[key];
+  if (!sub) { startSet(idx, {withCountdown:true}); return; }
+  if (!confirm('새 숙제를 시작합니다.\n예전 기록은 지워지지 않고 보관됩니다.\n계속할까요?')) return;
+
+  const stash = {
+    answers: sub.answers || {}, reportData: sub.reportData || null,
+    submitTime: sub.submitTime || null, hwKey: sub.hwKey || null,
+    remediation: sub.remediation || null, movedAt: new Date().toISOString()
+  };
+  sub._prev = (sub._prev || []).concat([stash]);
+  sub.answers = {};
+  sub.submitted = false;
+  sub.submitTime = null;
+  delete sub.reportData;
+  delete sub.remediation;
+  delete sub.celebrationShown;
+  const hk = hwLookupKey(store, currentUser.year, currentUser.country||'AU', p, currentUser.group);
+  if (hk) sub.hwKey = hk; else delete sub.hwKey;
+
+  saveStore(store);
+  fbSetSubmission(key, sub);
+  qIdx = 0;
+  startSet(idx, {withCountdown:true});
 }
 
 function startSet(idx, opts) {
@@ -7195,6 +7311,9 @@ function doSubmit() {
   const set = hw?.sets?.[currentSetIdx??0];
   sub.submitted=true;
   sub.submitTime=new Date().toISOString();
+  // ★ [2026-09-05] 어느 숙제를 푼 것인지 답안지에 적어 둔다 — 나중에 대조용(subIsStale).
+  const _hkNow = hwLookupKey(store, currentUser.year, currentUser.country||'AU', p, currentUser.group);
+  if (_hkNow) sub.hwKey = _hkNow;
 
   // ── 리포트 데이터 수집 ──
   if (set) {
@@ -8375,6 +8494,9 @@ function buildReportDataForStudent(studentId, period, store) {
     const key = subKey(studentId, period, idx);
     const sub = store.submissions[key];
     if (!sub?.submitted) return;
+    // ★ [2026-09-05] 다른 숙제를 푼 기록은 리포트에서 뺀다 — 다시 채점하면 틀린 숫자가 나온다.
+    //   (교사 화면에는 ⚠️ 와 그때의 진짜 점수가 뜬다.)
+    if (subIsStale(store, sub, student.year, student.country||'AU', period, student.group)) return;
     const autoQs = set.questions.filter(q=>q.type!=='written');
     const correct = autoQs.filter(q=>normAns(sub.answers?.[q.id])===normAns(q.answer)).length;
     const score = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
