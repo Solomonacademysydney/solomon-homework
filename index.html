@@ -4430,13 +4430,19 @@ async function checkNewLtResults() {
   if (!window.firebase || !firebase.database) return;
   const LS_KEY = 'solomon_lt_last_check';
   const lastCheck = parseInt(localStorage.getItem(LS_KEY) || '0');
-  localStorage.setItem(LS_KEY, String(Date.now()));
+  // [Fix 2026-09-05] 예전에는 여기서 바로 기준 시각을 찍었다. 배너는 20초 뒤 사라지므로
+  //   그 안에 못 보면 응시자가 영영 다시 안 떴다. 이제는 "실제로 확인한 뒤"에만 찍는다.
+  const checkedAt = Date.now();
+  window._ltMarkSeen = () => { try { localStorage.setItem(LS_KEY, String(checkedAt)); } catch(e) {} };
   try {
     const snap = await firebase.database().ref('lt_results')
       .orderByChild('timestamp').startAfter(lastCheck).once('value');
     const newResults = [];
-    snap.forEach(child => newResults.push(child.val()));
-    if (newResults.length === 0) return;
+    // [Fix 2026-09-05] ⛔ 중괄호 필수. DataSnapshot.forEach 는 콜백이 true 를 돌려주면 순회를 멈추는데
+    //   arr.push() 는 새 길이(첫 원소에서 1 = truthy)를 돌려준다. 중괄호 없는 화살표로 쓰면
+    //   언제나 첫 한 건에서 끊겨 "응시자 1명"만 떴다. loadLevelTestResults() 도 같은 결함이었다.
+    snap.forEach(child => { newResults.push(child.val()); });
+    if (newResults.length === 0) { window._ltMarkSeen(); return; }
 
     const existing = document.getElementById('lt-new-banner');
     if (existing) existing.remove();
@@ -4463,16 +4469,17 @@ async function checkNewLtResults() {
       </div>
       <div style="margin-bottom:10px;">${rows}${more}</div>
       <div style="display:flex;gap:8px;margin-top:4px;">
-        <button onclick="teacherTab='leveltest';renderTeacher();document.getElementById('lt-new-banner').remove();"
+        <button onclick="window._ltMarkSeen();teacherTab='leveltest';renderTeacher();document.getElementById('lt-new-banner').remove();"
           style="flex:1;padding:8px;background:#D4A93C;color:#1B2A4A;border:none;border-radius:8px;font-weight:800;cursor:pointer;font-size:12px;">
           결과 보기 →
         </button>
-        <button onclick="document.getElementById('lt-new-banner').remove();"
+        <button onclick="window._ltMarkSeen();document.getElementById('lt-new-banner').remove();"
           style="padding:8px 12px;background:rgba(255,255,255,.12);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;">
           닫기
         </button>
       </div>`;
     document.body.appendChild(banner);
+    // [Fix 2026-09-05] 저절로 사라질 때는 기준 시각을 찍지 않는다 → 다음 로그인에 다시 뜬다.
     setTimeout(() => { const b = document.getElementById('lt-new-banner'); if (b) b.remove(); }, 20000);
   } catch(e) {
     console.warn('[lt check]', e);
@@ -5957,7 +5964,10 @@ function loadLevelTestResults() {
   firebase.database().ref('lt_results').orderByChild('timestamp').limitToLast(200).once('value')
     .then(snap => {
       const results = [];
-      snap.forEach(child => results.push({key: child.key, ...child.val()}));
+      // [Fix 2026-09-05] ⛔ 중괄호 필수. arr.push() 가 돌려주는 새 길이(1)를 화살표가 그대로
+      //   return 하면 DataSnapshot.forEach 가 첫 건에서 멈춘다. 그래서 넉 달 동안 교사 표에
+      //   "총 1명 응시"(가장 오래된 기록 하나)만 떴다. checkNewLtResults() 도 같은 결함이었다.
+      snap.forEach(child => { results.push({key: child.key, ...child.val()}); });
       results.reverse();
       if (results.length === 0) {
         container.innerHTML = `<div style="padding:40px;text-align:center;color:#64748b;">아직 레벨테스트 응시 결과가 없습니다.</div>`;
