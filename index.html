@@ -3036,6 +3036,72 @@ function fbWrite(updates, onSuccess) {
 
 function fbSetHomeworkSet(key, data) {
   fbWrite({ ['homeworkSets/' + key]: data });
+  _ensureGroupPlaceholders(key);
+}
+
+// ★★★ [2026-09-05 션 사고] 공통 숙제를 올리는 순간, 반이 있는 아이 칸에 '빈 칸'을 세운다.
+//   왜 여기인가: 사고는 **공통이 있는데 그 아이 반 칸이 비었을 때만** 난다(hwLookup 의 폴백이
+//   공통을 대신 보여주고, 아이가 그걸 푼 뒤 반 숙제가 들어오면 같은 답이 다른 정답표로 채점된다).
+//   공통을 올리는 그 순간이 정확히 그 시점이라, 여기서 막으면 원장님이 따로 하실 일이 없다.
+//   빈 칸(sets:[])이라도 '있는 것'이라 폴백이 안 걸린다 → 아이는 '숙제 없음'을 보고 기다린다.
+//   나중에 그 반 숙제를 올리면 이 칸에 그대로 채워진다(published:true 라 올리는 즉시 보인다).
+//
+// ⛔ 지키는 것 넷 — 하나라도 어기면 멀쩡한 것을 가린다:
+//   ① 공통 열쇠(반 없는 것)일 때만 한다
+//   ② **이번 주 이후만** 한다 — 옛 주차에 세우면 그 주에 공통을 풀어 둔 아이의 성적이 화면에서
+//      사라진다(라이언은 3~8월 101건을 공통으로 풀었다)
+//   ③ 그 아이가 그 주에 **이미 푼 기록이 있으면 건너뛴다** — 보고 있던 것을 뺏지 않는다
+//   ④ 로컬 store 는 최근 4주만 담은 사본이라 '없다'가 진짜 없다는 뜻이 아니다 →
+//      **Firebase 에 직접 물어보고** 없을 때만 만든다
+async function _ensureGroupPlaceholders(commonKey) {
+  try {
+    if (!window.fbReady || !window.FB_REF) return;
+    const m = parseHwKey(commonKey);
+    if (!m || m.group !== '') return;                       // ① 반 숙제면 할 일 없음
+    const p = m.period;
+    if (!periodGte(p, getTodayPeriod())) return;            // ② 지난 주차는 건드리지 않는다
+
+    const store = getStore();
+    const kids = (store.users || []).filter(s =>
+      s.role === 'student' && s.status !== 'inactive' && !s.isTest &&
+      s.year === m.year && (s.country || 'AU') === m.country &&
+      String(s.group || '').trim() !== '');
+    if (!kids.length) return;
+
+    const updates = {};
+    for (const s of kids) {
+      const grp = sanitizeGroup(s.group);
+      const gkey = hwKey(s.year, m.country, p, grp);
+
+      // ③ 그 주에 이미 푼 흔적(제출·답·TS)이 있으면 손대지 않는다
+      let worked = !!store.submissions[tsSubKey(s.id, p)];
+      for (let i = 0; i < 12 && !worked; i++) {
+        const sub = store.submissions[subKey(s.id, p, i)];
+        if (sub && (sub.submitted || Object.keys(sub.answers || {}).length)) worked = true;
+      }
+      if (worked) continue;
+
+      // ④ 진짜로 없는지 Firebase 에 묻는다(로컬 사본만 믿지 않는다)
+      const snap = await window.FB_REF.child('homeworkSets/' + gkey).once('value');
+      if (snap.exists()) continue;
+
+      const ph = {
+        country: m.country, year: s.year, group: grp,
+        period: { year: p.year, month: p.month, week: p.week },
+        published: true, sets: [], _placeholder: true,
+        _note: '공통 숙제가 대신 보이는 것을 막는 빈 칸 — 이 반 숙제를 올리면 여기 채워진다'
+      };
+      updates['homeworkSets/' + gkey] = ph;
+      store.homeworkSets[gkey] = ph;
+    }
+    if (!Object.keys(updates).length) return;
+    saveStore(store);
+    fbWrite(updates);
+    console.log('[반 칸막이] 빈 칸을 세웠습니다:', Object.keys(updates));
+  } catch (e) {
+    // 실패해도 방금 올린 숙제는 이미 저장됐다 — 여기서 멈추면 안 된다
+    console.warn('[반 칸막이] 빈 칸 세우기 실패(숙제 저장은 정상):', e);
+  }
 }
 
 function fbDeleteHomeworkSet(key) {
