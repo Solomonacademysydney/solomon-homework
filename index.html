@@ -8996,6 +8996,10 @@ async function viewAsParent(studentId) {
         totalQuestions: visualData.totalQuestions,
         wrongCount: visualData.wrongCount,
         setCount: visualData.setCount,
+        // ★ [2026-09-11] 이 셋을 빠뜨려 「주간 완료율 0%」가 났다. 지우지 말 것.
+        weekTotalSets: visualData.weekTotalSets,
+        weekDoneSets: visualData.weekDoneSets,
+        weekSetCompletion: visualData.weekSetCompletion,
         grade: visualData.grade,
         setScores: visualData.setScores,
         weakAreas: visualData.weakAreas,
@@ -9138,6 +9142,10 @@ function renderTrpSummary() {
           totalQuestions: data.totalQuestions,
           wrongCount: data.wrongCount,
           setCount: data.setCount,
+          // ★ [2026-09-11] 이 셋을 빠뜨려 「주간 완료율 0%」가 났다. 지우지 말 것.
+          weekTotalSets: data.weekTotalSets,
+          weekDoneSets: data.weekDoneSets,
+          weekSetCompletion: data.weekSetCompletion,
           grade: data.grade,
           setScores: data.setScores,
           weakAreas: data.weakAreas,
@@ -9433,6 +9441,10 @@ async function generateParentReportInline(studentId) {
       totalQuestions: visualData.totalQuestions,
       wrongCount: visualData.wrongCount,
       setCount: visualData.setCount,
+      // ★ [2026-09-11] 이 셋을 빠뜨려 「주간 완료율 0%」가 났다. 지우지 말 것.
+      weekTotalSets: visualData.weekTotalSets,
+      weekDoneSets: visualData.weekDoneSets,
+      weekSetCompletion: visualData.weekSetCompletion,
       grade: visualData.grade,
       setScores: visualData.setScores,
       weakAreas: visualData.weakAreas,
@@ -9804,6 +9816,25 @@ function renderMobileWeeklyCard(child, savedReport, period) {
   const tsData = buildTSReportData(child.id, period, store);
   const tsHTML = tsData ? renderTSDailySection(tsData) : '';
 
+  // ★ [2026-09-11] 「📅 주간 완료율 0% · 0/0 세트」 수리 — 셈은 맞았고 **적어 두는 것을 빠뜨렸다.**
+  //   buildVisualReportData 는 weekTotalSets/weekDoneSets/weekSetCompletion 을 옳게 셌는데
+  //   리포트 저장 경로 다섯 중 넷이 그 셋을 saveData 에 안 담았다(openReportEditor 만 담았다).
+  //   화면은 savedReport 의 그 칸만 읽으니 undefined → `?? 0` → 0% 로 찍혔다.
+  //   여기서는 **저장값이 없을 때만** 그 자리에서 다시 센다 —
+  //   저장돼 있으면 그때 찍힌 값이 진실이므로 건드리지 않는다.
+  //   ⇒ 이미 만들어 둔 옛 리포트도 **재생성 없이** 고쳐진다.
+  let _wkTotal = savedReport?.weekTotalSets;
+  let _wkDone  = savedReport?.weekDoneSets;
+  let _wkPct   = savedReport?.weekSetCompletion;
+  if (_wkTotal === undefined || _wkTotal === null) {
+    const _wkHw = hwLookup(store, child.year, child.country || 'AU', period, child.group);
+    _wkTotal = _wkHw?.sets?.length || 0;
+    _wkDone = _wkTotal > 0
+      ? _wkHw.sets.filter((_, idx) => store.submissions?.[subKey(child.id, period, idx)]?.submitted).length
+      : 0;
+    _wkPct = _wkTotal > 0 ? Math.round(_wkDone / _wkTotal * 100) : 0;
+  }
+
   if (!savedReport) {
     return `
     <div class="parent-report-card">
@@ -9890,9 +9921,9 @@ function renderMobileWeeklyCard(child, savedReport, period) {
         <div class="m-card" style="padding:18px 14px;">
           <div style="display:flex;align-items:center;justify-content:space-around;gap:12px;">
             <div style="text-align:center;">
-              ${renderMobileDonutSVG(savedReport.weekSetCompletion ?? 0, '#16A34A', (savedReport.weekSetCompletion ?? 0) + '%', 90)}
+              ${renderMobileDonutSVG(_wkPct ?? 0, '#16A34A', (_wkPct ?? 0) + '%', 90)}
               <div style="font-size:11px;font-weight:700;color:#64748B;margin-top:6px;">📅 주간 완료율</div>
-              <div style="font-size:10px;color:#94A3B8;">${savedReport.weekDoneSets ?? 0}/${savedReport.weekTotalSets ?? 0} 세트</div>
+              <div style="font-size:10px;color:#94A3B8;">${_wkDone ?? 0}/${_wkTotal ?? 0} 세트</div>
             </div>
             <div style="text-align:center;">
               ${renderMobileDonutSVG(sc, '#D4A93C', sc + '%', 90)}
@@ -10939,6 +10970,10 @@ async function generateVisualReport(studentId) {
       totalQuestions: reportData.totalQuestions,
       wrongCount: reportData.wrongCount,
       setCount: reportData.setCount,
+      // ★ [2026-09-11] 이 셋을 빠뜨려 「주간 완료율 0%」가 났다. 지우지 말 것.
+      weekTotalSets: reportData.weekTotalSets,
+      weekDoneSets: reportData.weekDoneSets,
+      weekSetCompletion: reportData.weekSetCompletion,
       grade: reportData.grade,
       setScores: reportData.setScores,
       weakAreas: reportData.weakAreas,
