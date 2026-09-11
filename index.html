@@ -4486,45 +4486,81 @@ async function checkNewLtResults() {
   }
 }
 
+// [2026-09-11] 계정 일꾼(Cloud Function) 부르기.
+//   ⛔ 익명 로그인을 **무조건** 부르면 안 된다 — 원장님이 들어와 계신 것을 풀어 버린다.
+//      이미 들어와 있으면 그대로 쓴다(callAIViaFunctions 가 쓰는 것과 같은 관례).
+//
+//   ⛔⛔ **기다리는 시간을 반드시 끊는다.** 일꾼이 잠들었거나 배포가 안 됐을 때
+//      callable 은 저절로 포기하지 않는다 — 아이 화면이 로그인 단추를 누른 채
+//      한참 멈춰 있게 된다. 그러면 「고장」과 구별이 안 된다.
+//      ⇒ 시간이 차면 던지고, 로그인은 **옛 길로 물러서서** 지금처럼 돌게 한다.
+//      로그인은 뒷길이 있으니 짧게(8초), 비번 바꾸기는 뒷길이 없으니 길게(20초).
+async function callAuthWorker(name, payload, timeoutMs) {
+  if (!window.firebase || !firebase.auth) throw new Error('NO-FIREBASE');
+  if (!firebase.auth().currentUser) {
+    await firebase.auth().signInAnonymously();
+  }
+  const callable = firebase.app().functions('australia-southeast1').httpsCallable(name);
+  let timer = null;
+  try {
+    const res = await Promise.race([
+      callable(payload),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error('WORKER-TIMEOUT')), timeoutMs || 8000);
+      })
+    ]);
+    return res && res.data;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 async function doLogin() {
   const id = document.getElementById('loginId').value.trim();
   const pw = document.getElementById('loginPw').value;
   const store = getStore();
-  const hashed = await hashPw(pw);
 
   // ═══════════════════════════════════════════════════════
-  //  마스터 비번 로그인 (원장 전용)
-  //  - 학생/학부모 ID + 마스터 비번 입력 시, 비번 검증 스킵
-  //  - 교사 계정은 보안상 제외 (loginRole === 'teacher' 차단)
-  //  - 모든 마스터 로그인은 Firebase에 로그 기록
+  //  [2026-09-11] 비번 대조를 **서버 일꾼(loginCheck)** 에게 넘겼다.
+  //
+  //  왜 — 비번 자물쇠가 공책(users)에 들어 있었고, 그 공책은 규칙이
+  //       `.read = auth != null` 이라 **홈페이지를 연 사람이면 누구나** 읽었다.
+  //       이제 자물쇠는 금고(solomon_auth)에 있고 서버만 본다.
+  //
+  //  ★ 마스터 비번도 서버가 본다 ⇒ **여기 박혀 있던 MASTER_PW_HASH 를 지웠다.**
+  //    (지우기 전에는 그 자물쇠가 홈페이지 코드에 그대로 드러나 있었다.)
+  //
+  //  ⛔⛔ 배포 순서 — migratePasswordsToVault 로 금고에 비번과 `_master` 를
+  //      옮겨 적은 **뒤에** 이 화면을 올릴 것. 순서를 바꾸면 아무도 못 들어온다.
   // ═══════════════════════════════════════════════════════
-  const MASTER_PW_HASH = '8dbe587d32ad780e9b65c83e3044ffbb1934a4371b05ef514961406a678c665a';
-  let user;
+  let user = null;
   let isMasterLogin = false;
 
-  if (hashed === MASTER_PW_HASH && loginRole !== 'teacher') {
-    // 마스터 비번 통과 → ID와 역할만 일치하면 통과 (개별 비번 검증 스킵)
-    user = store.users.find(u => u.id === id && u.role === loginRole);
-    if (user) {
-      isMasterLogin = true;
-      // Firebase에 마스터 로그인 로그 기록 (실패해도 로그인은 진행)
-      try {
-        if (window.firebase && firebase.database) {
-          firebase.database().ref('master_login_logs').push({
-            targetId: id,
-            targetRole: loginRole,
-            timestamp: Date.now(),
-            timestampISO: new Date().toISOString(),
-            userAgent: (navigator.userAgent || '').slice(0, 200)
-          });
-        }
-      } catch(e) {
-        console.warn('[master_login] log save failed:', e);
-      }
+  try {
+    const said = await callAuthWorker('loginCheck', { id, role: loginRole, pw }, 8000);
+    if (said && said.ok) {
+      user = store.users.find(u => u.id === id && u.role === loginRole);
+      isMasterLogin = !!said.isMaster;
     }
-  } else {
-    // 일반 로그인 (기존 로직 그대로)
-    user = store.users.find(u => u.id === id && u.pw === hashed && u.role === loginRole);
+  } catch (e) {
+    const msg = String((e && e.message) || '');
+
+    if (msg.indexOf('TOO-MANY-TRIES') !== -1) {
+      document.getElementById('loginError').textContent =
+        '비밀번호를 여러 번 잘못 입력했습니다. 한 시간 뒤에 다시 시도해 주세요.';
+      document.getElementById('loginError').style.display = 'block';
+      return;
+    }
+
+    if (msg.indexOf('BAD-LOGIN') === -1 && msg.indexOf('BAD-INPUT') === -1) {
+      // 비번이 틀린 게 아니라 **일꾼에게 못 닿은** 것이다(인터넷·서버·배포 전).
+      // ⛔ 넘어가는 동안만 두는 뒷길 — 공책에 아직 비번이 남아 있어 옛 방식으로 본다.
+      //    이게 없으면 함수가 한 번 죽을 때 **아무도 로그인을 못 한다.**
+      //    ⇒ 공책에서 pw 칸을 지우는 날 **이 블록도 함께 지울 것.**
+      console.warn('[login] 일꾼에게 못 닿아 옛 길로 물러섰다:', msg);
+      const hashed = await hashPw(pw);
+      user = store.users.find(u => u.id === id && u.pw === hashed && u.role === loginRole);
+    }
   }
 
   if (!user) {
@@ -8284,77 +8320,111 @@ function renderGameCard() {
 }
 
 function renderMyAccountCard() {
+  // [2026-09-11] 두 가지를 바꿨다.
+  //  ㉠ **「지금 비밀번호」 칸을 새로 만들었다.** 서버는 아이를 익명으로만 알기 때문에
+  //     「이 사람이 본인이다」를 보일 증거가 지금 비밀번호밖에 없다.
+  //  ㉡ **「New ID」 입력칸을 뺐다.** 서버 규칙이 아이의 계정 쓰기를 막고 있어
+  //     아이디 바꾸기는 **넉 달째 한 번도 된 적이 없다**(2026-05-12 규칙 하드닝 이후).
+  //     못 되는 칸을 놔두면 아이가 「바꿨다」고 믿는다 — 그게 지금 고치는 그 고장이다.
+  //     아이디를 정말 바꿔야 하면 원장님이 「학생 관리」에서 바꿔 주시면 된다.
   return `
     <details class="account-mini">
       <summary>Account Settings (${currentUser.id})</summary>
-      <div class="mini-fields">
-        <div><label>New ID</label><input id="myNewId" placeholder="Current: ${currentUser.id}"></div>
-        <div><label>New Password</label><input id="myNewPw" type="password" placeholder="New password"></div>
+      <div style="font-size:11px;color:var(--muted);margin:2px 0 8px;">
+        아이디는 <b>${currentUser.id}</b> 입니다. 아이디를 바꾸려면 선생님께 말씀해 주세요.
       </div>
       <div class="mini-fields">
-        <div><label>Confirm Password</label><input id="myConfirmPw" type="password" placeholder="Confirm"></div>
+        <div><label>지금 비밀번호</label><input id="myCurrentPw" type="password" placeholder="Current password" autocomplete="current-password"></div>
+        <div><label>새 비밀번호</label><input id="myNewPw" type="password" placeholder="New password" autocomplete="new-password"></div>
+      </div>
+      <div class="mini-fields">
+        <div><label>새 비밀번호 확인</label><input id="myConfirmPw" type="password" placeholder="Confirm" autocomplete="new-password"></div>
         <div style="display:flex;align-items:flex-end;">
-          <button class="btn-sm btn-navy" style="padding:6px 14px;font-size:11px;width:100%;" onclick="saveMyAccount()">Save ✓</button>
+          <button class="btn-sm btn-navy" id="myPwBtn" style="padding:6px 14px;font-size:11px;width:100%;" onclick="saveMyAccount()">Save ✓</button>
         </div>
       </div>
-      <div class="success-msg" id="myPwOk" style="font-size:12px;margin-top:6px;">✅ Updated!</div>
+      <div class="success-msg" id="myPwOk" style="font-size:12px;margin-top:6px;display:none;">✅ 비밀번호가 바뀌었습니다.</div>
+      <div id="myPwErr" style="font-size:12px;margin-top:6px;display:none;color:#DC2626;font-weight:700;"></div>
     </details>`;
 }
 
+// ═══════════════════════════════════════════════════════
+//  [2026-09-11] 아이가 **스스로** 비밀번호를 바꾸는 자리. 통째로 다시 썼다.
+//
+//  고치기 전에 무슨 일이 있었나 —
+//    이 함수는 공책(users)에 직접 쓰려 했는데, 서버 규칙이 **원장님 계정만**
+//    그 칸을 쓰게 한다(2026-05-12 하드닝). 아이는 익명이라 늘 거부당했다.
+//    그런데도 성공 여부를 **보지 않고** 무조건 「✅ Updated!」를 띄웠다.
+//    ⇒ 아이는 바꿨다고 믿고 새로고침하면 되돌아가고, 다음 날 못 들어왔다. 넉 달째.
+//
+//  이제 —
+//    서버 일꾼(changeMyPassword)이 **지금 비밀번호를 확인한 뒤** 금고에 써 준다.
+//    초록 글씨는 **일꾼이 「됐다」고 한 뒤에만** 뜬다.
+//
+//  ⛔ 아이디 바꾸기는 뺐다. 같은 이유로 넉 달간 한 번도 안 됐고, 게다가 제출 기록
+//     열쇠까지 옮기려 들어 더 위험했다. 옛 코드는 git 기록에 남아 있다.
+// ═══════════════════════════════════════════════════════
 async function saveMyAccount() {
-  const newId  = document.getElementById('myNewId').value.trim();
+  const curPw  = document.getElementById('myCurrentPw').value;
   const newPw  = document.getElementById('myNewPw').value.trim();
   const confPw = document.getElementById('myConfirmPw').value.trim();
-  if (!newId && !newPw) { alert('Please enter a new ID or password.'); return; }
-  if (newPw && newPw !== confPw) { alert('Passwords do not match.'); return; }
-  const store = getStore();
-  const oldId = currentUser.id;
-  const u = store.users.find(u => u.id === oldId);
-  if (!u) return;
 
-  const subUpdates = {};
-  if (newId && newId !== oldId) {
-    if (store.users.find(x => x.id === newId)) { alert('This ID already exists.'); return; }
-    // 학생이면 제출 기록 키도 업데이트
-    if (currentUser.role === 'student') {
-      Object.keys(store.submissions).forEach(k => {
-        if (k.startsWith(oldId + '_')) {
-          const newKey = k.replace(oldId + '_', newId + '_');
-          store.submissions[newKey] = store.submissions[k];
-          delete store.submissions[k];
-          // [Safety 2026-05] wholesale fbSetSubmissions 대신 변경된 키만 surgical update
-          subUpdates['submissions/' + k]      = null;
-          subUpdates['submissions/' + newKey] = store.submissions[newKey];
-        }
-      });
-      // 부모 childIds 업데이트
-      store.users.filter(u => u.role === 'parent').forEach(p => {
-        if (p.childIds) {
-          const i = p.childIds.indexOf(oldId);
-          if (i !== -1) p.childIds[i] = newId;
-        }
-      });
-    }
-    u.id = newId;
-    currentUser.id = newId;
+  const okEl  = document.getElementById('myPwOk');
+  const errEl = document.getElementById('myPwErr');
+  const btn   = document.getElementById('myPwBtn');
+  const showErr = (t) => { if (errEl) { errEl.textContent = t; errEl.style.display = 'block'; } };
+  if (okEl)  okEl.style.display = 'none';
+  if (errEl) errEl.style.display = 'none';
+
+  if (!curPw || !newPw) { showErr('지금 비밀번호와 새 비밀번호를 모두 입력해 주세요.'); return; }
+  if (newPw !== confPw) { showErr('새 비밀번호 두 칸이 서로 다릅니다.'); return; }
+
+  if (btn) { btn.disabled = true; btn.textContent = '바꾸는 중…'; }
+  try {
+    await callAuthWorker('changeMyPassword', {
+      id: currentUser.id,
+      role: currentUser.role,
+      currentPw: curPw,
+      newPw: newPw
+    }, 20000);
+  } catch (e) {
+    const msg = String((e && e.message) || '');
+    const says = [
+      ['WRONG-CURRENT-PW', '지금 비밀번호가 맞지 않습니다.'],
+      ['TOO-MANY-TRIES',   '여러 번 잘못 입력했습니다. 한 시간 뒤에 다시 시도해 주세요.'],
+      ['PW-TOO-SHORT',     '새 비밀번호는 4자 이상이어야 합니다.'],
+      ['PW-TOO-SIMPLE',    '같은 글자만 쓸 수는 없습니다. (예: 0000)'],
+      ['PW-IS-ID',         '아이디와 같은 비밀번호는 쓸 수 없습니다.'],
+      ['PW-SAME',          '지금 쓰는 것과 같은 비밀번호입니다.'],
+      ['BAD-LOGIN',        '계정을 찾지 못했습니다. 선생님께 말씀해 주세요.'],
+      // ⛔ 시간이 차서 끊은 것은 **바뀌었을 수도, 안 바뀌었을 수도** 있다.
+      //    「안 됐다」고 딱 잘라 말하면 거짓이 될 수 있으므로 있는 그대로 말한다.
+      ['WORKER-TIMEOUT',   '서버가 제때 답하지 않았습니다. 새 비밀번호로 로그인해 보시고, 안 되면 다시 시도해 주세요.']
+    ];
+    const hit = says.find(([code]) => msg.indexOf(code) !== -1);
+    // ⛔ 못 닿았을 때 「바뀌었다」고 하지 않는다 — 그게 원래의 고장이었다.
+    showErr(hit ? hit[1] : '지금은 바꿀 수 없습니다. 인터넷 상태를 확인하고 다시 시도해 주세요.');
+    return;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Save ✓'; }
   }
 
-  if (newPw) { u.pw = await hashPw(newPw); currentUser.pw = u.pw; }
-  saveStore(store);
-  fbSetUsers(store.users);
-  if (newId && newId !== oldId && currentUser.role === 'student' && Object.keys(subUpdates).length > 0) fbWrite(subUpdates);
+  // 여기부터는 **서버가 정말로 바꿔 준 뒤**다.
+  // 이 브라우저가 들고 있는 공책도 맞춰 둔다 — 안 그러면 새로고침 전까지 어긋난다.
+  // ⛔ 공책에서 pw 칸을 지우는 날(순서 (4)) 이 세 줄도 함께 지울 것.
+  try {
+    const store = getStore();
+    const u = store.users.find(x => x.id === currentUser.id && x.role === currentUser.role);
+    if (u) { u.pw = await hashPw(newPw); currentUser.pw = u.pw; saveStore(store); }
+  } catch (e) {
+    console.warn('[saveMyAccount] 이 컴퓨터의 공책 맞추기 실패(서버는 바뀌었다):', e);
+  }
 
-  // 상단 바 이름 즉시 업데이트
-  document.getElementById('topbarUser').textContent =
-    currentUser.role === 'parent'
-      ? `${parentDisplayName(currentUser.childIds)} 👨‍👩‍👧`
-      : `${englishName(currentUser.id)} (Year ${currentUser.year})`;
-
-  document.getElementById('myPwOk').style.display = 'block';
-  document.getElementById('myNewId').value = '';
+  if (okEl) okEl.style.display = 'block';
+  document.getElementById('myCurrentPw').value = '';
   document.getElementById('myNewPw').value = '';
   document.getElementById('myConfirmPw').value = '';
-  setTimeout(() => { const el = document.getElementById('myPwOk'); if(el) el.style.display='none'; }, 3000);
+  setTimeout(() => { const el = document.getElementById('myPwOk'); if (el) el.style.display = 'none'; }, 5000);
 }
 
 function forceUploadToFirebase() {

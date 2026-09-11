@@ -313,3 +313,14 @@ exports.cleanupRateLimits = onSchedule({
     console.log(`[cleanupRateLimits] no entries older than ${cutoffDate}`);
   }
 });
+
+// ============================================================
+// [2026-09-11] 계정 일꾼 — 비번을 공책(users)에서 금고(solomon_auth)로 옮기기 위한 것.
+//   왜·순서·되돌리는 법은 functions/auth.js 맨 위에 적어 뒀다.
+//   ⛔ 맨 아래에서 부른다 — admin.initializeApp 과 setGlobalOptions 이 먼저 돌아야 한다.
+// ============================================================
+const _auth = require('./auth');
+exports.loginCheck = _auth.loginCheck;
+exports.changeMyPassword = _auth.changeMyPassword;
+exports.migratePasswordsToVault = _auth.migratePasswordsToVault;
+exports.resetPasswordsBulk = _auth.resetPasswordsBulk;
