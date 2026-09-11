@@ -3203,8 +3203,14 @@ async function elevateToOperatorAuth(teacherId, plainPw) {
       case 'auth/invalid-credential':
       case 'auth/wrong-password':
       case 'auth/user-not-found':
+        // ⛔ [2026-09-11] 여기서 가리키던 functions/reset_operator_pw.js 는 **없는 파일**이다.
+        //    (2026-09-11 전수 확인 — functions/ 에는 index.js·auth.js 뿐이다.)
+        //    없는 것을 가리키면 원장님이 그걸 찾느라 시간을 버린다. 실제로 되는 길을 적는다.
         msg = 'Firebase 원장 계정의 비밀번호가 로그인 비밀번호와 일치하지 않습니다.\n'
-            + '→ functions/reset_operator_pw.js 로 두 비밀번호를 6자 이상으로 일치시켜 주세요.';
+            + '지금은 저장이 안 됩니다 (리포트·숙제·학생 관리).\n\n'
+            + '→ Firebase 콘솔 → Authentication → Users 에서\n'
+            + '   ' + teacherEmail(teacherId) + ' 의 비밀번호를\n'
+            + '   홈페이지 로그인 비밀번호와 같은 값(6자 이상)으로 바꿔 주세요.';
         break;
       case 'auth/user-disabled':
         msg = 'Firebase 원장 계정이 비활성화되어 있습니다. 콘솔 Authentication 에서 활성화하세요.';
@@ -4512,6 +4518,32 @@ async function callAuthWorker(name, payload, timeoutMs) {
     return res && res.data;
   } finally {
     if (timer) clearTimeout(timer);
+  }
+}
+
+// [2026-09-11] 계정을 새로 만들 때 **금고에도** 비번을 넣는다.
+//
+//   ⛔ 왜 꼭 필요한가 — 빼먹으면 그 사람 비번은 **공책에만** 남는다. 지금은 일꾼이
+//      공책을 뒷길로 읽어 주어 멀쩡히 돌지만, 순서 (4)에서 공책의 pw 칸을 지우는 날
+//      **그 사람은 영영 로그인 못 하게 된다.** 티가 안 나서 더 위험한 종류다.
+//
+//   ⛔ mode:'vault' 를 쓴다 — 공책 쪽은 바로 위에서 fbSetUsers 가 쓰는 중이라,
+//      일꾼이 공책에서 찾으면 아직 안 닿아 「없는 아이디」가 될 수 있다(경합).
+async function ensureVaultPassword(id, role, plainPw, opts) {
+  try {
+    await callAuthWorker(
+      'setPasswordByOperator',
+      Object.assign({ id: id, role: role, newPw: plainPw, mode: 'vault' }, opts || {}),
+      20000
+    );
+    return true;
+  } catch (e) {
+    console.error('[vault] 금고에 비번을 넣지 못했다:', id, role, e);
+    alert('⚠️ 계정은 만들어졌지만 비밀번호를 금고에 넣지 못했습니다.\n\n'
+        + '지금은 로그인이 되지만 나중에 안 될 수 있습니다.\n'
+        + '「🔑 PW」 로 이 사람의 비밀번호를 한 번 다시 정해 주세요.\n\n'
+        + '대상: ' + id + ' (' + role + ')');
+    return false;
   }
 }
 
@@ -6562,6 +6594,8 @@ async function addStudent() {
     school_name:schoolName, school_group:schoolGroup, school_calendar_override:schoolCalendarOverride});
   saveStore(store);
   fbSetUsers(store.users);
+  // [2026-09-11] 비번은 금고(solomon_auth)가 정본이다 — 공책에만 두면 안 된다.
+  await ensureVaultPassword(id, 'student', pw);
   document.getElementById('ns_ok').style.display='block';
   setTimeout(()=>renderTeacher(),800);
 }
@@ -6584,6 +6618,8 @@ async function addParent() {
   store.users.push({id,pw:hpw,role:'parent',name,childIds,status:'active'});
   saveStore(store);
   fbSetUsers(store.users);
+  // [2026-09-11] 학생과 같은 이유로 금고에도 넣는다.
+  await ensureVaultPassword(id, 'parent', pw);
   renderTeacher();
   setTimeout(()=>{ document.getElementById('parentMgmt')?.scrollIntoView({behavior:'smooth',block:'start'}); }, 50);
 }
@@ -8460,6 +8496,38 @@ async function saveTeacherAccount() {
   if (newId !== oldId && store.users.find(x => x.id === newId)) {
     alert('This ID already exists.'); return;
   }
+  // ═══════════════════════════════════════════════════════
+  //  [2026-09-11] 여기는 **두 개의 비밀번호가 짝을 이루는 자리**다.
+  //    ㉠ 홈페이지 로그인 비번 (공책/금고)
+  //    ㉡ 파이어베이스 계정 비번 (teacher@solomon-academy.local)
+  //  로그인에 성공하면 홈페이지가 ㉡ 로 다시 로그인해 **저장 권한**을 얻는다
+  //  (elevateToOperatorAuth). ⇒ ㉠ 만 바꾸면 **다음 로그인부터 아무것도 저장 못 한다.**
+  //  고칠 수 없는 것은 막지 말고 **먼저 말해 주는 쪽**을 골랐다.
+  // ═══════════════════════════════════════════════════════
+  if (newPw) {
+    const goAhead = confirm(
+      '⚠️ 잠깐만요 — 비밀번호가 두 개 짝을 이룹니다.\n\n'
+      + '여기서 바꾸는 것은 「홈페이지 로그인 비밀번호」뿐입니다.\n'
+      + '「Firebase 계정 비밀번호」는 그대로 남습니다.\n\n'
+      + '둘이 달라지면 다음 로그인부터 저장이 안 됩니다.\n'
+      + '(리포트·숙제·학생 관리 전부)\n\n'
+      + '→ Firebase 콘솔 → Authentication → Users 에서\n'
+      + '   ' + teacherEmail(oldId) + ' 의 비밀번호도 같은 값으로 바꿔 주세요.\n\n'
+      + '그래도 계속할까요?'
+    );
+    if (!goAhead) return;
+  }
+  if (newId !== oldId) {
+    const goAhead2 = confirm(
+      '⚠️ 아이디를 바꾸면 Firebase 쪽 주소도 함께 달라집니다.\n\n'
+      + '지금: ' + teacherEmail(oldId) + '\n'
+      + '바꾼 뒤: ' + teacherEmail(newId) + '\n\n'
+      + '그 계정이 Firebase 에 없으면 저장 권한을 못 얻습니다.\n'
+      + '먼저 Firebase 콘솔에 그 계정을 만들어 두셨습니까?'
+    );
+    if (!goAhead2) return;
+  }
+
   const oldIdIdx = PROTECTED_ACCOUNTS.indexOf(oldId);
   if (oldIdIdx !== -1) PROTECTED_ACCOUNTS[oldIdIdx] = newId;
   u.id = newId;
@@ -8468,6 +8536,10 @@ async function saveTeacherAccount() {
   if (newPw) currentUser.pw = u.pw;
   saveStore(store);
   fbSetUsers(store.users);
+  // [2026-09-11] 금고에도 넣는다 — 로그인 대조는 금고를 먼저 본다.
+  //   ⛔ 아이디를 바꾼 경우 옛 서랍(teacher__oldId)은 그대로 남는다.
+  //      공책에 그 아이디가 없으면 아무도 그걸로 못 들어오므로 해는 없다.
+  if (newPw) await ensureVaultPassword(newId, 'teacher', newPw, { allowTeacher: true });
   document.getElementById('topbarUser').textContent = 'Teacher';
   showBackupToast('✅ Teacher account updated.');
   renderTeacher();
