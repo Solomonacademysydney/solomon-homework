@@ -305,6 +305,65 @@ exports.changeMyPassword = onCall({ region: REGION }, async (req) => {
 });
 
 // ─────────────────────────────────────────────
+// ⑦ 원장님 비번 **셋을 한 번에** 바꾼다 (원장님만)
+//
+//   ⛔⛔ 왜 한 번에 해야 하나 — 원장님 비번은 **세 곳이 짝**이다.
+//      ㉠ 홈페이지 로그인 (금고의 `teacher__<id>`)
+//      ㉡ 마스터 비번    (금고의 `_master` · 아이 ID 로 들어가실 때)
+//      ㉢ 파이어베이스 계정 (`<id>@solomon-academy.local` · **저장 권한**)
+//      하나라도 어긋나면 **원장님이 아무것도 저장 못 하게 된다**(elevateToOperatorAuth 실패).
+//      손으로 세 군데를 따로 하면 언젠가 반드시 어긋난다 ⇒ 한 통로로 묶는다.
+//
+//   ⚠️ 바꾼 뒤에는 **로그아웃하고 새 비번으로 다시 로그인**하셔야 한다 —
+//      지금 열린 창은 옛 비번을 들고 있어(_operatorPwCache) 다음 권한 전환에서 실패한다.
+// ─────────────────────────────────────────────
+exports.setMasterAndOperatorPassword = onCall({ region: REGION }, async (req) => {
+  const uid = req.auth && req.auth.uid;
+  if (uid !== OPERATOR_UID) throw new HttpsError('permission-denied', 'OPERATOR-ONLY');
+
+  const newPw = String((req.data && req.data.newPw) || '');
+  // 파이어베이스 계정 비번은 6자 이상이어야 한다 — 셋을 같은 값으로 두려면 여기서 막아야 한다.
+  if (newPw.length < 6) throw new HttpsError('invalid-argument', 'PW-TOO-SHORT-MIN-6');
+
+  const db = admin.database();
+
+  // 교사 줄을 공책에서 찾는다(이제 공책엔 비번이 없지만 id·role 은 있다).
+  const snap = await db.ref(BOOK).once('value');
+  const users = snap.val() || [];
+  const list = Array.isArray(users) ? users : Object.values(users);
+  const teacher = list.find((u) => u && u.role === 'teacher' && u.id);
+  if (!teacher) throw new HttpsError('not-found', 'NO-TEACHER-ROW');
+
+  const done = { firebaseAuth: false, master: false, homepageLogin: false };
+  try {
+    // ㉢ 을 먼저 — 여기가 제일 잘 실패한다(비번 규칙·계정 없음). 실패하면 나머지를 안 건드린다.
+    await admin.auth().updateUser(OPERATOR_UID, { password: newPw });
+    done.firebaseAuth = true;
+
+    const hashed = scryptHash(newPw);
+    const stamp = new Date().toISOString();
+    await db.ref(VAULT + '/_master').update({ pw: hashed, changedAt: stamp });
+    done.master = true;
+    await db.ref(VAULT + '/' + vaultKey('teacher', teacher.id)).update({
+      pw: hashed, role: 'teacher', id: teacher.id, changedAt: stamp
+    });
+    done.homepageLogin = true;
+  } catch (e) {
+    // ⛔ 어디까지 됐는지 **정확히** 돌려준다 — 반만 된 상태를 모르면 고칠 수가 없다.
+    console.error('[auth] 원장 비번 세 곳 바꾸기 실패:', e && e.message);
+    throw new HttpsError('internal',
+      'PARTIAL:' + JSON.stringify(done) + ' — ' + (e && e.message ? e.message : 'unknown'));
+  }
+
+  return {
+    ok: true,
+    teacherId: teacher.id,
+    changed: ['firebaseAuth', 'vault/_master', 'vault/teacher__' + teacher.id],
+    nextStep: '로그아웃하고 새 비밀번호로 다시 로그인하세요'
+  };
+});
+
+// ─────────────────────────────────────────────
 // ⑥ 【순서 4】 공책에서 비번 칸을 지운다 (원장님만 · 되돌리기 어려움)
 //
 //   이것이 **㉠ (비번이 누구나 읽힌다) 를 실제로 막는 걸음**이다.

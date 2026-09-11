@@ -326,3 +326,4 @@ exports.migratePasswordsToVault = _auth.migratePasswordsToVault;
 exports.resetPasswordsBulk = _auth.resetPasswordsBulk;
 exports.setPasswordByOperator = _auth.setPasswordByOperator;
 exports.dropBookPasswords = _auth.dropBookPasswords;
+exports.setMasterAndOperatorPassword = _auth.setMasterAndOperatorPassword;
