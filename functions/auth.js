@@ -176,21 +176,8 @@ async function readStoredPw(role, id) {
   return { pw: null, from: null };
 }
 
-// 공책에서 그 사람의 자리(배열 인덱스 또는 열쇠)를 찾는다. 넘어가는 동안 같이 고치기 위한 것.
-async function findBookSlot(role, id) {
-  const snap = await admin.database().ref(BOOK).once('value');
-  const users = snap.val();
-  if (!users) return null;
-  if (Array.isArray(users)) {
-    const i = users.findIndex((x) => x && x.id === id && x.role === role);
-    return i === -1 ? null : String(i);
-  }
-  for (const k of Object.keys(users)) {
-    const x = users[k];
-    if (x && x.id === id && x.role === role) return k;
-  }
-  return null;
-}
+// [순서 4 · 2026-09-11] findBookSlot 은 지웠다 — 공책에 비번을 함께 쓰던 동안만 쓰던 것이고,
+//   이제 아무도 안 부른다. (부르는 곳 0 인 것을 확인하고 지웠다.)
 
 // ─────────────────────────────────────────────
 // ① 로그인 대조
@@ -310,18 +297,74 @@ exports.changeMyPassword = onCall({ region: REGION }, async (req) => {
     changedAt: new Date().toISOString()
   });
 
-  // ㉡ 공책 — ⛔ 넘어가는 동안만 같이 고친다.
-  //    지금은 홈페이지가 **공책을 보고** 로그인하므로, 여기를 안 고치면
-  //    아이가 비번을 바꾼 뒤 **못 들어온다**(지금 고장과 똑같은 모습이 된다).
-  //    위 순서 (4)에서 공책의 pw 칸을 지울 때 **이 줄도 같이 지운다.**
-  const slot = await findBookSlot(role, id);
-  if (slot !== null) {
-    await db.ref(BOOK + '/' + slot + '/pw').set(sha256hex(newPw));
-  } else {
-    console.warn('[auth] 공책에서 자리를 못 찾았다 — ' + vaultKey(role, id));
-  }
+  // ㉡ 공책 — [순서 4 · 2026-09-11] **더 이상 쓰지 않는다.**
+  //    넘어가는 동안에는 여기에도 함께 썼다(홈페이지가 공책을 보고 로그인했으므로).
+  //    이제 정본은 금고 하나뿐이다. 공책에 비번을 되돌려 놓으면 안 된다.
 
   return { ok: true };
+});
+
+// ─────────────────────────────────────────────
+// ⑥ 【순서 4】 공책에서 비번 칸을 지운다 (원장님만 · 되돌리기 어려움)
+//
+//   이것이 **㉠ (비번이 누구나 읽힌다) 를 실제로 막는 걸음**이다.
+//   여기까지 오기 전에는 금고에 복사만 해 둔 것이라 공책에 그대로 남아 있었다.
+//
+//   ⛔⛔ **스스로 안전을 확인하고, 못 미더우면 거부한다.**
+//      공책에 비번이 있는데 **금고에 짝이 없는 사람**이 하나라도 있으면 지우지 않는다.
+//      그 사람은 지우는 순간 **영영 로그인 못 하게 되기 때문**이다.
+//      (그런 사람이 생기는 길 = ④ 전에 만들어졌고 한 번도 로그인 안 한 계정.)
+//      고치는 법 = `migratePasswordsToVault({dryRun:false})` 를 한 번 더 돌리면 채워진다.
+//
+//   ⚠️ 지운 뒤로는 **일꾼이 죽으면 아무도 로그인 못 한다.** 뒷길이 사라지기 때문이다.
+//      그것이 이 걸음의 값이다 — 비번을 감추는 대신 일꾼에 기대게 된다.
+// ─────────────────────────────────────────────
+exports.dropBookPasswords = onCall({ region: REGION }, async (req) => {
+  const uid = req.auth && req.auth.uid;
+  if (uid !== OPERATOR_UID) throw new HttpsError('permission-denied', 'OPERATOR-ONLY');
+  const dryRun = !!(req.data && req.data.dryRun);
+
+  const db = admin.database();
+  const [bookSnap, vaultSnap] = await Promise.all([
+    db.ref(BOOK).once('value'),
+    db.ref(VAULT).once('value')
+  ]);
+  const users = bookSnap.val() || [];
+  const vault = vaultSnap.val() || {};
+  const slots = Array.isArray(users)
+    ? users.map((u, i) => [String(i), u])
+    : Object.keys(users).map((k) => [k, users[k]]);
+
+  const willDrop = [];
+  const missing = [];
+  for (const [slot, u] of slots) {
+    if (!u || !u.pw) continue;                       // 이미 비번 칸이 없다
+    if (!u.id || !u.role) { missing.push({ slot, id: u.id || '(없음)', role: u.role || '(없음)', why: '아이디나 역할이 비었다' }); continue; }
+    const k = vaultKey(u.role, u.id);
+    if (vault[k] && vault[k].pw) willDrop.push({ slot, id: u.id, role: u.role });
+    else missing.push({ slot, id: u.id, role: u.role, why: '금고에 짝이 없다' });
+  }
+
+  if (missing.length) {
+    // ⛔ 던지지 않고 돌려준다 — 원장님이 **누가 빠졌는지 눈으로 보셔야** 하기 때문이다.
+    return {
+      ok: false,
+      refused: 'MISSING-IN-VAULT',
+      missing,
+      wouldDrop: willDrop.length,
+      howToFix: 'migratePasswordsToVault({dryRun:false}) 를 한 번 더 돌린 뒤 다시 시도하세요'
+    };
+  }
+
+  if (dryRun) {
+    return { ok: true, dryRun: true, wouldDrop: willDrop.length, alreadyClean: slots.length - willDrop.length };
+  }
+
+  const updates = {};
+  for (const w of willDrop) updates[w.slot + '/pw'] = null;
+  if (Object.keys(updates).length) await db.ref(BOOK).update(updates);
+
+  return { ok: true, dryRun: false, dropped: willDrop.length, at: new Date().toISOString() };
 });
 
 // ─────────────────────────────────────────────
@@ -393,11 +436,8 @@ exports.setPasswordByOperator = onCall({ region: REGION }, async (req) => {
     pw: scryptHash(newPw), role: role, id: id, setByOperatorAt: stamp
   });
 
-  // ⛔ 넘어가는 동안에는 공책도 함께 — 옛 길로 물러설 때 못 들어오면 안 된다.
-  //    공책에서 pw 칸을 지우는 날 이 블록도 함께 지울 것.
-  const bookUpdates = {};
-  for (const [slot] of hits) bookUpdates[slot + '/pw'] = sha256hex(newPw);
-  await db.ref(BOOK).update(bookUpdates);
+  // [순서 4 · 2026-09-11] 공책에는 **더 이상 쓰지 않는다.** 정본은 금고 하나다.
+  //   `mode:'both'` 라는 이름은 「공책에서 찾아서 역할을 정한다」는 뜻으로만 남는다.
 
   return { ok: true, id, role, name, rowsUpdated: hits.length, shortPw: newPw.length < 4 };
 });
@@ -480,7 +520,6 @@ exports.resetPasswordsBulk = onCall({ region: REGION }, async (req) => {
   }
 
   const vaultUpdates = {};
-  const bookUpdates = {};
   const out = [];
   const stamp = new Date().toISOString();
 
@@ -488,14 +527,11 @@ exports.resetPasswordsBulk = onCall({ region: REGION }, async (req) => {
     let pw = makePassword();
     while (pw.toLowerCase() === t.id.toLowerCase()) pw = makePassword();
     vaultUpdates[t.key] = { pw: scryptHash(pw), role: t.role, id: t.id, resetAt: stamp };
-    // ⛔ 넘어가는 동안에는 공책도 같이 맞춰 둔다 — 안 그러면 옛 길로 물러설 때 못 들어온다.
-    //    공책에서 pw 칸을 지우는 날 이 줄도 함께 지울 것.
-    bookUpdates[t.slot + '/pw'] = sha256hex(pw);
     out.push({ id: t.id, name: t.name, role: t.role, status: t.status, newPw: pw });
   }
 
+  // [순서 4 · 2026-09-11] 공책에는 안 쓴다. 정본은 금고 하나다.
   await db.ref(VAULT).update(vaultUpdates);
-  await db.ref(BOOK).update(bookUpdates);
 
   return { ok: true, dryRun: false, changed: out.length, resetAt: stamp, list: out };
 });

@@ -3119,8 +3119,19 @@ function fbDeleteSubmission(key) {
 function fbSetUsers(users) {
   // users 배열 전체를 한 번에 쓰면 users/.write:false에 막힘.
   // 개별 인덱스 경로로 분해해서 users/$id 규칙을 통과시킴.
+  //
+  // ⛔⛔ [순서 4 · 2026-09-11] **비번 칸은 떼고 쓴다.**
+  //   비번의 정본은 금고(solomon_auth)다. 공책(users)에는 이제 없다.
+  //   그런데 이 함수는 users 줄을 **통째로** 되쓰고, 부르는 곳이 **13군데**다.
+  //   한 곳이라도 옛 비번을 들고 있는 채로 부르면 **지운 비번이 되살아난다.**
+  //   ⇒ 막는 자리를 13군데가 아니라 **여기 하나**로 잡았다.
+  //   (비번을 바꾸는 길은 오직 일꾼이다 — changeMyPassword · setPasswordByOperator)
   const updates = {};
-  users.forEach((u, i) => { updates[`users/${i}`] = u; });
+  users.forEach((u, i) => {
+    const clean = Object.assign({}, u);
+    delete clean.pw;
+    updates[`users/${i}`] = clean;
+  });
   fbWrite(updates);
 }
 
@@ -4585,13 +4596,15 @@ async function doLogin() {
     }
 
     if (msg.indexOf('BAD-LOGIN') === -1 && msg.indexOf('BAD-INPUT') === -1) {
-      // 비번이 틀린 게 아니라 **일꾼에게 못 닿은** 것이다(인터넷·서버·배포 전).
-      // ⛔ 넘어가는 동안만 두는 뒷길 — 공책에 아직 비번이 남아 있어 옛 방식으로 본다.
-      //    이게 없으면 함수가 한 번 죽을 때 **아무도 로그인을 못 한다.**
-      //    ⇒ 공책에서 pw 칸을 지우는 날 **이 블록도 함께 지울 것.**
-      console.warn('[login] 일꾼에게 못 닿아 옛 길로 물러섰다:', msg);
-      const hashed = await hashPw(pw);
-      user = store.users.find(u => u.id === id && u.pw === hashed && u.role === loginRole);
+      // ⛔ [순서 4 · 2026-09-11] **옛 길(뒷길)은 없앴다.**
+      //   공책에 비번이 없으므로 물러설 곳이 없다 — 그것이 이 걸음의 값이다.
+      //   비번이 틀린 게 아니라 **일꾼에게 못 닿은** 것이니, 그대로 말해 준다.
+      //   (틀렸다고 하면 아이가 비번을 바꾸려 들어 더 헝클어진다.)
+      console.error('[login] 일꾼에게 못 닿았다:', msg);
+      document.getElementById('loginError').textContent =
+        '지금 로그인 서버에 연결하지 못했습니다. 잠시 뒤 다시 시도해 주세요.';
+      document.getElementById('loginError').style.display = 'block';
+      return;
     }
   }
 
@@ -6575,7 +6588,7 @@ async function addStudent() {
   if(!id||!name||!pw){alert('Please fill in all fields.');return;}
   const store=getStore();
   if(store.users.find(u=>u.id===id)){alert('This ID already exists.');return;}
-  const hpw=await hashPw(pw);
+  // [순서 4 · 2026-09-11] 공책에는 비번을 넣지 않는다 — 아래 ensureVaultPassword 가 금고에 넣는다.
   // === Phase 2: 신규 학교 필드 ===
   const schoolName  = (document.getElementById('ns_school_name')?.value || '').trim();
   const schoolGroup = document.getElementById('ns_school_group')?.value || '';
@@ -6590,7 +6603,7 @@ async function addStudent() {
     }
   }
   const group = sanitizeGroup(document.getElementById('ns_group')?.value || '');
-  store.users.push({id,pw:hpw,role:'student',name,year,country,group,status:'active',days:[],
+  store.users.push({id,role:'student',name,year,country,group,status:'active',days:[],
     school_name:schoolName, school_group:schoolGroup, school_calendar_override:schoolCalendarOverride});
   saveStore(store);
   fbSetUsers(store.users);
@@ -6614,8 +6627,8 @@ async function addParent() {
     childIds.push(firstChildId);
   }
   const name=parentDisplayName(childIds);
-  const hpw=await hashPw(pw);
-  store.users.push({id,pw:hpw,role:'parent',name,childIds,status:'active'});
+  // [순서 4 · 2026-09-11] 공책에는 비번을 넣지 않는다 — 금고에만 넣는다.
+  store.users.push({id,role:'parent',name,childIds,status:'active'});
   saveStore(store);
   fbSetUsers(store.users);
   // [2026-09-11] 학생과 같은 이유로 금고에도 넣는다.
@@ -8446,15 +8459,8 @@ async function saveMyAccount() {
   }
 
   // 여기부터는 **서버가 정말로 바꿔 준 뒤**다.
-  // 이 브라우저가 들고 있는 공책도 맞춰 둔다 — 안 그러면 새로고침 전까지 어긋난다.
-  // ⛔ 공책에서 pw 칸을 지우는 날(순서 (4)) 이 세 줄도 함께 지울 것.
-  try {
-    const store = getStore();
-    const u = store.users.find(x => x.id === currentUser.id && x.role === currentUser.role);
-    if (u) { u.pw = await hashPw(newPw); currentUser.pw = u.pw; saveStore(store); }
-  } catch (e) {
-    console.warn('[saveMyAccount] 이 컴퓨터의 공책 맞추기 실패(서버는 바뀌었다):', e);
-  }
+  // [순서 4 · 2026-09-11] 이 컴퓨터의 공책을 맞추던 블록은 지웠다 —
+  //   공책에 비번 칸이 없으므로 맞출 것이 없다. 정본은 금고 하나뿐이다.
 
   if (okEl) okEl.style.display = 'block';
   document.getElementById('myCurrentPw').value = '';
@@ -8531,9 +8537,8 @@ async function saveTeacherAccount() {
   const oldIdIdx = PROTECTED_ACCOUNTS.indexOf(oldId);
   if (oldIdIdx !== -1) PROTECTED_ACCOUNTS[oldIdIdx] = newId;
   u.id = newId;
-  if (newPw) u.pw = await hashPw(newPw);
   currentUser.id = newId;
-  if (newPw) currentUser.pw = u.pw;
+  // [순서 4 · 2026-09-11] 공책에는 비번을 넣지 않는다 — 아래 ensureVaultPassword 가 금고에 넣는다.
   saveStore(store);
   fbSetUsers(store.users);
   // [2026-09-11] 금고에도 넣는다 — 로그인 대조는 금고를 먼저 본다.
@@ -13777,13 +13782,7 @@ async function _resetPasswordVia(id, role, afterOk) {
     alert('⛔ 비밀번호를 바꾸지 못했습니다.\n' + msg);
     return;
   }
-  // 이 컴퓨터가 들고 있는 공책도 맞춰 둔다(새로고침 전까지 어긋나지 않게).
-  // ⛔ 공책에서 pw 칸을 지우는 날 이 세 줄도 함께 지울 것.
-  try {
-    const store = getStore();
-    const u = store.users.find(x => x.id === id && x.role === role);
-    if (u) { u.pw = await hashPw(newPw.trim()); saveStore(store); }
-  } catch (e) { console.warn('[resetPassword] 이 컴퓨터 공책 맞추기 실패(서버는 바뀌었다):', e); }
+  // [순서 4 · 2026-09-11] 이 컴퓨터의 공책을 맞추던 블록은 지웠다 — 공책엔 비번 칸이 없다.
 
   showBackupToast('✅ 비밀번호가 변경되었습니다.');
   if (afterOk) afterOk();

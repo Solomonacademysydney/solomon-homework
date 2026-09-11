@@ -61,23 +61,32 @@ const EXEMPT = {
     '순서 (4) 로 공책의 pw 칸이 사라지면 조건 자체가 거짓이 된다.'
 };
 
-console.log('\n① 비번을 쓰는 곳을 전부 찾았나');
+console.log('\n① 공책(users)에 비번을 쓰는 곳이 남아 있나');
+//   순서 (4) 를 마친 뒤로 **정본은 금고 하나**다. 공책에 비번을 쓰는 곳은 없어야 한다.
 const writers = findWriters();
 const names = Object.keys(writers).sort();
-console.log('   찾은 곳: ' + names.join(', '));
+console.log('   찾은 곳: ' + (names.length ? names.join(', ') : '없음'));
 
-const EXPECTED = ['_resetPasswordVia', 'addParent', 'addStudent', 'ensureStore', 'saveMyAccount', 'saveTeacherAccount'];
+const EXPECTED = ['ensureStore'];   // 면제 하나뿐 (아래 EXEMPT 참고)
 ok('알던 목록과 같다 (새 자리가 생기면 여기서 걸린다)',
   names.join(',') === EXPECTED.join(','),
-  '지금=' + names.join(',') + ' / 알던것=' + EXPECTED.join(','));
+  '지금=[' + names.join(',') + '] / 알던것=[' + EXPECTED.join(',') + ']');
 
-console.log('\n② 쓰는 곳마다 금고를 함께 건드리나');
-for (const name of names) {
-  if (EXEMPT[name]) { console.log('  --   ' + name + ' (면제: ' + EXEMPT[name].slice(0, 40) + '…)'); continue; }
+console.log('\n② 비번을 다루는 함수는 반드시 금고를 거치나');
+//   ⛔ 여기가 이 자의 핵심이다. 비번을 받는 화면이 금고를 안 거치면
+//      「바꿨다는데 안 바뀌는」 고장이 조용히 되살아난다 — 이틀에 두 번 그랬다.
+const REQUIRED_VAULT_FNS = [
+  'addStudent',          // 학생 새로 만들기
+  'addParent',           // 학부모 새로 만들기
+  'saveTeacherAccount',  // 원장님 자기 계정
+  'saveMyAccount',       // 아이가 스스로 바꾸기
+  '_resetPasswordVia'    // 「🔑 PW」 단추
+];
+for (const name of REQUIRED_VAULT_FNS) {
   const body = bodyOf(name);
-  if (!body) { ok(name + ' 의 몸통을 찾았다', false); continue; }
+  if (!body) { ok(name + ' 이(가) 아직 있다', false, '함수를 못 찾았다 — 이름이 바뀌었나?'); continue; }
   const hit = TOUCHES_VAULT.find((w) => body.indexOf(w) !== -1);
-  ok(name + ' 이(가) 금고를 건드린다', !!hit, hit ? '' : '금고를 건드리는 말이 하나도 없다');
+  ok(name + ' 이(가) 금고를 거친다', !!hit, hit ? '' : '금고를 건드리는 말이 하나도 없다');
 }
 
 console.log('\n③ 면제한 곳은 이유가 적혀 있나');
@@ -85,12 +94,11 @@ for (const name of Object.keys(EXEMPT)) {
   ok(name + ' 에 면제 이유가 적혀 있다', String(EXEMPT[name]).length > 30);
 }
 
-console.log('\n④ 순서 (4) 에서 함께 지울 것들이 아직 제자리에 있나');
-//   ⛔ 이것들은 **지금은 있어야 한다.** 공책에서 pw 를 지우는 날 함께 지운다.
-//      먼저 사라지면 뒷길이 끊겨 일꾼이 삐끗할 때 아무도 못 들어온다.
-ok('doLogin 에 「옛 길로 물러섬」이 아직 있다', /옛 길로 물러섰다/.test(HTML));
-ok('fbSetUsers 가 아직 pw 를 함께 쓴다 (여기를 떼면 그게 곧 순서 4다)',
-  /function fbSetUsers[\s\S]{0,200}updates\[`users\/\$\{i\}`\] = u;/.test(HTML));
+console.log('\n④ 순서 (4) 가 실제로 끝났나 — 되살아나는 길이 막혔나');
+ok('doLogin 의 「옛 길로 물러섬」이 사라졌다', !/옛 길로 물러섰다/.test(HTML));
+ok('⛔ fbSetUsers 가 pw 를 떼고 쓴다 (13군데를 한 곳에서 막는다)',
+  /function fbSetUsers[\s\S]{0,600}delete clean\.pw/.test(HTML));
+ok('⛔ fbSetUsers 가 줄을 통째로 되쓰지 않는다', !/updates\[`users\/\$\{i\}`\] = u;/.test(HTML));
 
 console.log('\n────────────────────────────');
 console.log(fail === 0 ? '전부 통과 — ' + pass + '개' : '실패 ' + fail + '개 / 통과 ' + pass + '개');
