@@ -346,9 +346,27 @@ exports.setPasswordByOperator = onCall({ region: REGION }, async (req) => {
   const newPw = String((req.data && req.data.newPw) || '');
   const wantRole = String((req.data && req.data.role) || '').trim();
   const allowTeacher = !!(req.data && req.data.allowTeacher);
+  // mode: 'both'(기본) = 금고+공책 · 'vault' = 금고만.
+  //   'vault' 는 **계정을 새로 만들 때** 쓴다 — 그때는 공책 쪽을 홈페이지가 이미 쓰고 있고,
+  //   그 쓰기가 서버에 닿기 전이라 여기서 찾으면 「없는 아이디」가 되기 때문이다(경합).
+  //   ⇒ 'vault' 는 공책을 보지 않으므로 순서에 매이지 않는다.
+  const mode = String((req.data && req.data.mode) || 'both').trim();
+  if (mode !== 'both' && mode !== 'vault') throw new HttpsError('invalid-argument', 'BAD-MODE');
   if (!id || !newPw) throw new HttpsError('invalid-argument', 'BAD-INPUT');
 
   const db = admin.database();
+
+  if (mode === 'vault') {
+    if (!wantRole) throw new HttpsError('invalid-argument', 'ROLE-REQUIRED');
+    if (wantRole === 'teacher' && !allowTeacher) {
+      throw new HttpsError('failed-precondition', 'TEACHER-NEEDS-CONFIRM');
+    }
+    await db.ref(VAULT + '/' + vaultKey(wantRole, id)).update({
+      pw: scryptHash(newPw), role: wantRole, id: id, setByOperatorAt: new Date().toISOString()
+    });
+    return { ok: true, id, role: wantRole, mode: 'vault', rowsUpdated: 0 };
+  }
+
   const snap = await db.ref(BOOK).once('value');
   const users = snap.val() || [];
   const slots = Array.isArray(users)
