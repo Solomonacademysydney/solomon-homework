@@ -3873,6 +3873,18 @@ function getStore() {
   if (!d.users)        d.users = [];
   if (!d.homeworkSets) d.homeworkSets = {};
   if (!d.submissions)  d.submissions = {};
+  // [2026-09-11] 반 빈 칸에는 `sets` 가 **없다** — 만드는 코드는 `sets: []` 를 넣지만
+  //   (3091줄) Firebase 는 **빈 배열을 저장하지 않고 지운다.** 그래서 돌아올 때 사라진다.
+  //   그 칸에 그 반의 첫 숙제를 올리면 `hw.sets.length` 에서 터졌다 —
+  //   「Cannot read properties of undefined (reading 'length')」 (2026-09-11 션 Y4 2주차).
+  //   ⛔ 같은 함정이 셋이었다 — JSON 등록(15187·15245) · 세트 옮기기(5545) · 손수 만들기(5935).
+  //   ⇒ **읽는 자리 한 곳**에서 세운다. 셋이 다 getStore() 를 지난다.
+  //   ★ 빈 배열을 넣을 뿐이라 지우는 것이 없고, `hw.sets && hw.sets.length` 로 보던
+  //     자리들은 판정이 그대로다(없는 것도 빈 것도 「세트 없음」이다).
+  for (const k in d.homeworkSets) {
+    const h = d.homeworkSets[k];
+    if (h && typeof h === 'object' && !Array.isArray(h.sets)) h.sets = [];
+  }
   // ts_progress and attendance fields are no longer used but may exist in Firebase data — ignored here
   d.users.forEach(u => {
     if (u.role === 'student' && !u.days) u.days = [];
