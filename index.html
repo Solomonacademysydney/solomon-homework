@@ -2682,6 +2682,90 @@ function visibleHw(hw) {
 //   원본은 Firebase에 그대로 남으므로 데이터 손실 없음.
 const FB_ONLY_LOCAL_DROP = ['aiCache', 'taxonomy_mr', 'taxonomy_feedback', 'lt_results'];
 
+// ═══════════════════════════════════════════════════════════════
+// [2026-09-11] 그림은 브라우저 사본에 담지 않는다 — 서랍 무게의 57%였다
+// ═══════════════════════════════════════════════════════════════
+// 실측(파이어베이스 실물, 보관 창 2026_m09_w1~w4):
+//   서랍에 들어갈 무게 3,111KB / 한도 2,600KB ⇒ **120%, 넘친다**
+//   그중 **그림(인라인 SVG) 1,674KB = 57%**. 그림만 빼면 1,437KB(55%) — 넉넉해진다.
+//   가장 무거운 칸 AU_y5_2026_m09_w2 = 829KB 인데 그중 **756KB(91%)가 그림**이었다.
+//   그림 138개 · 평균 5,611자 · 최대 27,048자.
+// ⛔ 파이어베이스 창고는 **그대로 둔다.** 여기서 하는 일은 「아이 기기에 복사할 때만 빼는 것」이다.
+//   그래서 창고도 TS 변환기도 이미 만든 문항도 안 건드린다. 백업(_fullStoreForBackup)은
+//   파이어베이스를 직접 읽으므로 그림이 그대로 들어간다.
+//
+// ★ 이름을 **그림 내용으로** 짓는다(내용이 곧 이름). 세트를 옮기거나 순서가 바뀌어도
+//   엉뚱한 그림이 붙는 일이 원리상 없고, 같은 그림은 저절로 한 벌만 남는다.
+//   자리(몇 번째 세트의 몇 번째 문항)로 이름을 지으면 세트를 옮기는 순간 그림이 바뀐다 — 그래서 안 쓴다.
+// ⛔ 물러설 자리: 이름표가 실물로 안 돌아왔는데 그대로 파이어베이스에 올리면
+//   **창고의 그림이 영영 지워진다.** fbSetHomeworkSet 에서 막는다(아래).
+window._figStore = window._figStore || Object.create(null);
+const FIG_REF_PREFIX = '§fig:';
+
+function _figId(svg) {
+  let h = 0x811c9dc5;                                  // FNV-1a 32bit
+  for (let i = 0; i < svg.length; i++) { h ^= svg.charCodeAt(i); h = (h * 0x01000193) >>> 0; }
+  return FIG_REF_PREFIX + h.toString(36) + '_' + svg.length;   // 길이까지 붙여 충돌을 더 줄인다
+}
+function _isFigRef(v) { return typeof v === 'string' && v.startsWith(FIG_REF_PREFIX); }
+
+// 저장할 글자를 만들면서 그림을 떼어 _figStore 에 담는다(원본 객체는 **건드리지 않는다**).
+// ★ JSON.stringify 의 replacer 라 사본을 한 벌 더 만들지 않는다 — 훑는 김에 뗀다.
+function _mirrorJson(obj) {
+  return JSON.stringify(obj, function (key, value) {
+    if (key === '_figPending') return undefined;       // 화면용 흔적은 저장하지 않는다
+    if (key === 'figure' && typeof value === 'string' && value && !_isFigRef(value)) {
+      const id = _figId(value);
+      window._figStore[id] = value;
+      return id;
+    }
+    return value;
+  });
+}
+
+// 숙제 칸들을 돌며 문항 배열마다 fn 을 부른다(sets 와 ts 둘 다).
+function _eachQuestionList(homeworkSets, fn) {
+  for (const k in homeworkSets) {
+    const hw = homeworkSets[k];
+    if (!hw || typeof hw !== 'object') continue;
+    if (Array.isArray(hw.sets)) for (const s of hw.sets) if (s) fn(s.questions);
+    if (hw.ts) fn(hw.ts.questions);
+  }
+}
+
+// 파이어베이스로 나가는 updates 에 「그림을 못 되돌린 문항」이 섞여 있으면 막는다.
+// 참을 돌려주면 써도 되는 것이다. fbWrite 한 곳에서만 부른다.
+function _figGuardOk(updates) {
+  let pending = 0;
+  for (const path in updates) {
+    if (!path.startsWith('homeworkSets/')) continue;
+    const hw = updates[path];
+    if (!hw || typeof hw !== 'object') continue;       // 삭제(null)는 그림과 무관
+    _eachQuestionList({ _: hw }, qs => {
+      if (!Array.isArray(qs)) return;
+      for (const q of qs) if (q && (q._figPending || _isFigRef(q.figure))) pending++;
+    });
+  }
+  if (!pending) return true;
+  console.error('[figure] 되돌리지 못한 그림', pending, '개 — 파이어베이스 쓰기를 멈춘다:', Object.keys(updates));
+  alert('⚠️ 그림을 불러오지 못해 저장을 멈췄습니다.\n\n'
+      + '그대로 저장하면 문항의 그림이 지워집니다.\n'
+      + '인터넷 연결을 확인하고 새로고침한 뒤 다시 시도해 주세요.');
+  return false;
+}
+
+// 이름표를 실물 그림으로 되돌린다. 못 찾으면 **이름표를 화면에 뿌리지 않고** 비워 두고,
+// 못 찾았다는 사실만 _figPending 에 남긴다(올리기를 막는 근거가 된다).
+function _restoreFigures(questions) {
+  if (!Array.isArray(questions)) return;
+  for (const q of questions) {
+    if (!q || !_isFigRef(q.figure)) continue;
+    const svg = window._figStore[q.figure];
+    if (svg) { q.figure = svg; delete q._figPending; }
+    else     { q._figPending = q.figure; q.figure = ''; }
+  }
+}
+
 function _isQuotaError(e) {
   return !!e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22 || e.code === 1014);
 }
@@ -2789,7 +2873,7 @@ function _rawLocalStore() { return window._memStoreRaw || localStorage.getItem(S
 //      메모리 사본이 진짜 서랍보다 오래 살아 **낡은 것을 붙드는** 반대 사고가 난다.
 function _persistLocalStore(d) {
   const mirror = _localMirror(d);
-  const raw = JSON.stringify(mirror);
+  const raw = _mirrorJson(mirror);   // 훑으면서 그림을 떼어 _figStore 로 옮긴다
   try {
     localStorage.setItem(STORE_KEY, raw);
     window._memStoreRaw = null;   // 진짜 서랍이 최신이다 — 메모리 사본은 버린다
@@ -3031,6 +3115,14 @@ function fbWrite(updates, onSuccess) {
     if (onSuccess) onSuccess(true);   // 화면은 저장된 것처럼 그대로 돌아간다
     return;
   }
+  // ⛔⛔ [2026-09-11] 그림을 못 되돌린 채로 올리면 **창고의 그림이 영영 지워진다.**
+  //   서랍에는 이름표만 들어 있고 실물은 메모리(_figStore)에 있다. 파이어베이스가 아직
+  //   한 번도 안 왔거나(새로고침 직후·연결 끊김) 되돌릴 실물이 없으면 figure 가 빈 채로 덮인다.
+  //   ★ 문지기를 여기 둔다 — 숙제 칸을 쓰는 곳이 fbSetHomeworkSet 말고도 넷 더 있다
+  //     (세트 수정·삭제 5502·5504 · 세트 옮기기 5675·5680 · 교사 재시도 3017).
+  //     그 지름길들도 다 fbWrite 를 지난다. 한 곳만 막으면 나머지로 샌다.
+  //   ⇒ 하나라도 못 되돌렸으면 **쓰지 않는다.** 저장을 미루는 것은 되돌릴 수 있다.
+  if (!_figGuardOk(updates)) { if (onSuccess) onSuccess(false); return; }
   if (!window.fbReady || !window.FB_REF) {
     // [Safety 2026-05-29] silent skip 방지 — 학생 자기 submission이면 queue + 알림
     _addToRetryQueue(updates);
@@ -3910,6 +4002,9 @@ function getStore() {
     const h = d.homeworkSets[k];
     if (h && typeof h === 'object' && !Array.isArray(h.sets)) h.sets = [];
   }
+  // [2026-09-11] 서랍에는 그림 대신 이름표만 들어 있다 — 여기서 실물로 되돌린다.
+  //   ★ 읽는 길목 하나에서 되돌리므로 위쪽 300여 군데는 전과 똑같이 q.figure 를 쓰면 된다.
+  _eachQuestionList(d.homeworkSets, _restoreFigures);
   // ts_progress and attendance fields are no longer used but may exist in Firebase data — ignored here
   d.users.forEach(u => {
     if (u.role === 'student' && !u.days) u.days = [];
@@ -13609,7 +13704,9 @@ const firebaseConfig = {
           let changed = false;
           // homeworkSets만 교체 (submissions 보존). [2026-06-12] 트리밍본끼리 비교(과거 주차 차이로 인한 매 이벤트 재렌더 방지)
           const _trimmedHw = (_localMirror({ homeworkSets: data.homeworkSets }).homeworkSets) || {};
-          if (JSON.stringify(_trimmedHw) !== JSON.stringify(localData.homeworkSets)) {
+          // [2026-09-11] 서랍에 든 것은 **그림을 뗀 꼴**이라, 견줄 때도 같은 꼴로 만들어야 한다.
+          //   안 그러면 매번 「달라졌다」가 되어 파이어베이스 이벤트마다 서랍을 다시 쓴다.
+          if (_mirrorJson(_trimmedHw) !== JSON.stringify(localData.homeworkSets)) {
             localData.homeworkSets = _trimmedHw;
             changed = true;
           }
@@ -14114,7 +14211,12 @@ async function _detectBackupAnomaly(currentHwSets, currentSubmissions, currentV4
 async function manualBackupDownload() {
   let store = await _fullStoreForBackup();  // [2026-06-12] 트리밍된 로컬이 아닌 Firebase 전체 트리로 백업
   if (!store) {
-    if (!confirm('⚠️ Firebase에 연결되지 않아 전체 백업을 만들 수 없습니다.\n이 브라우저의 로컬 데이터(최근 주차만 포함, 불완전)로 부분 백업을 받으시겠어요?')) return;
+    // ⛔ [2026-09-11] 로컬 사본에는 **그림이 없다**(브라우저 사본에서 뺐다). 파이어베이스에
+    //   연결이 안 된 상태면 그림을 되돌릴 수도 없으므로, 이 부분 백업에는 그림이 빠진다.
+    //   ⇒ 복구용으로 믿으시면 안 된다는 것을 말로 알린다.
+    if (!confirm('⚠️ Firebase에 연결되지 않아 전체 백업을 만들 수 없습니다.\n\n'
+               + '이 브라우저의 로컬 데이터로 부분 백업을 받으시겠어요?\n'
+               + '(최근 주차만 · 문항의 그림은 빠집니다 — 복구용으로는 불완전합니다)')) return;
     store = getStore();
   }
   if (!store) { alert('데이터가 없습니다.'); return; }
