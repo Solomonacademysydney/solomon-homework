@@ -325,6 +325,66 @@ exports.changeMyPassword = onCall({ region: REGION }, async (req) => {
 });
 
 // ─────────────────────────────────────────────
+// ⑤ 원장님이 한 사람의 비번을 **정해서** 바꾸기 (원장님만)
+//
+//   ⛔ 왜 필요한가 — 「🔑 PW」 단추는 원래 **공책에만** 썼다. 비번이 금고로 옮겨진
+//      뒤로는 로그인이 금고를 먼저 보므로, 공책만 고치면 **바꿔도 안 먹는다.**
+//      (2026-09-11 내가 만든 회귀다. 이 일꾼이 두 곳을 함께 고쳐 그것을 없앤다.)
+//
+//   role 은 안 주셔도 된다 — 공책에서 그 아이디를 찾아 정한다.
+//   같은 아이디가 역할 둘로 있으면 어느 쪽인지 물어본다(멋대로 고르지 않는다).
+//
+//   ⛔ 교사 줄은 `allowTeacher: true` 를 함께 주셔야 바꾼다.
+//      교사 비번은 **파이어베이스 계정 비번과 짝**이라, 한쪽만 바꾸면
+//      원장 권한 전환(elevateToOperatorAuth)이 깨져 아무것도 저장 못 하게 된다.
+// ─────────────────────────────────────────────
+exports.setPasswordByOperator = onCall({ region: REGION }, async (req) => {
+  const uid = req.auth && req.auth.uid;
+  if (uid !== OPERATOR_UID) throw new HttpsError('permission-denied', 'OPERATOR-ONLY');
+
+  const id = String((req.data && req.data.id) || '').trim();
+  const newPw = String((req.data && req.data.newPw) || '');
+  const wantRole = String((req.data && req.data.role) || '').trim();
+  const allowTeacher = !!(req.data && req.data.allowTeacher);
+  if (!id || !newPw) throw new HttpsError('invalid-argument', 'BAD-INPUT');
+
+  const db = admin.database();
+  const snap = await db.ref(BOOK).once('value');
+  const users = snap.val() || [];
+  const slots = Array.isArray(users)
+    ? users.map((u, i) => [String(i), u])
+    : Object.keys(users).map((k) => [k, users[k]]);
+
+  const hits = slots.filter(([, u]) => u && u.id === id && (!wantRole || u.role === wantRole));
+  if (!hits.length) throw new HttpsError('not-found', 'NO-SUCH-ID');
+
+  const roles = Array.from(new Set(hits.map(([, u]) => u.role)));
+  if (roles.length > 1) {
+    // 멋대로 고르지 않는다 — 어느 쪽인지 받아야 한다.
+    throw new HttpsError('failed-precondition', 'AMBIGUOUS-ROLE:' + roles.join(','));
+  }
+
+  const role = roles[0];
+  const name = (hits[0][1] && hits[0][1].name) || '';
+  if (role === 'teacher' && !allowTeacher) {
+    throw new HttpsError('failed-precondition', 'TEACHER-NEEDS-CONFIRM');
+  }
+
+  const stamp = new Date().toISOString();
+  await db.ref(VAULT + '/' + vaultKey(role, id)).update({
+    pw: scryptHash(newPw), role: role, id: id, setByOperatorAt: stamp
+  });
+
+  // ⛔ 넘어가는 동안에는 공책도 함께 — 옛 길로 물러설 때 못 들어오면 안 된다.
+  //    공책에서 pw 칸을 지우는 날 이 블록도 함께 지울 것.
+  const bookUpdates = {};
+  for (const [slot] of hits) bookUpdates[slot + '/pw'] = sha256hex(newPw);
+  await db.ref(BOOK).update(bookUpdates);
+
+  return { ok: true, id, role, name, rowsUpdated: hits.length, shortPw: newPw.length < 4 };
+});
+
+// ─────────────────────────────────────────────
 // ④ 아이들 비번을 한 번에 새로 깔기 (원장님만)
 //
 //   왜 —  공책이 넉 달간 열려 있었다. 그 사이에 누가 베껴 갔다면 **옛 비번은 이미

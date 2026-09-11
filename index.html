@@ -13681,30 +13681,48 @@ function isProtectedAccount(id) {
   return PROTECTED_ACCOUNTS.includes(id);
 }
 
-async function resetStudentPassword(studentId) {
-  const newPw = prompt(`"${studentId}" 의 새 비밀번호를 입력하세요:`);
+// ═══════════════════════════════════════════════════════
+//  [2026-09-11] 「🔑 PW」 단추 둘을 **서버 일꾼**으로 돌렸다.
+//
+//  ⛔ 왜 — 비번이 금고(solomon_auth)로 옮겨졌고 로그인은 **금고를 먼저** 본다.
+//     그런데 이 두 함수는 **공책에만** 썼다 ⇒ 옮긴 뒤로는 바꿔도 **안 먹는다**.
+//     (같은 날 내가 만든 회귀다. 공책만 고치면 화면은 「✅ 변경되었습니다」라고
+//      하는데 아이는 옛 비번으로 들어간다 — 오늘 없앤 그 거짓말과 같은 꼴이다.)
+//
+//  일꾼이 **금고와 공책을 함께** 고친다. 그리고 실패하면 실패했다고 말한다.
+// ═══════════════════════════════════════════════════════
+async function _resetPasswordVia(id, role, afterOk) {
+  const newPw = prompt(`"${id}" 의 새 비밀번호를 입력하세요:`);
   if (!newPw || !newPw.trim()) return;
-  const store = getStore();
-  const user = store.users.find(u => u.id === studentId && u.role === 'student');
-  if (!user) { alert('학생을 찾을 수 없습니다.'); return; }
-  user.pw = await hashPw(newPw.trim());
-  saveStore(store);
-  fbSetUsers(store.users);
+  try {
+    await callAuthWorker('setPasswordByOperator', { id, role, newPw: newPw.trim() }, 20000);
+  } catch (e) {
+    const msg = String((e && e.message) || '');
+    if (msg.indexOf('NO-SUCH-ID') !== -1) { alert('그 아이디를 찾을 수 없습니다.'); return; }
+    if (msg.indexOf('OPERATOR-ONLY') !== -1) { alert('원장 권한이 아닙니다. 로그아웃 후 다시 로그인해 주세요.'); return; }
+    if (msg.indexOf('WORKER-TIMEOUT') !== -1) { alert('⚠️ 서버가 제때 답하지 않았습니다.\n바뀌었을 수도 있으니 새 비밀번호로 먼저 확인해 보세요.'); return; }
+    console.error('[resetPassword] 실패:', e);
+    alert('⛔ 비밀번호를 바꾸지 못했습니다.\n' + msg);
+    return;
+  }
+  // 이 컴퓨터가 들고 있는 공책도 맞춰 둔다(새로고침 전까지 어긋나지 않게).
+  // ⛔ 공책에서 pw 칸을 지우는 날 이 세 줄도 함께 지울 것.
+  try {
+    const store = getStore();
+    const u = store.users.find(x => x.id === id && x.role === role);
+    if (u) { u.pw = await hashPw(newPw.trim()); saveStore(store); }
+  } catch (e) { console.warn('[resetPassword] 이 컴퓨터 공책 맞추기 실패(서버는 바뀌었다):', e); }
+
   showBackupToast('✅ 비밀번호가 변경되었습니다.');
-  renderTeacher();
+  if (afterOk) afterOk();
+}
+
+async function resetStudentPassword(studentId) {
+  await _resetPasswordVia(studentId, 'student', renderTeacher);
 }
 
 async function resetParentPassword(parentId) {
-  const newPw = prompt(`"${parentId}" 의 새 비밀번호를 입력하세요:`);
-  if (!newPw || !newPw.trim()) return;
-  const store = getStore();
-  const user = store.users.find(u => u.id === parentId && u.role === 'parent');
-  if (!user) { alert('학부모를 찾을 수 없습니다.'); return; }
-  user.pw = await hashPw(newPw.trim());
-  saveStore(store);
-  fbSetUsers(store.users);
-  showBackupToast('✅ 비밀번호가 변경되었습니다.');
-  rebuildParentCards();
+  await _resetPasswordVia(parentId, 'parent', rebuildParentCards);
 }
 
 // ═══════════════════════════════════════
