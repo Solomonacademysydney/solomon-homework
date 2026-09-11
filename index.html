@@ -7837,6 +7837,8 @@ function renderParentReportSection(child, store, period) {
       setScores: savedReport.setScores,
       weakAreas: savedReport.weakAreas,
       finalReports: savedReport.finalReports || [],
+      // ★ [2026-09-11] TS 는 저장된 리포트에 안 담기므로 늘 지금 store 에서 셈한다.
+      tsData: buildTSReportData(child.id, period, store),
       periodLabel: periodLabel(period),
       termLabel: termLabel(new Date())
     };
@@ -8746,6 +8748,8 @@ function buildVisualReportData(studentId, period) {
     weekTotalSets,
     weekDoneSets,
     weekSetCompletion,
+    // ★ [2026-09-11] TS(사고력)도 리포트에 함께 싣는다. 없으면 null 이고, 그때는 칸을 안 그린다.
+    tsData: buildTSReportData(studentId, period, store),
     grade: scorePercent >= 90 ? 'Excellent' :
            scorePercent >= 75 ? 'Good Progress' :
            scorePercent >= 60 ? 'Needs Practice' : 'Needs Attention',
@@ -9526,6 +9530,63 @@ function viewYearResults(yr) {
   } catch (e) { console.error('viewYearResults error:', e); closeModal(); }
 }
 
+// ★ [2026-09-11] 데스크톱/인쇄 리포트의 TS(사고력) 칸.
+//   학부모 모바일 카드에는 renderTSDailySection 이 이미 있었는데 이쪽 판에는 없었다 —
+//   선생님용 상세 리포트와 인쇄·PNG 판에서 TS 가 통째로 빠져 보이던 자리다.
+//   ⛔ 모바일 것(m-card 등)을 그대로 쓰면 안 된다. 그 css 는 이 판에 없어 민무늬로 나온다.
+//   셈은 buildTSReportData 하나만 쓴다 — 두 판이 다른 숫자를 말하면 그게 더 나쁘다.
+function renderTSDesktopSection(tsData) {
+  if (!tsData || !tsData.hasData) return '';
+
+  const {
+    totalDays, completedDays, totalQuestions,
+    firstTryCorrect, afterHintCorrect, revealedCount, inProgressCount,
+    firstTryRate, totalStars, overallProgress
+  } = tsData;
+
+  const rateColor = firstTryRate >= 70 ? '#16A34A' : firstTryRate >= 50 ? '#F59E0B' : '#DC2626';
+  const segs = [
+    { label: '첫 시도 정답', value: firstTryCorrect,  color: '#16A34A' },
+    { label: '힌트 후 정답', value: afterHintCorrect, color: '#F59E0B' },
+    { label: '정답 공개',    value: revealedCount,    color: '#DC2626' },
+    { label: '진행 중',      value: inProgressCount,  color: '#94A3B8' }
+  ];
+  const segTotal = segs.reduce((s, x) => s + x.value, 0);
+  const w = v => segTotal > 0 ? Math.round(v / segTotal * 100) : 0;
+
+  const barHTML = segTotal > 0 ? `
+    <div style="display:flex;height:28px;border-radius:6px;overflow:hidden;background:#f0f0f0;">
+      ${segs.map(s => s.value <= 0 ? '' :
+        `<div title="${s.label}: ${s.value}개" style="width:${w(s.value)}%;background:${s.color};display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;">${w(s.value) >= 8 ? s.value : ''}</div>`).join('')}
+    </div>
+    <div style="display:flex;gap:14px;margin-top:10px;flex-wrap:wrap;font-size:12px;">
+      ${segs.map(s => `
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${s.color};"></span>
+          <span style="color:#334155;font-weight:600;">${s.label}</span>
+          <b style="color:#1B2A4A;">${s.value}</b>
+        </div>`).join('')}
+    </div>` : '';
+
+  const box = (big, lbl, color) => `
+    <div style="flex:1;min-width:120px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:14px 16px;text-align:center;">
+      <div style="font-size:24px;font-weight:900;color:${color || '#1B2A4A'};line-height:1.2;">${big}</div>
+      <div style="font-size:12px;color:#64748B;font-weight:700;margin-top:4px;">${lbl}</div>
+    </div>`;
+
+  return `
+    <div style="margin:0 20px 20px;background:#fff;border-radius:14px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.06);">
+      <div style="font-size:16px;font-weight:800;color:#1B2A4A;margin-bottom:4px;">🧠 TS Daily (사고력 훈련)</div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:16px;">진도 ${completedDays}/${totalDays}일 (${overallProgress}%) · 이번 주 ${totalQuestions}문제</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
+        ${box(`${firstTryRate}<span style="font-size:15px;">%</span>`, '한 번에 정답', rateColor)}
+        ${box(totalStars === 0 ? '<span style="font-size:15px;color:#94A3B8;">없음</span>' : `⭐ ${totalStars}`, '획득 별점')}
+        ${box(`${completedDays}<span style="font-size:15px;">/${totalDays}일</span>`, '진도')}
+      </div>
+      ${barHTML}
+    </div>`;
+}
+
 function generateVisualReportHTML(data, comment, editable = false) {
   const sc = getScoreColor(data.scorePercent);
   const completionPercent = data.completionPercent ?? 100;
@@ -9678,6 +9739,7 @@ function generateVisualReportHTML(data, comment, editable = false) {
         <div style="font-size:16px;font-weight:800;color:#1B2A4A;margin-bottom:16px;">📝 세트별 점수</div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;">${setScoresHTML}</div>
       </div>
+      ${renderTSDesktopSection(data.tsData)}
       <div style="margin:0 20px 20px;background:#fff;border-radius:14px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.06);">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
           <div style="font-size:16px;font-weight:800;color:#1B2A4A;">💬 선생님 한마디</div>
@@ -10323,7 +10385,15 @@ function renderTeacherDetailPanel(child, period, mode) {
             Q${q.num} <span style="color:#DC2626;">✗</span>
             ${q.type?`<span style="background:#fee2e2;color:#991b1b;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;margin-left:4px;">${q.type}</span>`:''}
           </div>
-          <div style="font-size:12px;color:#64748B;margin-bottom:4px;">${(q.text||'').substring(0,100)}${(q.text||'').length>100?'...':''}</div>
+          <!-- ★ [2026-09-11] 아이가 보는 것과 같게 그린다.
+               고치기 전: 날것을 100자에서 잘라 찍어 수식 부호가 그대로 드러났다.
+               같은 파일에서 문항 글을 보여 주는 다른 아홉 곳은 전부 renderMath 를 거치는데
+               이 칸만 빠져 있었다 — 아이 화면(renderStudent)과 **같은 q.text** 인데도.
+               ⛔ 100자 자르기도 함께 없앴다. 수식 한가운데를 자르면 여는 부호의 짝이 사라져
+                  renderMath 가 못 알아보고, 자른 자국이 그대로 남는다.
+               ⛔ 이 주석에 백틱을 쓰지 말 것 — 여기는 글 상자(template literal) 안이라
+                  백틱 하나가 상자를 끊어 버린다(2026-09-11 에 그렇게 한 번 깨뜨렸다). -->
+          <div style="font-size:12px;color:#64748B;margin-bottom:4px;line-height:1.5;">${renderMath(q.text || '')}</div>
           <div style="font-size:12px;">학생 답: <b style="color:#DC2626;">${renderMath(q.studentAnswer || '(no answer)')}</b></div>
           <div style="font-size:12px;">정답: <b style="color:#16A34A;">${renderMath(q.answer || '')}</b></div>
         </div>`).join('');
@@ -11001,7 +11071,13 @@ function showSavedVisualReport(studentId, periodKey) {
   if (!saved) { alert('저장된 리포트가 없습니다.'); return; }
 
   const student = store.users?.find(u => u.id === studentId) || { name: studentId, year: '' };
-  const reportData = { ...saved, student, periodLabel: periodKey };
+  // ★ [2026-09-11] 여기는 기간이 열쇠 글자(`2026_m09_w1`)로만 온다 — 풀어서 TS 를 셈한다.
+  //   못 풀면 null 을 넘긴다(칸을 안 그릴 뿐, 리포트는 그대로 뜬다).
+  const _pk = /^(\d{4})_m(\d{2})_w(\d+)$/.exec(periodKey || '');
+  const _tsData = _pk
+    ? buildTSReportData(studentId, { year: +_pk[1], month: +_pk[2], week: +_pk[3] }, store)
+    : null;
+  const reportData = { ...saved, student, tsData: _tsData, periodLabel: periodKey };
   const reportHTML = generateVisualReportHTML(reportData, saved.comment);
 
   document.getElementById('modalContent').innerHTML = `
@@ -13206,6 +13282,7 @@ function renderStudentVisualReport(setIdx) {
       ...saved,
       student,
       periodLabel: periodLabel(p),
+      tsData: fresh.tsData,   // ★ [2026-09-11] 저장된 리포트엔 TS 가 없다 — 갓 셈한 것을 쓴다.
       finalReports: fresh.finalReports
     };
     comment = saved.comment;
