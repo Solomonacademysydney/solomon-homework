@@ -2770,16 +2770,35 @@ async function _ensurePeriodLoaded(p) {
   }
 }
 
+// 서랍을 읽는 **단 하나의 길목.** 쓰는 길이 하나(_persistLocalStore)이듯 읽는 길도 하나로 모은다.
+// ⛔ 이걸 안 만들고 getStore() 한 곳만 고쳤더니, 다른 읽는 자리들이 옛 사본을 보면서
+//   「화면은 새것 · 저장은 옛것」으로 갈라졌다(학생 갱신 13604 가 그 사본을 되썼다).
+//   ★ 지름길에도 같은 문지기를 세운다 — localStorage.getItem(STORE_KEY) 를 직접 부르지 말 것.
+function _rawLocalStore() { return window._memStoreRaw || localStorage.getItem(STORE_KEY); }
+
 // 모든 STORE_KEY 쓰기의 단일 통로. quota 초과 시 던지지 않고 false 반환 + 교사 경고.
+// ★★★ [2026-09-11 민아 사고] 서랍이 꽉 차면 **성공한 일이 실패한 것처럼 보였다.**
+//   무슨 일이 있었나: JSON 등록은 파이어베이스에 먼저 쓰고(성공) 그다음 여기에 쓴다.
+//   여기서 quota 로 막히면 바로 뒤 renderTeacher() 가 getStore() 로 **localStorage 를 다시 읽어**
+//   옛 사본을 그린다 → 방금 올린 6세트 120문항이 화면에서 사라진다.
+//   원장님은 「업로드가 안 된다」고 읽고 같은 것을 몇 번이나 다시 올리셨다(실제로는 다 올라가 있었다).
+//   ⇒ 못 쓴 사본을 **메모리에 들고 있다가** getStore() 가 그것을 읽게 한다.
+//     ★ 들고 있는 것은 localStorage 에 쓰려던 **바로 그 글자**다. 그래서 읽는 쪽 뜻이 하나도 안 바뀐다
+//       (같은 문자열 · 같은 파싱 · 같은 주차 트리밍). 새로고침하면 사라지고, 그때는 파이어베이스가 다시 채운다.
+//   ⛔ 물러설 자리: 저장이 한 번이라도 성공하면 즉시 비운다(아래 null). 비우지 않으면
+//      메모리 사본이 진짜 서랍보다 오래 살아 **낡은 것을 붙드는** 반대 사고가 난다.
 function _persistLocalStore(d) {
   const mirror = _localMirror(d);
+  const raw = JSON.stringify(mirror);
   try {
-    localStorage.setItem(STORE_KEY, JSON.stringify(mirror));
+    localStorage.setItem(STORE_KEY, raw);
+    window._memStoreRaw = null;   // 진짜 서랍이 최신이다 — 메모리 사본은 버린다
     _clearLocalStorageFull();
     return true;
   } catch (e) {
     if (!_isQuotaError(e)) { console.error('[localStore] 저장 실패(비-quota):', e); throw e; }
     // Firebase 전용 캐시를 이미 제외했는데도 초과 → 실제 데이터(submissions/reports)가 한도 초과.
+    window._memStoreRaw = raw;    // 화면이 볼 수 있게 메모리에 둔다(이번 세션 한정)
     console.error('[localStore] quota 초과 — 캐시 제외 후에도 한도 초과. 데이터 아카이빙 필요.');
     _notifyLocalStorageFull();
     return false;
@@ -2791,8 +2810,12 @@ function _notifyLocalStorageFull() {
   if (document.getElementById('localStorageFullBanner')) return;
   const banner = document.createElement('div');
   banner.id = 'localStorageFullBanner';
-  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#b45309;color:#fff;padding:14px 20px;text-align:center;font-weight:800;font-size:14px;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,.25);font-family:\'Noto Sans KR\',sans-serif;line-height:1.5;';
-  banner.textContent = '⚠️ 이 브라우저의 저장 공간이 가득 찼습니다. 등록은 Firebase에 반영되지만, 화면 일부가 갱신되지 않을 수 있습니다. 정호님께 알려 오래된 데이터 정리가 필요합니다.';
+  // ⛔ [2026-09-11] 이 배너는 top:0 이라 **맨 윗줄(📦 백업 다운로드가 있는 띠)을 통째로 덮는다.**
+  //   실제로 원장님이 그 단추를 못 눌러 갇히셨다. 닫기 단추 없이 띄우면 끌 방법이 없다.
+  //   ⇒ ✕ 를 단다. 닫아도 데이터는 아무것도 안 바뀐다(화면에서 줄만 치운다).
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#b45309;color:#fff;padding:14px 52px 14px 20px;text-align:center;font-weight:800;font-size:14px;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,.25);font-family:\'Noto Sans KR\',sans-serif;line-height:1.5;';
+  banner.innerHTML = '<span>⚠️ 이 브라우저의 저장 공간이 가득 찼습니다. 등록은 Firebase에 정상 반영됩니다 — 학생에게도 보입니다. 다만 새로고침하면 이 화면이 옛 사본으로 돌아갑니다. 정호님께 알려 오래된 데이터 정리가 필요합니다.</span>'
+    + '<button onclick="this.parentNode.remove()" title="이 줄만 닫기" style="position:absolute;top:8px;right:12px;background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:8px;width:30px;height:30px;font-size:16px;font-weight:900;cursor:pointer;line-height:1;">✕</button>';
   document.body.appendChild(banner);
 }
 
@@ -3866,7 +3889,9 @@ function getStore() {
     }
     return pd;
   }
-  const raw = localStorage.getItem(STORE_KEY);
+  // [2026-09-11] 서랍이 꽉 차 못 쓴 사본이 있으면 **그것이 최신이다**(_persistLocalStore 주석 참조).
+  //   ★ 들고 있는 것은 localStorage 에 쓰려던 바로 그 글자라, 아래 파싱·보정이 전과 똑같이 돈다.
+  const raw = _rawLocalStore();
   if (!raw) return { users:[], homeworkSets:{}, submissions:{}, currentPeriod:{ year:new Date().getFullYear(), month:new Date().getMonth()+1, week:1 } };
   const d = JSON.parse(raw);
   // 필수 필드 누락 시 기본값 보완
@@ -4390,7 +4415,7 @@ function renderD1MetricsCard(childId) {
 }
 
 async function ensureStore() {
-  const raw = localStorage.getItem(STORE_KEY);
+  const raw = _rawLocalStore();
   let store;
   if (!raw) {
     if (!window.fbReady) {
@@ -13578,7 +13603,7 @@ const firebaseConfig = {
         // [Fix 2026-05-30] 학생/학부모: homeworkSets·currentPeriod만 선택적 업데이트
         // submissions(진행중 답)은 절대 덮어쓰지 않음. 이후 renderStudent() 자동 호출.
         if (currentUser?.role === 'student' || currentUser?.role === 'parent') {
-          const localRaw = localStorage.getItem(STORE_KEY);
+          const localRaw = _rawLocalStore();
           const localData = localRaw ? JSON.parse(localRaw) : null;
           if (!localData) return;
           let changed = false;
@@ -13605,7 +13630,7 @@ const firebaseConfig = {
 
         // 선생님: 내가 직접 쓴 데이터의 echo는 무시 (타임스탬프 일치 시)
         if (data.lastModified && data.lastModified === _lastFbWriteTs) return;
-        const localRaw = localStorage.getItem(STORE_KEY);
+        const localRaw = _rawLocalStore();
         const localData = localRaw ? JSON.parse(localRaw) : null;
         const fbTs = data.lastModified || 0;
         const localTs = localData?.lastModified || 0;
@@ -13625,7 +13650,7 @@ const firebaseConfig = {
         _loadInFlight = false;
         clearTimeout(loadingTimeout);
         const fbData = snapshot.val();
-        const localRaw = localStorage.getItem(STORE_KEY);
+        const localRaw = _rawLocalStore();
         const localData = localRaw ? JSON.parse(localRaw) : null;
 
         // [Security 2026-05] Firebase 수신/송신 데이터 양쪽에서 API 키 제거
@@ -14549,14 +14574,21 @@ function _applyTsImport(yr, questions) {
     day_config: { questions_per_day: qPerDay, total_days: totalDays }
   };
 
-  saveStore(store);
+  // [2026-09-11] 순서를 뒤집었다 — **파이어베이스(학생이 보는 원본)에 먼저** 쓴다.
+  //   수학 JSON 길(doImportHwJson)은 2026-06-01 에 이미 이렇게 고쳤는데 TS 길만 옛 순서로 남아 있었다.
+  //   서랍이 꽉 찬 날 saveStore 가 먼저 걸리면 등록 자체가 위태로워진다.
   fbSetHomeworkSet(key, store.homeworkSets[key]);
+  const localOk = saveStore(store);
   renderTeacher();
 
   const ansCount = questions.filter(q => q.answer).length;
   const msg = document.createElement('div');
-  msg.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#4f46e5;color:#fff;padding:14px 28px;border-radius:12px;font-weight:800;font-size:15px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);';
-  msg.textContent = `🧠 TS ${questions.length}문제 등록 완료! (${totalDays}일 × ${qPerDay}문제, 정답 ${ansCount}/${questions.length}개)`;
+  // ⛔ 예전에는 잘되든 안 되든 **똑같은 보라색 「등록 완료!」** 하나뿐이었다.
+  //   그래서 「올라간 것처럼 보이는데 안 올라간」 상태를 화면에서 가릴 수 없었다.
+  msg.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:' + (localOk ? '#4f46e5' : '#b45309') + ';color:#fff;padding:14px 28px;border-radius:12px;font-weight:800;font-size:15px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);';
+  msg.textContent = localOk
+    ? `🧠 TS ${questions.length}문제 등록 완료! (${totalDays}일 × ${qPerDay}문제, 정답 ${ansCount}/${questions.length}개)`
+    : `🧠 TS ${questions.length}문제 Firebase 등록 완료 (${totalDays}일 × ${qPerDay}문제, 정답 ${ansCount}/${questions.length}개) — ⚠️ 이 브라우저 저장 공간 부족`;
   document.body.appendChild(msg);
   setTimeout(() => msg.remove(), 3500);
 }
