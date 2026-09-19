@@ -21,7 +21,7 @@
 
 'use strict';
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const { onValueUpdated } = require('firebase-functions/v2/database');
+const { onValueWritten } = require('firebase-functions/v2/database');
 const admin = require('firebase-admin');
 const H = require('./ts_hash');
 
@@ -646,10 +646,15 @@ exports.unlockTsAssignment = onCall({ region: 지역 }, async (req) => {
 // ⛔ 자리표(`{…}`) 이름은 **영문·숫자만** 된다. `{칸}` 이라 썼다가 배포가 막혔다(2026-09-19):
 //      expect Valid ID chars but got 칸
 //    경로 자리표는 구글 Eventarc 가 읽는 것이라 우리 이름 규칙이 안 통한다.
-exports.onTsPublished = onValueUpdated(
+// ⛔⛔ `onValueUpdated` 는 **값이 이미 있다가 바뀔 때만** 분다. 승인 함수는 칸 뼈대에
+//    `published` 를 **안 만들므로**(수학 것이라) 첫 공개는 「바뀜」이 아니라 **「생김」**이다
+//    ⇒ 트리거가 안 불어 `everPublished` 가 영영 false 였다(2026-09-20 ⑤ 실측 — 공개 뒤에도
+//    되돌리기가 됐고 공개된 칸에서 TS 가 지워졌다). 09-19 시험은 `published:false` 가
+//    **미리 있던 칸**이라 「바뀜」으로 불었을 뿐이다. `onValueWritten` 은 생김·바뀜·지움에 다 분다.
+exports.onTsPublished = onValueWritten(
   { ref: '/solomon_hw_v3/homeworkSets/{hwKey}/published', instance: DB_INSTANCE, region: 트리거지역 },
   async (event) => {
-    if (event.data.after.val() !== true) return;
+    if (!event.data.after.exists() || event.data.after.val() !== true) return;
     const 칸 = event.params.hwKey;
     const 잠금 = await 읽기(`${OPS}/lock/${칸}`);
     if (!잠금 || !잠금.학생 || !잠금.주차) return;
