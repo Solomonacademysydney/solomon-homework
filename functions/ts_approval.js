@@ -409,7 +409,7 @@ exports.approveTsAssignment = onCall({ region: 지역 }, async (req) => {
     if (옛['상태'] === 'verified')
       return { 결과: 'ok', 칸: 옛['칸'], 서버해시: 옛['서버해시'], 이미: true,
                까닭: '이미 승인돼 있습니다.' };
-    // `written`(확인 대기) · `reserving`(하다 말았다) 은 아래에서 이어 간다
+    // `reserving`(하다 말았다) 은 아래에서 처음부터 · `written`(확인 대기) 은 4.5 에서 ⑦로 간다
   }
 
   // ── 1. 초안 읽기 · 해시 대조 · 필드 검사
@@ -470,9 +470,25 @@ exports.approveTsAssignment = onCall({ region: 지역 }, async (req) => {
       await db().ref(반잠금).remove();
     return { 결과: '막힘', 까닭: '이 아이의 이 주차는 이미 잠겨 있습니다.' };
   }
+  // ⛔ `written` 으로 다시 들어온 것을 `reserving` 으로 **내려 적으면 안 된다.**
+  //    ⑥을 지났다는 사실이 지워진다.
+  const 쓴뒤 = !!(옛 && 옛['상태'] === 'written');
   await db().ref(승인칸).update({
-    revision, 해시: hash, 칸, 학생, 주차, 상태: 'reserving', 승인자: uid, 시각: 이제()
+    revision, 해시: hash, 칸, 학생, 주차, 상태: 쓴뒤 ? 'written' : 'reserving',
+    승인자: uid, 시각: 이제()
   });
+
+  // ── 4.5 「확인 대기」(`written`)로 다시 들어왔으면 ⑦만 남았다 (2026-09-20 고침)
+  // ⛔ 고치기 전엔 이 분기가 없었다. 주석과 계획서는 「7 부터 이어 간다」였는데 코드는
+  //    처음부터 돌다가 ⑤의 「이미 TS 가 있다」에 걸려 **되돌리기**를 했다 — 잠금 둘을 지우고
+  //    `failed` 로 적는다. 그러면 **TS 는 칸에 남은 채 잠금만 없는** 칸이 된다(규칙이 더는
+  //    안 지키고 `unlock` 도 안 된다). 열다섯 사례의 「저장 뒤 확인 읽기 실패」가 이것이다.
+  //    ⇒ 내 `written` 이고 칸에 TS 가 있으면 **되돌리지 말고 ⑦(확인)로** 간다.
+  //       TS 가 없으면 ⑥ 자체가 안 된 것이니 아래로 내려가 다시 쓴다(아직 아무것도 안 썼다).
+  if (쓴뒤) {
+    const 서버ts = await 읽기(`${뿌리}/homeworkSets/${칸}/ts`);
+    if (서버ts) return await 확인(requestId, 칸, 학생, 주차, 셈한해시, meta);
+  }
 
   // ── 5. 저장 직전 재검사 — 여기서 막으면 **되돌릴 수 있다**(아직 `ts` 를 안 썼다)
   const 되돌리기 = async (까닭) => {
