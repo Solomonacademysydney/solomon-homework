@@ -46,7 +46,9 @@ const B = (() => {
 })();
 // ⛔ 재는 값은 **자료에 실제로 있는 꼴**이다(실측 2026-09-19 — 배열 열하나 · 옛 글자 꼴).
 for (const 값 of [['mon'], ['fri'], 'mon', 'mon/wed', 'mon,wed', 'MON', '', null, undefined,
-                  ['mon', 'wed'], 'fri/sun']) {
+                  ['mon', 'wed'], 'fri/sun',
+                  // 한글도 — 원장님이 학생 관리에서 한글로 적으실 수 있다(2026-09-19 요청)
+                  '금', '수', '월/수', '월,수,금', '금요일', '월 수', '월/fri', ['금'], '엉뚱']) {
   const a = JSON.stringify(A(값)), b = JSON.stringify(B(값));
   재기('둘이 같다 — ' + JSON.stringify(값) + ' → ' + a, a === b, a + '  vs  ' + b);
 }

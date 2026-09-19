@@ -224,8 +224,9 @@ textarea{background:var(--바탕); color:var(--글); border:1px solid var(--선)
   </div>
 
   <p class="작게 흐림">
-    이 화면은 <b>읽기만 합니다.</b> 숙제 칸·수학·학생 기록에 쓰는 코드가 없습니다.
-    승인 단추는 서버 승인 함수(3.5단계)가 선 뒤에 붙습니다.
+    이 화면은 <b>숙제 칸·수학·학생 기록에 직접 쓰지 않습니다.</b>
+    하는 일은 둘뿐입니다 — PC 일꾼에게 <b>부탁을 남기는 것</b>과,
+    <b>승인</b>할 때 서버 함수를 <b>부르는 것</b>입니다. 숙제 칸에 글을 쓰는 것은 그 함수입니다.
   </p>
 </div>
 
@@ -306,6 +307,12 @@ firebase.auth().onAuthStateChanged(u => {
 // ─────────────────── 날짜 · 요일 ───────────────────
 const 요일말 = {mon:'월', tue:'화', wed:'수', thu:'목', fri:'금', sat:'토', sun:'일'};
 const 요일차례 = ['sun','mon','tue','wed','thu','fri','sat'];
+// 한글로 적힌 요일도 읽는다 — `index.html` 의 `_한글요일` 과 **같아야 한다.**
+//   ⛔ 지금 자료에는 영어만 들어 있지만, 한쪽만 한글을 읽으면 두 화면이 **다른 아이를**
+//      「내일 수업」으로 고르게 된다. 어긋날 자리를 남겨 두지 않는다.
+const 한글요일 = { '월':'mon', '화':'tue', '수':'wed', '목':'thu', '금':'fri', '토':'sat', '일':'sun',
+                '월요일':'mon', '화요일':'tue', '수요일':'wed', '목요일':'thu',
+                '금요일':'fri', '토요일':'sat', '일요일':'sun' };
 
 function 시드니지금(){
   return new Date(new Date().toLocaleString('en-US', {timeZone: 시드니}));
@@ -318,7 +325,8 @@ function 요일배열(v){
   const arr = Array.isArray(v) ? v : (typeof v === 'string' ? v.split(/[,/\s]+/) : []);
   const out = [];
   for (const x of arr) {
-    const d = String(x || '').trim().toLowerCase();
+    const 낱 = String(x || '').trim();
+    const d = 한글요일[낱] || 낱.toLowerCase();
     if (요일말[d] && !out.includes(d)) out.push(d);
   }
   return out;
