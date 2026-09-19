@@ -37,5 +37,12 @@
         "*.backup-*"
       ]
     }
-  ]
+  ],
+  "emulators": {
+    "// 주의": "시험용이다. 운영에는 아무 영향이 없다 — `firebase emulators:start` 를 칠 때만 뜬다. 학생 화면은 운영 config 가 박혀 있어 못 옮긴다(일꾼·함수·규칙 시험용).",
+    "database": { "port": 9000 },
+    "functions": { "port": 5001 },
+    "ui": { "enabled": true, "port": 4000 },
+    "singleProjectMode": true
+  }
 }

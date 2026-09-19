@@ -327,3 +327,17 @@ exports.resetPasswordsBulk = _auth.resetPasswordsBulk;
 exports.setPasswordByOperator = _auth.setPasswordByOperator;
 exports.dropBookPasswords = _auth.dropBookPasswords;
 exports.setMasterAndOperatorPassword = _auth.setMasterAndOperatorPassword;
+
+// ============================================================
+// [2026-09-19] TS 숙제 승인 — 무엇을·왜는 functions/ts_approval.js 맨 위에 적어 뒀다.
+//
+// ⛔⛔ **이름을 찍어서만 배포할 것.**
+//        firebase deploy --only functions:approveTsAssignment,functions:unlockTsAssignment,functions:onTsPublished
+//     `--only functions` 라고만 치면 **로그인 함수 일곱까지 같이 나간다.**
+//     그것들이 죽으면 아무도 로그인 못 한다(뒷길이 없다).
+// ⚠️ 배포 직후 `loginCheck` 를 시험 학생으로 한 번 불러 볼 것 — 같은 codebase 다.
+// ============================================================
+const _ts = require('./ts_approval');
+exports.approveTsAssignment = _ts.approveTsAssignment;
+exports.unlockTsAssignment = _ts.unlockTsAssignment;
+exports.onTsPublished = _ts.onTsPublished;

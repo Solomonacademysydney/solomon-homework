@@ -2723,7 +2723,38 @@ function _mirrorJson(obj) {
   });
 }
 
-// 숙제 칸들을 돌며 문항 배열마다 fn 을 부른다(sets 와 ts 둘 다).
+// [R-0 · 2026-09-19] 수업 요일을 늘 배열로 돌려준다.
+//   `['fri']` 도 `'mon'` 도 `'mon,tue'` 도 `null` 도 받는다. 아는 요일만 남긴다.
+const _요일들 = ['mon','tue','wed','thu','fri','sat','sun'];
+// 한글로 적으셔도 받는다 — 화면이 「예: 월/수」라고 안내하고 있다.
+//   ⛔ 안내하는 꼴을 안 받으면, 안내대로 한 사람의 값이 날아간다(2026-09-19 실측).
+const _한글요일 = { '월': 'mon', '화': 'tue', '수': 'wed', '목': 'thu', '금': 'fri', '토': 'sat', '일': 'sun',
+                 '월요일': 'mon', '화요일': 'tue', '수요일': 'wed', '목요일': 'thu',
+                 '금요일': 'fri', '토요일': 'sat', '일요일': 'sun' };
+
+function _요일배열(v) {
+  // ⛔ **슬래시로도 나눈다.** 화면이 「월/수」라고 안내하는데 쉼표·띄어쓰기만 나누면
+  //    안내대로 적은 값이 통째로 안 먹힌다(2026-09-19 실측 — 민준 요일이 그렇게 날아갔다).
+  const arr = Array.isArray(v) ? v : (typeof v === 'string' ? v.split(/[,/\s]+/) : []);
+  const out = [];
+  for (const x of arr) {
+    const 낱 = String(x || '').trim();
+    const d = _한글요일[낱] || 낱.toLowerCase();
+    if (_요일들.includes(d) && !out.includes(d)) out.push(d);
+  }
+  return out;
+}
+
+/**
+ * 적으신 글에서 **못 알아들은 낱말**을 돌려준다.
+ * ⛔ 「알아들은 것이 없다」와 「비워 두셨다」는 다르다. 앞의 것을 빈 값으로 저장하면
+ *    원장님이 적은 값이 **조용히 사라진다**(2026-09-19 실측 — 민준 요일이 그렇게 날아갔다).
+ */
+function _요일못알아들은것(v) {
+  const 조각 = String(v || '').split(/[,/\s]+/).map(x => x.trim()).filter(Boolean);
+  return 조각.filter(x => !_한글요일[x] && !_요일들.includes(x.toLowerCase()));
+}
+
 function _eachQuestionList(homeworkSets, fn) {
   for (const k in homeworkSets) {
     const hw = homeworkSets[k];
@@ -2737,14 +2768,28 @@ function _eachQuestionList(homeworkSets, fn) {
 // 참을 돌려주면 써도 되는 것이다. fbWrite 한 곳에서만 부른다.
 function _figGuardOk(updates) {
   let pending = 0;
+  const 세기 = qs => {
+    if (!Array.isArray(qs)) return;
+    for (const q of qs) if (q && (q._figPending || _isFigRef(q.figure))) pending++;
+  };
   for (const path in updates) {
     if (!path.startsWith('homeworkSets/')) continue;
-    const hw = updates[path];
-    if (!hw || typeof hw !== 'object') continue;       // 삭제(null)는 그림과 무관
-    _eachQuestionList({ _: hw }, qs => {
-      if (!Array.isArray(qs)) return;
-      for (const q of qs) if (q && (q._figPending || _isFigRef(q.figure))) pending++;
-    });
+    const v = updates[path];
+    if (!v || typeof v !== 'object') continue;         // 삭제(null)는 그림과 무관
+    // [R-0 · 2026-09-19] 이제 숙제 칸을 **가지별로** 쓴다(`…/sets` · `…/ts`).
+    //   예전에는 칸 통째 모양만 훑어서, 가지별로 보내면 미복원 그림이 **그냥 통과**했다.
+    const 뒤 = path.split('/').slice(2).join('/');     // 칸 뒤의 가지
+    if (!뒤) {                                          // homeworkSets/<칸>
+      _eachQuestionList({ _: v }, 세기);
+    } else if (뒤 === 'sets') {                         // …/sets (세트 배열)
+      if (Array.isArray(v)) for (const s of v) if (s) 세기(s.questions);
+    } else if (뒤 === 'ts') {                           // …/ts
+      세기(v.questions);
+    } else if (/^sets\/\d+$/.test(뒤)) {                // …/sets/<n> (세트 하나)
+      세기(v.questions);
+    } else if (뒤 === 'ts/questions' || /^sets\/\d+\/questions$/.test(뒤)) {
+      세기(v);                                          // 문항 배열이 통째로 왔다
+    }
   }
   if (!pending) return true;
   console.error('[figure] 되돌리지 못한 그림', pending, '개 — 파이어베이스 쓰기를 멈춘다:', Object.keys(updates));
@@ -3034,8 +3079,14 @@ async function _retryTeacherHomeworkSync() {
   // 전체 homeworkSets + currentPeriod를 한 번의 원자적 업데이트로 재전송
   const store = getStore();
   const updates = {};
+  // [R-0 · 2026-09-19] 가지마다 따로 보낸다. `ts` 는 **안 보낸다** —
+  //   이 단추는 로컬 사본을 통째로 밀어 올리는 것이라, 사본이 낡으면 승인된 TS 를 덮어쓴다.
   for (const key of Object.keys(store.homeworkSets || {})) {
-    updates['homeworkSets/' + key] = store.homeworkSets[key];
+    const hw = store.homeworkSets[key] || {};
+    for (const k of Object.keys(hw)) {
+      if (k === 'ts') continue;
+      updates['homeworkSets/' + key + '/' + k] = hw[k];
+    }
   }
   if (store.currentPeriod) updates.currentPeriod = store.currentPeriod;
 
@@ -3104,6 +3155,117 @@ async function _flushRetryQueue() {
 }
 
 // ── Firebase Granular Write Helpers ──
+// ══════════════════════════════════════════════════════════════════════
+//  [R-0 · 2026-09-19] 잠긴 칸 — 갈라 보내고, 거부되면 되돌린다
+//  ⛔ 예전에는 파이어베이스가 **거부**해도 인터넷이 끊긴 것과 똑같이 다뤘다.
+//     「인터넷 확인 후 다시 저장」은 잠긴 칸에서는 **거짓말**이고, 다시 보내도 영영 안 된다.
+//     그 사이 화면의 사본은 서버와 어긋난 채 남아 원장님은 저장된 줄 아신다.
+//  ⛔ `update()` 는 **하나가 막히면 다 막힌다.** 그래서 보내기 전에 갈라낸다 —
+//     잠긴 TS 때문에 멀쩡한 수학 올리기가 통째로 실패하면 안 된다.
+// ══════════════════════════════════════════════════════════════════════
+window._잠긴칸 = window._잠긴칸 || new Set();
+
+/** `sol_v4/ops/lock` 을 지켜본다. 승인 함수가 잠그면 곧바로 여기에 들어온다. */
+function _잠긴칸지켜보기() {
+  try {
+    firebase.database().ref('sol_v4/ops/lock').on('value', snap => {
+      const v = snap.val() || {};
+      window._잠긴칸 = new Set(Object.keys(v));
+      if (window._잠긴칸.size) console.info('[lock] 잠긴 칸', [...window._잠긴칸]);
+    }, err => {
+      // 못 읽어도 막지 않는다 — 규칙이 아직 배포 전이면 여기로 온다.
+      console.info('[lock] 잠금 목록을 못 읽습니다(규칙 배포 전일 수 있습니다):', err.code || err.message);
+    });
+  } catch (e) { console.warn('[lock] 지켜보기 실패:', e); }
+}
+
+/** `homeworkSets/<칸>/…` 에서 칸 이름과 가지를 뽑는다. 숙제 칸이 아니면 null. */
+function _경로의칸(path) {
+  const m = /^homeworkSets\/([^/]+)/.exec(String(path || ''));
+  return m ? m[1] : null;
+}
+function _경로의가지(path) {
+  const m = /^homeworkSets\/[^/]+\/([^/]+)/.exec(String(path || ''));
+  return m ? m[1] : null;          // null = 칸 통째
+}
+
+//  ⛔⛔ **잠겼다고 칸 통째로 막으면 안 된다.** 규칙 초안이 이렇게 두었다 —
+//        homeworkSets/$key           .write = 원장 && 잠금 없음
+//        homeworkSets/$key/sets      .write = 원장            ← 잠겨도 쓴다
+//        homeworkSets/$key/published .write = 원장            ← 잠겨도 쓴다
+//        homeworkSets/$key/ts        .write = 원장 && 잠금 없음
+//      TS 를 승인해 잠근 주에도 **수학은 계속 올릴 수 있어야 한다**
+//      (원장님 결정 = 「MR·TS 를 어느 걸 먼저 해도 문제 없게」).
+//      여기 목록이 규칙과 어긋나면 화면이 **규칙이 허락한 것을 스스로 막는다.**
+const _잠겨도쓰는가지 = ['sets', 'published', 'year', 'country', 'period', 'group', '_placeholder', '_note'];
+
+function _잠겨서막히나(path) {
+  const 칸 = _경로의칸(path);
+  if (!칸 || !window._잠긴칸 || !window._잠긴칸.has(칸)) return false;
+  const 가지 = _경로의가지(path);
+  if (가지 === null) return true;                       // 칸 통째 쓰기·삭제는 막힌다
+  return !_잠겨도쓰는가지.includes(가지);                 // `ts` 등만 막힌다
+}
+
+/** 묶음을 «보낼 것»과 «잠겨서 막힌 것»으로 가른다. 잠긴 칸이 없으면 전부 보낼 것이다. */
+function _묶음가르기(updates) {
+  const 보낼것 = {}, 막힌것 = {};
+  for (const k of Object.keys(updates || {})) {
+    if (_잠겨서막히나(k)) 막힌것[k] = updates[k];
+    else 보낼것[k] = updates[k];
+  }
+  return { 보낼것, 막힌것 };
+}
+
+/** 사본 깊은 곳에 값을 박는다. `homeworkSets/AU_y4_…/ts` 같은 경로. */
+function _사본에박기(store, path, 값) {
+  const 마디 = String(path).split('/').filter(Boolean);
+  if (!마디.length) return;
+  let 여기 = store;
+  for (let i = 0; i < 마디.length - 1; i++) {
+    const m = 마디[i];
+    if (여기[m] == null || typeof 여기[m] !== 'object') 여기[m] = {};
+    여기 = 여기[m];
+  }
+  const 끝 = 마디[마디.length - 1];
+  if (값 === null || 값 === undefined) delete 여기[끝];
+  else 여기[끝] = 값;
+}
+
+/**
+ * 거부당한 경로를 **서버에서 다시 읽어 사본을 되돌린다.**
+ * ⛔ 이것을 안 하면 화면은 「저장됨」인데 서버는 옛 값이라, 원장님이 그 어긋남을 못 보신다.
+ */
+async function _서버값으로되돌리기(paths, 까닭) {
+  if (!window.FB_REF || !paths || !paths.length) return 0;
+  const store = getStore();
+  let 되돌린수 = 0;
+  for (const path of paths) {
+    try {
+      const snap = await window.FB_REF.child(path).once('value');
+      _사본에박기(store, path, snap.exists() ? snap.val() : null);
+      되돌린수++;
+    } catch (e) {
+      console.warn('[되돌림] 서버 값을 못 읽었습니다:', path, e.code || e.message);
+    }
+  }
+  if (되돌린수) {
+    saveStore(store);
+    try { if (typeof renderTeacher === 'function' && currentUser && currentUser.role === 'teacher') renderTeacher(); } catch (_) {}
+    console.info('[되돌림] 사본을 서버 값으로 되돌렸습니다 —', 되돌린수, '자리 ·', 까닭);
+  }
+  return 되돌린수;
+}
+
+/** 잠겨서 못 쓴 것을 **인터넷 탓으로 돌리지 않고** 그대로 밝힌다. */
+function _잠김알리기(paths, 코드) {
+  const 칸들 = [...new Set(paths.map(_경로의칸).filter(Boolean))];
+  const 말 = 칸들.length
+    ? '🔒 잠긴 주입니다 — ' + 칸들.join(', ') + ' 는 승인이 끝나 더 고칠 수 없습니다.'
+    : '🔒 이 저장은 서버가 거부했습니다' + (코드 ? ' (' + 코드 + ')' : '') + '.';
+  showBackupToast(말 + ' 화면을 서버 값으로 되돌렸습니다.');
+}
+
 function fbWrite(updates, onSuccess) {
   // ★ [묶음 B-1 · 2026-08-30] 미리보기 중에는 **인터넷에 한 글자도 안 쓴다.**
   //   예전에는 문이 둘인데 하나만 닫혀 있었다 — 내 컴퓨터 저장(saveStore)은
@@ -3131,6 +3293,15 @@ function fbWrite(updates, onSuccess) {
     if (onSuccess) onSuccess(false);
     return;
   }
+  // [R-0] 잠긴 경로를 **먼저 갈라낸다** — update() 는 하나가 막히면 다 막힌다.
+  const _갈랐다 = _묶음가르기(updates);
+  const _막힌경로 = Object.keys(_갈랐다.막힌것);
+  if (_막힌경로.length) {
+    _잠김알리기(_막힌경로, 'locked');
+    _서버값으로되돌리기(_막힌경로, '잠긴 칸');
+    updates = _갈랐다.보낼것;
+    if (!Object.keys(updates).length) { if (onSuccess) onSuccess(false); return; }
+  }
   const ts = Date.now();
   _lastFbWriteTs = ts;
   updates.lastModified = ts;
@@ -3140,6 +3311,18 @@ function fbWrite(updates, onSuccess) {
     if (onSuccess) onSuccess(true);
   }).catch(err => {
     console.error('[Firebase] 업데이트 실패:', err);
+    // ⛔ [R-0 · 2026-09-19] **거부와 인터넷 끊김은 다른 일이다.**
+    //   거부(PERMISSION_DENIED)는 다시 보내도 영영 안 된다. 다시 보내기 줄에 넣으면
+    //   화면은 「곧 저장됩니다」인 채로 영원히 남고, 사본은 서버와 어긋난 채 굳는다.
+    //   ⇒ 줄에 넣지 말고 **사본을 서버 값으로 되돌리고 까닭을 그대로 밝힌다.**
+    const 코드 = String((err && (err.code || err.message)) || '');
+    if (/PERMISSION_DENIED|permission_denied/i.test(코드)) {
+      const 되돌릴것 = Object.keys(updates).filter(k => k !== 'lastModified');
+      _잠김알리기(되돌릴것, 코드);
+      _서버값으로되돌리기(되돌릴것, '쓰기 거부');
+      if (onSuccess) onSuccess(false);
+      return;
+    }
     showBackupToast('⚠️ Firebase 저장 실패 — 로컬에만 저장됨');
     // [Safety 2026-05-29] queue + 학생 알림
     _addToRetryQueue(updates);
@@ -3149,9 +3332,88 @@ function fbWrite(updates, onSuccess) {
   });
 }
 
-function fbSetHomeworkSet(key, data) {
-  fbWrite({ ['homeworkSets/' + key]: data });
+// ★★★ [R-0 · 2026-09-19] 숙제 칸은 **가지마다 따로** 쓴다.
+//   ⛔ 예전에는 `homeworkSets/<칸>` 한 열쇠에 **로컬 사본을 통째로** 썼다. 로컬 사본은
+//     최근 네 주치 사본일 뿐이라, 그 사이 남이 넣은 가지가 **소리 없이 지워진다.**
+//     수학을 올리면 TS 가 사라지고 TS 를 올리면 수학이 사라지는 자리였다(실측).
+//   ⇒ 가지마다 따로 쓰면 **사본에 없는 가지는 건드리지 않는다.**
+//   `빼기` 에 적은 가지는 아예 안 보낸다 — 낡은 사본으로 남의 것을 덮지 않으려고.
+//   ⛔ 여기 말고도 숙제 칸을 쓰는 곳이 더 있다(교사 재저장 3038 · 세트 삭제 5514 ·
+//     세트 이동 5687 · 빈 칸 세우기 3209). 그쪽도 전부 가지별로 고쳤다.
+/**
+ * 숙제 칸 하나를 **서버에서 읽어 로컬 사본에 맞춘다.**
+ *
+ * ⛔⛔ [2026-09-19 · 원장님 실측] 로컬 사본은 최근 몇 칸만 들고 있다. 없는 칸을
+ *    **빈 칸으로 여기고** 거기에 한 세트를 더해 쓰면, 서버에 있던 나머지가 **통째로 지워진다.**
+ *    가지를 좁게 쓰는 것만으로는 못 막는다 — **값이 낡은 사본에서 오기 때문**이다.
+ *    (그래서 TS 를 올린 뒤 화면에서 수학 여섯 세트가 사라져 보였다. 서버는 멀쩡했다.)
+ * ⇒ `sets` 를 만드는 모든 길은 **먼저 이것을 부른다.**
+ *
+ * 돌려주는 값 = 서버에 있던 칸(없으면 null). 못 읽으면 `undefined` 를 돌려준다 —
+ * **「없다」와 「못 읽었다」는 다르다.** 못 읽었으면 부르는 쪽이 멈춰야 한다.
+ */
+async function _칸맞추기(key) {
+  if (window.isPreviewMode) return undefined;          // 미리보기는 서버를 안 본다
+  if (!window.fbReady || !window.FB_REF) {
+    console.warn('[칸맞추기] 서버에 안 붙어 있습니다 —', key);
+    return undefined;
+  }
+  try {
+    const snap = await window.FB_REF.child('homeworkSets/' + key).once('value');
+    const store = getStore();
+    if (snap.exists()) store.homeworkSets[key] = snap.val();
+    else delete store.homeworkSets[key];
+    saveStore(store);
+    return snap.exists() ? snap.val() : null;
+  } catch (e) {
+    console.error('[칸맞추기] 못 읽었습니다 —', key, e.code || e.message);
+    return undefined;
+  }
+}
+
+/** 못 맞췄으면 **쓰지 않는다.** 낡은 사본으로 쓰면 남의 것을 지운다. */
+function _칸못맞춤알림(key) {
+  showBackupToast('⚠️ 서버에서 「' + key + '」 를 못 읽어 저장을 멈췄습니다. '
+                + '인터넷을 확인하고 다시 해 주십시오.');
+}
+
+function fbSetHomeworkSet(key, data, 빼기) {
+  const 뺄것 = new Set(빼기 || []);
+  const updates = {};
+  for (const k of Object.keys(data || {})) {
+    if (뺄것.has(k)) continue;
+    updates['homeworkSets/' + key + '/' + k] = data[k];
+  }
+  if (!Object.keys(updates).length) return;
+  fbWrite(updates);
   _ensureGroupPlaceholders(key);
+}
+
+// 수학 길 — **`ts` 를 쓰지 않는다.** TS 는 교사 승인이 쓰는 가지다.
+function fbSetHomeworkMaths(key, data) {
+  fbSetHomeworkSet(key, data, ['ts']);
+}
+
+// TS 길 — `/ts` 한 가지만 쓴다.
+//   뼈대(country·year·period·group·sets·published)는 **서버에 칸이 아예 없을 때만** 쓴다.
+//   있는 칸에 뼈대를 덮으면 그 안의 수학 세트가 지워진다.
+async function fbSetHomeworkTs(key, ts, 뼈대) {
+  const updates = { ['homeworkSets/' + key + '/ts']: ts };
+  try {
+    const snap = await window.FB_REF.child('homeworkSets/' + key).once('value');
+    if (!snap.exists()) {
+      for (const k of Object.keys(뼈대 || {})) {
+        if (k === 'ts') continue;
+        updates['homeworkSets/' + key + '/' + k] = 뼈대[k];
+      }
+    }
+  } catch (e) {
+    // 못 물어봤으면 뼈대는 안 쓴다 — 덜 쓰는 쪽이 안전하다
+    console.warn('[R-0] 칸 존재 확인 실패 — /ts 만 씁니다:', e);
+  }
+  return new Promise(res => {
+    fbWrite(updates, ok => { _ensureGroupPlaceholders(key); res(ok); });
+  });
 }
 
 // ★★★ [2026-09-05 션 사고] 공통 숙제를 올리는 순간, 반이 있는 아이 칸에 '빈 칸'을 세운다.
@@ -3183,7 +3445,7 @@ async function _ensureGroupPlaceholders(commonKey) {
       String(s.group || '').trim() !== '');
     if (!kids.length) return;
 
-    const updates = {};
+    const 세울것 = [];
     for (const s of kids) {
       const grp = sanitizeGroup(s.group);
       const gkey = hwKey(s.year, m.country, p, grp);
@@ -3197,6 +3459,9 @@ async function _ensureGroupPlaceholders(commonKey) {
       if (worked) continue;
 
       // ④ 진짜로 없는지 Firebase 에 묻는다(로컬 사본만 믿지 않는다)
+      // [R-0 · 2026-09-19] 묻고 쓰는 **사이**에 남이 그 칸을 만들 수 있다.
+      //   그래서 `once` 로 미리 걸러 헛일을 줄이고, 실제 쓰기는 **transaction** 으로
+      //   「아직 비었을 때만」 세운다. 그 사이에 진짜 숙제가 들어왔으면 그것을 남긴다.
       const snap = await window.FB_REF.child('homeworkSets/' + gkey).once('value');
       if (snap.exists()) continue;
 
@@ -3206,21 +3471,52 @@ async function _ensureGroupPlaceholders(commonKey) {
         published: true, sets: [], _placeholder: true,
         _note: '공통 숙제가 대신 보이는 것을 막는 빈 칸 — 이 반 숙제를 올리면 여기 채워진다'
       };
-      updates['homeworkSets/' + gkey] = ph;
-      store.homeworkSets[gkey] = ph;
+      세울것.push([gkey, ph]);
     }
-    if (!Object.keys(updates).length) return;
+    if (!세울것.length) return;
+    const 세운것 = [];
+    for (const [gkey, ph] of 세울것) {
+      try {
+        const r = await window.FB_REF.child('homeworkSets/' + gkey)
+          .transaction(cur => (cur === null ? ph : undefined));   // 비었을 때만 · 아니면 그만둔다
+        if (r && r.committed) { 세운것.push(gkey); store.homeworkSets[gkey] = ph; }
+        else console.info('[반 칸막이] 그 사이 칸이 생겨 안 세웁니다:', gkey);
+      } catch (e) {
+        console.warn('[반 칸막이] 빈 칸 세우기 실패:', gkey, e);
+      }
+    }
+    if (!세운것.length) return;
     saveStore(store);
-    fbWrite(updates);
-    console.log('[반 칸막이] 빈 칸을 세웠습니다:', Object.keys(updates));
+    console.log('[반 칸막이] 빈 칸을 세웠습니다:', 세운것);
   } catch (e) {
     // 실패해도 방금 올린 숙제는 이미 저장됐다 — 여기서 멈추면 안 된다
     console.warn('[반 칸막이] 빈 칸 세우기 실패(숙제 저장은 정상):', e);
   }
 }
 
+// ⛔ 부르는 곳이 없다(2026-09-19 실측). 칸을 통째로 지우는 것은 아래 `_칸비었으면지우기` 로만.
 function fbDeleteHomeworkSet(key) {
   fbWrite({ ['homeworkSets/' + key]: null });
+}
+
+// [R-0 · 2026-09-19] 칸을 통째로 지우기 전에 **서버에 물어본다.**
+//   로컬 사본은 최근 네 주치라, 「내 사본에 ts 가 없다」가 「서버에도 없다」는 뜻이 아니다.
+//   수학 세트를 다 지웠는데 그 칸에 승인된 TS 가 있으면 칸을 남겨야 한다.
+async function _칸비었으면지우기(key) {
+  try {
+    const snap = await window.FB_REF.child('homeworkSets/' + key).once('value');
+    const v = snap.val();
+    if (!v) return;
+    if (v.ts) { console.info('[R-0] 칸에 TS 가 있어 안 지웁니다:', key); return; }
+    if (Array.isArray(v.sets) && v.sets.length) return;
+    if (v._placeholder) return;              // 반 칸막이는 그대로 둔다
+    fbWrite({ ['homeworkSets/' + key]: null });
+    const store = getStore();
+    delete store.homeworkSets[key];
+    saveStore(store);
+  } catch (e) {
+    console.warn('[R-0] 칸 지우기 전 확인 실패 — 안 지웁니다:', key, e);
+  }
 }
 
 function fbSetSubmission(key, data, onSuccess) {
@@ -4007,7 +4303,11 @@ function getStore() {
   _eachQuestionList(d.homeworkSets, _restoreFigures);
   // ts_progress and attendance fields are no longer used but may exist in Firebase data — ignored here
   d.users.forEach(u => {
-    if (u.role === 'student' && !u.days) u.days = [];
+    // [R-0 · 2026-09-19] 수업 요일은 **배열**이 정본이다.
+    //   학생 정보 편집(se_days)이 문자열로 저장해 온 기록이 섞여 있어(민준·정별 실측),
+    //   그 아이의 요일을 토글하면 `u.days.push is not a function` 으로 깨졌다.
+    //   읽는 길목 한 곳에서 배열로 맞춘다 — 아래 쓰는 곳도 배열로 고쳤다.
+    if (u.role === 'student') u.days = _요일배열(u.days);
     if (u.role === 'student' && u.group == null) u.group = '';
     if ((u.role === 'student' || u.role === 'parent') && !u.status) u.status = 'active';
     if (u.role === 'student' && /^t\d+$/.test(u.id) && !u.isTest) u.isTest = true;
@@ -5347,7 +5647,11 @@ function renderTeacher() {
         const btnTitle = isManual ? '수동 처리됨 (다시 처리 가능)' : '수동 완료 처리';
         return `<button class="btn-sm" style="padding:2px 7px;font-size:11px;background:${isManual?'#a78bfa':'#7c3aed'};color:#fff;" onclick="manualMarkSubmission('${s.id}',${idx})" title="${btnTitle}">${btnLabel}</button>`;
       }).join('');
-      html += `<tr><td><b>${escHtml(s.name)}</b>${s.isTest?' <span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;">TEST</span>':''}</td><td>${s.id}</td><td>${status}</td><td>${scoreHtml}</td><td>${tsHtml}</td><td>${reportBtn}</td><td style="white-space:nowrap;">${resetBtns||'-'}</td><td style="white-space:nowrap;">${manualBtns||'-'}</td></tr>`;
+      // [R-0 · 2026-09-19] TS 교사 화면으로 가는 링크 한 줄.
+      //   그 아이·그 주로 바로 열린다. 새 창이라 이 화면의 로그인은 그대로 둔다.
+      const tsLink = ` <a href="/ts/?student=${encodeURIComponent(s.id)}&week=${p.year}_m${String(p.month).padStart(2,'0')}_w${p.week}" target="_blank" rel="noopener"
+        style="font-size:11px;font-weight:800;color:#4c1d95;text-decoration:none;white-space:nowrap;" title="TS 교사 화면에서 이 아이 열기">TS ↗</a>`;
+      html += `<tr><td><b>${escHtml(s.name)}</b>${s.isTest?' <span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;">TEST</span>':''}${tsLink}</td><td>${s.id}</td><td>${status}</td><td>${scoreHtml}</td><td>${tsHtml}</td><td>${reportBtn}</td><td style="white-space:nowrap;">${resetBtns||'-'}</td><td style="white-space:nowrap;">${manualBtns||'-'}</td></tr>`;
     });
     html += `</tbody></table></div>`;
   });
@@ -5486,12 +5790,21 @@ function editSet(idx) {
   renderTeacher();
 }
 
-function deleteSet(idx) {
+async function deleteSet(idx) {
+  const p0 = getStore().currentPeriod;
+  const key = hwKey(selectedYear, selectedCountry, p0, selectedGroup);
+  // ⛔ [R-0 · 2026-09-19] **맨 먼저 서버 것을 읽는다.** 지우기는 `sets` 를 통째로
+  //    다시 쓰기 때문에, 로컬 사본이 낡았으면 서버의 다른 세트가 같이 지워진다.
+  //    묻는 말도 **서버의 진짜 세트 이름**으로 나가야 한다.
+  if (await _칸맞추기(key) === undefined) { _칸못맞춤알림(key); return; }
   const store = getStore();
   const p = store.currentPeriod;
-  const key = hwKey(selectedYear, selectedCountry, p, selectedGroup);
   const hw = store.homeworkSets[key];
-  if (!hw?.sets) return;
+  if (!hw?.sets?.[idx]) {
+    showBackupToast('⚠️ 서버에서 보니 그 세트가 없습니다. 화면을 새로 고쳐 주십시오.');
+    renderTeacher();
+    return;
+  }
   const setTitle = hw.sets[idx]?.title || `Set ${idx+1}`;
   // 테스트·비활성 계정 포함 — 고아 제출 기록이 남지 않도록 전부 정리
   const yrStudents = store.users.filter(u=>u.role==='student'&&u.year===selectedYear&&(u.country||'AU')===selectedCountry&&(u.group||'')===selectedGroup);
@@ -5508,15 +5821,12 @@ function deleteSet(idx) {
   hw.sets.splice(idx, 1);
   // re-index remaining sets
   hw.sets.forEach((s,i) => { s.setIdx=i; s.title=`Set ${i+1}`; });
-  // MR sets가 비어도 TS 데이터가 있으면 bucket 보존
-  if (hw.sets.length === 0 && !hw.ts) {
-    delete store.homeworkSets[key];
-    fbUpdates['homeworkSets/' + key] = null;
-  } else {
-    fbUpdates['homeworkSets/' + key] = hw;
-  }
+  // [R-0 · 2026-09-19] `sets` 가지만 쓴다 — 칸을 통째로 쓰면 로컬 사본에 없는 `ts` 가 지워진다.
+  //   칸 통째 지우기는 **서버에 `ts` 가 없음을 확인한 뒤에만** 한다(로컬 사본은 못 믿는다).
+  fbUpdates['homeworkSets/' + key + '/sets'] = hw.sets;
   saveStore(store);
   fbWrite(fbUpdates);
+  if (hw.sets.length === 0 && !hw.ts) _칸비었으면지우기(key);
   editingSetIdx = null;
   parsedQuestions = [];
   renderTeacher();
@@ -5541,7 +5851,8 @@ function togglePublishYear() {
     hw.published = true;
   }
   saveStore(store);
-  fbSetHomeworkSet(key, hw);
+  // [R-0] 공개/비공개는 `published` 한 가지만 쓴다 — 수학·TS 본문은 안 건드린다.
+  fbWrite({ ['homeworkSets/' + key + '/published']: hw.published });
   renderTeacher();
 }
 
@@ -5644,14 +5955,13 @@ function updatePeriodWeekOpts() {
   }).join('');
 }
 
-function confirmMoveSet(fromIdx) {
+async function confirmMoveSet(fromIdx) {
   const toYearLevel = parseInt(document.getElementById('moveToYear').value);
   const toPYear     = parseInt(document.getElementById('moveToPYear').value);
   const toPMonth    = parseInt(document.getElementById('moveToPMonth').value);
   const toPWeek     = parseInt(document.getElementById('moveToPWeek').value);
 
-  const store = getStore();
-  const p = store.currentPeriod;
+  const p = getStore().currentPeriod;
   const fromKey = hwKey(selectedYear, selectedCountry, p, selectedGroup);
   const toP = { year: toPYear, month: toPMonth, week: toPWeek };
   const toKey = hwKey(toYearLevel, selectedCountry, toP, selectedGroup);
@@ -5662,8 +5972,20 @@ function confirmMoveSet(fromIdx) {
     return;
   }
 
+  // ⛔ [R-0 · 2026-09-19] **양쪽 칸을 서버에서 먼저 읽는다.** 한쪽이라도 낡으면
+  //    그쪽 세트가 통째로 지워진다.
+  if (await _칸맞추기(fromKey) === undefined) { _칸못맞춤알림(fromKey); return; }
+  if (await _칸맞추기(toKey) === undefined) { _칸못맞춤알림(toKey); return; }
+  // ⛔⛔ **서랍은 맞춘 뒤에 한 번만 잡는다.** `getStore()` 는 부를 때마다 새 사본을 만든다 —
+  //    맞추기 전에 잡아 두면 그 사본에는 서버 것이 없고, 끝에서 `saveStore` 할 때
+  //    **맞춘 것이 낡은 사본으로 덮인다.** (실측: 서버는 5개인데 화면은 6개였다.)
+  const store = getStore();
   const fromHw = store.homeworkSets[fromKey];
-  if (!fromHw?.sets?.[fromIdx]) return;
+  if (!fromHw?.sets?.[fromIdx]) {
+    showBackupToast('⚠️ 서버에서 보니 그 세트가 없습니다. 화면을 새로 고쳐 주십시오.');
+    renderTeacher();
+    return;
+  }
 
   const setToMove = { ...fromHw.sets[fromIdx] };
 
@@ -5682,18 +6004,14 @@ function confirmMoveSet(fromIdx) {
   // 원본에서 set 제거 후 재번호
   fromHw.sets.splice(fromIdx, 1);
   fromHw.sets.forEach((s, i) => { s.setIdx = i; s.title = `Set ${i + 1}`; });
-  // MR sets가 비어도 TS 데이터가 있으면 bucket 보존
+  // [R-0 · 2026-09-19] 두 칸 다 `sets` 가지만 쓴다 — `ts` 는 안 건드린다.
   const fbUpdates = {};
-  fbUpdates['homeworkSets/' + toKey] = toHw;
-  if (fromHw.sets.length === 0 && !fromHw.ts) {
-    delete store.homeworkSets[fromKey];
-    fbUpdates['homeworkSets/' + fromKey] = null;
-  } else {
-    fbUpdates['homeworkSets/' + fromKey] = fromHw;
-  }
+  fbUpdates['homeworkSets/' + toKey + '/sets'] = toHw.sets;
+  fbUpdates['homeworkSets/' + fromKey + '/sets'] = fromHw.sets;
 
   saveStore(store);
   fbWrite(fbUpdates);
+  if (fromHw.sets.length === 0 && !fromHw.ts) _칸비었으면지우기(fromKey);
   closeModal();
   editingSetIdx = null;
   showBackupToast(`✅ Set을 Year ${toYearLevel} — ${periodLabel(toP)} 으로 이동했습니다.`);
@@ -6059,9 +6377,19 @@ async function doSave() {
       tagResult = await tagQuestions(qs, selectedYear);
     }
 
+    // ⛔ [R-0 · 2026-09-19] **서버 것을 먼저 읽는다.** 안 그러면 로컬에 없는 칸을
+    //    「빈 칸」으로 여기고 한 세트만 써서 **서버의 나머지 세트를 다 지운다.**
+    const 서버칸 = await _칸맞추기(key);
+    if (서버칸 === undefined) { _칸못맞춤알림(key); return; }
+    // ⛔ 위에서 이미 `store` 를 잡아 두었다. `_칸맞추기` 가 채운 것은 **다른 사본**이므로
+    //    돌려받은 값을 **내가 든 서랍에 직접 넣어** 맞춘다. 안 그러면 끝의 `saveStore` 가
+    //    맞춘 것을 낡은 사본으로 덮는다(세트 옮기기에서 실측: 서버 5 · 화면 6).
+    if (서버칸) store.homeworkSets[key] = 서버칸;
+    else delete store.homeworkSets[key];
     if (!store.homeworkSets[key]) {
       store.homeworkSets[key] = { year: selectedYear, country: selectedCountry, period: p, group: selectedGroup, sets: [], published: false };
     }
+    if (!Array.isArray(store.homeworkSets[key].sets)) store.homeworkSets[key].sets = [];
     const hw = store.homeworkSets[key];
     const isNew = editingSetIdx === -1 || editingSetIdx === null;
     const actualIdx = isNew ? hw.sets.length : editingSetIdx;
@@ -6101,7 +6429,7 @@ async function doSave() {
     }
 
     saveStore(store);
-    fbSetHomeworkSet(key, store.homeworkSets[key]);
+    fbSetHomeworkMaths(key, store.homeworkSets[key]);   // [R-0] ts 는 안 쓴다
     parsedQuestions = [];
     editingSetIdx = null;
     renderTeacher();
@@ -6306,7 +6634,7 @@ function toggleStudentDay(studentId, day) {
   const store = getStore();
   const u = store.users.find(u => u.id === studentId && u.role === 'student');
   if (!u) return;
-  if (!u.days) u.days = [];
+  u.days = _요일배열(u.days);                        // [R-0] 문자열 기록도 배열로
   const idx = u.days.indexOf(day);
   if (idx === -1) u.days.push(day);
   else u.days.splice(idx, 1);
@@ -6387,7 +6715,7 @@ function renderStudentManagementSection(store) {
         <option value="Catholic_Sydney"${s.school_group==='Catholic_Sydney'?'selected':''}>천주교계</option>
         <option value="Indep_Other"${s.school_group==='Indep_Other'?'selected':''}>기타 사립</option>
       </select></td>
-      <td><input id="se_days_${s.id}" value="${escHtml(daysVal)}" placeholder="예: 월/수" style="width:70px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:13px;"></td>
+      <td><input id="se_days_${s.id}" value="${escHtml(daysVal)}" placeholder="월/수" title="월 화 수 목 금 토 일 또는 mon tue wed thu fri sat sun · 여럿이면 「월/수」" style="width:70px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;font-size:13px;"></td>
       <td style="white-space:nowrap;">
         <button class="btn-sm btn-green" style="padding:3px 8px;" onclick="saveStudentEdit('${s.id}')">Save</button>
         <button class="btn-sm btn-navy" style="padding:3px 8px;" onclick="resetStudentPassword('${s.id}')">🔑 PW</button>
@@ -6569,7 +6897,25 @@ async function saveStudentEdit(oldId) {
   }
   if (seGroupEl) u.group = seGroupEl.value;
   const seDaysEl = document.getElementById(`se_days_${oldId}`);
-  if (seDaysEl) u.days = seDaysEl.value.trim();
+  if (seDaysEl) {
+    const 적은것 = seDaysEl.value;
+    const 못알아들음 = _요일못알아들은것(적은것);
+    const 새것 = _요일배열(적은것);
+    // ⛔ 적으셨는데 **하나도 못 알아들었으면 지우지 않는다.** 알리고 옛 값을 둔다.
+    //   (2026-09-19 — 안내대로 「월/수」라 적으셨는데 민준 요일이 통째로 지워졌다.)
+    if (적은것.trim() && !새것.length) {
+      alert('⛔ 수업 요일을 못 알아들었습니다: ' + 못알아들음.join(', ')
+          + '\n\n월 화 수 목 금 토 일 또는 mon tue wed thu fri sat sun 으로 적어 주십시오.'
+          + '\n여럿이면 「월/수」 또는 「mon,wed」 처럼.'
+          + '\n\n요일은 **바꾸지 않았습니다** — 옛 값 그대로 둡니다.');
+      seDaysEl.value = Array.isArray(u.days) ? u.days.join('/') : (u.days || '');
+      return;
+    }
+    if (못알아들음.length) {
+      showBackupToast('⚠️ 못 알아들은 요일은 뺐습니다: ' + 못알아들음.join(', '));
+    }
+    u.days = 새것;   // [R-0] 문자열로 저장하던 자리
+  }
   saveStore(store);
   fbSetUsers(store.users);
   if (newId !== oldId && Object.keys(subUpdates).length > 0) fbWrite(subUpdates);
@@ -11727,7 +12073,7 @@ function finalizeTagReview() {
   const store = getStore();
   if (store.homeworkSets[state.hwKey]) {
     saveStore(store);
-    fbSetHomeworkSet(state.hwKey, store.homeworkSets[state.hwKey]);
+    fbSetHomeworkMaths(state.hwKey, store.homeworkSets[state.hwKey]);   // [R-0] ts 는 안 쓴다
   }
   window._tagReviewState = null;
   closeModal();
@@ -13670,6 +14016,9 @@ const firebaseConfig = {
     window.FB_REF = firebase.database().ref('solomon_hw_v3');
     window.fbReady = false;
 
+    // [R-0 · 2026-09-19] 잠긴 칸 목록을 늘 들고 있는다. 규칙 배포 전에는 못 읽고 그냥 넘어간다.
+    try { _잠긴칸지켜보기(); } catch (e) { console.warn('[lock] 시작 실패:', e); }
+
     // 중복 finishInit 방지 (timeout과 once 콜백 양쪽에서 호출될 수 있음)
     let _initDone = false;
     const finishInit = () => {
@@ -14041,11 +14390,13 @@ const V4_REF_PATH = 'sol_v4';
 //   bank·fig 는 C:\TS작업 창고에서 다시 올릴 수 있으므로 뺀다
 //   (FB_ONLY_LOCAL_DROP 이 「재생성 가능한 캐시는 뺀다」고 한 것과 같은 원칙).
 //   수동 다운로드는 sol_v4 를 **전부** 받는다.
-const V4_AUTOBACKUP_BRANCHES = ['assign', 'work'];
+// [R-0 · 2026-09-19] `ops` 를 더했다 — 승인·잠금·불변 배정·교사 리포트가 여기 산다.
+//   이것이 빠지면 백업을 되살려도 「누가 무엇을 승인했나」가 돌아오지 않는다.
+const V4_AUTOBACKUP_BRANCHES = ['assign', 'work', 'ops'];
 //   ⛔ **뿌리를 통째로 읽으면 안 된다** — 규칙이 sol_v4 자체에 .read:false 를 걸어 두었다
 //   (아이 브라우저가 새 길을 통째로 받는 것을 막으려고 일부러 그렇게 했다 · D-2).
 //   그래서 「전부」도 뿌리 한 번이 아니라 **가지를 하나씩** 읽는다.
-const V4_ALL_BRANCHES = ['bank', 'fig', 'assign', 'work'];
+const V4_ALL_BRANCHES = ['bank', 'fig', 'assign', 'work', 'ops'];
 
 // branches 를 안 주면 sol_v4 전부(가지별로). 실패하면 null(= 담지 못함).
 async function _v4ForBackup(branches) {
@@ -14667,32 +15018,49 @@ function _applyTsImport(yr, questions) {
   const p = store.currentPeriod;
   const key = hwKey(yr, selectedCountry, p, selectedGroup);
 
-  if (!store.homeworkSets[key]) {
-    store.homeworkSets[key] = { year: yr, country: selectedCountry, period: p, group: selectedGroup, sets: [], published: false };
-  }
-  store.homeworkSets[key].ts = {
+  const 뼈대 = { year: yr, country: selectedCountry, period: p, group: selectedGroup, sets: [], published: false };
+  const 새칸 = !store.homeworkSets[key];
+  const 이전ts = 새칸 ? undefined : store.homeworkSets[key].ts;
+  if (새칸) store.homeworkSets[key] = { ...뼈대 };
+  const tsObj = {
     enabled: true,
     questions,
     day_config: { questions_per_day: qPerDay, total_days: totalDays }
   };
+  store.homeworkSets[key].ts = tsObj;
 
   // [2026-09-11] 순서를 뒤집었다 — **파이어베이스(학생이 보는 원본)에 먼저** 쓴다.
   //   수학 JSON 길(doImportHwJson)은 2026-06-01 에 이미 이렇게 고쳤는데 TS 길만 옛 순서로 남아 있었다.
   //   서랍이 꽉 찬 날 saveStore 가 먼저 걸리면 등록 자체가 위태로워진다.
-  fbSetHomeworkSet(key, store.homeworkSets[key]);
-  const localOk = saveStore(store);
-  renderTeacher();
-
+  // [R-0 · 2026-09-19] 세 가지를 고쳤다 —
+  //   ① `/ts` **한 가지만** 쓴다(같은 칸의 수학 세트를 안 지운다)
+  //   ② **서버 대답을 기다려** 알린다(예전엔 로컬 저장 결과만 보고 「등록 완료」를 띄웠다)
+  //   ③ 서버가 **거부하면 로컬 사본을 되돌린다**(안 그러면 다음 「지금 다시 저장」이 또 보낸다)
   const ansCount = questions.filter(q => q.answer).length;
-  const msg = document.createElement('div');
-  // ⛔ 예전에는 잘되든 안 되든 **똑같은 보라색 「등록 완료!」** 하나뿐이었다.
-  //   그래서 「올라간 것처럼 보이는데 안 올라간」 상태를 화면에서 가릴 수 없었다.
-  msg.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:' + (localOk ? '#4f46e5' : '#b45309') + ';color:#fff;padding:14px 28px;border-radius:12px;font-weight:800;font-size:15px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);';
-  msg.textContent = localOk
-    ? `🧠 TS ${questions.length}문제 등록 완료! (${totalDays}일 × ${qPerDay}문제, 정답 ${ansCount}/${questions.length}개)`
-    : `🧠 TS ${questions.length}문제 Firebase 등록 완료 (${totalDays}일 × ${qPerDay}문제, 정답 ${ansCount}/${questions.length}개) — ⚠️ 이 브라우저 저장 공간 부족`;
-  document.body.appendChild(msg);
-  setTimeout(() => msg.remove(), 3500);
+  fbSetHomeworkTs(key, tsObj, 뼈대).then(서버ok => {
+    if (!서버ok) {
+      if (새칸) delete store.homeworkSets[key];
+      else if (이전ts === undefined) delete store.homeworkSets[key].ts;
+      else store.homeworkSets[key].ts = 이전ts;
+    }
+    // ⛔ [2026-09-19] 쓴 뒤에는 **서버 것을 다시 읽어 화면에 보인다.** 안 그러면
+    //    로컬 사본이 만든 「수학 0개」가 그대로 보여 원장님이 지워진 줄 아신다(실측).
+    const localOk = saveStore(store);
+    (서버ok ? _칸맞추기(key) : Promise.resolve()).then(() => renderTeacher());
+
+    const msg = document.createElement('div');
+    // ⛔ 예전에는 잘되든 안 되든 **똑같은 보라색 「등록 완료!」** 하나뿐이었다.
+    //   그래서 「올라간 것처럼 보이는데 안 올라간」 상태를 화면에서 가릴 수 없었다.
+    const 색 = !서버ok ? '#b91c1c' : (localOk ? '#4f46e5' : '#b45309');
+    msg.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:' + 색 + ';color:#fff;padding:14px 28px;border-radius:12px;font-weight:800;font-size:15px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);max-width:80vw;line-height:1.5;';
+    msg.textContent = !서버ok
+      ? `⛔ TS 등록이 서버에서 막혔습니다 — 저장되지 않았습니다.\n이미 승인된 주이거나 연결이 끊겼을 수 있습니다. 화면을 새로고침해 확인해 주세요.`
+      : (localOk
+        ? `🧠 TS ${questions.length}문제 등록 완료! (${totalDays}일 × ${qPerDay}문제, 정답 ${ansCount}/${questions.length}개)`
+        : `🧠 TS ${questions.length}문제 Firebase 등록 완료 (${totalDays}일 × ${qPerDay}문제, 정답 ${ansCount}/${questions.length}개) — ⚠️ 이 브라우저 저장 공간 부족`);
+    document.body.appendChild(msg);
+    setTimeout(() => msg.remove(), 서버ok ? 3500 : 9000);
+  });
 }
 
 function toggleTSPreview(yr) {
@@ -14709,7 +15077,8 @@ function removeTSForYear(yr) {
   if (store.homeworkSets[key]?.ts) {
     delete store.homeworkSets[key].ts;
     saveStore(store);
-    fbSetHomeworkSet(key, store.homeworkSets[key]);
+    // [R-0] `/ts` 한 가지만 지운다 — 같은 칸의 수학 세트는 그대로 둔다.
+    fbWrite({ ['homeworkSets/' + key + '/ts']: null });
     renderTeacher();
   }
 }
@@ -14717,6 +15086,29 @@ function removeTSForYear(yr) {
 // ── HW JSON Import ────────────────────────────────────────────────────────
 
 // 여러 JSON 형식을 자동 감지하여 통합 처리
+/**
+ * 이 파일이 **TS 문항 파일**인가. 수학 자리에서 받으면 안 된다.
+ *
+ * ⛔ [2026-09-19 실측] 막는 문이 없어서 TS 48문항이 「Thinking Skills — Day 1~6」이라는
+ *    수학 세트 여섯으로 들어갔다. 아이가 봤다면 수학 자리에서 TS 를 풀었을 것이다.
+ * 무엇으로 가리나 — TS 문항에만 있는 표 셋: `taxonomy_id`(TS.…) · `_item_id`(ts-…) · `_label_to_id`.
+ *   ⛔ **하나만 보고 판단하지 않는다.** 수학 문항이 우연히 하나를 가질 수 있다.
+ *      문항의 **절반 넘게**가 표를 가질 때만 TS 로 본다.
+ */
+function _TS파일인가(data) {
+  const qs = Array.isArray(data) ? data
+           : (Array.isArray(data && data.questions) ? data.questions : null);
+  if (!qs || !qs.length) return null;
+  let 표 = 0;
+  for (const q of qs) {
+    if (!q || typeof q !== 'object') continue;
+    if (String(q.taxonomy_id || '').startsWith('TS.')
+     || String(q._item_id || '').startsWith('ts-')
+     || q._label_to_id) 표++;
+  }
+  return (표 > qs.length / 2) ? { 문항: qs.length, 표 } : null;
+}
+
 function importHwJsonForYear(input, yr) {
   const files = Array.from(input.files);
   if (!files.length) return;
@@ -14735,6 +15127,18 @@ function importHwJsonForYear(input, yr) {
   }));
 
   Promise.all(readPromises).then(results => {
+    // ⛔ 수학 자리에 TS 파일이 들어오면 **여기서 멈춘다.** 들어가고 나면 되돌리기 번거롭다.
+    for (const { name, data } of results) {
+      const ts = _TS파일인가(data);
+      if (ts) {
+        alert('⛔ 이 파일은 수학(MR) 이 아니라 **Thinking Skills 문항 파일**로 보입니다.\n\n'
+            + '  ' + name + '\n'
+            + '  문항 ' + ts.문항 + '개 중 ' + ts.표 + '개가 TS 표를 가지고 있습니다.\n\n'
+            + '수학 자리에 올리면 아이가 수학 숙제 자리에서 TS 문항을 풀게 됩니다.\n'
+            + 'TS 는 「📂 TS JSON 업로드」 자리에 올려 주십시오.');
+        return;
+      }
+    }
     const merged = _mergeHwJsonFiles(results);
     if (!merged) return;
     _showHwJsonPreview(yr, merged);
@@ -15218,7 +15622,7 @@ function applySetAnswerFix(hwKey, setIdx, questionNum, selectId) {
 
   q.answer = newAnswer;
   saveStore(store);
-  fbSetHomeworkSet(hwKey, store.homeworkSets[hwKey]);
+  fbSetHomeworkMaths(hwKey, store.homeworkSets[hwKey]);   // [R-0] ts 는 안 쓴다
 
   el.style.borderColor = '#16a34a';
   const resultSpan = document.getElementById(`${selectId}_result`);
@@ -15297,6 +15701,13 @@ async function doImportHwJson(yr) {
   const store = getStore();
   const p     = store.currentPeriod;
   const key   = hwKey(yr, selectedCountry, p, selectedGroup);
+
+  // ⛔ [R-0 · 2026-09-19] **서버 것을 먼저 읽는다.** 로컬 사본이 낡았으면
+  //    「이미 있는 세트 0개」로 보고 서버의 세트를 덮어쓴다.
+  const 서버칸1 = await _칸맞추기(key);
+  if (서버칸1 === undefined) { _칸못맞춤알림(key); return; }
+  if (서버칸1) store.homeworkSets[key] = 서버칸1;
+  else delete store.homeworkSets[key];
 
   const existingSets = store.homeworkSets[key]?.sets || [];
   if (existingSets.length > 0) {
@@ -15417,7 +15828,7 @@ async function doImportHwJson(yr) {
   //   (이전엔 saveStore가 quota로 던지면 그 다음 fbSetHomeworkSet이 실행 안 돼
   //    로컬·Firebase 둘 다 등록 실패하고 조용히 멈췄음.)
   if (Object.keys(_subFbUpdates).length > 0) fbWrite(_subFbUpdates);
-  fbSetHomeworkSet(key, store.homeworkSets[key]);
+  fbSetHomeworkMaths(key, store.homeworkSets[key]);   // [R-0] ts 는 안 쓴다
   const localOk = saveStore(store);   // quota 초과 시 false 반환(경고 배너) — 더 이상 throw 안 함
   renderTeacher();
 

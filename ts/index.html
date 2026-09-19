@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>TS 교사 화면</title>
+<!--
+  TS 교사 승인 숙제 체계 — 교사 화면 (계획서 v5 · 3단계)
+
+  ⛔⛔ 이 페이지가 **하지 않는** 것 — 지키는 선이다
+    · 익명 로그인을 **하지 않는다**. `signInAnonymously` 를 부르는 코드가 한 줄도 없다.
+      (같은 origin 의 `index.html` 이 익명 로그인을 하면 원장 세션이 덮인다 — 그래서
+       여기서는 `onAuthStateChanged` 로 **원장 uid 인지 늘 지켜보다가** 아니면 잠근다.)
+    · `homeworkSets` 에 **쓰지 않는다**. 이 페이지에는 그 경로에 대한 쓰기가 없다.
+    · 수학에 **쓰지 않는다**. 읽고 셀 뿐이다.
+    · **통째로 읽지 않는다.** 경로를 좁혀 아이·주차 단위로만 읽는다.
+    · 승인 단추는 3.5단계(서버 함수) 뒤에 붙는다. 지금은 없다.
+-->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
+<style>
+:root{
+  --바탕:#f7f7f9; --판:#fff; --글:#1c1c1e; --흐린글:#6b6b70; --선:#e3e3e8;
+  --짙은파랑:#2b4c7e; --파랑:#3a6ea5; --녹색:#2e7d5b; --주황:#b26a00; --빨강:#b3261e;
+  --잠금:#8a8a8f;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --바탕:#17171a; --판:#202024; --글:#eceff4; --흐린글:#a0a0a8; --선:#33333a;
+    --짙은파랑:#9ec1ee; --파랑:#7aa9dd; --녹색:#6fd3a5; --주황:#e0a44a; --빨강:#f2837a;
+    --잠금:#7a7a82;
+  }
+}
+:root[data-theme="dark"]{
+  --바탕:#17171a; --판:#202024; --글:#eceff4; --흐린글:#a0a0a8; --선:#33333a;
+  --짙은파랑:#9ec1ee; --파랑:#7aa9dd; --녹색:#6fd3a5; --주황:#e0a44a; --빨강:#f2837a;
+  --잠금:#7a7a82;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--바탕); color:var(--글);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+  font-size:15px; line-height:1.6;
+}
+header{
+  position:sticky; top:0; z-index:20; background:var(--판);
+  border-bottom:1px solid var(--선); padding:10px 16px;
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+}
+header h1{font-size:16px; margin:0; font-weight:700; letter-spacing:-.2px}
+.칸{max-width:1180px; margin:0 auto; padding:16px}
+.판{background:var(--판); border:1px solid var(--선); border-radius:10px; padding:14px 16px; margin-bottom:14px}
+.판 h2{font-size:15px; margin:0 0 10px; font-weight:700}
+.흐림{color:var(--흐린글)}
+.작게{font-size:13px}
+button{
+  font:inherit; font-size:13px; padding:6px 12px; border-radius:7px;
+  border:1px solid var(--선); background:var(--판); color:var(--글); cursor:pointer;
+}
+button:hover:not(:disabled){border-color:var(--파랑); color:var(--파랑)}
+button:disabled{opacity:.45; cursor:not-allowed}
+button.주{background:var(--짙은파랑); border-color:var(--짙은파랑); color:#fff}
+:root:not([data-theme="light"]) button.주{color:#14141a}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) button.주{color:#14141a}}
+table{border-collapse:collapse; width:100%; font-size:13px}
+th,td{border-bottom:1px solid var(--선); padding:7px 8px; text-align:left; vertical-align:top}
+th{color:var(--흐린글); font-weight:600; white-space:nowrap}
+tr.고를수있음{cursor:pointer}
+tr.고를수있음:hover td{background:rgba(58,110,165,.09)}
+tr.골랐다 td{background:rgba(58,110,165,.16)}
+.딱지{
+  display:inline-block; font-size:11px; padding:1px 7px; border-radius:99px;
+  border:1px solid var(--선); color:var(--흐린글); white-space:nowrap;
+}
+.딱지.좋음{color:var(--녹색); border-color:var(--녹색)}
+.딱지.기다림{color:var(--주황); border-color:var(--주황)}
+.딱지.나쁨{color:var(--빨강); border-color:var(--빨강)}
+.딱지.내일{color:#fff; background:var(--짙은파랑); border-color:var(--짙은파랑)}
+:root:not([data-theme="light"]) .딱지.내일{color:#14141a}
+#잠금막{
+  position:fixed; inset:0; z-index:90; display:none;
+  background:var(--바탕); align-items:center; justify-content:center; padding:24px;
+}
+#잠금막.보임{display:flex}
+#잠금막 .속{max-width:460px; text-align:center}
+#잠금막 h2{font-size:18px; margin:0 0 10px}
+pre.리포트{
+  white-space:pre-wrap; word-break:break-word; font-size:12.5px; line-height:1.65;
+  background:var(--바탕); border:1px solid var(--선); border-radius:8px;
+  padding:12px; max-height:520px; overflow:auto; margin:0;
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+}
+.줄{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+.오른쪽{margin-left:auto}
+.알림{
+  border-left:3px solid var(--주황); background:rgba(178,106,0,.08);
+  padding:8px 12px; border-radius:0 8px 8px 0; font-size:13px; margin:8px 0;
+}
+.알림.빨강{border-left-color:var(--빨강); background:rgba(179,38,30,.08)}
+.알림.녹색{border-left-color:var(--녹색); background:rgba(46,125,91,.08)}
+.격자{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px}
+.쪽{border:1px solid var(--선); border-radius:8px; padding:9px 11px}
+.쪽 .이름{font-size:12px; color:var(--흐린글)}
+.쪽 .값{font-size:17px; font-weight:700; margin-top:2px}
+.문항장{border:1px solid var(--선); border-radius:8px; padding:10px 12px; margin:8px 0}
+.문항장.뺀것{opacity:.45; border-style:dashed; background:repeating-linear-gradient(
+  45deg, transparent, transparent 8px, rgba(179,38,30,.07) 8px, rgba(179,38,30,.07) 16px)}
+.값입력{
+  display:block; width:100%; margin-top:3px; font:inherit; font-size:16px; font-weight:700;
+  padding:4px 6px; border:1px solid var(--선); border-radius:6px;
+  background:var(--바탕); color:var(--글);
+}
+textarea{background:var(--바탕); color:var(--글); border:1px solid var(--선); border-radius:6px; padding:8px}
+@media (max-width:600px){ .칸{padding:12px} header{padding:9px 12px} }
+</style>
+</head>
+<body>
+
+<div id="잠금막">
+  <div class="속">
+    <h2 id="잠금제목">🔒 원장님만 볼 수 있습니다</h2>
+    <p id="잠금말" class="흐림">확인하는 중입니다…</p>
+    <p class="작게 흐림">
+      학생 화면(<code>/index.html</code>)을 새 탭에서 열면 그 탭의 익명 로그인이
+      이 창의 원장 로그인을 덮습니다. 그때는 학생 화면에서 <b>원장 로그인을 다시</b> 하시고
+      아래 단추를 누르십시오.
+    </p>
+    <p><button class="주" onclick="location.reload()">다시 확인</button></p>
+  </div>
+</div>
+
+<header>
+  <h1>TS 교사 화면</h1>
+  <span id="누구" class="딱지">확인 중</span>
+  <span id="일꾼딱지" class="딱지">PC 일꾼 —</span>
+  <span id="벌딱지" class="딱지">벌 —</span>
+  <span class="오른쪽 작게 흐림" id="읽은수">읽은 경로 0</span>
+  <button onclick="다시읽기()">↻ 다시 읽기</button>
+</header>
+
+<div class="칸">
+
+  <div class="판" id="경고판" style="display:none"></div>
+
+  <div class="판">
+    <h2>학생 — 내일 수업인 아이가 맨 위</h2>
+    <div id="목록">읽는 중…</div>
+  </div>
+
+  <div class="판" id="자세히판" style="display:none">
+    <h2 id="자세히제목">아이</h2>
+    <div id="자세히">아이를 고르십시오.</div>
+  </div>
+
+  <div class="판" id="설정판" style="display:none">
+    <h2>이번 주 숙제 설정</h2>
+    <div id="설정근거"></div>
+    <div class="격자" style="margin:10px 0">
+      <label class="쪽"><span class="이름">하루 문항</span>
+        <input id="설정_하루" type="number" min="1" max="20" class="값입력"></label>
+      <label class="쪽"><span class="이름">일수</span>
+        <input id="설정_일수" type="number" min="1" max="7" class="값입력"></label>
+      <label class="쪽"><span class="이름">중심 레벨</span>
+        <input id="설정_중심" type="number" min="1" max="5" class="값입력"></label>
+      <label class="쪽"><span class="이름">배정 주차</span>
+        <input id="설정_주차" type="text" class="값입력"></label>
+    </div>
+    <details style="margin:8px 0">
+      <summary>배분 표 — 어떤 꼴을 몇 개 (펼쳐 보기)</summary>
+      <p class="작게 흐림" style="margin:6px 0">
+        비워 두면 <b>지정 없이</b> 골고루 뽑습니다. 줄을 적으면 <b>그 칸은 정확히 그 수</b>,
+        나머지는 골고루입니다. ⛔ 채우지 못한 칸은 임의로 안 채우고 그대로 알려 드립니다.
+      </p>
+      <textarea id="설정_배분" rows="8" spellcheck="false"
+        style="width:100%;font-family:ui-monospace,Consolas,monospace;font-size:12px"></textarea>
+    </details>
+    <div class="줄">
+      <button id="부탁단추" class="주" onclick="초안부탁()">📝 이번 주 숙제 만들어 줘</button>
+      <button onclick="설정되돌리기()">↺ 지난 초안 값으로</button>
+      <span class="작게 흐림" id="설정알림"></span>
+    </div>
+    <p class="작게 흐림" style="margin-top:8px">
+      누르시면 PC 일꾼이 초안을 만들어 올립니다. <b>아이 숙제 칸에는 아무것도 안 씁니다.</b>
+      실제로 나가는 것은 초안을 보시고 <b>승인</b>하실 때입니다.
+    </p>
+  </div>
+
+  <div class="판" id="초안판" style="display:none">
+    <h2>이번 주에 나갈 숙제 (초안)</h2>
+    <div id="초안머리"></div>
+    <div class="줄" style="margin:8px 0">
+      <button id="승인단추" class="주" disabled onclick="승인하기()"
+              title="이 초안을 아이 숙제 칸에 올립니다">✅ 승인해서 내보내기</button>
+      <button id="빼기단추" style="display:none" onclick="빼고다시()">✂️ 뺀 것 빼고 다시 만들어 줘</button>
+      <button id="빼기취소" style="display:none" onclick="빼기비우기()">↺ 뺀 것 되돌리기</button>
+      <span class="작게 흐림" id="승인말"></span>
+    </div>
+    <div id="초안알림"></div>
+    <div id="초안문항"></div>
+  </div>
+
+  <div class="판" id="리포트판" style="display:none">
+    <h2>교사 리포트</h2>
+    <div class="줄" style="margin-bottom:8px">
+      <button id="복사단추" onclick="리포트복사()">📋 복사</button>
+      <button id="MD단추" class="주" onclick="리포트내려받기()">⬇ MD (확정)</button>
+      <span class="작게 흐림" id="리포트기준"></span>
+    </div>
+    <div id="리포트알림"></div>
+    <pre class="리포트" id="리포트본문">—</pre>
+  </div>
+
+  <div class="판" id="이력판" style="display:none">
+    <h2>출제 이력</h2>
+    <div id="이력"></div>
+  </div>
+
+  <div class="판">
+    <h2>창고 · 벌 · PC</h2>
+    <div class="격자" id="상태격자"></div>
+  </div>
+
+  <p class="작게 흐림">
+    이 화면은 <b>읽기만 합니다.</b> 숙제 칸·수학·학생 기록에 쓰는 코드가 없습니다.
+    승인 단추는 서버 승인 함수(3.5단계)가 선 뒤에 붙습니다.
+  </p>
+</div>
+
+<script>
+'use strict';
+
+// ══ 운영과 **같은 설정**이어야 한다. 다르면 다른 DB 를 보게 된다 ══
+const firebaseConfig = {
+  apiKey:      "AIzaSyDvj7CDHZ7_Wci0palB9KpbjvCUkvcCRZY",
+  authDomain:  "solomon-76715.firebaseapp.com",
+  databaseURL: "https://solomon-76715-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:   "solomon-76715",
+  storageBucket:"solomon-76715.appspot.com"
+};
+const OPERATOR_UID = '62bxWubzDLMrhHjjv2oNfAQiyaD2';   // index.html:3397 과 같아야 한다
+const 뿌리 = 'solomon_hw_v3';
+const OPS  = 'sol_v4/ops';
+const 시드니 = 'Australia/Sydney';
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let 읽은경로 = 0;
+let 잠겼나 = true;
+let 학생들 = [];
+let 고른아이 = null;
+let 리포트 = null;          // {md, 기준시각, sourceRevision, …}
+
+// ─────────────────── 읽기 (경로를 좁혀서만) ───────────────────
+async function 읽기(경로){
+  읽은경로++;
+  document.getElementById('읽은수').textContent = '읽은 경로 ' + 읽은경로;
+  try {
+    const s = await db.ref(경로).get();
+    return s.exists() ? s.val() : null;
+  } catch (e) {
+    console.warn('[읽기 실패]', 경로, e.code || e.message);
+    return null;
+  }
+}
+
+// ─────────────────── 원장 uid 문지기 ───────────────────
+// ⛔ 같은 origin 의 학생 화면이 익명 로그인을 하면 이 창의 세션이 **덮인다.**
+//    그래서 한 번 확인하고 마는 것이 아니라 **계속 지켜보다가** 바뀌면 잠근다.
+function 잠그기(말){
+  잠겼나 = true;
+  document.getElementById('잠금막').classList.add('보임');
+  document.getElementById('잠금말').textContent = 말;
+  document.getElementById('누구').textContent = '잠김';
+  document.getElementById('누구').className = '딱지 나쁨';
+  document.querySelectorAll('button').forEach(b => {
+    if (!b.closest('#잠금막')) b.disabled = true;
+  });
+}
+function 풀기(uid){
+  잠겼나 = false;
+  document.getElementById('잠금막').classList.remove('보임');
+  document.getElementById('누구').textContent = '원장님 (' + uid.slice(0,6) + '…)';
+  document.getElementById('누구').className = '딱지 좋음';
+  document.querySelectorAll('button').forEach(b => { b.disabled = false; });
+}
+
+firebase.auth().onAuthStateChanged(u => {
+  if (!u) {
+    잠그기('로그인돼 있지 않습니다. 학생 화면에서 원장 로그인을 하신 뒤 이 창을 새로 고치십시오.');
+    return;
+  }
+  if (u.isAnonymous || u.uid !== OPERATOR_UID) {
+    잠그기(u.isAnonymous
+      ? '지금 이 브라우저는 **익명**으로 로그인돼 있습니다(학생 화면을 여신 듯합니다). 원장 로그인을 다시 하십시오.'
+      : '원장 계정이 아닙니다(uid ' + u.uid.slice(0,8) + '…).');
+    return;
+  }
+  풀기(u.uid);
+  첫판();
+});
+
+// ─────────────────── 날짜 · 요일 ───────────────────
+const 요일말 = {mon:'월', tue:'화', wed:'수', thu:'목', fri:'금', sat:'토', sun:'일'};
+const 요일차례 = ['sun','mon','tue','wed','thu','fri','sat'];
+
+function 시드니지금(){
+  return new Date(new Date().toLocaleString('en-US', {timeZone: 시드니}));
+}
+// ⛔ `days` 는 배열일 때도 있고 글자일 때도 있다(실측: RYAN 은 'mon').
+//    한쪽만 보면 그 아이가 목록에서 늘 맨 아래로 간다.
+function 요일배열(v){
+  // ⛔ `index.html` 의 같은 이름 함수와 **똑같아야 한다.** 한쪽만 고치면 화면 둘이
+  //    다른 요일을 보게 된다(이 화면은 「내일 수업인 아이」를 이걸로 고른다).
+  const arr = Array.isArray(v) ? v : (typeof v === 'string' ? v.split(/[,/\s]+/) : []);
+  const out = [];
+  for (const x of arr) {
+    const d = String(x || '').trim().toLowerCase();
+    if (요일말[d] && !out.includes(d)) out.push(d);
+  }
+  return out;
+}
+/** 오늘부터 며칠 뒤가 그 아이 수업인가. 요일이 없으면 999(맨 아래). */
+function 며칠뒤(days){
+  const 오늘 = 요일차례[시드니지금().getDay()];
+  const 나 = 요일차례.indexOf(오늘);
+  let 가장 = 999;
+  for (const d of days) {
+    const i = 요일차례.indexOf(d);
+    if (i < 0) continue;
+    가장 = Math.min(가장, (i - 나 + 7) % 7);
+  }
+  return 가장;
+}
+function 며칠뒤말(n){
+  if (n === 999) return '요일 없음';
+  if (n === 0) return '오늘';
+  if (n === 1) return '내일';
+  return n + '일 뒤';
+}
+
+/** 오늘이 든 주차 이름표. 홈페이지와 같은 규칙(그 달 첫 월요일 = w1). */
+function 이번주차(d){
+  d = d || 시드니지금();
+  const 해 = d.getFullYear(), 달 = d.getMonth() + 1;
+  const 첫 = new Date(해, 달 - 1, 1);
+  const 첫월 = 1 + ((8 - (첫.getDay() || 7)) % 7);
+  const 주 = Math.max(1, Math.floor((d.getDate() - 첫월) / 7) + 1);
+  return 해 + '_m' + String(달).padStart(2,'0') + '_w' + 주;
+}
+function 앞주차(w){
+  const m = /^(\d{4})_m(\d{2})_w(\d)$/.exec(w || '');
+  if (!m) return null;
+  let [_, y, mo, wk] = m; y = +y; mo = +mo; wk = +wk;
+  if (wk > 1) return y + '_m' + String(mo).padStart(2,'0') + '_w' + (wk - 1);
+  mo -= 1; if (mo < 1) { mo = 12; y -= 1; }
+  return y + '_m' + String(mo).padStart(2,'0') + '_w5';   // 앞달 마지막 주는 w5 부터 찾는다
+}
+function 다음주차(w){
+  const m = /^(\d{4})_m(\d{2})_w(\d)$/.exec(w || '');
+  if (!m) return null;
+  return m[1] + '_m' + m[2] + '_w' + (+m[3] + 1);
+}
+function 칸이름(s, 주차, 반붙임){
+  const g = (s.group || '').trim();
+  const c = s.country || 'AU';
+  return c + '_y' + s.year + ((g && 반붙임) ? '-' + g : '') + '_' + 주차;
+}
+
+// ─────────────────── 첫판 ───────────────────
+async function 첫판(){
+  await 일꾼상태();
+  await 학생읽기();
+}
+
+async function 다시읽기(){
+  if (잠겼나) return;
+  고른아이 = null; 리포트 = null;
+  document.getElementById('리포트판').style.display = 'none';
+  document.getElementById('자세히판').style.display = 'none';
+  document.getElementById('초안판').style.display = 'none';
+  document.getElementById('설정판').style.display = 'none';
+  document.getElementById('이력판').style.display = 'none';
+  await 첫판();
+}
+
+async function 일꾼상태(){
+  const pc  = await 읽기(OPS + '/pc');
+  const bank= await 읽기(OPS + '/bank_status');
+  const 격자 = document.getElementById('상태격자');
+
+  const 살 = pc && pc['살아있음'];
+  const 늦었나 = 살 ? (Date.now() - new Date(살).getTime() > 2*3600*1000) : true;
+  const d1 = document.getElementById('일꾼딱지');
+  d1.textContent = 'PC 일꾼 ' + (살 ? (늦었나 ? '오래됨' : '살아 있음') : '안 붙음');
+  d1.className = '딱지 ' + (살 ? (늦었나 ? '기다림' : '좋음') : '나쁨');
+
+  const 벌 = bank && (bank['벌'] || bank['release']);
+  const d2 = document.getElementById('벌딱지');
+  d2.textContent = '벌 ' + (벌 || '—');
+  d2.className = '딱지 ' + (벌 ? '좋음' : '');
+
+  격자.innerHTML = [
+    쪽('PC 일꾼', 살 ? 시각말(살) : '아직 안 붙었습니다'),
+    쪽('출제 벌', 벌 || '—'),
+    쪽('쓸 수 있는 문항', bank && bank['문항수'] != null ? bank['문항수'] : '—'),
+    쪽('자격판 맞춘 때', bank && bank['맞춘때'] ? 시각말(bank['맞춘때']) : '—'),
+  ].join('');
+
+  const 경고 = document.getElementById('경고판');
+  if (!pc) {
+    경고.style.display = '';
+    경고.innerHTML = '<div class="알림">⏳ <b>PC 일꾼이 아직 안 붙었습니다.</b> '
+      + '리포트·초안·수집은 PC 가 만들어 올리는 것이라, 그때까지 이 화면은 '
+      + '<b>파이어베이스에 이미 있는 것</b>만 보여 줍니다.'
+      + '<div class="작게 흐림" style="margin-top:4px">PC 에서 <code>py -3.12 일꾼\\ts_worker.py</code> 를 띄우십시오.</div></div>';
+  } else {
+    경고.style.display = 'none';
+  }
+}
+function 쪽(이름, 값){
+  return '<div class="쪽"><div class="이름">' + 글(이름) + '</div><div class="값">' + 글(String(값)) + '</div></div>';
+}
+function 글(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function 시각말(iso){
+  if (!iso) return '—';
+  try {
+    return new Date(iso).toLocaleString('ko-KR', {timeZone: 시드니, dateStyle:'short', timeStyle:'short'});
+  } catch(_) { return iso; }
+}
+
+// ─────────────────── 학생 목록 ───────────────────
+async function 학생읽기(){
+  const 목록 = document.getElementById('목록');
+  목록.textContent = '읽는 중…';
+
+  const users = await 읽기(뿌리 + '/users');
+  const 커리 = await 읽기(OPS + '/curriculum');       // 일꾼이 올리는 「TS 를 받는 아이」 명단
+
+  let us = users ? (Array.isArray(users) ? users : Object.values(users)) : [];
+  us = us.filter(u => u && typeof u === 'object' && u.role === 'student' && u.id);
+
+  // ⛔ 같은 id 가 두 줄 있는 경우가 실제로 있다(실측: Jasper05). 한 번만 센다.
+  const 본 = new Set(); const 하나씩 = [];
+  for (const u of us) { if (본.has(u.id)) continue; 본.add(u.id); 하나씩.push(u); }
+
+  const 명단 = 커리 && 커리['학생'] ? Object.keys(커리['학생']) : null;
+  학생들 = 하나씩.filter(u => 명단 ? 명단.includes(u.id) : true).map(u => {
+    const days = 요일배열(u.days);
+    return Object.assign({}, u, {
+      _days: days,
+      _며칠: 며칠뒤(days),
+      _설정: (커리 && 커리['학생'] && 커리['학생'][u.id]) || null
+    });
+  });
+  학생들.sort((a,b) => a._며칠 - b._며칠 || String(a.name||'').localeCompare(String(b.name||''), 'ko'));
+
+  if (!학생들.length) { 목록.innerHTML = '<p class="흐림">학생이 없습니다.</p>'; return; }
+
+  const 안내 = 명단 ? '' :
+    '<div class="알림">⚠️ <b>TS 를 받는 아이 명단을 아직 PC 가 안 올렸습니다.</b> '
+    + '지금은 <b>학생 전체</b>를 보여 주고 있습니다(시험 계정·옛 계정이 섞여 있습니다).</div>';
+
+  목록.innerHTML = 안내 + '<table><thead><tr>'
+    + '<th>수업</th><th>아이</th><th>학년</th><th>반</th><th>시험</th>'
+    + '<th>분석 주차</th><th>배정 주차</th><th>칸</th><th>지난주 TS</th><th>지난주 수학</th><th>상태</th>'
+    + '</tr></thead><tbody id="몸통"></tbody></table>';
+
+  const 몸통 = document.getElementById('몸통');
+  for (const s of 학생들) {
+    const tr = document.createElement('tr');
+    tr.className = '고를수있음';
+    tr.dataset.id = s.id;
+    tr.innerHTML = '<td>' + (s._며칠 <= 1
+        ? '<span class="딱지 내일">' + 며칠뒤말(s._며칠) + '</span>'
+        : '<span class="흐림">' + 며칠뒤말(s._며칠) + '</span>')
+      + '<div class="작게 흐림">' + (s._days.map(d=>요일말[d]).join('·') || '—') + '</div></td>'
+      + '<td><b>' + 글(s.name || s.id) + '</b><div class="작게 흐림">' + 글(s.id) + '</div></td>'
+      + '<td>Y' + 글(s.year) + '</td>'
+      + '<td>' + 글((s.group || '').trim() || '—') + '</td>'
+      + '<td>' + 글((s._설정 && s._설정['시험']) || '—') + '</td>'
+      + '<td colspan="6" class="흐림 작게">고르시면 읽습니다</td>';
+    tr.onclick = () => 아이고르기(s.id);
+    몸통.appendChild(tr);
+  }
+}
+
+// ─────────────────── 한 아이 자세히 ───────────────────
+async function 아이고르기(sid){
+  if (잠겼나) return;
+  const s = 학생들.find(x => x.id === sid);
+  if (!s) return;
+  고른아이 = s;
+  document.querySelectorAll('#몸통 tr').forEach(tr =>
+    tr.classList.toggle('골랐다', tr.dataset.id === sid));
+
+  const 판 = document.getElementById('자세히판');
+  판.style.display = '';
+  document.getElementById('자세히제목').textContent = (s.name || s.id) + ' — 자세히';
+  const 통 = document.getElementById('자세히');
+  통.textContent = '읽는 중…';
+
+  const 분석 = 앞주차(이번주차());
+  const 배정 = 이번주차();
+
+  // 칸 — 반 칸이 없으면 학년 공통으로 내려간다(홈페이지와 같은 폴백)
+  let 칸 = null, 칸값 = null;
+  for (const 반붙임 of [true, false]) {
+    const k = 칸이름(s, 분석, 반붙임);
+    const v = await 읽기(뿌리 + '/homeworkSets/' + k + '/sets');
+    const t = await 읽기(뿌리 + '/homeworkSets/' + k + '/ts');
+    if (v || t) { 칸 = k; 칸값 = {sets: v, ts: t}; break; }
+    if (!(s.group || '').trim()) break;
+  }
+
+  const ts제출 = await 읽기(뿌리 + '/submissions/ts_' + sid + '_' + 분석);
+  const 수학 = await 수학세기(sid, 분석, 칸값 && 칸값.sets ? Object.keys(칸값.sets).length : 0);
+  const t = TS세기(칸값 && 칸값.ts, ts제출);
+
+  통.innerHTML =
+    '<div class="격자">'
+    + 쪽('분석 주차', 분석) + 쪽('배정 주차', 배정)
+    + 쪽('칸', 칸 || '없음')
+    + 쪽('커리', (s._설정 && s._설정['커리']) || '—')
+    + '</div>'
+    + '<h3 style="font-size:14px;margin:14px 0 6px">지난주 TS</h3>'
+    + TS표(t)
+    + '<h3 style="font-size:14px;margin:14px 0 6px">지난주 수학 (읽기·계산만)</h3>'
+    + 수학표(수학)
+    + '<h3 style="font-size:14px;margin:14px 0 6px">상태</h3>'
+    + 상태표(칸값, ts제출);
+
+  // 행에도 채워 넣는다
+  const tr = document.querySelector('#몸통 tr[data-id="' + CSS.escape(sid) + '"]');
+  if (tr) {
+    const 뒤 = tr.querySelectorAll('td');
+    뒤[5].outerHTML =
+        '<td>' + 글(분석) + '</td><td>' + 글(배정) + '</td>'
+      + '<td class="작게">' + 글(칸 || '없음') + '</td>'
+      + '<td>' + (t.배정 ? (t.첫판 + '/' + t.시도 + ' · ' + t.첫판 + '/' + t.배정) : '—') + '</td>'
+      + '<td>' + (수학.배정세트 ? (수학.낸세트 + '/' + 수학.배정세트) : '—') + '</td>'
+      + '<td>' + (ts제출 ? '<span class="딱지 좋음">제출 있음</span>' : '<span class="딱지">제출 없음</span>') + '</td>';
+  }
+
+  await 초안읽기(sid, 배정);
+  설정채우기(sid, 배정, s._설정, 초안);
+  await 이력읽기(sid);
+  await 리포트읽기(sid, 분석);
+}
+
+/** 집계 공통 규격(지시서 v6 §6.8). 홈페이지·PC·MD 가 같은 수를 내야 한다. */
+function TS세기(ts, 제출){
+  const 문항 = (ts && ts.questions) || [];
+  const 결과 = {배정: 문항.length, 시도:0, 미시도:0, 첫판:0, 재시도정답:0, 힌트:0, 정답공개:0, 아직오답:0, 완료일차:0, 자료없음:0};
+  if (!제출) { 결과.자료없음 = 결과.배정; return 결과; }
+  // ⛔ 답은 `day<N>.answers.q<N>` 에 산다(실측). 힌트 칸 이름은 `hint1_used`·`hint2_used` 다.
+  //    공책(`공책_만들기.py:163-185`)과 **같은 이름**을 읽어야 화면·PC·MD 수가 같다.
+  const 답들 = [];
+  for (const 날 of Object.values(제출)) {
+    if (!날 || typeof 날 !== 'object') continue;
+    if (날.completed) 결과.완료일차++;
+    for (const a of Object.values(날.answers || {})) {
+      if (a && typeof a === 'object') 답들.push(a);
+    }
+  }
+  for (const a of 답들) {
+    const 시도수 = a.attempts || 0;
+    if (시도수 < 1) { 결과.미시도++; continue; }   // ⛔ 보기만 고른 것은 「풀이」가 아니다
+    결과.시도++;
+    const 힌트썼나 = !!(a.hint1_used || a.hint2_used);
+    if (힌트썼나) 결과.힌트++;
+    if (a.revealed) 결과.정답공개++;
+    if (시도수 === 1 && a.correct && !힌트썼나 && !a.revealed) 결과.첫판++;
+    else if (a.correct && 시도수 >= 2 && !a.revealed) 결과.재시도정답++;
+    if (!a.correct) 결과.아직오답++;
+  }
+  결과.자료없음 = Math.max(0, 결과.배정 - 답들.length);
+  return 결과;
+}
+function 비율(a,b){ return b ? Math.round(100*a/b) + '%' : '—'; }
+function TS표(t){
+  if (!t.배정) return '<p class="흐림 작게">이 주차에 TS 가 없습니다.</p>';
+  return '<table><tbody>'
+    + 줄('배정', t.배정)
+    + 줄('시도한 문항', t.시도 + ' <span class="흐림">(안 푼 것 ' + (t.미시도 + t.자료없음) + ')</span>')
+    + 줄('첫판 · 힌트 없이 정답',
+        '<b>' + t.첫판 + '</b> — 시도 기준 <b>' + 비율(t.첫판, t.시도)
+        + '</b> · 배정 기준 <b>' + 비율(t.첫판, t.배정) + '</b>')
+    + 줄('재시도해서 맞힘', t.재시도정답)
+    + 줄('힌트 / 정답공개', t.힌트 + ' / ' + t.정답공개)
+    + 줄('완료 단추를 누른 일차', t.완료일차)
+    + 줄('한 문항당 시간', '<span class="흐림">측정 없음 — 홈페이지가 문항별 시각을 안 남깁니다</span>')
+    + '</tbody></table>';
+}
+function 줄(a,b){ return '<tr><th style="width:190px">' + 글(a) + '</th><td>' + b + '</td></tr>'; }
+
+/** 수학 — 세트마다 따로 산다: `submissions/<아이>_<주차>_s<n>` */
+async function 수학세기(sid, 주차, 세트수){
+  const 결과 = {배정세트: 세트수, 낸세트:0, 맞은수:0, 푼문항:0, 세트:[], 영역:{}, 빈답:0};
+  for (let i = 0; i < 세트수; i++) {
+    const v = await 읽기(뿌리 + '/submissions/' + sid + '_' + 주차 + '_s' + i);
+    if (!v) { 결과.세트.push({n:i, 상태:'손도 안 댐'}); continue; }
+    const r = v.reportData || {};
+    if (!v.submitted || !r.totalQuestions) { 결과.세트.push({n:i, 상태:'열었으나 안 냄'}); continue; }
+    결과.낸세트++; 결과.맞은수 += (r.correctCount||0); 결과.푼문항 += r.totalQuestions;
+    결과.세트.push({n:i, 상태:'냄', 점수:r.score, 맞:r.correctCount, 총:r.totalQuestions,
+                   때:(r.submittedAt||'').slice(0,10), 제목:r.setTitle});
+    for (const a of (r.weakAreas || [])) {
+      if (a && a.area) 결과.영역[a.area] = (결과.영역[a.area] || 0) + (a.count || 1);
+    }
+    // ⛔ 빈 답을 오답과 섞지 않는다 — 분량 부족과 개념 오답은 다른 것이다
+    const 답 = v.answers || {};
+    for (let q = 0; q < r.totalQuestions; q++) {
+      const x = 답['q' + q];
+      if (x == null || x === '') 결과.빈답++;
+    }
+  }
+  return 결과;
+}
+function 수학표(m){
+  if (!m.배정세트) return '<p class="흐림 작게">이 주차에 수학 칸이 없습니다.</p>';
+  if (!m.낸세트) {
+    const 연것 = m.세트.filter(x => x.상태 !== '손도 안 댐').length;
+    return '<p class="알림">배정된 세트 <b>' + m.배정세트 + '개</b> 중 낸 것 <b>0개</b>'
+      + (연것 ? '(' + 연것 + '장은 열었으나 제출하지 않았습니다)' : ' — 한 장도 열지 않았습니다') + '.</p>';
+  }
+  const 영역 = Object.entries(m.영역).sort((a,b)=>b[1]-a[1]);
+  const 되풀이 = 영역.filter(([,n]) => n >= 2).map(([k]) => k);
+  return '<table><tbody>'
+    + 줄('낸 세트', '<b>' + m.낸세트 + ' / ' + m.배정세트 + '</b>')
+    + 줄('맞은 문항', '<b>' + m.맞은수 + ' / ' + m.푼문항 + '</b> (낸 세트 기준 ' + 비율(m.맞은수, m.푼문항) + ')')
+    + 줄('빈 답', m.빈답 + ' <span class="흐림">— 오답과 따로 셉니다</span>')
+    + 줄('세트별', m.세트.map(x => x.상태 === '냄'
+        ? 's' + x.n + ' <b>' + x.점수 + '점</b> (' + x.맞 + '/' + x.총 + ')'
+        : 's' + x.n + ' <span class="흐림">' + x.상태 + '</span>').join(' · '))
+    + 줄('틀린 영역', 영역.length ? 영역.map(([k,n]) => 글(k) + ' ' + n).join(' · ') : '—')
+    + (되풀이.length ? 줄('👀 두 번 넘게 걸린 영역', '<b>' + 되풀이.map(글).join(' · ') + '</b>') : '')
+    + 줄('서술형', '<span class="흐림">판단 유보 — 자동 채점이 없습니다</span>')
+    + '</tbody></table>';
+}
+
+/** 상태 축 넷 — 배정 × 공개 × PC 수집 × 백업 (한 줄 순서가 아니다) */
+function 상태표(칸값, ts제출){
+  const 있나 = !!(칸값 && 칸값.ts);
+  const 공개 = 칸값 && 칸값.ts && 칸값.ts.published;
+  return '<div class="격자">'
+    + 쪽('배정', 있나 ? '저장됨' : '아직 없음')
+    + 쪽('공개', 있나 ? (공개 ? '공개됨' : '비공개') : '—')
+    + 쪽('PC 수집', ts제출 ? '제출이 있습니다' : '제출 없음')
+    + 쪽('백업', '—')
+    + '</div>'
+    + '<p class="작게 흐림">네 축은 <b>차례가 아니라 따로따로</b>입니다. 하나가 됐다고 다음이 되는 것이 아닙니다.</p>';
+}
+
+// ─────────────────── 이번 주 숙제 설정 · 부탁 ───────────────────
+//  ⛔ 이 판은 **부탁만 남긴다**(`ops/req`). 숙제 칸에는 한 글자도 안 쓴다.
+//     실제로 나가는 것은 원장님이 초안을 보시고 승인하실 때다.
+let 설정바탕 = null;          // 「지난 초안 값으로」 되돌릴 때 쓴다
+
+function 설정채우기(sid, 배정주차, 커리설정, 지난초안){
+  const 판 = document.getElementById('설정판');
+  판.style.display = '';
+  const 주당 = (커리설정 && 커리설정['주당문항']) || null;
+  const 일수 = (커리설정 && 커리설정['일수']) || 6;
+  const 하루 = (지난초안 && ((지난초안['설정'] || {})['하루문항']))
+             || (주당 ? Math.round(주당 / 일수) : 8);
+  설정바탕 = {
+    하루: 하루,
+    일수: (지난초안 && ((지난초안['설정'] || {})['일수'])) || 일수,
+    중심: (지난초안 && ((지난초안['설정'] || {})['중심레벨']))
+        || (커리설정 && 커리설정['중심레벨']) || 3,
+    주차: 배정주차,
+    배분: (지난초안 && ((지난초안['설정'] || {})['배분표'])) || null
+  };
+  설정되돌리기();
+
+  // 근거 셋을 **따로** 보인다 — 어느 값이 어디서 왔는지 섞으면 못 고르신다
+  const 줄 = [];
+  if (커리설정) {
+    줄.push('커리 — 주당 <b>' + (주당 || '?') + '문항</b> · ' + 일수 + '일 · 중심 <b>L'
+      + (커리설정['중심레벨'] || '?') + '</b>'
+      + (커리설정['_중심레벨_까닭'] ? ' <span class="흐림">(' + 글(커리설정['_중심레벨_까닭']) + ')</span>' : ''));
+    if (커리설정['남은주_어림'] != null)
+      줄.push('시험까지 — 남은 주 <b>' + 커리설정['남은주_어림'] + '</b> · '
+        + 글(커리설정['시험'] || '') + ' ' + 글(커리설정['시험날짜'] || ''));
+  }
+  if (지난초안) 줄.push('지난 초안 — 판 r' + 지난초안.revision + ' · '
+    + ((지난초안.ts || {}).questions || []).length + '문항');
+  document.getElementById('설정근거').innerHTML = 줄.length
+    ? '<ul style="margin:0 0 4px 18px" class="작게">' + 줄.map(x => '<li>' + x + '</li>').join('') + '</ul>'
+    : '<p class="알림">커리 설정을 아직 PC 가 안 올렸습니다. 값을 직접 넣으십시오.</p>';
+}
+
+function 설정되돌리기(){
+  if (!설정바탕) return;
+  document.getElementById('설정_하루').value = 설정바탕.하루;
+  document.getElementById('설정_일수').value = 설정바탕.일수;
+  document.getElementById('설정_중심').value = 설정바탕.중심;
+  document.getElementById('설정_주차').value = 설정바탕.주차;
+  document.getElementById('설정_배분').value =
+    설정바탕.배분 ? JSON.stringify(설정바탕.배분, null, 1) : '';
+  document.getElementById('설정알림').textContent = '';
+}
+
+async function 초안부탁(){
+  if (잠겼나 || !고른아이) return;
+  const 알림 = document.getElementById('설정알림');
+  const 하루 = parseInt(document.getElementById('설정_하루').value, 10);
+  const 일수 = parseInt(document.getElementById('설정_일수').value, 10);
+  const 중심 = parseInt(document.getElementById('설정_중심').value, 10);
+  const 주차 = document.getElementById('설정_주차').value.trim();
+  if (!(하루 > 0) || !(일수 > 0) || !/^\d{4}_m\d{2}_w\d$/.test(주차)) {
+    알림.textContent = '⛔ 하루 문항·일수는 1 이상, 주차는 2026_m09_w4 꼴이어야 합니다.';
+    return;
+  }
+  let 배분 = null;
+  const 글자 = document.getElementById('설정_배분').value.trim();
+  if (글자) {
+    try { 배분 = JSON.parse(글자); }
+    catch (e) { 알림.textContent = '⛔ 배분 표를 못 읽었습니다: ' + e.message; return; }
+    if (!Array.isArray(배분)) { 알림.textContent = '⛔ 배분 표는 [ … ] 목록이어야 합니다.'; return; }
+    const 몫 = 배분.reduce((a, r) => a + (parseInt(r['수'], 10) || 0), 0);
+    if (몫 > 하루 * 일수) {
+      알림.textContent = '⛔ 배분 표 합 ' + 몫 + ' 이 한 주치 ' + (하루 * 일수) + ' 보다 많습니다.';
+      return;
+    }
+    // 「전부 지정」인지 「일부 고정」인지 밝혀 준다 — 둘은 다른 일이다
+    알림.textContent = (몫 === 하루 * 일수)
+      ? '배분 표가 한 주치를 다 채웁니다(전부 지정).'
+      : '배분 표가 ' + 몫 + '문항을 고정하고 나머지 ' + (하루 * 일수 - 몫) + '은 골고루 뽑습니다.';
+  }
+
+  const 단추 = document.getElementById('부탁단추');
+  단추.disabled = true; 단추.textContent = '⏳ 보내는 중…';
+  const rid = 고른아이.id + '_' + 주차 + '_' + Date.now().toString(36);
+  try {
+    await db.ref(OPS + '/req/' + rid).set({
+      subject: 'TS', 갈래: '초안',
+      학생: 고른아이.id, 분석주차: 앞주차(이번주차()), 배정주차: 주차,
+      하루문항: 하루, 일수: 일수, 중심: 중심,
+      배분모드: 배분 ? '표' : '골고루', 배분: 배분,
+      revision: ((지난판(고른아이.id, 주차) || 0) + 1),
+      상태: '대기', 낸시각: new Date().toISOString()
+    });
+    알림.innerHTML = '✅ 부탁을 보냈습니다 (<code>' + 글(rid) + '</code>). '
+      + 'PC 일꾼이 만들면 아래 초안이 바뀝니다. <b>↻ 다시 읽기</b>를 눌러 보십시오.';
+  } catch (e) {
+    알림.textContent = '⛔ 부탁을 못 보냈습니다: ' + (e.code || e.message);
+  }
+  단추.disabled = false; 단추.textContent = '📝 이번 주 숙제 만들어 줘';
+}
+
+function 지난판(sid, 주차){
+  return (초안 && 초안.student === sid && 초안['배정주차'] === 주차) ? (초안.revision || 0) : 0;
+}
+
+// ─────────────────── 출제 이력 ───────────────────
+async function 이력읽기(sid){
+  const 판 = document.getElementById('이력판');
+  const 통 = document.getElementById('이력');
+  판.style.display = '';
+  const h = await 읽기(OPS + '/history/' + sid);
+  if (!h) {
+    통.innerHTML = '<p class="알림">이력이 아직 안 올라왔습니다. PC 일꾼이 올립니다.</p>';
+    return;
+  }
+  const 주차들 = Object.keys(h).sort().reverse();
+  let t = '<table><thead><tr><th>주차</th><th>배정</th><th>시도</th><th>첫판 무힌트</th>'
+        + '<th>힌트</th><th>정답공개</th><th>완료일차</th><th>푼 날</th></tr></thead><tbody>';
+  for (const wk of 주차들) {
+    const v = h[wk] || {};
+    const 안푼 = (v['미시도'] || 0) + (v['자료없음'] || 0);
+    const 날 = v['푼날짜'] || [];
+    t += '<tr><td><b>' + 글(wk) + '</b></td>'
+      + '<td>' + (v['배정'] || 0) + '</td>'
+      + '<td>' + (v['시도'] || 0) + (안푼 ? ' <span class="흐림">(안 푼 ' + 안푼 + ')</span>' : '') + '</td>'
+      + '<td><b>' + (v['첫판무힌트'] || 0) + '</b> <span class="흐림">'
+        + 비율(v['첫판무힌트'] || 0, v['시도'] || 0) + ' · ' + 비율(v['첫판무힌트'] || 0, v['배정'] || 0)
+        + '</span></td>'
+      + '<td>' + (v['힌트'] || 0) + '</td><td>' + (v['정답공개'] || 0) + '</td>'
+      + '<td>' + (v['완료일차'] || 0) + '</td>'
+      + '<td class="작게">' + (날.length ? 글(날.join(' · ')) + ' (' + 날.length + '일)' : '—') + '</td></tr>';
+  }
+  t += '</tbody></table>';
+  t += '<p class="작게 흐림" style="margin-top:6px">첫판 무힌트의 두 비율은 '
+     + '<b>시도 기준 · 배정 기준</b>입니다. 하나만 보면 다섯 문항 풀고 100% 가 됩니다.<br>'
+     + '⏱ 한 문항에 몇 초 걸렸는지는 <b>측정 자료가 없습니다.</b></p>';
+  통.innerHTML = t;
+}
+
+// ─────────────────── 초안 미리보기 ───────────────────
+//  ⛔ 원장님이 승인하시기 전에 **무엇이 나가는지 눈으로 보셔야** 한다.
+//     숫자만 보고 누르는 단추는 단추가 아니다.
+//  ⛔ 이 자리는 **읽기만** 한다. 승인은 서버 함수가 한다(3.5단계).
+let 초안 = null;
+// 원장님이 「빼겠다」고 하신 문항. ⛔ 여기 담기는 것만으로는 **아무 일도 안 일어난다** —
+//   「빼고 다시 만들어 줘」를 누르셔야 일꾼이 새 판을 만든다.
+let 뺄것 = new Set();
+
+function 문항빼기(iid){
+  if (뺄것.has(iid)) 뺄것.delete(iid); else 뺄것.add(iid);
+  초안그리기();
+  빼기단추새로();
+  승인단추새로();     // 뺀 것이 있으면 승인을 막는다 — 안 그러면 뺀 채로 나간다
+}
+function 빼기비우기(){ 뺄것.clear(); 초안그리기(); 빼기단추새로(); 승인단추새로(); }
+
+function 빼기단추새로(){
+  const 있나 = 뺄것.size > 0;
+  const b = document.getElementById('빼기단추');
+  const c = document.getElementById('빼기취소');
+  b.style.display = 있나 ? '' : 'none';
+  c.style.display = 있나 ? '' : 'none';
+  b.textContent = '✂️ ' + 뺄것.size + '문항 빼고 다시 만들어 줘';
+  b.className = 있나 ? '주' : '';
+}
+
+async function 빼고다시(){
+  if (잠겼나 || !초안 || !뺄것.size) return;
+  const 알림 = document.getElementById('초안알림');
+  const b = document.getElementById('빼기단추');
+  b.disabled = true; b.textContent = '⏳ 보내는 중…';
+  const 주차 = 초안['배정주차'];
+  const rid = 초안.student + '_' + 주차 + '_' + Date.now().toString(36);
+  try {
+    await db.ref(OPS + '/req/' + rid).set({
+      subject: 'TS', 갈래: '초안',
+      학생: 초안.student, 분석주차: 앞주차(이번주차()), 배정주차: 주차,
+      하루문항: ((초안['설정'] || {})['하루문항']) || null,
+      일수: ((초안['설정'] || {})['일수']) || null,
+      중심: ((초안['설정'] || {})['중심레벨']) || null,
+      배분모드: ((초안['설정'] || {})['배분표']) ? '표' : '골고루',
+      배분: ((초안['설정'] || {})['배분표']) || null,
+      제외: [...뺄것],
+      revision: (초안.revision || 1) + 1,
+      상태: '대기', 낸시각: new Date().toISOString()
+    });
+    알림.innerHTML = '<div class="알림 녹색">✂️ <b>' + 뺄것.size + '문항을 빼 달라고 보냈습니다.</b> '
+      + '같은 꼴·같은 레벨의 다음 후보가 그 자리에 들어오고 <b>수는 그대로</b>입니다. '
+      + 'PC 일꾼이 만들면 <b>↻ 다시 읽기</b>로 보십시오.</div>';
+    뺄것.clear();
+  } catch (e) {
+    알림.innerHTML = '<div class="알림 빨강">⛔ 못 보냈습니다: ' + 글(e.code || e.message) + '</div>';
+  }
+  b.disabled = false; 빼기단추새로();
+}
+
+async function 초안읽기(sid, 배정주차){
+  const 판 = document.getElementById('초안판');
+  const 머리 = document.getElementById('초안머리');
+  const 알림 = document.getElementById('초안알림');
+  const 통 = document.getElementById('초안문항');
+  판.style.display = '';
+  알림.innerHTML = ''; 통.innerHTML = '';
+
+  // ⛔⛔ **초안을 통째로 읽지 않는다.** 한 벌이 80~230KB 다(실측 · 그 61%가 그림).
+  //    `ops/draft` 를 다 읽으면 이 아이와 상관없는 것까지 내려받고, 주마다 쌓여 무거워진다.
+  //    ⇒ 일꾼이 둔 **가리키는 쪽지**를 먼저 읽고, 그 한 벌만 내려받는다.
+  const 쪽지 = await 읽기(OPS + '/draft/_현재/' + sid + '/' + 배정주차);
+  초안 = null;
+  if (쪽지 && 쪽지.requestId) {
+    const d = await 읽기(OPS + '/draft/' + 쪽지.requestId);
+    if (d) 초안 = Object.assign({ _rid: 쪽지.requestId }, d);
+  }
+  if (!초안) {
+    머리.innerHTML = '<div class="알림">📝 <b>이 주차의 초안이 아직 없습니다.</b>'
+      + '<div class="작게" style="margin-top:4px">PC 에서 만든 뒤 일꾼이 올립니다:<br>'
+      + '<code>py -3.12 일꾼\\초안_만들기.py --student ' + 글(sid)
+      + ' --배정주차 ' + 글(배정주차) + '</code></div></div>';
+    승인단추새로();
+    return;
+  }
+
+  const ts = 초안.ts || {};
+  const qs = ts.questions || [];
+  const dc = ts.day_config || {};
+  const 그림 = qs.filter(q => String(q.figure || '').trim()).length;
+  const 출처 = {};
+  for (const m of (초안.manifest || [])) 출처[m['출처']] = (출처[m['출처']] || 0) + 1;
+
+  머리.innerHTML = '<div class="격자">'
+    + 쪽('판', 'r' + (초안.revision || '?'))
+    + 쪽('문항', qs.length + ' (' + (dc.total_days || '?') + '일 × ' + (dc.questions_per_day || '?') + ')')
+    + 쪽('그림', 그림 + '개')
+    + 쪽('벌', 초안.release || '—')
+    + 쪽('출처', Object.entries(출처).map(([k, v]) => k + ' ' + v).join(' · ') || '—')
+    + 쪽('칸', 초안['칸'] || '—')
+    + '</div>';
+
+  if ((초안['부족보고'] || []).length) {
+    알림.innerHTML += '<div class="알림">⚠️ <b>배분 표를 다 못 채웠습니다.</b> '
+      + '임의로 채우지 않았습니다.<ul style="margin:6px 0 0 18px">'
+      + 초안['부족보고'].map(x => '<li>' + 글(x) + '</li>').join('') + '</ul></div>';
+  }
+  const 이름표 = qs.filter(q => String(q.figure || '').startsWith('§fig:')).length;
+  if (이름표) {
+    알림.innerHTML += '<div class="알림 빨강">⛔ <b>그림 ' + 이름표
+      + '개가 이름표로 남아 있습니다.</b> 이대로 나가면 학생 화면에 그림이 안 뜹니다.</div>';
+  }
+
+  뺄것.clear();
+  빼기단추새로();
+  승인단추새로();
+  초안그리기();
+}
+
+/** 날마다 접어서 보인다 — 48문항을 한 번에 펴면 못 읽는다. */
+function 초안그리기(){
+  const 통 = document.getElementById('초안문항');
+  if (!초안) { 통.innerHTML = ''; return; }
+  const ts = 초안.ts || {};
+  const qs = ts.questions || [];
+  const 하루 = (ts.day_config || {}).questions_per_day || qs.length;
+  let h = '';
+  for (let d = 0; d * 하루 < qs.length; d++) {
+    const 날문항 = qs.slice(d * 하루, (d + 1) * 하루);
+    const 뺀수 = 날문항.filter(q => 뺄것.has(q._item_id)).length;
+    h += '<details' + (d === 0 ? ' open' : '') + ' style="margin:8px 0">'
+      + '<summary><b>' + (d + 1) + '일차</b> <span class="흐림 작게">'
+      + 날문항.length + '문항 · 그림 '
+      + 날문항.filter(q => String(q.figure || '').trim()).length
+      + (뺀수 ? ' · <b>뺀 것 ' + 뺀수 + '</b>' : '') + '</span></summary>';
+    for (const q of 날문항) h += 문항한장(q);
+    h += '</details>';
+  }
+  통.innerHTML = h;
+}
+
+function 문항한장(q){
+  const 뺐나 = 뺄것.has(q._item_id);
+  const 보기 = (q.options || []).map((o, i) =>
+    '<li' + (String.fromCharCode(65 + i) === q.answer ? ' style="font-weight:700"' : '') + '>'
+    + String.fromCharCode(65 + i) + '. ' + 글(o) + '</li>').join('');
+  const 그림 = String(q.figure || '').trim();
+  return '<div class="문항장' + (뺐나 ? ' 뺀것' : '') + '">'
+    + '<div class="줄 작게 흐림">'
+    + '<span>' + 글(q.num || '') + '. ' + 글(q.type || '') + ' · '
+    + 글(q.taxonomy_id || '') + ' · <code>' + 글(q._item_id || '') + '</code></span>'
+    + '<button class="오른쪽" onclick="문항빼기(\'' + 글(q._item_id) + '\')">'
+    + (뺐나 ? '↺ 되돌리기' : '✕ 이 문항 빼기') + '</button></div>'
+    + '<div style="margin:6px 0">' + 글(q.text || '') + '</div>'
+    + (그림 ? '<div style="max-width:520px;margin:6px 0">' + 그림 + '</div>' : '')
+    + '<ol style="margin:6px 0 0 0;list-style:none;padding:0">' + 보기 + '</ol>'
+    + '<div class="작게 흐림" style="margin-top:4px">정답 <b>' + 글(q.answer || '') + '</b></div>'
+    + '</div>';
+}
+
+// ─────────────────── 승인 ───────────────────
+//  ⛔⛔ 여기가 **아이 숙제 칸에 글을 쓰는 유일한 자리**다.
+//     쓰는 것은 화면이 아니라 **서버 함수**다(`approveTsAssignment`). 화면은 부르기만 한다.
+//     그래야 화면이 낡았거나 두 번 눌려도 서버가 한 번만 쓴다.
+const 함수 = firebase.app().functions('australia-southeast1');
+
+function 승인단추새로(){
+  const b = document.getElementById('승인단추');
+  const m = document.getElementById('승인말');
+  if (!초안 || !초안.sha) {
+    b.disabled = true;
+    m.textContent = '올릴 초안이 없습니다.';
+    return;
+  }
+  if (뺄것.size) {
+    b.disabled = true;
+    m.textContent = '뺀 문항이 있습니다. 먼저 「빼고 다시 만들어 줘」를 눌러 새 판을 받으십시오.';
+    return;
+  }
+  b.disabled = false;
+  m.textContent = '판 r' + (초안.revision || '?') + ' · '
+    + ((초안.ts || {}).questions || []).length + '문항을 ' + (초안['칸'] || '') + ' 에 올립니다.';
+}
+
+async function 승인하기(){
+  if (잠겼나 || !초안 || !초안.sha) return;
+  const qs = (초안.ts || {}).questions || [];
+  const 그림 = qs.filter(q => String(q.figure || '').trim()).length;
+  // ⛔ 누르기 전에 **무엇이 나가는지** 다시 보인다. 숫자만 보고 누르는 단추는 단추가 아니다.
+  const 물음 = [
+    '이 숙제를 ' + (초안.student || '') + ' 에게 내보냅니다.',
+    '',
+    '  주차   ' + (초안['배정주차'] || ''),
+    '  칸     ' + (초안['칸'] || ''),
+    '  문항   ' + qs.length + '개 (그림 ' + 그림 + ')',
+    '  판     r' + (초안.revision || '?'),
+    '',
+    '올린 뒤에는 되돌리기가 어렵습니다.',
+    '한 번이라도 공개되면 되돌릴 수 없습니다.',
+    '',
+    '올릴까요?'
+  ].join('\n');
+  if (!confirm(물음)) return;
+
+  const b = document.getElementById('승인단추');
+  const 알림 = document.getElementById('초안알림');
+  b.disabled = true; b.textContent = '⏳ 서버가 올리는 중…';
+  try {
+    const r = await 함수.httpsCallable('approveTsAssignment')({
+      requestId: 초안._rid, revision: 초안.revision, hash: 초안.sha
+    });
+    const d = (r && r.data) || {};
+    알림.innerHTML = 승인결과그리기(d);
+    // 「했다」는 서버가 ok 라 한 것만 — 판정을 화면이 지어내지 않는다
+    if (d['결과'] === 'ok') await 아이고르기(초안.student);
+  } catch (e) {
+    const 말 = (e && (e.message || e.code)) || String(e);
+    알림.innerHTML = '<div class="알림 빨강">⛔ <b>승인이 안 됐습니다.</b> ' + 글(말) + '</div>';
+  }
+  b.disabled = false; b.textContent = '✅ 승인해서 내보내기';
+  승인단추새로();
+}
+
+/** 서버가 준 답을 **그대로** 보인다. 막힌 까닭을 감추지 않는다. */
+function 승인결과그리기(d){
+  const 결과 = d['결과'];
+  if (결과 === 'ok') {
+    return '<div class="알림 녹색">✅ <b>' + (d['이미'] ? '이미 올라가 있었습니다.' : '올렸습니다.') + '</b> '
+      + '칸 <code>' + 글(d['칸'] || '') + '</code> · ' + 글(d['공개상태'] || '')
+      + '<div class="작게" style="margin-top:4px">아이에게 보이려면 <b>공개</b>를 따로 누르셔야 합니다.</div></div>';
+  }
+  if (결과 === '확인대기') {
+    return '<div class="알림">⏳ <b>올라갔는지 확인하지 못했습니다.</b> ' + 글(d['까닭'] || '')
+      + '<div class="작게" style="margin-top:4px">⛔ 잠금은 그대로 두었습니다 — '
+      + '<b>같은 단추를 한 번 더</b> 눌러 주십시오. 두 번 써지지 않습니다.</div></div>';
+  }
+  let h = '<div class="알림 빨강">⛔ <b>막혔습니다.</b> ' + 글(d['까닭'] || '까닭을 못 받았습니다');
+  if ((d['걸린것'] || []).length) {
+    h += '<ul style="margin:6px 0 0 18px">'
+       + d['걸린것'].map(x => '<li>' + 글(x) + '</li>').join('') + '</ul>';
+  }
+  if ((d['막힌문항'] || []).length) {
+    h += '<div class="작게" style="margin-top:4px">검수가 취소된 문항: '
+       + d['막힌문항'].map(글).join(', ')
+       + (d['자격판기준'] ? ' <span class="흐림">(자격판 ' + 글(d['자격판기준']) + ' 기준)</span>' : '')
+       + '</div>';
+  }
+  if ((d['받는이'] || []).length) {
+    h += '<div class="작게" style="margin-top:4px">이 칸을 보는 아이: ' + d['받는이'].map(글).join(', ') + '</div>';
+  }
+  return h + '</div>';
+}
+
+// ─────────────────── 교사 리포트 ───────────────────
+async function 리포트읽기(sid, 분석주차){
+  const 판 = document.getElementById('리포트판');
+  const 본문 = document.getElementById('리포트본문');
+  const 알림 = document.getElementById('리포트알림');
+  판.style.display = '';
+  알림.innerHTML = '';
+  리포트 = await 읽기(OPS + '/report/' + sid + '/' + 분석주차);
+  if (!리포트 || !리포트.md) {
+    본문.textContent = '—';
+    document.getElementById('리포트기준').textContent = '';
+    알림.innerHTML = '<div class="알림">📄 <b>이 아이의 리포트가 아직 올라오지 않았습니다.</b>'
+      + '<div class="작게" style="margin-top:4px">PC 에서 만든 뒤 일꾼이 올립니다:<br>'
+      + '<code>py -3.12 일꾼\\수집.py --student ' + 글(sid) + '</code><br>'
+      + '<code>py -3.12 일꾼\\교사리포트.py --student ' + 글(sid)
+      + ' --분석주차 ' + 글(분석주차) + ' --배정주차 ' + 글(이번주차()) + '</code></div></div>';
+    document.getElementById('복사단추').disabled = true;
+    document.getElementById('MD단추').disabled = true;
+    return;
+  }
+  본문.textContent = 리포트.md;
+  document.getElementById('복사단추').disabled = false;
+  document.getElementById('MD단추').disabled = false;
+  document.getElementById('리포트기준').textContent =
+    '기준 ' + 시각말(리포트['기준시각']) + (리포트['sourceRevision'] ? ' · 벌 ' + 리포트['sourceRevision'] : '');
+
+  // 「자료가 바뀌었습니다」 — 리포트를 만든 뒤에 새 제출이 들어왔는가
+  const 제출 = await 읽기(뿌리 + '/submissions/ts_' + sid + '_' + 분석주차);
+  const 늦은 = 마지막제출시각(제출);
+  if (늦은 && 리포트['기준시각'] && new Date(늦은) > new Date(리포트['기준시각'])) {
+    알림.innerHTML = '<div class="알림 빨강">⚠️ <b>자료가 바뀌었습니다.</b> '
+      + '리포트를 만든 뒤(' + 시각말(리포트['기준시각']) + ')에 새 제출이 있었습니다('
+      + 시각말(늦은) + '). 다시 수집한 뒤 쓰십시오.</div>';
+  }
+  if (리포트['확정여부']) {
+    알림.innerHTML += '<div class="알림 녹색">✅ 이 주차 시험지는 이미 <b>확정</b>됐습니다('
+      + 시각말(리포트['확정시각']) + '). 다시 내려받아도 <b>같은 다섯 문항</b>입니다.</div>';
+  }
+}
+function 마지막제출시각(제출){
+  if (!제출) return null;
+  let 늦 = null;
+  for (const 날 of Object.values(제출)) {
+    if (!날 || typeof 날 !== 'object') continue;
+    // 문항별 시각은 자료에 **없다**(측정 없음). 있는 것은 일차 완료 시각뿐이다.
+    if (날.completed_at && (!늦 || 날.completed_at > 늦)) 늦 = 날.completed_at;
+  }
+  return 늦;
+}
+
+function 리포트복사(){
+  if (!리포트 || !리포트.md) return;
+  navigator.clipboard.writeText(리포트.md).then(
+    () => 알림띄우기('📋 복사했습니다. 클로드에 그대로 붙여 넣으십시오.'),
+    () => 알림띄우기('복사에 실패했습니다. 본문을 직접 긁어서 복사하십시오.', true));
+}
+
+/**
+ * ⬇ MD = **확정**이다. 시험지 다섯 문항이 대장에 오르고, 그 뒤로는
+ * 다시 내려받아도 **같은 다섯**이 나온다(다음 주 숙제의 신규에서도 빠진다).
+ * ⛔ 확정 기록을 쓰는 것은 **서버 함수/일꾼**이다. 이 화면은 부탁만 남긴다.
+ */
+async function 리포트내려받기(){
+  if (!리포트 || !리포트.md || !고른아이) return;
+  const 분석 = 앞주차(이번주차());
+  const 이름 = (고른아이.name || 고른아이.id) + '_' + 분석 + '.md';
+  const blob = new Blob([리포트.md], {type:'text/markdown;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 이름;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+
+  // 확정 부탁 — 일꾼이 집어 간다. ⛔ 여기서 대장에 직접 쓰지 않는다.
+  try {
+    await db.ref(OPS + '/req').push({
+      갈래: '시험지확정', 학생: 고른아이.id, 분석주차: 분석,
+      배정주차: 이번주차(), 상태: '대기', 부탁시각: new Date().toISOString()
+    });
+    알림띄우기('⬇ 내려받았습니다. 확정 부탁을 PC 일꾼에게 보냈습니다.');
+  } catch (e) {
+    알림띄우기('⬇ 내려받았습니다. 다만 **확정 부탁을 못 보냈습니다** (' + (e.code || e.message)
+      + '). PC 에서 `시험지.py --확정` 을 직접 돌리십시오.', true);
+  }
+}
+
+function 알림띄우기(말, 나쁨){
+  const 알림 = document.getElementById('리포트알림');
+  const d = document.createElement('div');
+  d.className = '알림' + (나쁨 ? ' 빨강' : ' 녹색');
+  d.textContent = 말;
+  알림.appendChild(d);
+  setTimeout(() => d.remove(), 8000);
+}
+
+// 첫 화면 — 인증이 확인될 때까지 잠근 채로 둔다
+잠그기('확인하는 중입니다…');
+</script>
+</body>
+</html>
