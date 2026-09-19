@@ -342,28 +342,64 @@ function 며칠뒤말(n){
   return n + '일 뒤';
 }
 
-/** 오늘이 든 주차 이름표. 홈페이지와 같은 규칙(그 달 첫 월요일 = w1). */
+/**
+ * 오늘이 든 주차 이름표.
+ *
+ * ⛔⛔ 홈페이지(`index.html` 의 `_weekNumInMonth`)와 **똑같은 규칙**이어야 한다 —
+ *    **그 주의 목요일이 든 달**에 그 주가 속한다(ISO). 「그 달 첫 월요일부터」로 세면
+ *    **한 주씩 밀리고**, 밀린 주차로 **엉뚱한 칸에 숙제를 넣는다.**
+ *    (2026-09-19 실측 — 홈페이지는 「Week 3 (Sep 14–18)」인데 이 화면은 w2 라 했다.)
+ *      · 8/31(월) → 목 9/3  → 9월 1주
+ *      · 9/14(월) → 목 9/17 → 9월 3주
+ */
 function 이번주차(d){
   d = d || 시드니지금();
-  const 해 = d.getFullYear(), 달 = d.getMonth() + 1;
-  const 첫 = new Date(해, 달 - 1, 1);
-  const 첫월 = 1 + ((8 - (첫.getDay() || 7)) % 7);
-  const 주 = Math.max(1, Math.floor((d.getDate() - 첫월) / 7) + 1);
-  return 해 + '_m' + String(달).padStart(2,'0') + '_w' + 주;
+  // 그 날이 든 주의 월요일
+  const 월 = new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7));
+  // 그 주의 목요일이 든 달 = 그 주가 속한 달
+  const 목 = new Date(월.getFullYear(), 월.getMonth(), 월.getDate() + 3);
+  const 해 = 목.getFullYear(), 달 = 목.getMonth() + 1;
+  // 그 달에 속한 월요일들을 앞에서부터 세어 몇 번째인지
+  let 번 = 0;
+  for (let x = new Date(해, 달 - 1, 1 - 7); ; x = new Date(x.getFullYear(), x.getMonth(), x.getDate() + 7)) {
+    if (x.getDay() !== 1) { x = new Date(x.getFullYear(), x.getMonth(), x.getDate() + ((8 - x.getDay()) % 7)); }
+    const t = new Date(x.getFullYear(), x.getMonth(), x.getDate() + 3);
+    if (t.getFullYear() === 해 && t.getMonth() + 1 === 달) {
+      번++;
+      if (x.getTime() === 월.getTime()) break;
+    }
+    if (t.getFullYear() > 해 || (t.getFullYear() === 해 && t.getMonth() + 1 > 달)) break;
+  }
+  return 해 + '_m' + String(달).padStart(2,'0') + '_w' + Math.max(1, 번);
 }
-function 앞주차(w){
+/**
+ * 주차 이름표 → **그 주의 월요일**.
+ * ⛔ 이름표의 숫자만 더하고 빼면 달 경계에서 틀린다 — 9월 4주의 다음은 **10월 1주**지
+ *    「9월 5주」가 아니다(그런 주가 아예 없을 수 있다). 날짜로 셈해야 한다.
+ */
+function 주차의월요일(w){
   const m = /^(\d{4})_m(\d{2})_w(\d)$/.exec(w || '');
   if (!m) return null;
-  let [_, y, mo, wk] = m; y = +y; mo = +mo; wk = +wk;
-  if (wk > 1) return y + '_m' + String(mo).padStart(2,'0') + '_w' + (wk - 1);
-  mo -= 1; if (mo < 1) { mo = 12; y -= 1; }
-  return y + '_m' + String(mo).padStart(2,'0') + '_w5';   // 앞달 마지막 주는 w5 부터 찾는다
+  const 해 = +m[1], 달 = +m[2], 번호 = +m[3];
+  let 셈 = 0;
+  // 그 달에 속하는(= 목요일이 그 달인) 월요일을 앞에서부터 센다
+  for (let d = new Date(해, 달 - 1, -6); d < new Date(해, 달, 8); d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) {
+    if (d.getDay() !== 1) continue;
+    const 목 = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 3);
+    if (목.getFullYear() !== 해 || 목.getMonth() + 1 !== 달) continue;
+    if (++셈 === 번호) return d;
+  }
+  return null;
 }
-function 다음주차(w){
-  const m = /^(\d{4})_m(\d{2})_w(\d)$/.exec(w || '');
-  if (!m) return null;
-  return m[1] + '_m' + m[2] + '_w' + (+m[3] + 1);
+
+function 주차옮기기(w, 주수){
+  const 월 = 주차의월요일(w);
+  if (!월) return null;
+  return 이번주차(new Date(월.getFullYear(), 월.getMonth(), 월.getDate() + 7 * 주수));
 }
+
+function 앞주차(w){ return 주차옮기기(w, -1); }
+function 다음주차(w){ return 주차옮기기(w, 1); }
 function 칸이름(s, 주차, 반붙임){
   const g = (s.group || '').trim();
   const c = s.country || 'AU';
