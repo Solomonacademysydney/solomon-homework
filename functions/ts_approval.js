@@ -53,10 +53,14 @@ function 원장인가(req) {
   return uid;
 }
 
-async function 읽기(경로) {
+async function 기본읽기(경로) {
   const s = await db().ref(경로).get();
   return s.exists() ? s.val() : null;
 }
+// 시험에서 **서버 없이** 셈하는 부분을 재려고 읽기 자리를 하나 낸다.
+// ⛔ 운영에서는 아무도 이걸 바꾸지 않는다(`ts_빈칸.test.js` 만 쓴다).
+let _읽개 = 기본읽기;
+const 읽기 = (경로) => _읽개(경로);
 
 /** `AU_y4-션_2026_m09_w3` 꼴. index.html:3869 `hwKey` 와 **같아야 한다.** */
 function 칸이름(year, country, p, group) {
@@ -74,6 +78,176 @@ function 칸풀기(key) {
 function 주차풀기(w) {
   const m = /^(\d{4})_m(\d{2})_w(\d+)$/.exec(w || '');
   return m ? { year: +m[1], month: +m[2], week: +m[3] } : null;
+}
+/** {year, month, week} → `2026_m09_w4` */
+function 주차이름(p) {
+  return `${p.year}_m${String(p.month).padStart(2, '0')}_w${p.week}`;
+}
+
+// ───────────────────────── 반 빈 칸 (index.html 과 같은 규칙) ─────────────────────────
+// ⛔⛔ 여기가 2026-09-20 에 고친 자리다. 왜 있어야 하는지 적어 둔다.
+//
+//   반 이름이 **없는** 칸(공통)은 「반 칸이 없는 아이들」이 다 같이 본다(`hwLookup`).
+//   그래서 홈페이지는 공통 칸을 만들 때 `_ensureGroupPlaceholders`(index.html:3433) 로
+//   **반 아이들의 빈 칸을 함께 세운다.** 빈 칸이라도 있으면 그 아이는 그쪽을 보므로
+//   공통 칸이 안 내려간다.
+//
+//   승인 함수는 그것을 **몰랐다.** 그래서 두 가지가 한꺼번에 어긋나 있었다 —
+//     ㉠ 세어 보는 쪽 : 「이 칸을 2명이 봅니다」로 **멀쩡한 승인이 막혔다**
+//     ㉡ 쓰는 쪽     : 빈 칸을 안 세워서, 문을 열면 **다른 반 아이가 그 TS 를 받는다**
+//   ⇒ **둘을 같이** 고쳐야 한다. 한쪽만 고치면 막히기만 하거나 새 나간다.
+//
+//   아래 넷은 `index.html:3437~3470` 의 규칙을 그대로 옮긴 것이다.
+//   ⛔ 홈페이지 쪽을 고치면 여기도 같이 고쳐야 한다(시험이 둘을 맞댄다).
+
+/** index.html:5188 `sanitizeGroup` 과 **같아야 한다.** `.trim()` 만으로는 모자란다. */
+function 반정리(v) {
+  return String(v == null ? '' : v)
+    .replace(/[_\r\n\t]/g, ' ')      // 열쇠 구분자·제어문자
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 20);
+}
+
+/** index.html:3999 `periodGte` — a >= b ? */
+function 주차크거나같나(a, b) {
+  if (a.year !== b.year) return a.year > b.year;
+  if (a.month !== b.month) return a.month > b.month;
+  return a.week >= b.week;
+}
+
+/**
+ * 시드니 기준 오늘의 연·월·일.
+ * ⛔ 서버는 UTC 로 돈다. 원장님 화면은 시드니다. 그대로 두면 주 경계에서
+ *    화면과 서버가 **다른 주**를 가리킨다.
+ */
+function 시드니날짜(dt) {
+  try {
+    const s = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Australia/Sydney', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(dt);
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+    if (m) return { y: +m[1], m: +m[2], d: +m[3] };
+  } catch (e) { /* ICU 가 없는 판이면 아래로 */ }
+  return { y: dt.getUTCFullYear(), m: dt.getUTCMonth() + 1, d: dt.getUTCDate() };
+}
+
+/**
+ * index.html:4184 `getTodayPeriod` 를 옮긴 것 — ISO 8601(그 주 목요일이 속한 달).
+ * ⛔ 원본은 그 컴퓨터의 시각으로 `new Date(y, m, d)` 를 쓴다. 서버는 시간대가 다르므로
+ *    날짜 셈은 전부 UTC 자리로 하고, 「오늘」만 시드니에서 가져온다.
+ */
+function 오늘주차(지금) {
+  const t = 시드니날짜(지금 || new Date());
+  const D = (y, m, d) => new Date(Date.UTC(y, m - 1, d));   // m 은 1..12
+  const 오늘 = D(t.y, t.m, t.d);
+  const dow = 오늘.getUTCDay();                              // 0=일
+  const 월요차 = dow === 0 ? -6 : 1 - dow;
+  const 월요일 = D(t.y, t.m, t.d + 월요차);
+  const 목요일 = D(t.y, t.m, t.d + 월요차 + 3);
+
+  const year = 목요일.getUTCFullYear();
+  const month = 목요일.getUTCMonth() + 1;
+
+  const 월요일들 = [];
+  for (let d = -6; d <= 0; d++) {                            // 1일 앞의 월요일
+    const dt = D(year, month, d);
+    if (dt.getUTCDay() === 1) {
+      const thu = D(year, month, d + 3);
+      if (thu.getUTCMonth() + 1 === month && thu.getUTCFullYear() === year) 월요일들.push(dt);
+    }
+  }
+  const 그달날수 = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  for (let d = 1; d <= 그달날수; d++) {
+    if (D(year, month, d).getUTCDay() === 1) {
+      const thu = D(year, month, d + 3);
+      if (thu.getUTCMonth() + 1 === month) 월요일들.push(D(year, month, d));
+    }
+  }
+
+  let week = 1;
+  for (let i = 0; i < 월요일들.length; i++) {
+    if (월요일.getTime() === 월요일들[i].getTime()) { week = i + 1; break; }
+    if (월요일들[i] <= 월요일) week = i + 1;
+  }
+  return { year, month, week };
+}
+
+/** 홈페이지가 세우는 빈 칸과 **글자까지 같아야 한다**(index.html:3466). */
+function 빈칸값(country, year, grp, p) {
+  return {
+    country, year: +year, group: grp,
+    period: { year: p.year, month: p.month, week: p.week },
+    published: true, sets: [], _placeholder: true,
+    _note: '공통 숙제가 대신 보이는 것을 막는 빈 칸 — 이 반 숙제를 올리면 여기 채워진다'
+  };
+}
+
+/**
+ * 숙제 칸 **열쇠만** 가져온다. 앞자리로 좁혀 읽는다(`AU_y4` → `AU_y4_…` 와 `AU_y4-션_…` 둘 다).
+ * ⛔ 시험에서 읽기를 갈아 끼울 수 있게, 좁혀 읽기가 안 되면 `읽기` 로 물러선다.
+ */
+function 열쇠범위(앞자리) {
+  return { 시작: 앞자리, 끝: 앞자리 + '\uf8ff' };
+}
+/** 그 범위에 드는 열쇠인가 — 파이어베이스 `orderByKey` 가 고르는 것과 **같은 셈**이다. */
+function 범위안인가(열쇠, 앞자리) {
+  const r = 열쇠범위(앞자리);
+  return String(열쇠) >= r.시작 && String(열쇠) <= r.끝;
+}
+async function 칸열쇠읽기(앞자리) {
+  const 길 = `${뿌리}/homeworkSets`;
+  if (_읽개 === 기본읽기) {
+    const r = 열쇠범위(앞자리);
+    const s = await db().ref(길).orderByKey().startAt(r.시작).endAt(r.끝).get();
+    return s.exists() ? s.val() : null;
+  }
+  // 시험용 가짜 마당 — 좁혀 읽기가 없으니 **같은 셈을 손으로** 해서 똑같이 걸러 준다.
+  const 다 = await 읽기(길);
+  if (!다) return null;
+  const 걸른 = {};
+  for (const k of Object.keys(다)) if (범위안인가(k, 앞자리)) 걸른[k] = 다[k];
+  return 걸른;
+}
+
+/** 규칙 ③ — 그 주에 이미 푼 흔적(TS 제출·답)이 있으면 그 아이 칸은 **건드리지 않는다.** */
+async function 푼흔적있나(sid, p) {
+  const w = 주차이름(p);
+  if (await 읽기(`${뿌리}/submissions/ts_${sid}_${w}`)) return true;
+  for (let i = 0; i < 12; i++) {                             // index.html 도 12까지 본다
+    const sub = await 읽기(`${뿌리}/submissions/${sid}_${w}_s${i}`);
+    if (sub && (sub.submitted || Object.keys(sub.answers || {}).length)) return true;
+  }
+  return false;
+}
+
+/**
+ * 이 공통 칸을 세울 때 **함께 세워야 할 반 빈 칸**을 셈한다.
+ * 규칙 넷 — ①공통 칸만 ②지난 주차는 손대지 않는다 ③푼 흔적 있으면 건너뛴다 ④이미 있으면 건너뛴다.
+ * 쓰지는 않는다. 셈만 한다.
+ */
+async function 세울빈칸들(칸, 있는열쇠, 학생들) {
+  const 풀 = 칸풀기(칸);
+  if (!풀) return { 칸들: [], 막은까닭: null };
+  if (풀.group !== '') return { 칸들: [], 막은까닭: null };          // ① 반 칸이면 할 일 없음
+  const p = 풀.period;
+  if (!주차크거나같나(p, 오늘주차()))                                 // ② 지난 주차
+    return { 칸들: [], 막은까닭: '지난 주차라 반 빈 칸을 세우지 않습니다(홈페이지도 같습니다)' };
+
+  const 열쇠 = new Set(있는열쇠);
+  const 셀것 = [];
+  for (const s of 학생들) {
+    if (s.status === 'inactive' || s.isTest) continue;
+    if (+s.year !== 풀.year) continue;
+    if ((s.country || 'AU') !== 풀.country) continue;
+    const grp = 반정리(s.group);
+    if (grp === '') continue;                                        // 반 없는 아이 = 이 칸의 주인
+    const gkey = 칸이름(s.year, 풀.country, p, grp);
+    if (열쇠.has(gkey)) continue;                                    // ④ 이미 있다
+    if (await 푼흔적있나(s.id, p)) continue;                          // ③ 푼 흔적
+    셀것.push({ 학생: s.id, 칸: gkey, 값: 빈칸값(풀.country, s.year, grp, p) });
+  }
+  return { 칸들: 셀것, 막은까닭: null };
 }
 
 // ───────────────────────── ① 초안 검사 ─────────────────────────
@@ -155,26 +329,41 @@ async function 자격판보기(draft) {
  * ⛔ 「지금」이 아니라 **「이 칸을 만든 뒤」**로 따져야 한다. 공통 칸을 새로 만들면
  *    반이 없는 다른 아이들도 그 칸을 보게 된다 — 만들기 전에는 안 보이던 일이다.
  */
-async function 수신자확인(칸, 학생id) {
+async function 수신자확인(칸, 학생id, 어떻게) {
+  const 가상 = !(어떻게 && 어떻게.가상 === false);     // 기본 = 가상 저장 후로 본다
   const users = await 읽기(`${뿌리}/users`);
-  const 있는칸 = await 읽기(`${뿌리}/homeworkSets`);   // 열쇠만 쓴다
-  const 칸들 = new Set(Object.keys(있는칸 || {}));
-  칸들.add(칸);                                        // 가상 저장
 
   const 풀 = 칸풀기(칸);
-  if (!풀) return { ok: false, 까닭: `칸 이름을 못 읽습니다: ${칸}` };
+  if (!풀) return { ok: false, 까닭: `칸 이름을 못 읽습니다: ${칸}`, 세울칸들: [] };
+
+  // ⛔ **열쇠만 쓰는데 통째로 읽으면 안 된다.** `homeworkSets` 는 2026-09-20 실측 **10.5MB**
+  //    (문항 본문이 다 들어 있다). 이 함수는 한 번 승인에 **두 번** 불린다(가상·진짜).
+  //    그래서 그 학년·그 나라 앞자리로 좁혀 읽는다 — 같은 실측에서 `AU_y4` 는 **1.9MB**.
+  //    ⚠️ 앞자리라 `AU_y1` 은 `AU_y10`·`AU_y11` 도 딸려 온다. 넉넉히 읽는 것이라 셈은 안 틀린다
+  //       (열쇠가 **있나**만 묻는다).
+  const 앞자리 = `${풀.country}_y${풀.year}`;
+  const 있는칸 = await 칸열쇠읽기(앞자리);
 
   let us = users ? (Array.isArray(users) ? users : Object.values(users)) : [];
   us = us.filter(u => u && typeof u === 'object' && u.role === 'student' && u.id);
   const 본 = new Set(); const 하나씩 = [];
   for (const u of us) { if (본.has(u.id)) continue; 본.add(u.id); 하나씩.push(u); }
 
+  const 있는열쇠 = Object.keys(있는칸 || {});
+  const 칸들 = new Set(있는열쇠);
+  칸들.add(칸);                                        // 가상 저장 — 이 칸
+
+  // ⛔ **가상 저장은 이 칸 하나가 아니다.** 공통 칸을 세우면 홈페이지가 반 빈 칸도 함께
+  //    세운다(`_ensureGroupPlaceholders`). 그것을 안 세면 멀쩡한 승인이 「2명이 봅니다」로 막힌다.
+  const 계획 = await 세울빈칸들(칸, 있는열쇠, 하나씩);
+  if (가상) for (const b of 계획.칸들) 칸들.add(b.칸);
+
   const 받는이 = [];
   for (const u of 하나씩) {
     if (+u.year !== 풀.year) continue;
     const c = u.country || 'AU';
     if (c !== 풀.country) continue;
-    const g = (u.group || '').trim();
+    const g = 반정리(u.group);                         // index.html 의 sanitizeGroup 과 같게
     const k1 = 칸이름(u.year, c, 풀.period, g);
     const k2 = g ? 칸이름(u.year, c, 풀.period, '') : null;
     const 본다 = 칸들.has(k1) ? k1 : (k2 && 칸들.has(k2) ? k2 : null);
@@ -187,13 +376,18 @@ async function 수신자확인(칸, 학생id) {
   const 시험학생 = !!(대상 && 대상.isTest);
   const 재는것 = 시험학생 ? 시험 : 운영;
 
-  if (재는것.length === 1 && 재는것[0] === 학생id) return { ok: true, 받는이: 재는것 };
+  if (재는것.length === 1 && 재는것[0] === 학생id)
+    return { ok: true, 받는이: 재는것, 세울칸들: 계획.칸들 };
+
+  // 막을 때는 **왜 그 아이가 딸려 왔는지**를 같이 보인다. 「2명이 봅니다」만으로는 못 고친다.
+  const 곁들임 = 계획.막은까닭 ? ` — ${계획.막은까닭}` : '';
   return {
     ok: false,
     받는이: 재는것,
+    세울칸들: 계획.칸들,
     까닭: 재는것.length === 0
       ? `이 칸을 볼 학생이 없습니다(${학생id} 가 이 칸을 안 봅니다)`
-      : `이 칸을 ${재는것.length}명이 봅니다: ${재는것.join(', ')}`
+      : `이 칸을 ${재는것.length}명이 봅니다: ${재는것.join(', ')}${곁들임}`
   };
 }
 
@@ -295,6 +489,30 @@ exports.approveTsAssignment = onCall({ region: 지역 }, async (req) => {
   if (옛배정 && 옛배정.everPublished)
     return 되돌리기('이미 공개된 적 있는 배정이 있습니다.');
 
+  // ── 5.5 반 빈 칸을 **진짜로 세운다** (2026-09-20)
+  // ⛔ 3 에서 「가상으로는 괜찮다」를 봤을 뿐이다. 세우지 않고 6 으로 가면
+  //    반 아이가 이 TS 를 **진짜로 받는다.**
+  // ⛔ 6 의 묶음(update)에 넣으면 안 된다 — 그 사이에 그 반의 **진짜 숙제**가 들어왔을 때
+  //    통째로 덮어쓴다. 홈페이지와 같이 **transaction 으로 「아직 비었을 때만」** 세운다.
+  const 세운칸 = [], 못세운칸 = [];
+  for (const b of 수신.세울칸들 || []) {
+    try {
+      const r = await db().ref(`${뿌리}/homeworkSets/${b.칸}`)
+        .transaction(cur => (cur === null ? b.값 : undefined));   // 비었을 때만
+      if (r && r.committed) 세운칸.push(b.칸);
+      else 못세운칸.push({ 칸: b.칸, 까닭: '그 사이에 칸이 생겼습니다(그것을 남깁니다)' });
+    } catch (e) {
+      못세운칸.push({ 칸: b.칸, 까닭: e.code || e.message });
+    }
+  }
+
+  // ── 5.6 **진짜 상태로** 다시 센다. 여기서는 가상을 안 쓴다.
+  // 5.5 가 하나라도 못 세웠으면 그 아이가 이 칸을 보게 된다 ⇒ 써서는 안 된다.
+  const 다시 = await 수신자확인(칸, 학생, { 가상: false });
+  if (!다시.ok) {
+    return 되돌리기(`반 빈 칸을 세운 뒤에도 수신자가 하나가 아닙니다 — ${다시.까닭}`);
+  }
+
   // ── 6. 한 번의 update — 하나라도 막히면 다 막힌다(그게 맞다)
   const 칸값 = await 읽기(`${뿌리}/homeworkSets/${칸}`);
   const 풀 = 칸풀기(칸);
@@ -314,6 +532,7 @@ exports.approveTsAssignment = onCall({ region: 지역 }, async (req) => {
   묶음[`${OPS}/approval/${requestId}/상태`] = 'written';
   묶음[`${OPS}/approval/${requestId}/assignmentId`] = assignmentId;
   묶음[`${OPS}/approval/${requestId}/쓴시각`] = 이제();
+  묶음[`${OPS}/approval/${requestId}/세운반빈칸`] = 세운칸;        // 무엇을 함께 세웠는지 남긴다
   묶음[`${반잠금}/상태`] = 'written';
   묶음[`${아이잠금}/상태`] = 'written';
   묶음[`${OPS}/assigned/${학생}/${주차}/${assignmentId}`] = {
@@ -336,7 +555,10 @@ exports.approveTsAssignment = onCall({ region: 지역 }, async (req) => {
   }
 
   // ── 7. 다시 읽어 대조 — 「했다」는 이것뿐이다
-  return await 확인(requestId, 칸, 학생, 주차, 셈한해시, meta);
+  const 결 = await 확인(requestId, 칸, 학생, 주차, 셈한해시, meta);
+  if (세운칸.length) 결['세운반빈칸'] = 세운칸;
+  if (못세운칸.length) 결['못세운반빈칸'] = 못세운칸;
+  return 결;
 });
 
 /** 서버에 실제로 들어간 것을 **다시 읽어** 해시가 맞는지 본다. */
@@ -423,4 +645,7 @@ exports.onTsPublished = onValueUpdated(
   });
 
 // 시험에서 쓴다(배포에는 영향 없다)
-exports._속 = { 초안검사, 칸이름, 칸풀기, 주차풀기, 수신자확인 };
+exports._속 = { 초안검사, 칸이름, 칸풀기, 주차풀기, 주차이름, 수신자확인,
+                반정리, 주차크거나같나, 오늘주차, 시드니날짜, 빈칸값, 세울빈칸들,
+                열쇠범위, 범위안인가,
+                읽기바꾸기: (fn) => { _읽개 = fn || 기본읽기; } };
