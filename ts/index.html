@@ -325,10 +325,13 @@ function 요일배열(v){
 }
 /** 오늘부터 며칠 뒤가 그 아이 수업인가. 요일이 없으면 999(맨 아래). */
 function 며칠뒤(days){
+  // ⛔ 무엇이 들어와도 안 터져야 한다. 이 값으로 **배정 주차**를 셈하므로, 여기서 터지면
+  //    아이 화면이 통째로 안 뜬다. 모르면 999(= 요일 없음)로 조용히 물러난다.
+  const 목록 = 요일배열(days);
   const 오늘 = 요일차례[시드니지금().getDay()];
   const 나 = 요일차례.indexOf(오늘);
   let 가장 = 999;
-  for (const d of days) {
+  for (const d of 목록) {
     const i = 요일차례.indexOf(d);
     if (i < 0) continue;
     가장 = Math.min(가장, (i - 나 + 7) % 7);
@@ -400,6 +403,24 @@ function 주차옮기기(w, 주수){
 
 function 앞주차(w){ return 주차옮기기(w, -1); }
 function 다음주차(w){ return 주차옮기기(w, 1); }
+/**
+ * 그 아이의 **배정 주차**와 **분석 주차**.
+ *
+ * ⛔⛔ 달력 한 주를 모두에게 똑같이 쓰면 안 된다 — **아이마다 수업일이 다르다.**
+ *    원장님 규칙 = 「아이별로 수업 이후에 작업하면 **다음 주**에 들어간다」
+ *      · 배정 = 그 아이의 **다음 수업**이 든 주
+ *      · 분석 = 그 앞 주 (방금 풀어 낸 것)
+ * ⛔ 수업 요일이 없으면 **셈하지 않는다.** 짐작해 넣으면 엉뚱한 칸에 숙제가 들어간다.
+ */
+function 아이주차(days){
+  const 며칠 = 며칠뒤(days);
+  if (며칠 === 999) return null;                 // 요일을 모른다 — 짐작하지 않는다
+  const 이제 = 시드니지금();
+  const 다음수업 = new Date(이제.getFullYear(), 이제.getMonth(), 이제.getDate() + 며칠);
+  const 배정 = 이번주차(다음수업);
+  return { 배정, 분석: 앞주차(배정), 다음수업, 며칠 };
+}
+
 function 칸이름(s, 주차, 반붙임){
   const g = (s.group || '').trim();
   const c = s.country || 'AU';
@@ -542,8 +563,21 @@ async function 아이고르기(sid){
   const 통 = document.getElementById('자세히');
   통.textContent = '읽는 중…';
 
-  const 분석 = 앞주차(이번주차());
-  const 배정 = 이번주차();
+  const 주차 = 아이주차(s._days);
+  if (!주차) {
+    통.innerHTML = '<div class="알림">📅 <b>' + 글(s.name || s.id)
+      + ' 의 수업 요일이 아직 없습니다.</b>'
+      + '<div class="작게" style="margin-top:4px">요일을 모르면 <b>어느 주에 낼 숙제인지</b>를 '
+      + '셈할 수 없습니다. 홈페이지의 <b>학생 관리</b>에서 수업 요일을 적어 주십시오'
+      + '(「금」 또는 「fri」 · 여럿이면 「월/수」).</div></div>';
+    document.getElementById('설정판').style.display = 'none';
+    document.getElementById('초안판').style.display = 'none';
+    document.getElementById('리포트판').style.display = 'none';
+    document.getElementById('이력판').style.display = 'none';
+    return;
+  }
+  const 분석 = 주차.분석;
+  const 배정 = 주차.배정;
 
   // 칸 — 반 칸이 없으면 학년 공통으로 내려간다(홈페이지와 같은 폴백)
   let 칸 = null, 칸값 = null;
@@ -778,7 +812,7 @@ async function 초안부탁(){
   try {
     await db.ref(OPS + '/req/' + rid).set({
       subject: 'TS', 갈래: '초안',
-      학생: 고른아이.id, 분석주차: 앞주차(이번주차()), 배정주차: 주차,
+      학생: 고른아이.id, 분석주차: 앞주차(주차), 배정주차: 주차,
       하루문항: 하루, 일수: 일수, 중심: 중심,
       배분모드: 배분 ? '표' : '골고루', 배분: 배분,
       revision: ((지난판(고른아이.id, 주차) || 0) + 1),
@@ -867,7 +901,7 @@ async function 빼고다시(){
   try {
     await db.ref(OPS + '/req/' + rid).set({
       subject: 'TS', 갈래: '초안',
-      학생: 초안.student, 분석주차: 앞주차(이번주차()), 배정주차: 주차,
+      학생: 초안.student, 분석주차: 앞주차(주차), 배정주차: 주차,
       하루문항: ((초안['설정'] || {})['하루문항']) || null,
       일수: ((초안['설정'] || {})['일수']) || null,
       중심: ((초안['설정'] || {})['중심레벨']) || null,
@@ -1144,7 +1178,8 @@ function 리포트복사(){
  */
 async function 리포트내려받기(){
   if (!리포트 || !리포트.md || !고른아이) return;
-  const 분석 = 앞주차(이번주차());
+  const 주차 = 아이주차(고른아이._days);
+  const 분석 = 주차 ? 주차.분석 : 앞주차(이번주차());
   const 이름 = (고른아이.name || 고른아이.id) + '_' + 분석 + '.md';
   const blob = new Blob([리포트.md], {type:'text/markdown;charset=utf-8'});
   const a = document.createElement('a');
@@ -1156,7 +1191,8 @@ async function 리포트내려받기(){
   try {
     await db.ref(OPS + '/req').push({
       갈래: '시험지확정', 학생: 고른아이.id, 분석주차: 분석,
-      배정주차: 이번주차(), 상태: '대기', 부탁시각: new Date().toISOString()
+      배정주차: (주차 ? 주차.배정 : 이번주차()), 상태: '대기',
+      부탁시각: new Date().toISOString()
     });
     알림띄우기('⬇ 내려받았습니다. 확정 부탁을 PC 일꾼에게 보냈습니다.');
   } catch (e) {
