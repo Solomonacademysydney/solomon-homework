@@ -51,6 +51,12 @@ header{
   display:flex; align-items:center; gap:12px; flex-wrap:wrap;
 }
 header h1{font-size:16px; margin:0; font-weight:700; letter-spacing:-.2px}
+.돌아가기{
+  font-size:13px; font-weight:700; text-decoration:none; white-space:nowrap;
+  padding:6px 12px; border-radius:7px; border:1px solid var(--선);
+  background:var(--바탕); color:var(--짙은파랑);
+}
+.돌아가기:hover{border-color:var(--파랑); color:var(--파랑)}
 .칸{max-width:1180px; margin:0 auto; padding:16px}
 .판{background:var(--판); border:1px solid var(--선); border-radius:10px; padding:14px 16px; margin-bottom:14px}
 .판 h2{font-size:15px; margin:0 0 10px; font-weight:700}
@@ -128,11 +134,19 @@ textarea{background:var(--바탕); color:var(--글); border:1px solid var(--선)
       이 창의 원장 로그인을 덮습니다. 그때는 학생 화면에서 <b>원장 로그인을 다시</b> 하시고
       아래 단추를 누르십시오.
     </p>
-    <p><button class="주" onclick="location.reload()">다시 확인</button></p>
+    <!-- ⛔ 잠금막이 화면을 통째로 덮는다. 나가는 길을 **여기에도** 둬야 갇히지 않는다. -->
+    <p class="줄" style="justify-content:center">
+      <button class="주" onclick="location.reload()">다시 확인</button>
+      <a class="돌아가기" href="/" onclick="return 홈으로(event)">← 홈페이지</a>
+    </p>
   </div>
 </div>
 
 <header>
+  <!-- ⛔ [2026-09-19] 나가는 길이 없어서 갇히셨다. 이 화면은 **새 창**으로 열리므로
+       「뒤로」가 안 듣는다(올 데가 없는 새 창이다). -->
+  <a href="/" class="돌아가기" onclick="return 홈으로(event)"
+     title="홈페이지로 — 이 창이 새 창이면 창을 닫습니다">← 홈페이지</a>
   <h1>TS 교사 화면</h1>
   <span id="누구" class="딱지">확인 중</span>
   <span id="일꾼딱지" class="딱지">PC 일꾼 —</span>
@@ -303,6 +317,36 @@ firebase.auth().onAuthStateChanged(u => {
   풀기(u.uid);
   첫판();
 });
+
+/**
+ * 홈페이지로 돌아간다.
+ *
+ * ⛔⛔ 그냥 `/` 로 가면 안 된다 — 홈페이지는 열릴 때 **무조건 익명 로그인**을 한다
+ *    (`index.html` 의 `signInAnonymously()`). 홈페이지 창이 따로 열려 있으면
+ *    **그 창의 원장 로그인이 풀린다.** 그래서 **이 창을 닫는 쪽을 먼저** 해 본다.
+ * ⛔ 새 창이 아니면(창을 못 닫으면) 그때 홈페이지로 간다 — 그 경우엔 어차피
+ *    이 창 하나뿐이라 덮을 로그인이 없다.
+ */
+function 홈으로(e){
+  // 이 창에 「뒤로 갈 데」가 없으면 = 새 창으로 열린 것
+  const 새창 = (history.length <= 1);
+  if (새창) {
+    e.preventDefault();
+    window.close();
+    // 브라우저가 못 닫게 막는 일이 있다 — 그때는 알려 드리고 그냥 간다
+    setTimeout(() => {
+      if (!document.hidden) {
+        if (confirm('이 창을 못 닫았습니다.\n\n홈페이지로 옮겨 갈까요?\n'
+                  + '⛔ 홈페이지 창이 따로 열려 있으면 그 창의 로그인이 풀립니다.\n'
+                  + '   그 창이 있다면 「취소」를 누르고 이 창만 닫아 주십시오.')) {
+          location.href = '/';
+        }
+      }
+    }, 300);
+    return false;
+  }
+  return true;                       // 같은 창에서 온 것이니 그냥 뒤로 간다
+}
 
 // ─────────────────── 날짜 · 요일 ───────────────────
 const 요일말 = {mon:'월', tue:'화', wed:'수', thu:'목', fri:'금', sat:'토', sun:'일'};
