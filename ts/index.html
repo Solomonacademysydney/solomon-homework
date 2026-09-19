@@ -439,6 +439,19 @@ function 칸이름(s, 주차, 반붙임){
 async function 첫판(){
   await 일꾼상태();
   await 학생읽기();
+  // 홈페이지에서 「TS ↗」로 오시면 `?student=…` 가 붙는다 — 그 아이를 바로 연다.
+  //   ⛔ 없는 아이면 **조용히 넘어간다.** 억지로 열면 엉뚱한 아이를 보시게 된다.
+  try {
+    const 물음 = new URLSearchParams(location.search);
+    const sid = 물음.get('student');
+    if (sid && 학생들.some(x => x.id === sid)) await 아이고르기(sid);
+    else if (sid) {
+      const 경고 = document.getElementById('경고판');
+      경고.style.display = '';
+      경고.innerHTML += '<div class="알림">⚠️ <b>' + 글(sid)
+        + '</b> 는 이 화면이 보는 아이가 아닙니다(TS 를 받는 다섯 아이만 나옵니다).</div>';
+    }
+  } catch (e) { console.warn('[주소의 학생]', e); }
 }
 
 async function 다시읽기(){
