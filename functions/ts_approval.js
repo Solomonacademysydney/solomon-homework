@@ -543,7 +543,15 @@ exports.approveTsAssignment = onCall({ region: 지역 }, async (req) => {
     묶음[`${뿌리}/homeworkSets/${칸}/country`] = 풀.country;
     묶음[`${뿌리}/homeworkSets/${칸}/period`] = 풀.period;
     if (풀.group) 묶음[`${뿌리}/homeworkSets/${칸}/group`] = 풀.group;
-    // ⛔ `sets` 와 `published` 는 **만들지 않는다** — 수학의 것이다.
+    // ⛔ `sets` 는 **만들지 않는다** — 수학의 것이다.
+    // ⛔⛔ `published:false` 는 **만든다** (2026-09-20 원장님 「한 줄 고쳐라」).
+    //    아이 화면의 문 `visibleHw`(index.html:2667) 는 `published === false` 일 때만 막고
+    //    **없으면 보인다**(:2665 「하위호환」). 그래서 이 줄이 없으면 승인하는 순간 —
+    //    원장님이 공개 단추를 누르기 전에 — 아이가 TS 를 본다. 홈페이지가 칸을 새로 만들 때는
+    //    늘 `published:false` 로 만든다(index.html:15026 · :6395 · :5999) — 그것과 같게.
+    //    ⇒ 승인 → 수학 올리기 → 공개 **한 번** 이 원장님 습관 그대로 된다.
+    //    칸이 **이미 있으면** 건드리지 않는다(수학이 이미 공개돼 있으면 그대로 공개 · everPublished 도 위에서 그 값으로 셈).
+    묶음[`${뿌리}/homeworkSets/${칸}/published`] = false;
   }
   묶음[`${OPS}/approval/${requestId}/상태`] = 'written';
   묶음[`${OPS}/approval/${requestId}/assignmentId`] = assignmentId;
