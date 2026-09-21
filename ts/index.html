@@ -221,6 +221,7 @@ textarea{background:var(--바탕); color:var(--글); border:1px solid var(--선)
     <div class="줄" style="margin-bottom:8px">
       <button id="복사단추" onclick="리포트복사()">📋 복사</button>
       <button id="MD단추" class="주" onclick="리포트내려받기()">⬇ MD (확정)</button>
+      <button id="새로단추" onclick="리포트새로()" title="이 PC 에서 수집·공책·리포트를 다시 만들어 올립니다">🔄 새로 만들기</button>
       <span class="작게 흐림" id="리포트기준"></span>
     </div>
     <div id="리포트알림"></div>
@@ -268,6 +269,8 @@ let 잠겼나 = true;
 let 학생들 = [];
 let 고른아이 = null;
 let 리포트 = null;          // {md, 기준시각, sourceRevision, …}
+let 현재주차 = null;        // {분석, 배정} — 고른 아이의 주차(「새로 만들기」가 쓴다)
+let 새로감시 = null;        // 「새로 만들기」 진행을 읽는 시계
 
 // ─────────────────── 읽기 (경로를 좁혀서만) ───────────────────
 async function 읽기(경로){
@@ -643,6 +646,7 @@ async function 아이고르기(sid){
   }
   const 분석 = 주차.분석;
   const 배정 = 주차.배정;
+  현재주차 = {분석: 분석, 배정: 배정};
 
   // 칸 — 반 칸이 없으면 학년 공통으로 내려간다(홈페이지와 같은 폴백)
   let 칸 = null, 칸값 = null;
@@ -1264,6 +1268,54 @@ async function 리포트내려받기(){
     알림띄우기('⬇ 내려받았습니다. 다만 **확정 부탁을 못 보냈습니다** (' + (e.code || e.message)
       + '). PC 에서 `시험지.py --확정` 을 직접 돌리십시오.', true);
   }
+}
+
+// ─────────────────── 「🔄 새로 만들기」 — 이 PC 의 단추.py 를 띄운다 ───────────────────
+//  화면은 부탁만 던진다(ts:// 주소 → 윈도우가 C:\TS작업\일꾼\단추.py 를 띄운다 · 등록은 단추_등록.ps1).
+//  수집·공책·리포트·올리기는 PC 가 하고, 진행을 ops/pc/단추/<아이> 에 적으면 화면이 3초마다 읽는다.
+//  ⛔ 창고가 있는 PC 에서 연 화면에서만 듣는다. 다른 기기에서는 5분 뒤 「소식이 없습니다」.
+async function 리포트새로(){
+  if (!고른아이 || !현재주차) return;
+  const sid = 고른아이.id, 분석 = 현재주차.분석, 배정 = 현재주차.배정;
+  const b = document.getElementById('새로단추');
+  const 알림 = document.getElementById('리포트알림');
+  const 풀기 = () => { clearInterval(새로감시); 새로감시 = null; b.disabled = false; b.textContent = '🔄 새로 만들기'; };
+  if (새로감시) clearInterval(새로감시);
+  b.disabled = true; b.textContent = '⏳ PC 가 만드는 중…';
+  const 진행 = document.createElement('div');
+  진행.className = '알림';
+  진행.textContent = '⏳ PC 프로그램을 띄웠습니다. 크롬이 「열까요?」 하고 물으면 「열기」를 누르십시오.';
+  알림.appendChild(진행);
+  const 부른때 = Date.now();
+  location.href = 'ts://report?student=' + encodeURIComponent(sid)
+    + '&analysis=' + encodeURIComponent(분석) + '&assign=' + encodeURIComponent(배정);
+  const 말 = {수집: '수집 중 — 파이어베이스에서 제출을 읽습니다', 공책: '공책을 다시 만드는 중',
+              리포트: '리포트를 쓰는 중', 올리기: '서버에 올리는 중'};
+  새로감시 = setInterval(async () => {
+    if (!고른아이 || 고른아이.id !== sid) { 풀기(); return; }      // 그새 다른 아이를 골랐다
+    const p = await 읽기(OPS + '/pc/단추/' + sid);
+    const 시각 = p && p['시각'] ? new Date(p['시각']).getTime() : 0;
+    const 새것 = 시각 >= 부른때 - 60000;                            // 지난번 부탁의 기록은 무시
+    if (새것 && p['상태'] === '끝') {
+      풀기();
+      await 리포트읽기(sid, 분석);
+      알림띄우기('✅ 새 리포트가 올라왔습니다(' + (p['말'] || '') + ').');
+      return;
+    }
+    if (새것 && p['상태'] === '실패') {
+      풀기();
+      진행.className = '알림 빨강';
+      진행.textContent = '⛔ PC 에서 실패했습니다: ' + (p['말'] || '') + ' — PC 의 검은 창을 보십시오.';
+      return;
+    }
+    if (새것 && 말[p['상태']]) 진행.textContent = '⏳ ' + 말[p['상태']] + '…';
+    if (Date.now() - 부른때 > 5 * 60000) {
+      풀기();
+      진행.className = '알림 빨강';
+      진행.textContent = '⛔ 5분이 지나도 PC 에서 소식이 없습니다. 이 단추는 창고가 있는 PC 에서 연 화면에서만 듣습니다. '
+        + '그 PC 라면 「단추_등록.ps1」이 등록돼 있는지 보십시오.';
+    }
+  }, 3000);
 }
 
 function 알림띄우기(말, 나쁨){
