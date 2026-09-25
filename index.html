@@ -3360,11 +3360,16 @@ async function _칸맞추기(key) {
   }
   try {
     const snap = await window.FB_REF.child('homeworkSets/' + key).once('value');
+    const 칸 = snap.exists() ? snap.val() : null;
+    // [2026-09-23] Firebase 는 빈 배열을 저장하지 않는다 — 세트를 다 지운 칸은 `sets` 가 **없다.**
+    //   getStore() 는 이것을 `sets: []` 로 세우지만, 여기서 돌려주는 날것은 그 보정을 안 지나
+    //   JSON 등록(doImportHwJson)이 `hw.sets.length` 에서 터졌다(하경 C1 W7). 돌려주기 전에 세운다.
+    if (칸 && typeof 칸 === 'object' && 칸.sets == null) 칸.sets = [];
     const store = getStore();
-    if (snap.exists()) store.homeworkSets[key] = snap.val();
+    if (칸) store.homeworkSets[key] = 칸;
     else delete store.homeworkSets[key];
     saveStore(store);
-    return snap.exists() ? snap.val() : null;
+    return 칸;
   } catch (e) {
     console.error('[칸맞추기] 못 읽었습니다 —', key, e.code || e.message);
     return undefined;
@@ -15735,6 +15740,7 @@ async function doImportHwJson(yr) {
   }
 
   const hw = store.homeworkSets[key];
+  if (hw.sets == null) hw.sets = [];   // [2026-09-23] 세트를 다 지운 칸엔 sets 가 없다 (_칸맞추기 에서도 세우지만 여기서 한 번 더)
   const addedSets = [];
   const addedIdxs = [];
 
