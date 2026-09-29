@@ -161,6 +161,12 @@ textarea{background:var(--바탕); color:var(--글); border:1px solid var(--선)
 
   <div class="판">
     <h2>학생 — 내일 수업인 아이가 맨 위</h2>
+    <div class="줄" style="margin-bottom:8px">
+      <label class="작게">📅 기준 날짜
+        <input id="기준날짜" type="date" onchange="기준날짜바꾸기(this.value)"></label>
+      <button id="오늘로단추" onclick="기준날짜바꾸기('')" style="display:none">↺ 오늘로</button>
+      <span class="작게 흐림" id="기준말">오늘 기준입니다. 지난 날짜를 고르면 그날 기준으로 주차를 다시 셉니다.</span>
+    </div>
     <div id="목록">읽는 중…</div>
   </div>
 
@@ -304,6 +310,7 @@ function 풀기(uid){
   document.getElementById('누구').textContent = '원장님 (' + uid.slice(0,6) + '…)';
   document.getElementById('누구').className = '딱지 좋음';
   document.querySelectorAll('button').forEach(b => { b.disabled = false; });
+  보기전용잠금();
 }
 
 firebase.auth().onAuthStateChanged(u => {
@@ -361,8 +368,53 @@ const 한글요일 = { '월':'mon', '화':'tue', '수':'wed', '목':'thu', '금'
                 '월요일':'mon', '화요일':'tue', '수요일':'wed', '목요일':'thu',
                 '금요일':'fri', '토요일':'sat', '일요일':'sun' };
 
-function 시드니지금(){
+// [2026-09-29] 「기준 날짜」 — 고르면 이 화면의 「오늘」이 그날이 된다(지난 주 보기).
+//   ⛔ 보기 전용이다. 고른 동안은 부탁·승인·새로 만들기를 잠근다(`보기전용()`).
+//   서버에는 아무것도 안 쓴다 — 홈페이지의 currentPeriod 도 안 바뀐다.
+let 기준날짜 = '';           // 'YYYY-MM-DD' · 빈 글자면 진짜 오늘
+function 진짜오늘(){
   return new Date(new Date().toLocaleString('en-US', {timeZone: 시드니}));
+}
+function 시드니지금(){
+  if (기준날짜) {
+    const [y, m, d] = 기준날짜.split('-').map(Number);
+    return new Date(y, m - 1, d, 12, 0, 0);
+  }
+  return 진짜오늘();
+}
+function 보기전용(){ return !!기준날짜; }
+function 날짜글(d){
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+/** 보기 전용이면 나가는 단추를 잠근다. `풀기()` 가 단추를 다 열므로 그 뒤에도 부른다. */
+function 보기전용잠금(){
+  if (!보기전용()) return;
+  for (const id of ['부탁단추', '승인단추', '빼기단추', '빼기취소', '새로단추']) {
+    const b = document.getElementById(id);
+    if (b) b.disabled = true;
+  }
+  const m = document.getElementById('승인말');
+  if (m) m.textContent = '지난 날짜를 보는 중입니다 — 「↺ 오늘로」를 누르셔야 승인할 수 있습니다.';
+}
+async function 기준날짜바꾸기(v){
+  if (v && v === 날짜글(진짜오늘())) v = '';      // 오늘을 고르시면 그냥 오늘 보기
+  기준날짜 = v || '';
+  document.getElementById('기준날짜').value = 기준날짜 || 날짜글(진짜오늘());
+  document.getElementById('오늘로단추').style.display = 기준날짜 ? '' : 'none';
+  const 말 = document.getElementById('기준말');
+  말.innerHTML = 기준날짜
+    ? '<b style="color:#b45309">' + 기준날짜 + ' 기준으로 보는 중 — 보기 전용</b> · 숙제 만들기·승인은 잠겼습니다.'
+    : '오늘 기준입니다. 지난 날짜를 고르면 그날 기준으로 주차를 다시 셉니다.';
+  const 다시열아이 = 고른아이 && 고른아이.id;
+  if (!잠겼나) { if (typeof 풀기단추 === 'function') 풀기단추(); }
+  await 학생읽기();
+  if (다시열아이 && 학생들.some(x => x.id === 다시열아이)) await 아이고르기(다시열아이);
+  보기전용잠금();
+}
+/** 보기 전용을 풀 때 단추를 다시 연다 — `풀기()` 와 같은 규칙(잠금막 안 단추는 그대로). */
+function 풀기단추(){
+  document.querySelectorAll('button').forEach(b => { if (!b.closest('#잠금막')) b.disabled = false; });
+  if (typeof 승인단추새로 === 'function') 승인단추새로();
 }
 // ⛔ `days` 는 배열일 때도 있고 글자일 때도 있다(실측: RYAN 은 'mon').
 //    한쪽만 보면 그 아이가 목록에서 늘 맨 아래로 간다.
@@ -484,6 +536,7 @@ function 칸이름(s, 주차, 반붙임){
 
 // ─────────────────── 첫판 ───────────────────
 async function 첫판(){
+  document.getElementById('기준날짜').value = 날짜글(진짜오늘());
   await 일꾼상태();
   await 학생읽기();
   // 홈페이지에서 「TS ↗」로 오시면 `?student=…` 가 붙는다 — 그 아이를 바로 연다.
@@ -569,7 +622,9 @@ async function 학생읽기(){
   const 커리 = await 읽기(OPS + '/curriculum');       // 일꾼이 올리는 「TS 를 받는 아이」 명단
 
   let us = users ? (Array.isArray(users) ? users : Object.values(users)) : [];
-  us = us.filter(u => u && typeof u === 'object' && u.role === 'student' && u.id);
+  // [2026-09-29] 홈페이지 학생 관리에서 퇴원(`status:'inactive'`)한 아이는 뺀다.
+  //   예전엔 이 값을 안 읽어 키이라가 퇴원 뒤에도 여기 떴다.
+  us = us.filter(u => u && typeof u === 'object' && u.role === 'student' && u.id && u.status !== 'inactive');
 
   // ⛔ 같은 id 가 두 줄 있는 경우가 실제로 있다(실측: Jasper05). 한 번만 센다.
   const 본 = new Set(); const 하나씩 = [];
@@ -849,6 +904,7 @@ function 설정되돌리기(){
 
 async function 초안부탁(){
   if (잠겼나 || !고른아이) return;
+  if (보기전용()) return;   // 지난 날짜 보기 중에는 안 나간다
   const 알림 = document.getElementById('설정알림');
   const 하루 = parseInt(document.getElementById('설정_하루').value, 10);
   const 일수 = parseInt(document.getElementById('설정_일수').value, 10);
@@ -962,6 +1018,7 @@ function 빼기단추새로(){
 
 async function 빼고다시(){
   if (잠겼나 || !초안 || !뺄것.size) return;
+  if (보기전용()) return;   // 지난 날짜 보기 중에는 안 나간다
   const 알림 = document.getElementById('초안알림');
   const b = document.getElementById('빼기단추');
   b.disabled = true; b.textContent = '⏳ 보내는 중…';
@@ -1140,10 +1197,12 @@ function 승인단추새로(){
   b.disabled = false;
   m.textContent = '판 r' + (초안.revision || '?') + ' · '
     + ((초안.ts || {}).questions || []).length + '문항을 ' + (초안['칸'] || '') + ' 에 올립니다.';
+  보기전용잠금();
 }
 
 async function 승인하기(){
   if (잠겼나 || !초안 || !초안.sha) return;
+  if (보기전용()) return;   // 지난 날짜 보기 중에는 안 나간다
   const qs = (초안.ts || {}).questions || [];
   const 그림 = qs.filter(q => String(q.figure || '').trim()).length;
   // ⛔ 누르기 전에 **무엇이 나가는지** 다시 보인다. 숫자만 보고 누르는 단추는 단추가 아니다.
@@ -1304,6 +1363,7 @@ async function 리포트내려받기(){
 //  ⛔ 창고가 있는 PC 에서 연 화면에서만 듣는다. 다른 기기에서는 5분 뒤 「소식이 없습니다」.
 async function 리포트새로(){
   if (!고른아이 || !현재주차) return;
+  if (보기전용()) return;   // 지난 날짜 보기 중에는 안 나간다
   const sid = 고른아이.id, 분석 = 현재주차.분석, 배정 = 현재주차.배정;
   const b = document.getElementById('새로단추');
   const 알림 = document.getElementById('리포트알림');
