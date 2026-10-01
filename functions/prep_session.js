@@ -337,3 +337,69 @@ exports.prepSubmit = onCall({ region: S.REGION }, async (req) => {
 
 // 시험용(일꾼 동작에는 안 쓰인다)
 exports._internals = { sessionOf, targetStudent, stripForStudent, safeKey, SESSION_MS, gradeSet, periodOf };
+
+// ─────────────────────────────────────────────
+// ⑥ [4단계 · 2026-10-01] 제작 주문 확정 — 원장만
+//   지시서: 제작 방향 확정 시 커리·결과 기준 시각·규격 판·수업일·검수 기준 스냅샷을 고정하고 주문을 만든다.
+//           확정 판은 수정 불가. 판 변경 시 새 판과 관련 초안 무효화 기록. 자유 지시 해석 불가는 보류.
+//   쓰는 곳: plans/<planId>/revisions/<판>(만들기만) · plans/<planId>/latest · jobs/<jobId> · drafts/<id>.invalidatedByRev
+//   ⛔ 판은 덮지 않는다(트랜잭션으로 「없을 때만」). 옛 판 주문: 대기 → 취소 · 일꾼이 잡은 것 → 취소 요청(일꾼이 멈춘다).
+// ─────────────────────────────────────────────
+const O = require('./order_core');   // 화면(prep/order_core.js)과 글자째 같은 파일
+const SPEC_VERSION = 'order-v1', QA_VERSION = 'qa-v1';
+exports.prepConfirmOrder = onCall({ region: S.REGION }, async (req) => {
+  if (!req.auth || req.auth.uid !== S.OPERATOR_UID) throw new HttpsError('permission-denied', 'OPERATOR-ONLY');
+  const d = req.data || {};
+  const sid = safeKey(d.studentId, 'studentId');
+  const lessonDate = String(d.lessonDate || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(lessonDate)) throw new HttpsError('invalid-argument', 'BAD-INPUT:lessonDate');
+  const settings = d.settings;
+  if (!settings || typeof settings !== 'object') throw new HttpsError('invalid-argument', 'BAD-INPUT:settings');
+  let v;
+  try { v = O.validateSettings(settings); } catch (e) { throw new HttpsError('invalid-argument', 'BAD-SETTINGS', { problems: ['설정 꼴이 깨졌습니다'], conflicts: [] }); }
+  if (!v.ok) throw new HttpsError('failed-precondition', 'BAD-SETTINGS', { problems: v.problems, conflicts: v.conflicts });
+  const unresolved = Array.isArray(d.unresolved) ? d.unresolved.filter(x => String(x || '').trim()) : [];
+  if (unresolved.length) throw new HttpsError('failed-precondition', 'FREE-TEXT-UNRESOLVED', { unresolved });
+
+  const db = admin.database();
+  const 학생 = (await db.ref(ROOT + '/students/' + sid).once('value')).val() || {};
+  const curRev = (학생.profile && 학생.profile.currentCurriculum) || null;
+  const 커리 = curRev && 학생.curricula ? 학생.curricula[curRev] : null;
+  const lesson = 커리 && Array.isArray(커리.lessons) ? (커리.lessons.find(l => l && l.date === lessonDate) || null) : null;
+  const now = new Date().toISOString();
+  const planId = sid + '_' + lessonDate.replace(/-/g, '') + '_1';
+  const planRef = db.ref(ROOT + '/plans/' + planId);
+
+  // 판 번호 — latest 를 하나 올린다(동시 확정도 겹치지 않게)
+  const t = await planRef.child('latest').transaction(cur => (Number(cur) || 0) + 1);
+  const rev = Number(t.snapshot.val());
+
+  // 무효로 할 초안 — 이 계획의 옛 판 · 미공개만
+  const 초안 = (await db.ref(ROOT + '/drafts').orderByChild('planId').equalTo(planId).once('value')).val() || {};
+  const invalidated = Object.keys(초안).filter(k => 초안[k] && 초안[k].planId === planId && Number(초안[k].planRev) < rev && 초안[k].published !== true).sort();
+
+  const jobRef = db.ref(ROOT + '/jobs').push();
+  const 판 = {
+    rev, studentId: sid, lessonDate, confirmedAt: now, by: req.auth.uid,
+    settings, thisWeekOnly: Array.isArray(d.thisWeekOnly) ? d.thisWeekOnly.map(String) : [],
+    freeText: String(d.freeText || ''), freeTextApplied: Array.isArray(d.freeTextApplied) ? d.freeTextApplied.map(String) : [],
+    snapshot: { curriculumRev: curRev, curriculumLesson: lesson, resultsAsOf: now, specVersion: SPEC_VERSION, qaVersion: QA_VERSION, lessonDate },
+    spec: O.specFromSettings(settings, { studentId: sid, lessonDate }),
+    jobId: jobRef.key, invalidatedDrafts: invalidated,
+  };
+  const w = await planRef.child('revisions/' + rev).transaction(cur => (cur ? undefined : 판));
+  if (!w.committed) throw new HttpsError('aborted', 'REV-EXISTS');
+  await jobRef.set({ type: 'produce', planId, rev, studentId: sid, lessonDate, status: 'queued', owner: null, createdAt: now });
+
+  // 옛 판 주문 정리 · 초안 무효 표시
+  const 옛주문 = (await db.ref(ROOT + '/jobs').orderByChild('planId').equalTo(planId).once('value')).val() || {};
+  const 고칠 = {};
+  for (const [k, j] of Object.entries(옛주문)) {
+    if (!j || k === jobRef.key || Number(j.rev) >= rev) continue;
+    if (j.status === 'queued') 고칠['jobs/' + k + '/status'] = 'cancelled';
+    else if (j.status === 'running' || j.status === 'claimed') 고칠['jobs/' + k + '/status'] = 'cancel-requested';
+  }
+  for (const k of invalidated) { 고칠['drafts/' + k + '/invalidatedByRev'] = rev; 고칠['drafts/' + k + '/invalidatedAt'] = now; }
+  if (Object.keys(고칠).length) await db.ref(ROOT).update(고칠);
+  return { ok: true, planId, rev, jobId: jobRef.key, invalidated, spec: 판.spec };
+});

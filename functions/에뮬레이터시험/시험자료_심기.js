@@ -78,6 +78,11 @@ async function 심기(db) {
       sets: { s1: { title: '개인 Set 1', questions: 문항 } } },
     emu5_20261008_1_hw: { studentId: 'emu5', published: false, title: '시험오 다음 주(비공개)', period: W(2), sets: { s1: { title: 'x', questions: 문항 } } },
   });
+  // [4단계] 주간 설정 시험용 — emu5 커리(10-06 화 수업)
+  await db.ref('sol_prep_v1/students/emu5').set({ profile: { currentCurriculum: 'r1' }, curricula: { r1: {
+    long: { startDate: '2026-10-06', targetExamDate: '2026-11-24', holidays: [], bufferWeeks: 1 },
+    short: { remainingClasses: 1, confirmedRange: 'Ch 1-4', examDate: '2026-11-24', examFormat: '객관식' },
+    lessons: [{ date: '2026-10-06', mr: '분수 덧셈', ts: '수열', reviewRatio: 30, targetLevel: 4 }] } } });
 }
 
 (async () => {

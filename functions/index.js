@@ -360,3 +360,4 @@ exports.prepEndSession = _prep.prepEndSession;
 exports.prepListMyAssignments = _prep.prepListMyAssignments;
 exports.prepGetAssignment = _prep.prepGetAssignment;
 exports.prepSubmit = _prep.prepSubmit;
+exports.prepConfirmOrder = _prep.prepConfirmOrder;   // [4단계] 제작 주문 확정(원장만)

@@ -19,7 +19,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js"></script>
 <script src="prep_core.js"></script>
+<script src="order_core.js"></script>
 <style>
 :root{ --바탕:#f7f7f9; --판:#fff; --글:#1c1c1e; --흐린글:#6b6b70; --선:#e3e3e8; --짙은파랑:#2b4c7e; --파랑:#3a6ea5;
   --녹색:#2e7d5b; --주황:#b26a00; --빨강:#b3261e; --보라:#5b21b6; }
@@ -76,7 +78,8 @@ firebase.initializeApp(_EMU ? { apiKey: 'demo-key', authDomain: 'demo-solomon.fi
   projectId: 'demo-solomon', storageBucket: 'demo-solomon.appspot.com' } : 운영설정);
 if (_EMU) {
   firebase.database().useEmulator('127.0.0.1', 9000); firebase.auth().useEmulator('http://127.0.0.1:9099');
-  firebase.storage().useEmulator('127.0.0.1', 9199); document.title = '[시험] ' + document.title;
+  firebase.storage().useEmulator('127.0.0.1', 9199); firebase.app().functions('australia-southeast1').useEmulator('127.0.0.1', 5001);
+  document.title = '[시험] ' + document.title;
   document.addEventListener('DOMContentLoaded', () => { const b = document.createElement('div'); b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;background:#7c2d12;color:#fff;text-align:center;padding:8px;font-weight:900;z-index:99;pointer-events:none'; b.textContent = '🧪 시험 환경 (에뮬레이터) — 운영 자료가 아닙니다'; document.body.appendChild(b); });
 }
 const OPERATOR_UID = '62bxWubzDLMrhHjjv2oNfAQiyaD2';   // index.html 과 같아야 한다
@@ -144,18 +147,21 @@ async function 아이고르기(sid) {
     읽기(뿌리 + '/submissions', 범위(sid + '_')), 읽기(뿌리 + '/submissions', 범위('ts_' + sid + '_')), 읽기(뿌리 + '/weakness/' + sid),
     읽기(새뿌리 + '/students/' + sid + '/profile'), 읽기(새뿌리 + '/students/' + sid + '/curricula'), 읽기(새뿌리 + '/students/' + sid + '/sources'),
     읽기(새뿌리 + '/paperResults/' + sid), 읽기(새뿌리 + '/drafts')]);
+  const plans = await 읽기(새뿌리 + '/plans', 범위(sid + '_'));
   const submissions = Object.assign({}, mr || {}, ts || {});
   const 분석 = C.analyzeHomework({ user: u, periods, homeworkSets: hw, submissions, releases: 판.releases, prepSubs: 판.prepSubs, normAns: C.normAns });
-  아이자료 = { u, win, periods, 분석, weak: weak || {}, profile: prof || {}, curricula: curs || {}, sources: srcs || {}, results: results || {}, drafts: drafts || {} };
+  설정편집 = null;
+  아이자료 = { u, win, periods, 분석, plans: plans || {}, weak: weak || {}, profile: prof || {}, curricula: curs || {}, sources: srcs || {}, results: results || {}, drafts: drafts || {} };
   카드그리기();
 }
 
 function 카드그리기() {
   const a = 아이자료; if (!a) return;
-  const 탭 = ['현황', '종이 시험', '커리·학교 자료'].map(t => `<button class="${t === 고른탭 ? '고름' : ''}" onclick="고른탭='${t}';카드그리기()">${t}</button>`).join('');
+  const 탭 = ['현황', '주간 설정', '종이 시험', '커리·학교 자료'].map(t => `<button class="${t === 고른탭 ? '고름' : ''}" onclick="고른탭='${t}';카드그리기()">${t}</button>`).join('');
   const 검토 = C.needsCurriculumReview(a.sources);
   let 몸 = '';
   if (고른탭 === '현황') 몸 = 현황그리기(a);
+  else if (고른탭 === '주간 설정') 몸 = 설정그리기(a);
   else if (고른탭 === '종이 시험') 몸 = 시험그리기(a);
   else 몸 = 커리그리기(a);
   document.getElementById('카드').innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
@@ -194,6 +200,93 @@ function 현황그리기(a) {
     <div class="섹"><h3>제작 상태</h3>${제작.length ? 제작.map(k => `${글(k)}${무효.includes(k) ? ' <span class="경고">(옛 커리 — 무효)</span>' : ''}`).join(' · ') : '<span class="작게">제작 중인 것 없음</span>'}</div>`;
 }
 function 현재커리(a) { const r = a.profile.currentCurriculum; return r ? a.curricula[r] || null : null; }
+
+// ── 주간 설정 · 제작 주문 (4단계) ──
+const OC = window.OrderCore;
+let 설정편집 = null;   // { lessonDate, settings, base, source, thisWeekOnly:Set, free, 결과, 승인판 }
+/** 이 학생의 가장 최근 **확정** 판(취소 초안·마지막 입력값이 아니다) */
+function 지난승인(a) {
+  let 최근 = null;
+  for (const id of Object.keys(a.plans || {})) {
+    const pl = a.plans[id]; const v = pl && pl.revisions && pl.latest ? pl.revisions[pl.latest] : null;
+    if (v && (!최근 || String(v.lessonDate) > String(최근.lessonDate))) 최근 = v;
+  }
+  return 최근;
+}
+function 설정시작(a, 날) {
+  const 승인 = 지난승인(a), 커리 = 현재커리(a);
+  const r = OC.prefill(승인, 커리, 날);
+  설정편집 = { lessonDate: 날, settings: r.settings, base: JSON.parse(JSON.stringify(r.settings)), source: r.source, thisWeekOnly: new Set(), free: null, 결과: null, 승인판: 승인 ? 승인.rev : null };
+}
+const 칸목록 = [
+  ['mr.units.0.title', 'MR 소단원 제목', 'text'], ['mr.units.0.examples', 'MR 예제 수', 'int'], ['mr.units.0.practice', 'MR 연습 수', 'int'],
+  ['mr.units.0.difficulty', 'MR 난이도', ['basic', 'standard', 'challenge']], ['mr.review.sets', 'MR 종합문제 세트(0=생략)', 'int'], ['mr.review.questions', 'MR 종합문제 문항', 'int'],
+  ['ts.include', 'TS 포함', 'bool'], ['ts.mode', 'TS 소단원별/합본', ['perUnit', 'combined']], ['ts.title', 'TS 제목', 'text'], ['ts.practice', 'TS 연습 수', 'int'],
+  ['paperHw.sets', '종이 숙제 세트 수', 'int'], ['frontTest.mode', '앞장 테스트', ['normal', 'skip', 'diagnostic']], ['frontTest.questions', '앞장 문항 수', 'int'], ['frontTest.minutes', '앞장 시간(분)', 'int'],
+  ['difficulty.target', '목표 수준(1~5)', 'int'], ['difficulty.mix.basic', '기본 %', 'int'], ['difficulty.mix.standard', '표준 %', 'int'], ['difficulty.mix.challenge', '도전 %', 'int'],
+  ['composition.mcPct', '객관식 %', 'int'], ['composition.saPct', '단답 %', 'int'], ['composition.writtenPct', '서술 %', 'int'], ['composition.calculatorPct', '계산기 %', 'int'],
+  ['composition.figures', '도형', ['include', 'exclude']], ['layout.answerCols', '답지 단', [1, 2]], ['layout.fontSize', '글자 크기', 'int'], ['layout.bilingual', '영한 병기', 'bool'],
+  ['onlineHw.mrSets', '홈페이지 MR 세트', 'int'], ['onlineHw.tsSets', '홈페이지 TS 세트', 'int'], ['onlineHw.perSet', '홈페이지 세트당 문항', 'int']];
+const 값얻기 = (o, p) => p.split('.').reduce((v, k) => (v == null ? undefined : v[k]), o);
+function 값넣기(o, p, v) { const ks = p.split('.'); let x = o; for (const k of ks.slice(0, -1)) x = x[k]; x[ks[ks.length - 1]] = v; }
+const 묶음길 = (p) => OC.PATHS.find(x => p === x || p.startsWith(x + '.')) || p;
+function 설정그리기(a) {
+  if (!설정편집) 설정시작(a, (판.차례.find(x => x.user.id === a.u.id) || {}).nextClass || C.ymd(오늘()));
+  const e = 설정편집, s = e.settings;
+  const 바뀜 = new Set(OC.changedPaths(e.base, s));
+  const 칸 = 칸목록.map(([p, 이름, t]) => {
+    const v = 값얻기(s, p), 출처 = e.source[p] || e.source[묶음길(p)] || '기본', 묶 = 묶음길(p);
+    let 입력;
+    if (t === 'bool') 입력 = `<input type="checkbox" data-p="${p}" ${v ? 'checked' : ''} onchange="설정바꿈('${p}', this.checked)">`;
+    else if (Array.isArray(t)) 입력 = `<select data-p="${p}" onchange="설정바꿈('${p}', ${typeof t[0] === 'number' ? 'Number(this.value)' : 'this.value'})">${t.map(o => `<option ${o === v ? 'selected' : ''}>${o}</option>`).join('')}</select>`;
+    else 입력 = `<input data-p="${p}" ${t === 'int' ? 'type="number" min="0" style="width:70px"' : 'style="width:160px"'} value="${글(v)}" onchange="설정바꿈('${p}', ${t === 'int' ? 'Number(this.value)' : 'this.value'})">`;
+    return `<tr><td>${이름}${바뀜.has(묶) ? ' <span class="경고">*바뀜</span>' : ''}</td><td>${입력}</td><td class="작게">${출처}</td>
+      <td class="작게"><label><input type="checkbox" ${e.thisWeekOnly.has(묶) ? 'checked' : ''} onchange="이번주만('${묶}', this.checked)"> 이번 주만</label></td></tr>`;
+  }).join('');
+  const 세트 = s.paperHw.perSet.map((x, i) => `세트${i + 1} MR <input type="number" min="0" value="${x.mr}" style="width:55px" onchange="설정편집.settings.paperHw.perSet[${i}].mr=Number(this.value);카드그리기()">
+    + TS <input type="number" min="0" value="${x.ts}" style="width:55px" onchange="설정편집.settings.paperHw.perSet[${i}].ts=Number(this.value);카드그리기()">`).join(' · ');
+  const 검 = OC.validateSettings(s);
+  const 명 = 검.ok ? OC.specFromSettings(s, { studentId: a.u.id, lessonDate: e.lessonDate }) : null;
+  const 자유 = e.free ? `<div>알아들음: ${e.free.applied.map(글).join(' · ') || '-'}</div>${e.free.unresolved.length ? `<div class="경고">보류(못 알아들음): ${e.free.unresolved.map(글).join(' · ')} — 지시를 고치거나 칸에 직접 넣으세요</div>` : ''}
+      <button onclick="자유반영()">알아들은 것 반영</button> <button onclick="설정편집.free=null;카드그리기()">버림</button>` : '';
+  const 결과 = e.결과 ? `<div class="판" id="주문결과" style="margin-top:8px">✅ 확정 — 계획 <b>${글(e.결과.planId)}</b> 판 <b>${e.결과.rev}</b> · 주문 ${글(e.결과.jobId)}${e.결과.invalidated.length ? ' · 무효로 한 초안 ' + e.결과.invalidated.map(글).join(', ') : ''}</div>` : '';
+  return `<div class="섹"><h3>주간 설정 — 수업일 <input type="date" value="${글(e.lessonDate)}" onchange="설정시작(아이자료, this.value);카드그리기()">
+      <span class="작게">${e.승인판 ? '지난 승인(판 ' + e.승인판 + ')에서' : '지난 승인 없음 — 기본값'} · 현재 커리에서 단원·목표</span></h3>
+    <table><tr><th>칸</th><th>값</th><th>어디서</th><th></th></tr>${칸}</table><div style="margin:6px 0">${세트}</div></div>
+    <div class="섹"><h3>자유 지시</h3><textarea id="자유지시" rows="2" style="width:100%" placeholder="예: 이번 주는 TS 빼줘. 세트 3개로, 25+5. 계산기 30%.">${글(e.free ? e.free.text : '')}</textarea>
+      <button onclick="자유해석()">해석</button> ${자유}</div>
+    <div class="섹"><h3>확인</h3>${검.problems.map(x => '<div class="빨강">' + 글(x) + '</div>').join('')}${검.conflicts.map(x => '<div class="경고">⚠️ 상충: ' + 글(x) + '</div>').join('')}
+      ${명 ? `<div class="작게" id="명세미리">주문 명세: ${명.parts.map(p => p.kind + (p.total != null ? '(' + p.total + ')' : '')).join(' · ')} · ${글(명.calculator.note)}</div>` : ''}
+      <button class="주" id="주문단추" ${검.ok && !(e.free && e.free.unresolved.length) ? '' : 'disabled'} onclick="주문확정()">제작 방향 확정(주문)</button></div>${결과}`;
+}
+function 설정바꿈(p, v) {
+  const s = 설정편집.settings; 값넣기(s, p, v);
+  if (p === 'paperHw.sets') { const n = Math.max(0, v | 0), last = s.paperHw.perSet[s.paperHw.perSet.length - 1] || { mr: 20, ts: 10 }; while (s.paperHw.perSet.length < n) s.paperHw.perSet.push(JSON.parse(JSON.stringify(last))); s.paperHw.perSet.length = n; }
+  카드그리기();
+}
+function 이번주만(p, on) { if (on) 설정편집.thisWeekOnly.add(p); else 설정편집.thisWeekOnly.delete(p); 카드그리기(); }
+function 자유해석() {
+  const t = document.getElementById('자유지시').value;
+  const r = OC.interpretFreeText(t, 설정편집.settings);
+  설정편집.free = { text: t, applied: r.applied, unresolved: r.unresolved, settings: r.settings };
+  카드그리기();
+}
+/** 원장 확인 — 알아들은 것만 반영. 보류(못 알아들은 말)가 남아 있으면 확정 단추가 잠긴다 */
+function 자유반영() { 설정편집.settings = 설정편집.free.settings; 카드그리기(); }
+async function 주문확정() {
+  const a = 아이자료, e = 설정편집;
+  try {
+    const fn = firebase.app().functions('australia-southeast1').httpsCallable('prepConfirmOrder');
+    const r = await fn({ studentId: a.u.id, lessonDate: e.lessonDate, settings: e.settings, thisWeekOnly: Array.from(e.thisWeekOnly),
+      freeText: e.free ? e.free.text : '', freeTextApplied: e.free ? e.free.applied : [], unresolved: e.free ? e.free.unresolved : [] });
+    e.결과 = r.data; 알림('✅ 주문 확정 — 판 ' + r.data.rev);
+    a.plans = (await 읽기(새뿌리 + '/plans', (x) => x.orderByKey().startAt(a.u.id + '_').endAt(a.u.id + '_'))) || {};
+    카드그리기();
+  } catch (err) {
+    const d = err.details || {};
+    알림('❌ 확정 안 됨 — ' + err.message + ' ' + [].concat(d.problems || [], d.conflicts || [], d.unresolved || []).join(' · '));
+  }
+}
 
 // ── 종이 시험 ──
 let 명세편집 = null;   // { testId, title, date, items:[] }
