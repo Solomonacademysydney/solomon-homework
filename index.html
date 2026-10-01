@@ -14198,9 +14198,42 @@ const firebaseConfig = {
   appId:             ""
 };
 
+// ★ [2-A · 2026-10-01] 시험 환경(에뮬레이터) 스위치.
+//   `localhost`·`127.0.0.1` 에서 주소에 `?emu=1` 이 있을 때만 켜진다. **운영 주소에서는 ?emu=1 을 붙여도 안 켜진다.**
+//   켜지면 데모 프로젝트(demo-solomon)의 에뮬레이터(DB 9000 · 인증 9099 · 함수 5001)에만 붙고 화면 위에 띠를 띄운다.
+//   ⛔ 시험 설정에는 운영 프로젝트 이름·주소를 넣지 않는다(functions/화면시험/시험환경_스위치.test.js 가 지킨다).
+function _emuModeOf(loc) {
+  const h = String((loc && loc.hostname) || '');
+  if (h !== 'localhost' && h !== '127.0.0.1') return false;
+  return /[?&]emu=1(&|$)/.test(String((loc && loc.search) || ''));
+}
+const _EMU = _emuModeOf(window.location);
+const _EMU_CONFIG = {
+  apiKey:      'demo-key',
+  authDomain:  'demo-solomon.firebaseapp.com',
+  databaseURL: 'http://127.0.0.1:9000?ns=demo-solomon',
+  projectId:   'demo-solomon'
+};
+function _emuConnect(fb, doc) {
+  fb.database().useEmulator('127.0.0.1', 9000);
+  fb.auth().useEmulator('http://127.0.0.1:9099');
+  fb.app().functions('australia-southeast1').useEmulator('127.0.0.1', 5001);
+  doc.title = '[시험] ' + doc.title;
+  const 띠 = () => {
+    const b = doc.createElement('div');
+    b.id = 'emuBanner';
+    b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:2147483647;background:#7c2d12;color:#fff;'
+      + 'font:900 18px "Noto Sans KR",sans-serif;text-align:center;padding:10px;pointer-events:none;opacity:.92;';
+    b.textContent = '🧪 시험 환경 (에뮬레이터) — 운영 자료가 아닙니다';
+    doc.body.appendChild(b);
+  };
+  if (doc.body) 띠(); else doc.addEventListener('DOMContentLoaded', 띠);
+}
+
 (function initFirebase() {
   try {
-    firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp(_EMU ? _EMU_CONFIG : firebaseConfig);
+    if (_EMU) _emuConnect(firebase, document);
     window.FB_REF = firebase.database().ref('solomon_hw_v3');
     window.fbReady = false;
 

@@ -666,3 +666,13 @@ exports.migratePasswordsToVault = onCall({ region: REGION }, async (req) => {
     totalRows: list.length
   };
 });
+
+// ─────────────────────────────────────────────
+// [2-A · 2026-10-01] 학생 세션 일꾼(prep_session.js)이 **같은 대조 규칙**을 쓰도록 내보낸다.
+//   ⛔ 덧붙이기만 했다 — loginCheck 와 다른 일꾼의 동작은 그대로다.
+// ─────────────────────────────────────────────
+exports._shared = {
+  REGION, OPERATOR_UID, VAULT, BOOK,
+  verifyPw, vaultKey, readStoredPw,
+  assertTryBudget, assertNotLocked, noteFailure, clearFailures
+};

@@ -341,3 +341,16 @@ const _ts = require('./ts_approval');
 exports.approveTsAssignment = _ts.approveTsAssignment;
 exports.unlockTsAssignment = _ts.unlockTsAssignment;
 exports.onTsPublished = _ts.onTsPublished;
+
+// ============================================================
+// [2-A · 2026-10-01] 학생 세션 · 학생별 배정 조회·제출 — functions/prep_session.js 맨 위에 적어 뒀다.
+//   ⛔ 아직 아무도 안 부른다(학생 화면은 2-B 에서 붙인다). **배포하지 않았다.**
+//   ⛔ 배포할 때도 이름을 찍어서만:
+//        firebase deploy --only functions:prepStartSession,functions:prepEndSession,functions:prepListMyAssignments,functions:prepGetAssignment,functions:prepSubmit
+// ============================================================
+const _prep = require('./prep_session');
+exports.prepStartSession = _prep.prepStartSession;
+exports.prepEndSession = _prep.prepEndSession;
+exports.prepListMyAssignments = _prep.prepListMyAssignments;
+exports.prepGetAssignment = _prep.prepGetAssignment;
+exports.prepSubmit = _prep.prepSubmit;
