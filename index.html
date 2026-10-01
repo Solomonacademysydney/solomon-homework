@@ -3113,6 +3113,37 @@ async function _retryTeacherHomeworkSync() {
   });
 }
 
+// ★ [2-B 추가 · 2026-10-01 원장 지시] 다시 보내기 판단 — 답 **개수**가 아니라 **내용**을 견준다.
+//   ⛔ 옛 판단: (줄 제출·서버 미제출) 또는 (줄 답 개수 > 서버 답 개수) 일 때만 보냈다 — 답을 바꾸기만 했거나
+//      개수가 같으면 줄을 **버렸다**(「냈는데 안 보인다」의 한 원인일 수 있다 · 2-B 브라우저 시험 실측).
+//   보낸다: 내용이 하나라도 다르다 · 서버 칸이 없다.  보낼 값 = 서버 값 + 줄 값(답은 칸마다 합친다 —
+//     서버에만 있는 답은 지킨다).
+//   안 보낸다: 내용이 같다 · 서버는 이미 제출(원장 처리 포함)인데 줄은 풀던 중 · 둘 다 제출인데 서버 판(rev)이 더 높다.
+function _retryDecision(fbVal, queueVal) {
+  if (queueVal == null || typeof queueVal !== 'object') return { push: false, why: 'empty' };
+  const fb = (fbVal && typeof fbVal === 'object') ? fbVal : null;
+  if (!fb) return { push: true, value: queueVal, why: 'no-server' };
+  if (fb.submitted && !queueVal.submitted) return { push: false, why: 'server-submitted' };
+  if (fb.submitted && queueVal.submitted && (Number(fb.rev) || 0) > (Number(queueVal.rev) || 0)) return { push: false, why: 'server-newer-rev' };
+  const 굳힘 = (v) => (v && typeof v === 'object')
+    ? '{' + Object.keys(v).sort().map(k => JSON.stringify(k) + ':' + 굳힘(v[k])).join(',') + '}'
+    : JSON.stringify(v === undefined ? null : v);
+  let 다름 = false;
+  for (const k of Object.keys(queueVal)) {
+    if (k === 'answers') {
+      const qa = queueVal.answers || {}, fa = fb.answers || {};
+      if (Object.keys(qa).some(q => !(q in fa) || String(qa[q]) !== String(fa[q]))) 다름 = true;
+    } else if (굳힘(queueVal[k]) !== 굳힘(fb[k])) {
+      다름 = true;
+    }
+    if (다름) break;
+  }
+  if (!다름) return { push: false, why: 'same' };
+  const value = Object.assign({}, fb, queueVal);
+  if (fb.answers || queueVal.answers) value.answers = Object.assign({}, fb.answers || {}, queueVal.answers || {});
+  return { push: true, value, why: 'differs' };
+}
+
 async function _flushRetryQueue() {
   if (!window.fbReady || !window.FB_REF) return;
   // ⛔ [2-B] 로그인 전에는 손대지 않는다 — 예전에는 여기서 「누구 것인지 모른다」로 **줄을 버렸다**
@@ -3141,18 +3172,13 @@ async function _flushRetryQueue() {
           const queueVal = item.updates[path];
           if (queueVal === null) continue;
           const snap = await window.FB_REF.child(path).once('value');
-          const fbVal = snap.val() || {};
-          const fbAnsCount = Object.keys(fbVal.answers || {}).length;
-          const queueAnsCount = Object.keys(queueVal.answers || {}).length;
-          const fbSubmitted = !!fbVal.submitted;
-          const queueSubmitted = !!queueVal.submitted;
-          // 안전 push: (a) queue가 submitted이고 fb는 미제출, (b) queue 답 개수가 fb보다 많음
-          // skip: fb가 더 채워졌거나 같음 (다른 디바이스 진행 추정)
-          const shouldPush = (queueSubmitted && !fbSubmitted) || (queueAnsCount > fbAnsCount);
-          if (!shouldPush) continue;
+          const fbVal = snap.val();
+          // ★ [2-B 추가 · 2026-10-01] 개수가 아니라 **내용**을 견준다(_retryDecision 위 설명).
+          const 판단 = _retryDecision(fbVal, queueVal);
+          if (!판단.push) continue;
           const ts = Date.now();
           _lastFbWriteTs = ts;
-          await window.FB_REF.update({ [path]: queueVal, lastModified: ts });
+          await window.FB_REF.update({ [path]: 판단.value, lastModified: ts });
         }
       } catch (e) {
         remaining.push(item);
@@ -4053,7 +4079,7 @@ function samePeriod(a, b) {
 /** 이 기기의 세션 — none · ok · master · expired */
 function prepSessionState() {
   const s = window._prepSession;
-  if (!s) return 'none';
+  if (!s) return window._legacyMaster ? 'master' : 'none';   // 옛 방식으로 들어온 마스터도 보기 전용
   if (!(Number(s.exp) > Date.now())) return 'expired';
   return s.master ? 'master' : 'ok';
 }
@@ -4136,9 +4162,24 @@ async function prepLoadTeacher() {
   return _prepTeacherCache;
 }
 /** 로그아웃·학생 전환 — 세션을 푼다(서버에 알리는 것은 기다리지 않는다). */
+// [2-B 추가] 막기 칸 — 원장만 바꾸는 참/거짓 칸(solomon_hw_v3/submitLock). 규칙과 화면이 **같은 칸**을 본다.
+//   새로 읽고(5초), 못 읽으면 처음 받아 둔 사본을 본다. 둘 다 없으면 꺼짐(지금 운영과 같다).
+async function _readSubmitLock() {
+  try {
+    const v = await Promise.race([
+      window.FB_REF.child('submitLock').once('value').then(sn => sn.val()),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000))
+    ]);
+    return v === true;
+  } catch (e) {
+    try { return getStore().submitLock === true; } catch (_) { return false; }
+  }
+}
 function prepEndSessionClient() {
   const had = window._prepSession;
   window._prepSession = null;
+  window._prepLegacy = false;
+  window._legacyMaster = false;
   _prepAssignBySid = {};
   _prepDetail = {};
   if (had) callAuthWorker('prepEndSession', {}, 8000).catch(e => console.warn('[2-B] 세션 끝내기 알림 실패:', e && e.message));
@@ -5232,7 +5273,10 @@ async function doLogin() {
   }
   // ★ [2-B · 2026-10-01] 학생·학부모는 **세션**을 받는다 — 서버가 이 기기에 「누구로 들어왔는지」를 묶는다(12시간).
   //   이것이 있어야 새 쓰기 규칙(남의 제출 칸 막기)을 지나고, 개인 배정을 받는다.
-  //   못 받으면 들여보내지 않는다 — 세션 없이 들어가면 저장이 거절되어 아이 답이 사라질 수 있다.
+  //   [2-B 추가 · 원장 지시] 못 받았을 때는 **막기 칸(solomon_hw_v3/submitLock)** 을 본다 —
+  //     켜짐 → 들여보내지 않는다(세션 없이 들어가면 저장이 거절되어 아이 답이 사라진다)
+  //     꺼짐 → 경고만 하고 **옛 방식**으로 들여보낸다(개인 배정은 「없음」으로 · 그룹 숙제가 보인다 · 저장도 옛 규칙대로 된다)
+  window._prepSession = null; window._prepLegacy = false; window._legacyMaster = false;
   if (user.role === 'student' || user.role === 'parent') {
     try {
       const d = await callAuthWorker('prepStartSession', { id, role: loginRole, pw }, 12000);
@@ -5241,10 +5285,16 @@ async function doLogin() {
     } catch (e) {
       console.error('[2-B] 세션을 못 받음:', e && e.message);
       window._prepSession = null;
-      document.getElementById('loginError').textContent =
-        '지금 로그인 서버(세션)에 연결하지 못했습니다. 잠시 뒤 다시 시도해 주세요.';
-      document.getElementById('loginError').style.display = 'block';
-      return;
+      const _lockOn = await _readSubmitLock();
+      if (_lockOn) {
+        document.getElementById('loginError').textContent =
+          '지금 로그인 서버(세션)에 연결하지 못했습니다. 잠시 뒤 다시 시도해 주세요.';
+        document.getElementById('loginError').style.display = 'block';
+        return;
+      }
+      window._prepLegacy = true;
+      window._legacyMaster = isMasterLogin;   // 옛 방식이어도 마스터는 보기 전용
+      setTimeout(() => showBackupToast('⚠️ 세션 서버에 연결하지 못해 예전 방식으로 들어왔습니다. 숙제·저장은 그대로 됩니다.'), 500);
     }
   }
   currentUser = user;
@@ -5288,7 +5338,8 @@ async function doLogin() {
     }
     else if (user.role==='parent') {
       // [2-B] 자녀마다 배정 목록을 먼저 받아 둔다(공통 조회 장치가 쓴다)
-      await Promise.all((user.childIds || []).map(k => prepLoadAssignments(k, true)));
+      if (window._prepSession) await Promise.all((user.childIds || []).map(k => prepLoadAssignments(k, true)));
+      else (user.childIds || []).forEach(k => _setPrepCache(k, { status: 'none', list: [], hidden: [], legacy: true }));
       renderParent();
     }
     else {
@@ -5297,7 +5348,9 @@ async function doLogin() {
       const _stored = getStore().currentPeriod;
       const _today = getTodayPeriod();
       studentPeriod = (!_stored || !periodGte(_stored, _today)) ? _today : _stored;
-      await prepLoadAssignments(user.id);   // [2-B] 내 배정 목록 — 그다음에 그린다
+      // [2-B] 내 배정 목록 — 그다음에 그린다. 옛 방식(세션 없음)이면 묻지 않고 「개인 배정 없음」(그룹 숙제가 보이게)
+      if (window._prepSession) await prepLoadAssignments(user.id);
+      else _setPrepCache(user.id, { status: 'none', list: [], hidden: [], legacy: true });
       renderStudent();
       // [2-B] 세션을 받은 뒤 — 못 보낸 답 → 약점 순으로 다시 보낸다(로그인 전에는 줄을 지킨다)
       _flushRetryQueue().then(() => _weaknessFlush()).catch(e => console.warn('[2-B] 줄 다시 보내기 실패:', e));
@@ -7498,6 +7551,7 @@ function renderPersonalSet(a, p) {
 }
 function personalAnswer(qid, val) {
   if (!_personalOpen) return;
+  if (prepSessionState() === 'master') { _masterViewOnlyToast(); return; }   // 마스터 = 보기만(초안도 안 남긴다)
   const { aid, setId } = _personalOpen;
   const d = _draftRead(aid, setId);
   d[qid] = String(val);
@@ -8229,7 +8283,15 @@ if (typeof window !== 'undefined') {
   }
 }
 
+// [2-B 추가] 마스터로 보는 중 알림 — 같은 말을 여러 번 띄우지 않는다
+let _masterToastAt = 0;
+function _masterViewOnlyToast() {
+  if (Date.now() - _masterToastAt < 3000) return;
+  _masterToastAt = Date.now();
+  showBackupToast('👀 마스터로 보는 중 — 보기 전용이라 답을 받지 않습니다.');
+}
 function saveAnswer(qid, val) {
+  if (prepSessionState() === 'master') { _masterViewOnlyToast(); return; }   // [2-B] 마스터 = 보기만(서랍에도 안 남긴다)
   const store=getStore();
   const key=subKey(currentUser.id,studentPeriod||store.currentPeriod,currentSetIdx??0);
   if(!store.submissions[key]) store.submissions[key]={answers:{},submitted:false,submitTime:null};
@@ -8241,6 +8303,7 @@ function saveAnswer(qid, val) {
 }
 
 function answerMC(qid, letter, btnEl) {
+  if (prepSessionState() === 'master') { _masterViewOnlyToast(); return; }   // [2-B] 마스터 = 보기만(서랍에도 안 남긴다)
   // [즉시 고정] 이미 답한 MC 문제는 변경 불가 — 정답 brute-force(매번 만점) + 점수·별·박수 부풀리기 동시 차단.
   // saveAnswer(아래) 와 동일한 키 도출로 store에서 직접 확인. 판정 기준은 렌더(userAns)와 동일하게 !== undefined.
   const _store = getStore();
@@ -8303,6 +8366,7 @@ function answerOX(qid, val) {
   setTimeout(()=>{ qIdx++; renderStudent(); }, 300);
 }
 function answerSA(qid, val) {
+  if (prepSessionState() === 'master') { _masterViewOnlyToast(); return; }   // [2-B] 마스터 = 보기만(서랍에도 안 남긴다)
   const store=getStore();
   const key=subKey(currentUser.id,studentPeriod||store.currentPeriod,currentSetIdx??0);
   if(!store.submissions[key]) store.submissions[key]={answers:{},submitted:false,submitTime:null};

@@ -104,19 +104,36 @@ console.log('\n── ③ 세션 상태');
   재기('마스터 → master', 세상({ 세션: { sid: 'Mina', role: 'student', master: true, exp: Date.now() + 1e6 } }).F.prepSessionState() === 'master');
   재기('만료 → expired', 세상({ 세션: { sid: 'Mina', role: 'student', master: false, exp: Date.now() - 1 } }).F.prepSessionState() === 'expired');
   재기('없음 → none', 세상({ 세션: null }).F.prepSessionState() === 'none');
+  { const z = 세상({ 세션: null }); z.w._legacyMaster = true; 재기('[2-B 추가] 세션 없이 들어온 마스터 → master(보기 전용)', z.F.prepSessionState() === 'master'); }
+  { const z = 세상({ 세션: null }); z.F._setPrepCache('Mina', { status: 'none', list: [], hidden: [], legacy: true });
+    const zv = z.F.hwViewFor({ users: [], homeworkSets: { AU_y5_2026_m10_w1: 그룹칸() }, submissions: {} }, { id: 'Mina', year: 5, country: 'AU', group: '' }, P1);
+    재기('[2-B 추가] 옛 방식(세션 없음)이면 그룹 숙제가 보인다', zv.kind === 'group', JSON.stringify(zv)); }
 }
 
 console.log('\n── ④ 로그인·로그아웃·쓰기 문지기·제출이 장치와 세션을 쓴다(글자로 확인)');
 const 로그인 = 떼기('async function doLogin() {', '\nfunction doLogout');
 재기('로그인: 학생·학부모는 prepStartSession 을 부른다', /callAuthWorker\('prepStartSession'/.test(로그인));
 재기('로그인: 세션 뒤 토큰을 새로 받는다(getIdToken(true))', /getIdToken\(true\)/.test(로그인));
-재기('로그인: 세션을 못 받으면 들여보내지 않는다(연결 실패 안내)', /세션[\s\S]{0,200}return;/.test(로그인) || /prepStartSession[\s\S]{0,900}return;/.test(로그인));
+// [2-B 추가 · 원장 지시] 세션을 못 받으면 — 막기 칸이 꺼져 있으면 경고만 하고 옛 방식으로 들여보내고, 켜져 있으면 막는다.
+재기('로그인: 막기 칸(submitLock)을 읽는다', /_readSubmitLock\(\)/.test(로그인));
+재기('로그인: 세션 실패 + 칸 켜짐 → 막는다(return)', /if \(_lockOn\)\s*\{[\s\S]{0,400}return;/.test(로그인));
+재기('로그인: 세션 실패 + 칸 꺼짐 → 경고만 하고 들여보낸다(옛 방식)', /_prepLegacy = true[\s\S]{0,400}showBackupToast\(/.test(로그인));
+재기('로그인: 옛 방식이면 배정 목록을 묻지 않고 「개인 배정 없음」으로 둔다(그룹 숙제가 보이게)', /legacy: true/.test(로그인));
+재기('로그인: 옛 방식이어도 마스터는 보기 전용(loginCheck 의 isMaster)', /_legacyMaster = isMasterLogin/.test(로그인));
 재기('로그인: 학생·학부모는 배정 목록을 먼저 받아 둔다', /await prepLoadAssignments\(/.test(로그인));
 재기('로그인: 교사는 교사 캐시를 받아 둔다', /prepLoadTeacher\(/.test(로그인));
 재기('로그아웃: 세션을 끝낸다', /prepEndSessionClient\(\)/.test(떼기('function doLogout() {', '\n}\n')));
 const 문지기 = 떼기('function fbWrite(updates, onSuccess) {', '\n// ★★★ [R-0');
 재기('fbWrite: 마스터 세션이면 안 보낸다', /prepSessionState\(\)[\s\S]{0,80}'master'[\s\S]{0,200}return;/.test(문지기));
 재기('fbWrite: 학생 세션이 끝났으면 안 보내고 줄에 넣는다', /'expired'[\s\S]{0,400}_addToRetryQueue\(updates\)/.test(문지기));
+// [2-B 추가] 마스터 화면에서 누른 답이 **이 기기 서랍에도** 남지 않게 — 같은 기기로 아이가 들어오면
+//   그 답이 아이 답으로 보이고(객관식은 바꿀 수 없다) 제출 때 서버로 간다(브라우저 시험 실측).
+const 객관식 = 떼기('function answerMC(qid, letter, btnEl) {', '\n}\n');
+const 주관식 = 떼기('function answerSA(qid, val) {', '\n}\n');
+const 저장답 = 떼기('function saveAnswer(qid, val) {', '\n}\n');
+재기('answerMC: 마스터면 답을 안 받는다', /prepSessionState\(\) === 'master'[\s\S]{0,120}return;/.test(객관식));
+재기('answerSA: 마스터면 답을 안 받는다', /prepSessionState\(\) === 'master'[\s\S]{0,120}return;/.test(주관식));
+재기('saveAnswer: 마스터면 서랍에도 안 쓴다', /prepSessionState\(\) === 'master'[\s\S]{0,120}return;/.test(저장답));
 const 제출 = 떼기('function doSubmit() {', '\n// ═══ [1단계] 약점 반영 — 시작');
 재기('doSubmit: 마스터는 제출 못 한다', /prepSessionState\(\)\s*===\s*'master'/.test(제출));
 

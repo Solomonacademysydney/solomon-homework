@@ -5,7 +5,8 @@
 //
 // ⛔ 규칙 파일은 공개 저장소에 안 올린다(firebase.json 주의 글) — backup/ 에 있다:
 //      backup/database.rules.2A_sol_prep_v1.json       ← 2-A 판(운영 LIVE 10-01 + sol_prep_v1)
-//      backup/database.rules.2B_잠금켬.json            ← 2-B 「남의 제출 칸 막기」를 켠 판(배포 때 이것을 올린다 · 10-01 초안과 같은 내용)
+//      backup/database.rules.2B_잠금켬.json            ← 막기를 늘 켠 판(시험용 비교 · 배포하지 않는다)
+//      backup/database.rules.2B_스위치판.json          ← **배포할 판** — 막기를 DB 칸 solomon_hw_v3/submitLock 으로 켜고 끈다
 //    이 시험은 그 파일을 에뮬레이터에 **올려 놓고** 돈다(운영 규칙과 무관).
 // 사용자 토큰은 서명 없는 JWT 로 만든다 — 에뮬레이터는 서명을 안 본다(운영에서는 통하지 않는다).
 
@@ -23,7 +24,8 @@ if (!DB || !/^(127\.0\.0\.1|localhost):\d+$/.test(DB)) {
 const 뿌리 = path.join(__dirname, '..', '..');
 const 규칙2A = path.join(뿌리, 'backup', 'database.rules.2A_sol_prep_v1.json');
 const 규칙2B = path.join(뿌리, 'backup', 'database.rules.2B_잠금켬.json');
-for (const f of [규칙2A, 규칙2B]) if (!fs.existsSync(f)) { console.log('⛔ 규칙 파일 없음: ' + f); console.log('\n셈 — 통과 0 · 실패 1'); process.exit(1); }
+const 규칙스위치 = path.join(뿌리, 'backup', 'database.rules.2B_스위치판.json');   // [2-B 추가] 내일 올릴 판
+for (const f of [규칙2A, 규칙2B, 규칙스위치]) if (!fs.existsSync(f)) { console.log('⛔ 규칙 파일 없음: ' + f); console.log('\n셈 — 통과 0 · 실패 1'); process.exit(1); }
 
 const OP = '62bxWubzDLMrhHjjv2oNfAQiyaD2';
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
@@ -126,6 +128,38 @@ const 학생 = (sid, 덧) => ({ prep: Object.assign({ sid, role: 'student', mast
   재기('⛔ 일꾼은 여전히 막힘', 막힘(await 쓰기(칸 + 'Mina_2026_m10_w1_s0/x', 1, 'ts-worker')));
   재기('원장은 쓴다', 됨(await 쓰기(칸 + 'Aron_2026_m10_w1_s0/x', 1, OP)));
   재기('2-B 초안에서도 sol_prep_v1 은 같다(학생 직접 읽기 막힘)', 막힘(await 읽기('sol_prep_v1/releases/A1', 'u-mina', 학생('Mina'))));
+
+  // ── [2-B 추가 · 2026-10-01 원장 결정] 스위치 판 — 막기를 DB 칸 하나(solomon_hw_v3/submitLock)로 켜고 끈다.
+  //    내일 이 판을 올리되 칸은 꺼 둔다(지금과 똑같이 돈다) → 모레 오전 칸만 켠다 · 되돌리기 = 칸 끄기.
+  console.log('\n── 스위치 판(2B_스위치판) — 칸이 꺼져 있으면 지금과 같다');
+  await 규칙올리기(규칙스위치);
+  await 요청('PUT', 'solomon_hw_v3/submissions', { Mina_2026_m10_w1_s0: { submitted: true } }, 'owner');
+  재기('칸 없음: 세션 없는 로그인도 아무 칸에 쓴다(지금 운영과 같다)', 됨(await 쓰기(칸 + 'Aron_2026_m10_w1_s0/x', 1, 'u-anon')));
+  재기('칸 없음: 일꾼은 여전히 막힘', 막힘(await 쓰기(칸 + 'Mina_2026_m10_w1_s0/x', 1, 'ts-worker')));
+
+  console.log('\n── 스위치 칸은 원장만 바꾼다');
+  재기('⛔ 세션 학생이 칸을 켜지 못한다', 막힘(await 쓰기('solomon_hw_v3/submitLock', true, 'u-mina', 학생('Mina'))));
+  재기('⛔ 세션 학생이 칸을 끄지 못한다', 막힘(await 쓰기('solomon_hw_v3/submitLock', false, 'u-mina', 학생('Mina'))));
+  재기('⛔ 학부모가 칸을 바꾸지 못한다', 막힘(await 쓰기('solomon_hw_v3/submitLock', false, 'u-p', { prep: { sid: 'MinaMom', role: 'parent', master: false, exp: Date.now() + 3600e3, kids: { Mina: true } } })));
+  재기('⛔ 마스터 세션도 못 바꾼다', 막힘(await 쓰기('solomon_hw_v3/submitLock', false, 'u-m', 학생('Mina', { master: true }))));
+  재기('⛔ 세션 없는 로그인도 못 바꾼다', 막힘(await 쓰기('solomon_hw_v3/submitLock', true, 'u-anon')));
+  재기('⛔ 일꾼도 못 바꾼다', 막힘(await 쓰기('solomon_hw_v3/submitLock', true, 'ts-worker')));
+  재기('⛔ 원장도 참/거짓 말고는 못 넣는다', 막힘(await 쓰기('solomon_hw_v3/submitLock', 'yes', OP)));
+  재기('원장은 칸을 켠다', 됨(await 쓰기('solomon_hw_v3/submitLock', true, OP)));
+  재기('누구나(로그인) 칸을 읽는다 — 화면이 보고 판단', 됨(await 읽기('solomon_hw_v3/submitLock', 'u-anon')));
+
+  console.log('\n── 칸을 켜면 막기');
+  재기('세션 학생은 자기 칸에 쓴다', 됨(await 쓰기(칸 + 'Mina_2026_m10_w1_s0/x', 2, 'u-mina', 학생('Mina'))));
+  재기('⛔ 남의 칸 막힘', 막힘(await 쓰기(칸 + 'Aron_2026_m10_w1_s0/x', 2, 'u-mina', 학생('Mina'))));
+  재기('⛔ 세션 없는 로그인 막힘', 막힘(await 쓰기(칸 + 'Mina_2026_m10_w1_s0/x', 2, 'u-anon')));
+  재기('⛔ 만료 막힘', 막힘(await 쓰기(칸 + 'Mina_2026_m10_w1_s0/x', 2, 'u-mina', 학생('Mina', { exp: Date.now() - 1000 }))));
+  재기('⛔ 마스터 막힘', 막힘(await 쓰기(칸 + 'Mina_2026_m10_w1_s0/x', 2, 'u-m', 학생('Mina', { master: true }))));
+  재기('⛔ 학부모 막힘', 막힘(await 쓰기(칸 + 'Mina_2026_m10_w1_s0/x', 2, 'u-p', { prep: { sid: 'MinaMom', role: 'parent', master: false, exp: Date.now() + 3600e3, kids: { Mina: true } } })));
+  재기('원장(제출 처리)은 쓴다', 됨(await 쓰기(칸 + 'Aron_2026_m10_w1_s0/x', 2, OP)));
+
+  console.log('\n── 칸을 끄면 바로 원래대로(되돌리기)');
+  재기('원장은 칸을 끈다', 됨(await 쓰기('solomon_hw_v3/submitLock', false, OP)));
+  재기('끈 뒤: 세션 없는 로그인도 다시 쓴다', 됨(await 쓰기(칸 + 'Aron_2026_m10_w1_s0/x', 3, 'u-anon')));
 
   await 요청('PUT', '', null, 'owner');
   console.log('\n셈 — 통과 ' + 통과 + ' · 실패 ' + 실패);

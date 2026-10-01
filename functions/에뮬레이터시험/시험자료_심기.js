@@ -13,7 +13,8 @@
 //   학생 emu5 / emu5pass (Year 5 · 개인 배정: 10월 1주 공개 · 2주 비공개 · 3주는 그룹 숙제만)
 //   학생 emu9 / emu9pass (Year 9 · 그룹 숙제만)
 //   학부모 emu5mom / mompass · 마스터 비번 emuMASTER · 교사 emuT / emuTeach1 (원장 UID 로 만든다)
-// [2-B] 화면 칸(demo-solomon)에 **「남의 제출 칸 막기」를 켠 규칙**(backup/database.rules.2B_잠금켬.json)을 올린다.
+// [2-B] 화면 칸(demo-solomon)에 **배포할 판 규칙**(backup/database.rules.2B_스위치판.json)을 올린다.
+//   막기 칸(solomon_hw_v3/submitLock)은 꺼 둔다 — 켜서 시험하려면 `--잠금` 을 붙인다.
 
 'use strict';
 const fs = require('fs');
@@ -83,9 +84,11 @@ async function 심기(db) {
   try { await admin.auth().deleteUser(OPERATOR_UID); } catch (e) { /* 없으면 그만 */ }
   await admin.auth().createUser({ uid: OPERATOR_UID, email: 'emuT@solomon-academy.local', password: 'emuTeach1' });
   // 화면 칸에 「남의 제출 칸 막기」를 켠 규칙
-  const 규칙 = fs.readFileSync(path.join(__dirname, '..', '..', 'backup', 'database.rules.2B_잠금켬.json'), 'utf8');
+  const 규칙 = fs.readFileSync(path.join(__dirname, '..', '..', 'backup', 'database.rules.2B_스위치판.json'), 'utf8');
   const r = await fetch(`http://${DB}/.settings/rules.json?ns=demo-solomon`, { method: 'PUT', headers: { Authorization: 'Bearer owner' }, body: 규칙 });
   if (r.status !== 200) throw new Error('규칙 올리기 실패 ' + r.status);
-  console.log('✅ 심었다(화면 칸·일꾼 칸 · 잠금 켠 규칙) — http://127.0.0.1:5000/?emu=1  (emu5 / emu5pass)');
+  const 잠금 = process.argv.includes('--잠금');
+  await admin.database().ref('solomon_hw_v3/submitLock').set(잠금);
+  console.log('✅ 심었다(화면 칸·일꾼 칸 · 스위치 판 규칙 · 막기 ' + (잠금 ? '켬' : '끔') + ') — http://127.0.0.1:5000/?emu=1  (emu5 / emu5pass)');
   process.exit(0);
 })().catch(e => { console.error('⛔', e); process.exit(1); });
