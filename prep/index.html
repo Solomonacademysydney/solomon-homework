@@ -148,21 +148,26 @@ async function 아이고르기(sid) {
     읽기(새뿌리 + '/students/' + sid + '/profile'), 읽기(새뿌리 + '/students/' + sid + '/curricula'), 읽기(새뿌리 + '/students/' + sid + '/sources'),
     읽기(새뿌리 + '/paperResults/' + sid), 읽기(새뿌리 + '/drafts')]);
   const plans = await 읽기(새뿌리 + '/plans', 범위(sid + '_'));
+  // [5단계] 이 학생 주문만(계획 id 가 「학생_」로 시작) · 완전 자동 스위치
+  const [jobs, auto] = await Promise.all([읽기(새뿌리 + '/jobs', (r) => r.orderByChild('planId').startAt(sid + '_').endAt(sid + '_\uf8ff')), 읽기(새뿌리 + '/config/autoProduce')]);
+  판.autoProduce = auto === true;
   const submissions = Object.assign({}, mr || {}, ts || {});
   const 분석 = C.analyzeHomework({ user: u, periods, homeworkSets: hw, submissions, releases: 판.releases, prepSubs: 판.prepSubs, normAns: C.normAns });
   설정편집 = null;
-  아이자료 = { u, win, periods, 분석, plans: plans || {}, weak: weak || {}, profile: prof || {}, curricula: curs || {}, sources: srcs || {}, results: results || {}, drafts: drafts || {} };
+  보는파일 = null;
+  아이자료 = { u, win, periods, 분석, plans: plans || {}, jobs: jobs || {}, weak: weak || {}, profile: prof || {}, curricula: curs || {}, sources: srcs || {}, results: results || {}, drafts: drafts || {} };
   카드그리기();
 }
 
 function 카드그리기() {
   const a = 아이자료; if (!a) return;
-  const 탭 = ['현황', '주간 설정', '종이 시험', '커리·학교 자료'].map(t => `<button class="${t === 고른탭 ? '고름' : ''}" onclick="고른탭='${t}';카드그리기()">${t}</button>`).join('');
+  const 탭 = ['현황', '주간 설정', '종이 시험', '커리·학교 자료', '지난 교재'].map(t => `<button class="${t === 고른탭 ? '고름' : ''}" onclick="고른탭='${t}';카드그리기()">${t}</button>`).join('');
   const 검토 = C.needsCurriculumReview(a.sources);
   let 몸 = '';
   if (고른탭 === '현황') 몸 = 현황그리기(a);
   else if (고른탭 === '주간 설정') 몸 = 설정그리기(a);
   else if (고른탭 === '종이 시험') 몸 = 시험그리기(a);
+  else if (고른탭 === '지난 교재') 몸 = 지난그리기(a);
   else 몸 = 커리그리기(a);
   document.getElementById('카드').innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
       <h2 style="margin:0">${글(a.u.name || a.u.id)} <span class="작게">Y${글(a.u.year)} ${글(a.u.group || '')}</span></h2>
@@ -286,6 +291,61 @@ async function 주문확정() {
     const d = err.details || {};
     알림('❌ 확정 안 됨 — ' + err.message + ' ' + [].concat(d.problems || [], d.conflicts || [], d.unresolved || []).join(' · '));
   }
+}
+
+// ── 지난 교재 · 제작 주문 (5단계) ──
+const 상태말 = { queued: '대기', running: '만드는 중', done: '끝', failed: '실패', held: '보류', cancelled: '취소', 'cancel-requested': '취소 요청' };
+const 파일말 = { test: '테스트지', book: '교재', hw: '숙제', student: '학생용 전체', teacher: '교사용 답지' };
+const 보류말 = { 'token-cap': '토큰 상한을 넘어 멈춤', 'ts-short': 'TS 창고 부족', 'mr-unverified': 'MR 검사·재풀이 못 넘음', 'pdf-check': 'PDF 검사 실패',
+  'not-approved': '교재 미승인', 'bad-plan': '판을 못 읽음', 'curriculum-review': '커리 먼저 검토' };
+let 보는파일 = null;   // { url, 이름 } — 카드 안에서 바로 본다(새 창을 열지 않는다)
+function 지난그리기(a) {
+  const 주문 = Object.entries(a.jobs || {}).sort((x, y) => String(y[1].createdAt).localeCompare(String(x[1].createdAt)));
+  const 주문줄 = 주문.map(([id, j]) => {
+    const w = j.w || {}, u = w.usage || {}, h = w.hold;
+    const 모델 = w.models ? Object.entries(w.models).map(([k, v]) => k + ':' + v.join('/')).join(' · ') : '';
+    return `<tr><td>${글(j.lessonDate || '')}</td><td>${글(j.type)} · 판 ${글(j.rev)}</td>
+      <td class="${j.status === 'held' || j.status === 'failed' ? '빨강' : ''}" data-job="${글(id)}">${글(상태말[j.status] || j.status)}${w.progress && j.status === 'running' ? ' — ' + 글(w.progress.step) : ''}</td>
+      <td class="작게">${u.tokens != null ? '토큰 ' + Number(u.tokens).toLocaleString() + (u.cap ? ' / 상한 ' + Number(u.cap).toLocaleString() : '') : ''}${모델 ? '<br>' + 글(모델) : ''}</td>
+      <td class="작게">${h ? '<span class="빨강">⛔ ' + 글(보류말[h.kind] || h.kind) + '</span> — ' + 글(h.msg) : (w.lastError && j.status !== 'done' ? 글(w.lastError).slice(0, 160) : '')}</td></tr>`;
+  }).join('');
+  const 초안 = Object.entries(a.drafts || {}).filter(([, d]) => d && d.studentId === a.u.id)
+    .sort((x, y) => String(y[1].lessonDate).localeCompare(String(x[1].lessonDate)) || (y[1].planRev - x[1].planRev));
+  const 주차 = {};
+  for (const [id, d] of 초안) (주차[d.lessonDate] = 주차[d.lessonDate] || []).push([id, d]);
+  const 교재 = Object.entries(주차).map(([날, 줄]) => `<div class="판" style="margin:6px 0"><b>${글(날)} 수업</b>
+    ${줄.map(([id, d]) => `<div style="margin:4px 0" data-draft="${글(id)}">${d.kind === 'online' ? '홈페이지 숙제' : '종이 교재'} · 판 ${글(d.planRev)}
+      ${d.sample ? '<span class="경고">표본</span>' : ''}${d.invalidatedByRev ? ' <span class="경고">무효(판 ' + 글(d.invalidatedByRev) + ')</span>' : ''}
+      ${d.approval && d.approval.approved ? ' <span class="딱지 좋음">승인</span>' : ' <span class="작게">' + 글(d.status) + '</span>'}
+      <div>${(d.files || []).filter(f => 파일말[f.kind]).map(f => `<span style="display:inline-block;margin:2px 6px 2px 0">${파일말[f.kind]}${f.pages ? '(' + f.pages + '쪽)' : ''}
+        <button onclick="파일받기('${글(f.path)}','${글(날 + '_' + (a.u.name || a.u.id) + '_' + 파일말[f.kind])}.pdf',true)">보기</button><button onclick="파일받기('${글(f.path)}','${글(날 + '_' + (a.u.name || a.u.id) + '_' + 파일말[f.kind])}.pdf',false)">내려받기</button></span>`).join('')}
+      ${d.kind === 'online' ? (d.sets || []).map(s => 글(s.title) + ' ' + ((s.questions || []).length) + '문항').join(' · ') : ''}</div></div>`).join('')}</div>`).join('');
+  const 뷰 = 보는파일 ? `<div class="섹" id="파일보기"><h3>${글(보는파일.이름)} <button onclick="보는파일=null;카드그리기()">닫기</button></h3>
+      <iframe src="${보는파일.url}" style="width:100%;height:70vh;border:1px solid #ccc"></iframe></div>` : '';
+  return `<div class="섹"><h3>제작 주문</h3>
+      <div class="작게">실행 방식: <b>${판.autoProduce === true ? '완전 자동(PC 일꾼이 알아서)' : '반자동'}</b> —
+        ${판.autoProduce === true ? '' : '확정 주문은 여기 쌓이고, Claude Code 에 「확정 주문 처리해」라고 하시면 그때 만듭니다.'}
+        <label><input type="checkbox" id="자동스위치" ${판.autoProduce === true ? 'checked' : ''} onchange="자동바꿈(this.checked)"> 완전 자동 켜기</label>
+        (PC 설정도 auto 여야 돕니다)</div>
+      ${주문줄 ? `<table><tr><th>수업일</th><th>종류</th><th>상태</th><th>사용량·모델</th><th>까닭</th></tr>${주문줄}</table>` : '<div class="작게">주문이 없습니다.</div>'}</div>
+    <div class="섹"><h3>지난 교재</h3>${교재 || '<div class="작게">아직 만든 교재가 없습니다.</div>'}</div>${뷰}`;
+}
+async function 자동바꿈(켬) {
+  try { await db.ref(새뿌리 + '/config/autoProduce').set(!!켬); 판.autoProduce = !!켬; 알림(켬 ? '완전 자동을 켰습니다' : '반자동으로 돌렸습니다'); }
+  catch (e) { 알림('❌ 바꾸지 못함 — ' + (e.code || e.message)); }
+  카드그리기();
+}
+/** 비공개 파일 — 원장 로그인 토큰으로 직접 받는다(공개 다운로드 주소를 만들지 않는다) */
+async function 파일받기(경로, 이름, 보기만) {
+  try {
+    const t = await firebase.auth().currentUser.getIdToken();
+    const base = _EMU ? 'http://127.0.0.1:9199' : 'https://firebasestorage.googleapis.com';
+    const r = await fetch(base + '/v0/b/' + firebase.app().options.storageBucket + '/o/' + encodeURIComponent(경로) + '?alt=media', { headers: { Authorization: 'Firebase ' + t } });
+    if (!r.ok) throw new Error('응답 ' + r.status);
+    const url = URL.createObjectURL(new Blob([await r.arrayBuffer()], { type: 'application/pdf' }));
+    if (보기만) { if (보는파일) URL.revokeObjectURL(보는파일.url); 보는파일 = { url, 이름 }; 카드그리기(); }
+    else { const l = document.createElement('a'); l.href = url; l.download = 이름; document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000); }
+  } catch (e) { 알림('❌ 파일을 못 받음 — ' + e.message); }
 }
 
 // ── 종이 시험 ──

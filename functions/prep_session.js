@@ -347,6 +347,14 @@ exports._internals = { sessionOf, targetStudent, stripForStudent, safeKey, SESSI
 // ─────────────────────────────────────────────
 const O = require('./order_core');   // 화면(prep/order_core.js)과 글자째 같은 파일
 const SPEC_VERSION = 'order-v1', QA_VERSION = 'qa-v1';
+/** 명세 해시 — 일꾼(prep_worker/core.js specHash)과 같은 셈: 열쇠를 정렬한 직렬화의 sha256 앞 16자 */
+const 빈J = (x) => x === null || x === undefined || (Array.isArray(x) && x.length === 0) || (x && typeof x === 'object' && !Array.isArray(x) && Object.keys(x).every(k => 빈J(x[k])));
+function canonJ(v) {   // DB 는 null·빈 배열·빈 객체를 안 남긴다 ⇒ 빼고 센다
+  if (Array.isArray(v)) return '[' + v.map(canonJ).join(',') + ']';
+  if (v && typeof v === 'object') return '{' + Object.keys(v).sort().filter(k => !빈J(v[k])).map(k => JSON.stringify(k) + ':' + canonJ(v[k])).join(',') + '}';
+  return JSON.stringify(v === undefined ? null : v);
+}
+const specHashOf = (spec) => require('crypto').createHash('sha256').update(canonJ(spec)).digest('hex').slice(0, 16);
 exports.prepConfirmOrder = onCall({ region: S.REGION }, async (req) => {
   if (!req.auth || req.auth.uid !== S.OPERATOR_UID) throw new HttpsError('permission-denied', 'OPERATOR-ONLY');
   const d = req.data || {};
@@ -389,7 +397,8 @@ exports.prepConfirmOrder = onCall({ region: S.REGION }, async (req) => {
   };
   const w = await planRef.child('revisions/' + rev).transaction(cur => (cur ? undefined : 판));
   if (!w.committed) throw new HttpsError('aborted', 'REV-EXISTS');
-  await jobRef.set({ type: 'produce', planId, rev, studentId: sid, lessonDate, status: 'queued', owner: null, createdAt: now });
+  // 5단계: 작업 종류를 이름으로 못박는다(옛 TS 큐 sol_v4/ops 와 다른 줄) · 명세 해시로 중복을 가린다 · 잠금은 일꾼이 lease 로
+  await jobRef.set({ type: 'prep-paper', planId, rev, studentId: sid, lessonDate, specHash: specHashOf(판.spec), maxAttempts: 3, status: 'queued', createdAt: now });
 
   // 옛 판 주문 정리 · 초안 무효 표시
   const 옛주문 = (await db.ref(ROOT + '/jobs').orderByChild('planId').equalTo(planId).once('value')).val() || {};
@@ -403,3 +412,4 @@ exports.prepConfirmOrder = onCall({ region: S.REGION }, async (req) => {
   if (Object.keys(고칠).length) await db.ref(ROOT).update(고칠);
   return { ok: true, planId, rev, jobId: jobRef.key, invalidated, spec: 판.spec };
 });
+exports.specHashOf = specHashOf;   // 시험용(일꾼의 core.specHash 와 같은지) — index.js 는 내보내지 않는다

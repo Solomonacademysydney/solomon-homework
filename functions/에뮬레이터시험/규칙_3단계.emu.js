@@ -11,7 +11,8 @@ const DB = process.env.FIREBASE_DATABASE_EMULATOR_HOST;
 const ST = process.env.FIREBASE_STORAGE_EMULATOR_HOST || '127.0.0.1:9199';
 const NS = 'demo-solomon';
 if (!DB || !/^(127\.0\.0\.1|localhost):\d+$/.test(DB)) { console.log('⛔ DB 에뮬레이터 변수가 없습니다'); console.log('\n셈 — 통과 0 · 실패 1'); process.exit(1); }
-const 규칙 = path.join(__dirname, '..', '..', 'backup', 'database.rules.3단계.json');
+// RULES_FILE 로 바꿔 끼울 수 있다 — 5단계 판(3단계 + 제작 일꾼)이 3단계 약속을 그대로 지키는지 같은 시험으로 잰다
+const 규칙 = path.join(__dirname, '..', '..', 'backup', process.env.RULES_FILE || 'database.rules.3단계.json');
 if (!fs.existsSync(규칙)) { console.log('⛔ 규칙 파일 없음'); console.log('\n셈 — 통과 0 · 실패 1'); process.exit(1); }
 const OP = '62bxWubzDLMrhHjjv2oNfAQiyaD2';
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');

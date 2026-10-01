@@ -1,0 +1,33 @@
+{
+  "_설명": "이 파일을 C:/솔로몬제작/설정.json 으로 복사해 쓴다. 열쇠·학생 자료는 이 저장소(공개)에 두지 않는다.",
+  "mode": "semi",
+  "backend": "cli",
+  "allowApi": false,
+  "models": { "generate": "opus", "verify": "opus", "format": "haiku" },
+  "claudeBin": "C:/Users/jijon/.local/bin/claude.exe",
+  "claudeWorkdir": "C:/솔로몬제작/작업실",
+  "callTimeoutSec": 900,
+  "maxTokensPerJob": 600000,
+  "estimatePerCall": { "generate": 40000, "verify": 20000, "format": 10000 },
+  "batchSize": 12,
+  "maxRounds": 3,
+  "heartbeatSec": 60,
+  "pollSec": 60,
+  "overfullFailPt": 30,
+  "workRoot": "C:/솔로몬제작/일감",
+  "logFile": "C:/솔로몬제작/기록/작업기록.jsonl",
+  "candidatesFile": "C:/솔로몬제작/MR후보/후보.jsonl",
+  "coreDir": "C:/솔로몬제작/toolchain_core",
+  "tsRoot": "C:/TS작업",
+  "python": "python",
+  "edge": "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+  "archive": { "enabled": false, "root": "G:/내 드라이브/Solomon_교재보관/학생별 교재" },
+  "firebase": {
+    "emulator": false,
+    "dbUrl": "https://solomon-76715-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "bucket": "(Storage 를 켠 뒤 콘솔에 보이는 버킷 이름)",
+    "apiKey": "AIzaSyDvj7CDHZ7_Wci0palB9KpbjvCUkvcCRZY",
+    "keyFile": "C:/TS작업/_열쇠/(서비스 계정 열쇠).json",
+    "uid": "ts-worker"
+  }
+}

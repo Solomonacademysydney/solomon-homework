@@ -92,7 +92,7 @@ async function 심기(db) {
   try { await admin.auth().deleteUser(OPERATOR_UID); } catch (e) { /* 없으면 그만 */ }
   await admin.auth().createUser({ uid: OPERATOR_UID, email: 'emuT@solomon-academy.local', password: 'emuTeach1' });
   // 화면 칸에 「남의 제출 칸 막기」를 켠 규칙
-  const 규칙 = fs.readFileSync(path.join(__dirname, '..', '..', 'backup', 'database.rules.3단계.json'), 'utf8');
+  const 규칙 = fs.readFileSync(path.join(__dirname, '..', '..', 'backup', 'database.rules.5단계.json'), 'utf8');
   const r = await fetch(`http://${DB}/.settings/rules.json?ns=demo-solomon`, { method: 'PUT', headers: { Authorization: 'Bearer owner' }, body: 규칙 });
   if (r.status !== 200) throw new Error('규칙 올리기 실패 ' + r.status);
   const 잠금 = process.argv.includes('--잠금');
