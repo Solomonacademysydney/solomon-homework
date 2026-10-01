@@ -226,7 +226,8 @@ function 약점세상(서버) {
   console.log('\n── ⑤ 읽는 쪽 — 원문으로 나누고 옛 자료도 읽는다');
   {
     const { F } = 약점세상(가짜서버());
-    const 지금 = new Date().toISOString();
+    // 1분 전 — 읽개는 「ts < 지금」 이라 같은 밀리초면 빠진다(시험이 가끔 넘어지던 까닭)
+    const 지금 = new Date(Date.now() - 60 * 1000).toISOString();
     const 줄 = (n, c) => Array.from({ length: n }, (_, i) => ({ ts: 지금, correct: i < c }));
     const 약점 = { skills: {
       [F.taxSafeKey('MR.Y8.AL.LE.linear')]: { taxonomyId: 'MR.Y8.AL.LE.linear', history: 줄(4, 1) },

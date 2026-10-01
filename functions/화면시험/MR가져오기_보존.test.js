@@ -167,7 +167,8 @@ function 등록세상({ 서버칸, 쓰기망가뜨림, 파일 }) {
     },
     fbSetHomeworkMaths: () => { throw new Error('등록은 확인 가능한 쓰기(fbSetHomeworkSet + 끝)로 가야 한다'); },
     tagQuestions: async (qs) => { 상태.태깅받음.push(qs.map(q => q.id)); qs.forEach(q => { q.taxonomy_id = 'MR.AI.TAG'; }); },
-    showTaggingReviewModal: () => {},
+    showTaggingReviewModal: () => { 상태.확인창 = true; },
+    AUTO_TAG_ENABLED: false,
     _katexToMixed: (s) => s,
     selectedCountry: 'AU', selectedGroup: '',
     document: {
@@ -203,8 +204,10 @@ const 파일 = { A: { title: 'Fractions', questions: [
     재기('파일의 분류가 서버까지 간다', a.taxonomy_id === 'MR.Y5.NA.FR.add', a.taxonomy_id);
     재기('출처가 서버까지 간다', a.source === 'ICAS', a.source);
     재기('정답·해설이 서버까지 간다', a.answer === '2' && a.explanation === 'e1' && b.answer === '3');
-    재기('AI 태깅은 분류 없는 문항만 받는다', JSON.stringify(s.태깅받음) === JSON.stringify([['q1']]), JSON.stringify(s.태깅받음));
-    재기('분류 없던 문항은 태깅값을 받는다', b.taxonomy_id === 'MR.AI.TAG', b.taxonomy_id);
+    // [1단계 추가 · 2026-10-01 원장 결정] 자동 분류(유료 API)는 끈다 — 분류 없는 문항은 분류 없이 등록
+    재기('AI 자동 분류를 부르지 않는다', s.태깅받음.length === 0, JSON.stringify(s.태깅받음));
+    재기('분류 없던 문항은 분류 없이 등록된다', !b.taxonomy_id, b.taxonomy_id);
+    재기('파일 분류만으로는 「자동 태깅 확인」 창을 띄우지 않는다', !s.확인창, '');
     재기('다시 읽어 맞으면 「등록 완료」', s.몸.some(t => /등록 완료/.test(t)), JSON.stringify(s.몸));
   }
   {
@@ -225,6 +228,19 @@ const 파일 = { A: { title: 'Fractions', questions: [
     s.서버손질 = (칸) => { 칸.sets[0].questions[0].answer = 'X'; };   // 내용이 바뀌어 들어갔다
     await s.F.doImportHwJson(5);
     재기('다시 읽은 내용 지문이 다르면 「완료」가 아니다', !s.몸.some(t => /등록 완료/.test(t)), JSON.stringify(s.몸));
+  }
+  {
+    // 자동 분류 스위치 — 꺼져 있으면 tagQuestions 가 AI 를 부르지 않는다
+    재기('AUTO_TAG_ENABLED 가 false 로 박혀 있다', /const AUTO_TAG_ENABLED = false;/.test(html));
+    const tq = 떼기('async function tagQuestions(questions, year) {', '\n// ── ANSWER VERIFICATION');
+    let 불림 = 0;
+    const tagQ = new Function('AUTO_TAG_ENABLED', 'window', 'callAI', 'flattenTaxonomySubskills', 'parseTaggingResponse', 'console',
+      tq + '\n; return tagQuestions;')(false, { TAXONOMY_MR: {} }, async () => { 불림++; return '{}'; },
+      () => [{ id: 'MR.X', name: 'x' }], () => ({}), { warn() {}, log() {} });
+    const r = await tagQ([{ num: 1, text: 'q' }], 5);
+    재기('스위치가 꺼져 있으면 tagQuestions 가 AI 를 안 부른다', 불림 === 0 && r.skipped === true, JSON.stringify(r));
+    const 저장 = 떼기('async function doSave(', '\nfunction ');
+    재기('수동 세트 저장(doSave)도 스위치를 본다', /AUTO_TAG_ENABLED/.test(저장));
   }
   {
     // 지문은 그림 떼기(figure → 번호)에 흔들리지 않아야 한다

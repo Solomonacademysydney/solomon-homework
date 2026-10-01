@@ -6411,7 +6411,7 @@ async function doSave() {
 
     // Phase C: auto-tag questions before save
     let tagResult = { skipped: true };
-    if (window.TAXONOMY_MR) {
+    if (AUTO_TAG_ENABLED && window.TAXONOMY_MR) {   // [2026-10-01] 자동 분류 꺼짐
       showBackupToast('🏷️ 태깅 중...');
       tagResult = await tagQuestions(qs, selectedYear);
     }
@@ -12262,7 +12262,13 @@ function finalizeTagReview() {
   showBackupToast('✅ 태깅 확정 완료');
 }
 
+// ★ [2026-10-01 원장 결정] 자동 분류(AI 태깅) 스위치 — 유료 API 라 끈다. 켤 일이 생기면 여기 하나만.
+const AUTO_TAG_ENABLED = false;
+
 async function tagQuestions(questions, year) {
+  // ⛔ [2026-10-01 원장 결정] 자동 분류는 끈다 — 유료 API(callClaudeForStudent)를 부른다.
+  //   분류는 문제를 만들 때 JSON 에 붙이고, 등록은 그것을 그대로 지킨다. 없으면 분류 없이 등록.
+  if (!AUTO_TAG_ENABLED) return { questions, skipped: true, reason: 'off' };
   if (!window.TAXONOMY_MR) {
     console.warn('[Tag] Taxonomy not loaded, skipping');
     return { questions, skipped: true, reason: 'no_taxonomy' };
@@ -16062,6 +16068,7 @@ async function doImportHwJson(yr) {
   if (hw.sets == null) hw.sets = [];   // [2026-09-23] 세트를 다 지운 칸엔 sets 가 없다 (_칸맞추기 에서도 세우지만 여기서 한 번 더)
   const addedSets = [];
   const addedIdxs = [];
+  let _자동태깅함 = false;   // 「자동 태깅 확인」 창은 AI 가 붙인 분류가 있을 때만
 
   // [제출 정리 안전망] 새로 추가될 자리들의 기존 제출 기록 확인
   // 대상: 해당 학년+국가 전체 학생 (테스트·비활성 포함 — 고아 기록 방지)
@@ -16089,9 +16096,10 @@ async function doImportHwJson(yr) {
     // Phase C: auto-tag imported questions
     // ★ [1단계] 파일에 분류가 있는 문항은 태깅이 덮지 않는다 — **분류 없는 문항만** 보낸다.
     const _태깅할것 = questions.filter(q => !q.taxonomy_id);
-    if (window.TAXONOMY_MR && _태깅할것.length) {
+    if (AUTO_TAG_ENABLED && window.TAXONOMY_MR && _태깅할것.length) {   // [2026-10-01] 자동 분류 꺼짐
       showBackupToast(`🏷️ 태깅 중... (${setTitle})`);
       await tagQuestions(_태깅할것, yr);
+      _자동태깅함 = true;
     }
 
     // [제출 정리 안전망] 이 자리의 기존 제출 기록 정리 (보관 후 삭제)
@@ -16143,7 +16151,7 @@ async function doImportHwJson(yr) {
   setTimeout(() => msg.remove(), 4000);
 
   // Phase C: show review modal for first set with tagged questions
-  if (window.TAXONOMY_MR && addedIdxs.length > 0) {
+  if (_자동태깅함 && window.TAXONOMY_MR && addedIdxs.length > 0) {
     const firstIdx = addedIdxs[0];
     const firstSet = hw.sets[firstIdx];
     if (firstSet?.questions?.some(q => q.taxonomy_id)) {
