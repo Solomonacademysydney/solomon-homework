@@ -2,7 +2,9 @@
 //   firebase emulators:exec --only database,auth,storage --project demo-solomon "node functions/에뮬레이터시험/일꾼.emu.js"
 // 지시서 5단계 완료 기준: 한 학생 설정에 맞는 PDF·온라인 초안 생성 · 모든 문항이 명세와 연결 ·
 //   생성·업로드 실패 · 한도 초과 · 중단 복구 · 중복 주문 시험 · 비용 상한 초과 시 중단과 화면 표시(w.hold)
-// 원장 지시: 일꾼은 drafts 에만(숙제 칸·공개 과제·제출 ✕) · 반자동 기본 · 드라이브 복사는 임시 폴더로만
+// 원장 지시: 일꾼은 drafts 에만(숙제 칸·공개 과제·제출 ✕) · 반자동 기본
+// 10-01 방향 바꿈: 저장소(Storage) 안 씀 — 교재 PDF·답지·원본 JSON 은 드라이브 학생별·주차별 폴더 · 학교 사진은 드라이브에서 찾기
+//   ⛔ 시험은 실제 드라이브가 아니라 **임시 폴더**로만(아래 바탕 = os.tmpdir 안)
 'use strict';
 const fs = require('fs');
 const os = require('os');
@@ -50,7 +52,7 @@ function 설정(이름, 덧) {
   return Object.assign({ mode: 'semi', backend: 'fake', allowApi: false, models: { generate: 'opus', verify: 'opus', format: 'haiku' }, maxTokensPerJob: 100000,
     estimatePerCall: {}, batchSize: 12, maxRounds: 2, workRoot: path.join(바탕, 이름, '일감'), logFile: path.join(바탕, 이름, '기록.jsonl'),
     candidatesFile: path.join(바탕, 이름, '후보.jsonl'), coreDir: 'C:/솔로몬제작/toolchain_core', tsRoot: 'C:/TS작업', python: 'python', edge: EDGE,
-    heartbeatSec: 60, workerId: 'PC-A', firebase: { emulator: true, dbUrl: 'http://' + DB, ns: 'demo-solomon', bucket: 'demo-solomon.appspot.com',
+    heartbeatSec: 60, workerId: 'PC-A', output: 'drive', drive: { root: path.join(바탕, 이름, '학생별 교재'), curriculumRoot: path.join(바탕, '찾기없음') }, firebase: { emulator: true, dbUrl: 'http://' + DB, ns: 'demo-solomon', bucket: 'demo-solomon.appspot.com',
       storageBase: 'http://' + ST, authBase: 'http://' + AUTH, apiKey: 'demo-key', uid: 'ts-worker' } }, 덧 || {});
 }
 function 작은설정() {
@@ -120,19 +122,17 @@ async function 주문(날, s) {
   재기('초안: 공개 아님 · 교재 검토 상태 · 판·학생 맞음', d1.published === false && d1.status === 'paperReview' && d1.planRev === 1 && d1.studentId === 'emu5');
   const 파일 = Object.fromEntries((d1.files || []).map(f => [f.kind, f]));
   재기('PDF 5종(테스트지·교재·숙제·학생용 전체·교사용 답지) + 원본 JSON·검수 기록', ['test', 'book', 'hw', 'student', 'teacher', 'items', 'qa'].every(k => 파일[k]), Object.keys(파일).join(','));
-  재기('학생용과 교사용 답지는 자리가 다르다', /\/student\//.test(파일.student.path) && /\/teacher\//.test(파일.teacher.path));
-  const 다시 = await fb.download(파일.teacher.path);
-  재기('저장소에서 다시 읽은 해시 = 기록한 해시', C.sha256(다시) === 파일.teacher.sha256);
-  재기('올린 파일마다 다운로드 토큰 처리 기록(에뮬레이터는 지우기를 지원 안 해 「건너뜀」 — 운영에서 지우고 다시 읽어 확인)', d1.files.every(f => f.downloadToken === 'emulator-skip'));
+  재기('드라이브 학생/수업일/판 폴더 · 날짜_학생_판_종류 이름', d1.files.every(f => f.where === 'drive' && f.rel === '시험오/2026-10-06/판1' && f.name.startsWith('2026-10-06_시험오_판1_'))
+    && 파일.teacher.name.endsWith('_교사용답지.pdf') && 파일.student.name.endsWith('_학생용전체.pdf') && 파일.items.name.endsWith('_원본.json'), JSON.stringify(d1.files.map(f => f.rel + '/' + f.name)));
+  재기('드라이브(임시 폴더)에 실제로 있고 다시 읽은 해시 = 기록한 해시', d1.files.every(f => { const q = path.join(cA.drive.root, f.rel, f.name); return fs.existsSync(q) && C.sha256(fs.readFileSync(q)) === f.sha256; }));
+  재기('저장소(Storage) 자리는 안 씀 — 파일 기록에 저장소 경로가 없다', d1.files.every(f => !f.path && !f.downloadToken));
   재기('검사: 학생용 전체에 칸 수만큼 문항 · 쪽 있음', d1.qa.ok && d1.qa.files.student.count === 칸.length && d1.qa.files.student.pages >= 3, JSON.stringify(d1.qa));
   재기('작업 기록: 토큰·실제 모델(생성·검증 opus · 설정대로)', 끝.w.usage.tokens > 0 && JSON.stringify(끝.w.models.generate) === '["claude-opus-fake"]' && JSON.stringify(끝.w.models.verify) === '["claude-opus-fake"]', JSON.stringify(끝.w.models));
   const 기록줄 = fs.readFileSync(cA.logFile, 'utf8').trim().split('\n').map(x => JSON.parse(x));
   재기('PC 작업 기록 파일에 호출마다 모델·토큰', 기록줄.filter(x => x.call).every(x => x.models && x.tokens > 0) && 기록줄.some(x => x.msg === '끝'));
   const 후보 = fs.readFileSync(cA.candidatesFile, 'utf8').trim().split('\n').map(x => JSON.parse(x));
   재기('생성 MR 은 「미승인 후보」로 적립(문항·정답·분류·출처·검수)', 후보.length === 칸.filter(s => s.src === 'mr').length && 후보.every(x => x.status === 'unapproved' && x.answer && x.unit && x.source.draftId && x.verify));
-  재기('저장소 일꾼 초안 덮어쓰기 ✕', await 거절됨(() => fb.upload(파일.test.path, Buffer.from('%PDF-1.4 x'), 'application/pdf')));
-  재기('저장소: 학교 자료 자리(sources) 쓰기 ✕ · PDF·JSON 말고 ✕', await 거절됨(() => fb.upload('prep/emu5/sources/x.pdf', Buffer.from('%PDF'), 'application/pdf'))
-    && await 거절됨(() => fb.upload('prep/emu5/drafts/zz/student/x.html', Buffer.from('<b>'), 'text/html')));
+  재기('일꾼은 학교 자료(sources)·드라이브 폴더 연결 칸에 못 쓴다', await 거절됨(() => fb.put('sol_prep_v1/students/emu5/sources/x', { name: 'x' })) && await 거절됨(() => fb.put('sol_prep_v1/driveFolders/민아', 'emu5')));
 
   console.log('\n── 중복 주문 · 늦게 온 옛 결과');
   const r1b = await W.한바퀴(cA, fb, { job: o1.jobId });
@@ -165,10 +165,11 @@ async function 주문(날, s) {
   console.log('\n── 중단 뒤 이어하기 · 올리기 실패');
   const o4 = await 주문('2026-10-20');
   const g4 = 가짜();
-  const cD = 설정('이어', { fake: g4.fake, firebase: Object.assign({}, 설정('x').firebase, { storageBase: 'http://127.0.0.1:9' }) });
-  const r4 = await W.한바퀴(cD, new FB(cD.firebase), { job: o4.jobId });   // 저장소가 죽은 연결
+  const 막힌자리 = path.join(바탕, '파일이라폴더못만듦'); fs.writeFileSync(막힌자리, 'x');
+  const cD = 설정('이어', { fake: g4.fake }); cD.drive = { root: path.join(막힌자리, '학생별 교재'), curriculumRoot: path.join(바탕, '찾기없음') };
+  const r4 = await W.한바퀴(cD, fb, { job: o4.jobId });   // 드라이브에 못 씀(동기화 폴더가 없거나 막힘)
   const j4 = await 값('sol_prep_v1/jobs/' + o4.jobId);
-  재기('올리기 실패 → 다시 대기(queued) · 까닭 기록 · 재시도 1', j4.status === 'queued' && /fetch failed|올리기|거절/.test(j4.w.lastError) && j4.w.attempts === 1, JSON.stringify(r4) + JSON.stringify(j4.w));
+  재기('드라이브 저장 실패 → 다시 대기(queued) · 까닭 기록 · 재시도 1', j4.status === 'queued' && /ENOTDIR|EEXIST|ENOENT/.test(j4.w.lastError) && j4.w.attempts === 1, JSON.stringify(r4) + JSON.stringify(j4.w));
   const 앞호출 = g4.n.generate + g4.n.verify;
   // PC 가 죽은 것처럼: 내 잠금이 살아 있는 채 「running」
   await db.ref('sol_prep_v1/jobs/' + o4.jobId).update({ status: 'running', lease: { workerId: 'PC-A', token: 'tok-old', until: Date.now() + 60000 } });
@@ -180,15 +181,20 @@ async function 주문(날, s) {
 
   console.log('\n── 재시도 다 씀 · 재풀이 불일치 · TS 창고 부족');
   const o5 = await 주문('2026-10-27');
-  const cE = 설정('실패', { fake: 가짜().fake, firebase: Object.assign({}, 설정('x').firebase, { storageBase: 'http://127.0.0.1:9' }) });
-  const fbE = new FB(cE.firebase);
-  for (let i = 0; i < 3; i++) await W.한바퀴(cE, fbE, { job: o5.jobId });
+  const cE = 설정('실패', { fake: 가짜().fake }); cE.drive = { root: path.join(막힌자리, '교재'), curriculumRoot: path.join(바탕, '찾기없음') };
+  for (let i = 0; i < 3; i++) await W.한바퀴(cE, fb, { job: o5.jobId });
   재기('세 번 실패하면 failed', (await 값('sol_prep_v1/jobs/' + o5.jobId + '/status')) === 'failed');
   const o6 = await 주문('2026-11-03');
   const g6 = 가짜({ wrong: (slot) => slot === 'm001' });
   await W.한바퀴(설정('불일치', { fake: g6.fake }), fb, { job: o6.jobId });
   const j6 = await 값('sol_prep_v1/jobs/' + o6.jobId);
   재기('재풀이가 계속 어긋나면 보충 생성 뒤 보류(mr-unverified) · 어느 문항인지', j6.status === 'held' && j6.w.hold.kind === 'mr-unverified' && JSON.stringify(j6.w.hold.detail).includes('m001') && g6.n.generate >= 2, JSON.stringify(j6.w.hold));
+  const o6b = await 주문('2026-11-04');
+  const g6b = 가짜({ onCall: async (role) => { if (role === 'verify') throw new Error("claude 오류: API Error: Opus 5.5's safeguards flagged this message"); } });
+  await W.한바퀴(설정('막힘', { fake: g6b.fake }), fb, { job: o6b.jobId });
+  const j6b = await 값('sol_prep_v1/jobs/' + o6b.jobId);
+  재기('검증 호출이 막히면 재시도로 헛돌지 않고 보류(claude-blocked) · 막힌 문항·까닭이 화면용 칸에', j6b.status === 'held' && j6b.w.hold.kind === 'claude-blocked' && /검증/.test(j6b.w.hold.msg)
+    && Array.isArray(j6b.w.hold.detail.slots) && j6b.w.hold.detail.slots.length > 0, JSON.stringify(j6b.w));
   const 큰 = 작은설정(); 큰.ts.title = '결론을 이끄는 근거'; 큰.difficulty.target = 5; 큰.ts.practice = 40;
   const o7 = await 주문('2026-11-10', 큰);
   await W.한바퀴(설정('부족', { fake: 가짜().fake }), fb, { job: o7.jobId });
@@ -212,14 +218,16 @@ async function 주문(날, s) {
   await W.한바퀴(설정('미승인', { fake: 가짜().fake }), fb, { job: ju.key });
   재기('승인 안 된 교재로는 온라인을 안 만든다(보류 not-approved)', (await 값('sol_prep_v1/jobs/' + ju.key + '/w/hold/kind')) === 'not-approved');
 
-  console.log('\n── 구글 드라이브 보관(임시 폴더로만) · 실행 방식 스위치');
-  const 임시 = path.join(바탕, '드라이브흉내');
-  const plan = await W.보관(설정('보관'), fb, 끝.w.resultRef, 임시);
-  재기('학생/수업일 폴더에 PDF 5종 · 해시 같음', plan.length === 5 && plan.every(p => fs.existsSync(p.to) && C.sha256(fs.readFileSync(p.to)) === p.sha256) && plan[0].to.includes(path.join('시험오', '2026-10-06').replace(/\\/g, '/')), JSON.stringify(plan.map(p => p.to)));
-  const plan2 = await W.보관(설정('보관'), fb, 끝.w.resultRef, 임시);
-  재기('두 번 복사해도 같은 파일은 그대로(덮어쓰기 없음)', plan2.length === 5);
-  let 막 = false; try { await W.보관(설정('보관'), fb, (await 값('sol_prep_v1/jobs/' + o4.jobId + '/w/resultRef')), 임시); } catch (e) { 막 = /승인/.test(e.message); }
-  재기('승인 안 된 교재는 복사 안 함', 막);
+  console.log('\n── 드라이브 저장(임시 폴더로만) · 실행 방식 스위치');
+  const 덮기 = new W.처리(설정('덮기'), fb, 'jx-덮기', { studentId: 'emu5', lessonDate: '2026-10-06', rev: 9 }, {});
+  const 원본 = path.join(바탕, 'a.pdf'); fs.writeFileSync(원본, '%PDF-A');
+  const 첫 = 덮기.드라이브저장({ koName: '시험오' }, [{ kind: 'test', local: 원본, ext: 'pdf' }]);
+  const 둘째 = 덮기.드라이브저장({ koName: '시험오' }, [{ kind: 'test', local: 원본, ext: 'pdf' }]);
+  재기('같은 파일을 다시 저장하면 그대로(두 번째도 통과)', 첫[0].sha256 === 둘째[0].sha256);
+  fs.writeFileSync(원본, '%PDF-B'); let 덮음막 = false;
+  try { 덮기.드라이브저장({ koName: '시험오' }, [{ kind: 'test', local: 원본, ext: 'pdf' }]); } catch (e) { 덮음막 = /덮어쓰지 않음/.test(e.message); }
+  재기('같은 이름의 다른 파일은 덮어쓰지 않는다(실패로 알림)', 덮음막);
+  재기('드라이브 폴더 이름: driveFolder → koName → name → 학생 id', W.폴더이름({ driveFolder: '민아', koName: 'x' }, 's') === '민아' && W.폴더이름({ koName: '시험오' }, 's') === '시험오' && W.폴더이름({}, 'emu5') === 'emu5');
   재기('완전 자동: 이 PC 설정 semi 면 꺼짐', !(await W.자동켜짐(설정('s'), fb)));
   재기('완전 자동: auto 라도 DB 스위치가 없으면 꺼짐', !(await W.자동켜짐(설정('s', { mode: 'auto' }), fb)));
   await db.ref('sol_prep_v1/config/autoProduce').set(true);
@@ -231,6 +239,25 @@ async function 주문(날, s) {
   const o9 = await 주문('2026-11-17'); const g9 = 가짜();
   await W.한바퀴(설정('커리보류', { fake: g9.fake }), fb, { job: o9.jobId });
   재기('「커리 먼저 검토」가 켜져 있으면 Claude 를 안 부르고 보류(curriculum-review)', (await 값('sol_prep_v1/jobs/' + o9.jobId + '/w/hold/kind')) === 'curriculum-review' && g9.n.generate === 0);
+
+  console.log('\n── 학교 자료 — 휴대폰 드라이브 앱으로 올린 새 파일을 PC 일꾼이 찾는다(임시 폴더)');
+  await db.ref('sol_prep_v1/students/emu5/profile/holdForCurriculum').remove();
+  const 커리 = path.join(바탕, '학생별 커리');
+  fs.mkdirSync(path.join(커리, '민아', '학교자료'), { recursive: true }); fs.writeFileSync(path.join(커리, '민아', '학교자료', '시험범위.jpg'), 'jpg');
+  fs.writeFileSync(path.join(커리, '민아', '학교자료', '메모.txt'), 'txt');
+  fs.mkdirSync(path.join(커리, '모르는아이', '학교자료'), { recursive: true }); fs.writeFileSync(path.join(커리, '모르는아이', '학교자료', 'a.pdf'), '%PDF');
+  await db.ref('sol_prep_v1/driveFolders/민아').set('emu5');
+  const cS = 설정('찾기'); cS.drive.curriculumRoot = 커리;
+  const 찾음 = await W.학교자료찾기(cS, fb);
+  const 받은함 = (await 값('sol_prep_v1/inbox/emu5')) || {};
+  재기('연결된 폴더(민아→emu5)의 새 사진 1개만 알림(메모.txt 는 뺌)', 찾음.적음.length === 1 && Object.values(받은함).length === 1 && Object.values(받은함)[0].status === 'new' && Object.values(받은함)[0].name === '시험범위.jpg', JSON.stringify(찾음));
+  재기('연결 안 된 폴더는 「미연결」로 따로 알림', 찾음.미연결.length === 1 && Object.values((await 값('sol_prep_v1/inbox/_미연결')) || {}).length === 1);
+  재기('다시 찾아도 같은 파일은 또 알리지 않는다', (await W.학교자료찾기(cS, fb)).적음.length === 0);
+  재기('일꾼은 이미 적힌 알림을 덮지 못한다(새로 적기만)', await 거절됨(() => fb.put('sol_prep_v1/inbox/emu5/' + Object.keys(받은함)[0], { name: 'x', status: 'new' })));
+  const o10 = await 주문('2026-11-24'); const g10 = 가짜();
+  await W.한바퀴(설정('새자료', { fake: g10.fake }), fb, { job: o10.jobId, noScan: true });
+  const j10 = await 값('sol_prep_v1/jobs/' + o10.jobId);
+  재기('새 학교 자료가 있으면 그 학생 제작은 보류(curriculum-review · 「새 학교 자료」) · Claude 안 부름', j10.w.hold.kind === 'curriculum-review' && /새 학교 자료/.test(j10.w.hold.msg) && g10.n.generate === 0, JSON.stringify(j10.w.hold));
 
   await db.ref().set(null);
   console.log('\n셈 — 통과 ' + 통과 + ' · 실패 ' + 실패);

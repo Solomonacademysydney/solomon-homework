@@ -499,6 +499,22 @@
     return Object.values(sources || {}).some(s => s && ['uploaded', 'drafted', 'confirmed'].includes(s.status || 'uploaded'));
   }
   /** 개정 뒤 무효로 볼 초안 — 그 학생의 **미공개** 초안 중 옛 판 기준인 것만 */
+  /* ── 5단계 방향 바꿈(10-01): 학교 사진은 원장이 휴대폰 드라이브 앱으로 올리고, PC 일꾼이 찾아 inbox 에 적는다 ── */
+  function hasNewSchoolFiles(inbox) { return Object.values(inbox || {}).some(x => x && x.status === 'new'); }
+  /** inbox 의 새 파일 → 학교 자료(sources) 한 줄씩. 이미 있는 자료는 건너뛴다. 원장 화면이 쓴다(sources 는 원장만 쓰는 칸) */
+  function inboxImports(inbox, sources) {
+    const out = [];
+    for (const [id, x] of Object.entries(inbox || {})) {
+      if (!x || x.status !== 'new') continue;
+      const sourceId = 'drive_' + String(id).replace(/[^A-Za-z0-9_-]/g, '_');
+      if ((sources || {})[sourceId]) continue;
+      out.push({ inboxId: id, sourceId, source: { name: x.name || '', driveRel: x.rel || '', size: x.size || 0, via: 'drive', status: 'uploaded', uploadedAt: x.foundAt || '' } });
+    }
+    return out;
+  }
+  /** 드라이브에서 파일 이름으로 찾는 주소(원장 구글 계정으로 연다 · 공개 링크 아님) */
+  function driveSearchUrl(name) { return name ? 'https://drive.google.com/drive/search?q=' + encodeURIComponent('"' + name + '"') : ''; }
+
   function staleDrafts(drafts, sid, currentRev) {
     const cur = revNum(currentRev);
     return Object.keys(drafts || {}).filter(k => {
@@ -514,6 +530,7 @@
     taxSafeKey, taxFromSafeKey, weakTop,
     normAns, weaknessMerge, newTestId, validateTestSpec, gradePaper, nextPaperRecord, paperSummary, paperWeaknessJob,
     planLessonDates, validateCurriculum, diffCurriculum, nextCurriculumRev, sourceStep, needsCurriculumReview, staleDrafts,
+    hasNewSchoolFiles, inboxImports, driveSearchUrl,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = PrepCore;
   else root.PrepCore = PrepCore;

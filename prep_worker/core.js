@@ -256,5 +256,21 @@ function archivePlan(root, studentName, lessonDate, files) {
   return files.map(f => ({ from: f.local, to: dir + '/' + lessonDate + '_' + (이름[f.kind] || f.kind) + '.pdf', sha256: f.sha256 }));
 }
 
-module.exports = { KNOWN_TYPES, LEASE_MS, canon, sha256, specHash, draftIdFor, apportion, slotsFromSpec, sampleSlots, valueOf, evalExact, sameAnswer,
+/* ── 구글 드라이브 저장(10-01 원장 결정: 저장소(Storage) 안 씀 · PDF 는 원장만 보고 인쇄) ── */
+/** 학생/수업일/판N(표본이면 판N_표본) */
+function driveDest(root, folder, job, sample) {
+  const rel = safeName(folder) + '/' + job.lessonDate + '/판' + job.rev + (sample ? '_표본' : '');
+  return { dir: String(root).replace(/[\\/]+$/, '') + '/' + rel, rel };
+}
+const 종류이름 = { test: '테스트지', book: '교재', hw: '숙제', student: '학생용전체', teacher: '교사용답지', items: '원본', qa: '검수기록' };
+/** 날짜_학생_판N_종류.확장자 — 드라이브 검색으로 하나만 찾히게 이름에 다 넣는다 */
+function driveFileName(folder, job, kind, ext, sample) { return job.lessonDate + '_' + safeName(folder) + '_판' + job.rev + (sample ? '_표본' : '') + '_' + (종류이름[kind] || kind) + '.' + ext; }
+/** 학교 자료 폴더에서 새로 생긴 사진·PDF — id = 경로+크기(같은 파일은 같은 id · 새로 찍어 덮으면 새 id) */
+function schoolFileNews(files, known) {
+  return (files || []).filter(f => /\.(jpe?g|png|heic|webp|pdf)$/i.test(f.name) && !/^(~\$|\.)/.test(f.name))
+    .map(f => Object.assign({ id: sha256(f.rel + '|' + f.size).slice(0, 16) }, f))
+    .filter(f => !(known || {})[f.id]);
+}
+
+module.exports = { driveDest, driveFileName, schoolFileNews, KNOWN_TYPES, LEASE_MS, canon, sha256, specHash, draftIdFor, apportion, slotsFromSpec, sampleSlots, valueOf, evalExact, sameAnswer,
   resolveChoice, checkMrItems, compareSolve, leaseDecision, usageTokens, overCap, itemIdFor, buildManifest, checkPdfText, archivePlan, safeName };

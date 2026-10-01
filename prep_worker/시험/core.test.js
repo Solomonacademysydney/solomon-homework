@@ -89,5 +89,29 @@ const ap = C.archivePlan('C:/tmp/보관/', '유준', '2026-10-06', [{ kind: 'tes
 재기('학생/수업일/날짜_종류.pdf', ap[0].to === 'C:/tmp/보관/유준/2026-10-06/2026-10-06_테스트지.pdf' && ap[1].to.endsWith('교사용_답지.pdf'));
 재기('이름의 금지 글자는 바꾼다', C.safeName('a/b:c') === 'a_b_c');
 
+console.log('\n── 드라이브 저장(10-01 방향 바꿈: 저장소 대신 드라이브)');
+{
+  const d = C.driveDest('C:/tmp/교재/', '민아', { lessonDate: '2026-10-06', rev: 2 }, false);
+  재기('학생/수업일/판 폴더', d.dir === 'C:/tmp/교재/민아/2026-10-06/판2' && d.rel === '민아/2026-10-06/판2', JSON.stringify(d));
+  재기('표본은 폴더에 「표본」 표시', C.driveDest('C:/r', '민아', { lessonDate: '2026-10-06', rev: 1 }, true).dir.endsWith('/판1_표본'));
+  const n = C.driveFileName('민아', { lessonDate: '2026-10-06', rev: 2 }, 'teacher', 'pdf');
+  재기('파일 이름 = 날짜_학생_판_종류(드라이브 검색으로 하나만 찾히게)', n === '2026-10-06_민아_판2_교사용답지.pdf', n);
+  재기('표본은 파일 이름에도 「표본」(같은 판 정식 교재와 검색이 안 섞이게)', C.driveFileName('민아', { lessonDate: '2026-10-06', rev: 2 }, 'test', 'pdf', true) === '2026-10-06_민아_판2_표본_테스트지.pdf');
+  재기('원본 JSON·검수 기록 이름', C.driveFileName('민아', { lessonDate: '2026-10-06', rev: 2 }, 'items', 'json') === '2026-10-06_민아_판2_원본.json'
+    && C.driveFileName('민아', { lessonDate: '2026-10-06', rev: 2 }, 'qa', 'json') === '2026-10-06_민아_판2_검수기록.json');
+}
+
+console.log('\n── 학교 자료 새 파일 찾기(원장님이 휴대폰 드라이브 앱으로 올림)');
+{
+  const 파일 = [{ rel: '민아/학교자료/범위.jpg', name: '범위.jpg', size: 100, mtime: 1 }, { rel: '민아/학교자료/메모.txt', name: '메모.txt', size: 5, mtime: 1 },
+    { rel: '민아/학교자료/시험지.PDF', name: '시험지.PDF', size: 900, mtime: 2 }, { rel: '민아/학교자료/~$임시.jpg', name: '~$임시.jpg', size: 1, mtime: 3 }];
+  const 새 = C.schoolFileNews(파일, {});
+  재기('사진·PDF 만(대소문자 무관) · 임시 파일 뺌', 새.length === 2 && 새.every(x => /\.(jpg|pdf)$/i.test(x.name)), JSON.stringify(새.map(x => x.name)));
+  재기('파일 id 는 경로+크기로 고정(같은 파일은 같은 id)', 새[0].id === C.schoolFileNews(파일, {})[0].id && /^[a-f0-9]{16}$/.test(새[0].id));
+  const 받은 = {}; 새.forEach(x => { 받은[x.id] = { status: 'new' }; });
+  재기('이미 알린 파일은 다시 알리지 않는다', C.schoolFileNews(파일, 받은).length === 0);
+  재기('같은 이름이라도 크기가 바뀌면(새로 찍어 덮음) 새 파일', C.schoolFileNews([Object.assign({}, 파일[0], { size: 101 })], 받은).length === 1);
+}
+
 console.log('\n셈 — 통과 ' + 통과 + ' · 실패 ' + 실패);
 process.exit(실패 ? 1 : 0);

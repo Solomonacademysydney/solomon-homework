@@ -3,12 +3,20 @@
   "mode": "semi",
   "backend": "cli",
   "allowApi": false,
-  "models": { "generate": "opus", "verify": "opus", "format": "haiku" },
+  "models": {
+    "generate": "opus",
+    "verify": "opus",
+    "format": "haiku"
+  },
   "claudeBin": "C:/Users/jijon/.local/bin/claude.exe",
   "claudeWorkdir": "C:/솔로몬제작/작업실",
   "callTimeoutSec": 900,
   "maxTokensPerJob": 600000,
-  "estimatePerCall": { "generate": 40000, "verify": 20000, "format": 10000 },
+  "estimatePerCall": {
+    "generate": 40000,
+    "verify": 20000,
+    "format": 10000
+  },
   "batchSize": 12,
   "maxRounds": 3,
   "heartbeatSec": 60,
@@ -21,13 +29,21 @@
   "tsRoot": "C:/TS작업",
   "python": "python",
   "edge": "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
-  "archive": { "enabled": false, "root": "G:/내 드라이브/Solomon_교재보관/학생별 교재" },
+  "archive": {
+    "enabled": false,
+    "_설명": "꺼 둠 — 10-01 부터 교재를 드라이브에 바로 저장하므로 승인 뒤 복사는 쓰지 않는다"
+  },
   "firebase": {
     "emulator": false,
     "dbUrl": "https://solomon-76715-default-rtdb.asia-southeast1.firebasedatabase.app",
-    "bucket": "(Storage 를 켠 뒤 콘솔에 보이는 버킷 이름)",
+    "bucket": "(안 씀 — output:storage 일 때만)",
     "apiKey": "AIzaSyDvj7CDHZ7_Wci0palB9KpbjvCUkvcCRZY",
     "keyFile": "C:/TS작업/_열쇠/(서비스 계정 열쇠).json",
     "uid": "ts-worker"
+  },
+  "output": "drive",
+  "drive": {
+    "root": "G:/내 드라이브/Solomon_교재보관/학생별 교재",
+    "curriculumRoot": "G:/내 드라이브/Solomon_교재보관/학생별 커리"
   }
 }

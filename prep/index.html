@@ -73,16 +73,21 @@ function _emuModeOf(loc) {
   if (h !== 'localhost' && h !== '127.0.0.1') return false;
   return /[?&]emu=1(&|$)/.test(String((loc && loc.search) || ''));
 }
+// [10-01 원장 결정] 파일 저장소(Firebase Storage)는 쓰지 않는다 — PDF 는 드라이브에 두고 원장만 보고 인쇄 ·
+//   학교 사진은 휴대폰 드라이브 앱으로 올리고 PC 일꾼이 찾는다. 저장소 코드는 지우지 않고 이 스위치로 꺼 둔다.
+const 저장소사용 = false;
 const _EMU = _emuModeOf(location);
 firebase.initializeApp(_EMU ? { apiKey: 'demo-key', authDomain: 'demo-solomon.firebaseapp.com', databaseURL: 'http://127.0.0.1:9000?ns=demo-solomon',
   projectId: 'demo-solomon', storageBucket: 'demo-solomon.appspot.com' } : 운영설정);
 if (_EMU) {
   firebase.database().useEmulator('127.0.0.1', 9000); firebase.auth().useEmulator('http://127.0.0.1:9099');
-  firebase.storage().useEmulator('127.0.0.1', 9199); firebase.app().functions('australia-southeast1').useEmulator('127.0.0.1', 5001);
+  if (저장소사용) firebase.storage().useEmulator('127.0.0.1', 9199);
+  firebase.app().functions('australia-southeast1').useEmulator('127.0.0.1', 5001);
   document.title = '[시험] ' + document.title;
   document.addEventListener('DOMContentLoaded', () => { const b = document.createElement('div'); b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;background:#7c2d12;color:#fff;text-align:center;padding:8px;font-weight:900;z-index:99;pointer-events:none'; b.textContent = '🧪 시험 환경 (에뮬레이터) — 운영 자료가 아닙니다'; document.body.appendChild(b); });
 }
 const OPERATOR_UID = '62bxWubzDLMrhHjjv2oNfAQiyaD2';   // index.html 과 같아야 한다
+
 const db = firebase.database();
 const 뿌리 = 'solomon_hw_v3', 새뿌리 = 'sol_prep_v1';
 
@@ -118,6 +123,7 @@ async function 첫판() {
   const [users, att, attDays, rel, sub, tests] = await Promise.all([
     읽기(뿌리 + '/users'), 읽기(뿌리 + '/attendance'), 읽기(뿌리 + '/attendance_days'),
     읽기(새뿌리 + '/releases'), 읽기(새뿌리 + '/submissions'), 읽기(새뿌리 + '/paperTests')]);
+  판.inbox = (await 읽기(새뿌리 + '/inbox')) || {};   // [5단계] PC 일꾼이 드라이브에서 찾은 새 학교 자료
   const 목록 = Array.isArray(users) ? users : Object.values(users || {});
   판.users = 목록.filter(u => u && u.role === 'student' && u.status !== 'inactive' && !u.isTest);
   판.attendance = att || {}; 판.attendanceDays = attDays || {}; 판.releases = rel || {}; 판.prepSubs = sub || {}; 판.paperTests = tests || {};
@@ -127,9 +133,11 @@ function 다시그리기() { 목록그리기(); if (고른) 아이고르기(고�
 function 목록그리기() {
   판.차례 = C.orderStudents(판.users, 판.attendanceDays, 오늘());
   document.getElementById('학생목록').innerHTML = 판.차례.map(x =>
-    `<button class="${x.user.id === 고른 ? '고름' : ''}" onclick="아이고르기('${글(x.user.id)}')">${x.tomorrow ? '🔔 ' : ''}<b>${글(x.user.name || x.user.id)}</b>
+    `<button class="${x.user.id === 고른 ? '고름' : ''}" onclick="아이고르기('${글(x.user.id)}')">${x.tomorrow ? '🔔 ' : ''}${C.hasNewSchoolFiles((판.inbox || {})[x.user.id]) ? '📷 ' : ''}<b>${글(x.user.name || x.user.id)}</b>
       <span class="작게">Y${글(x.user.year)} · ${x.days.map(d => C.요일말[d]).join('') || '요일?'}${x.nextClass ? ' · 다음 ' + x.nextClass.slice(5) : ''}</span></button>`).join('')
     || '<div class="작게">학생이 없습니다.</div>';
+  const 미연결 = Object.values((판.inbox || {})._미연결 || {}).filter(x => x && x.status === 'new');
+  if (미연결.length) document.getElementById('학생목록').innerHTML += `<div class="경고" style="margin-top:6px">📷 드라이브에 학생과 연결 안 된 폴더의 새 자료 ${미연결.length}개 — ${글(Array.from(new Set(미연결.map(x => x.folder))).join(', '))} · 학생 카드 「커리·학교 자료」에서 폴더 이름을 넣어 주세요</div>`;
 }
 
 // ── 한 학생 자료 — 좁혀서 읽는다 ──
@@ -143,7 +151,7 @@ async function 아이고르기(sid) {
   const hw = {};
   await Promise.all(Array.from(열쇠들).map(async k => { const v = await 읽기(뿌리 + '/homeworkSets/' + k); if (v) hw[k] = v; }));
   const 범위 = (앞) => (r) => r.orderByKey().startAt(앞).endAt(앞 + '');
-  const [mr, ts, weak, prof, curs, srcs, results, drafts] = await Promise.all([
+  let [mr, ts, weak, prof, curs, srcs, results, drafts] = await Promise.all([
     읽기(뿌리 + '/submissions', 범위(sid + '_')), 읽기(뿌리 + '/submissions', 범위('ts_' + sid + '_')), 읽기(뿌리 + '/weakness/' + sid),
     읽기(새뿌리 + '/students/' + sid + '/profile'), 읽기(새뿌리 + '/students/' + sid + '/curricula'), 읽기(새뿌리 + '/students/' + sid + '/sources'),
     읽기(새뿌리 + '/paperResults/' + sid), 읽기(새뿌리 + '/drafts')]);
@@ -155,6 +163,17 @@ async function 아이고르기(sid) {
   const 분석 = C.analyzeHomework({ user: u, periods, homeworkSets: hw, submissions, releases: 판.releases, prepSubs: 판.prepSubs, normAns: C.normAns });
   설정편집 = null;
   보는파일 = null;
+  // [5단계] 드라이브에서 찾은 새 학교 자료 → 학교 자료(올림 단계)로 가져온다 → 「커리 먼저 검토」(3단계 흐름 그대로)
+  const 새것 = C.inboxImports((await 읽기(새뿌리 + '/inbox/' + sid)) || {}, srcs || {});
+  if (새것.length) {
+    const 고칠 = {};
+    for (const x of 새것) { 고칠['students/' + sid + '/sources/' + x.sourceId] = x.source; 고칠['inbox/' + sid + '/' + x.inboxId + '/status'] = 'imported'; 고칠['inbox/' + sid + '/' + x.inboxId + '/sourceId'] = x.sourceId; }
+    고칠['students/' + sid + '/profile/holdForCurriculum'] = true;
+    try { await db.ref(새뿌리).update(고칠); 알림('📷 새 학교 자료 ' + 새것.length + '개 → 커리 먼저 검토'); } catch (e) { 알림('❌ 새 자료를 못 가져옴 — ' + (e.code || e.message)); }
+    srcs = Object.assign({}, srcs || {}); 새것.forEach(x => { srcs[x.sourceId] = x.source; });
+    if ((판.inbox || {})[sid]) 새것.forEach(x => { if (판.inbox[sid][x.inboxId]) 판.inbox[sid][x.inboxId].status = 'imported'; });
+    목록그리기();
+  }
   아이자료 = { u, win, periods, 분석, plans: plans || {}, jobs: jobs || {}, weak: weak || {}, profile: prof || {}, curricula: curs || {}, sources: srcs || {}, results: results || {}, drafts: drafts || {} };
   카드그리기();
 }
@@ -171,7 +190,7 @@ function 카드그리기() {
   else 몸 = 커리그리기(a);
   document.getElementById('카드').innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
       <h2 style="margin:0">${글(a.u.name || a.u.id)} <span class="작게">Y${글(a.u.year)} ${글(a.u.group || '')}</span></h2>
-      ${검토 ? '<span class="경고" id="커리검토">⚠️ 커리 먼저 검토 — 관련 제작 보류</span>' : ''}</div>
+      ${검토 ? '<span class="경고" id="커리검토">⚠️ ' + (Object.values(a.sources || {}).some(s => s && s.via === 'drive' && (s.status || 'uploaded') === 'uploaded') ? '새 자료 → ' : '') + '커리 먼저 검토 — 관련 제작 보류</span>' : ''}</div>
     <div class="탭">${탭}</div>${몸}`;
 }
 
@@ -296,9 +315,18 @@ async function 주문확정() {
 // ── 지난 교재 · 제작 주문 (5단계) ──
 const 상태말 = { queued: '대기', running: '만드는 중', done: '끝', failed: '실패', held: '보류', cancelled: '취소', 'cancel-requested': '취소 요청' };
 const 파일말 = { test: '테스트지', book: '교재', hw: '숙제', student: '학생용 전체', teacher: '교사용 답지' };
-const 보류말 = { 'token-cap': '토큰 상한을 넘어 멈춤', 'ts-short': 'TS 창고 부족', 'mr-unverified': 'MR 검사·재풀이 못 넘음', 'pdf-check': 'PDF 검사 실패',
+const 보류말 = { 'claude-blocked': 'Claude 가 요청을 막음', 'token-cap': '토큰 상한을 넘어 멈춤', 'ts-short': 'TS 창고 부족', 'mr-unverified': 'MR 검사·재풀이 못 넘음', 'pdf-check': 'PDF 검사 실패',
   'not-approved': '교재 미승인', 'bad-plan': '판을 못 읽음', 'curriculum-review': '커리 먼저 검토' };
-let 보는파일 = null;   // { url, 이름 } — 카드 안에서 바로 본다(새 창을 열지 않는다)
+let 보는파일 = null;
+/** 보류 까닭 자세히 — 어느 문항이 왜(검증 실패·막힘), TS 부족이면 대안 */
+function 보류자세히(h) {
+  const d = h && h.detail;
+  if (!d) return '';
+  if (Array.isArray(d)) return '<ul style="margin:2px 0 0 14px;padding:0">' + d.slice(0, 20).map(x => '<li>' + 글(x.slot) + ': ' + 글([].concat(x.problems || []).join(' · ')) + '</li>').join('') + (d.length > 20 ? '<li>… 외 ' + (d.length - 20) + '</li>' : '') + '</ul>';
+  if (d.slots) return '<div>막힌 문항: ' + 글(d.slots.join(', ')) + '</div>';
+  if (d.alternatives) return '<div>대안: ' + d.alternatives.map(x => 글(x.type) + ' L' + x.level + ' ' + x.have + '개').join(' · ') + '</div>';
+  return '';
+}   // { url, 이름 } — 카드 안에서 바로 본다(새 창을 열지 않는다)
 function 지난그리기(a) {
   const 주문 = Object.entries(a.jobs || {}).sort((x, y) => String(y[1].createdAt).localeCompare(String(x[1].createdAt)));
   const 주문줄 = 주문.map(([id, j]) => {
@@ -307,7 +335,7 @@ function 지난그리기(a) {
     return `<tr><td>${글(j.lessonDate || '')}</td><td>${글(j.type)} · 판 ${글(j.rev)}</td>
       <td class="${j.status === 'held' || j.status === 'failed' ? '빨강' : ''}" data-job="${글(id)}">${글(상태말[j.status] || j.status)}${w.progress && j.status === 'running' ? ' — ' + 글(w.progress.step) : ''}</td>
       <td class="작게">${u.tokens != null ? '토큰 ' + Number(u.tokens).toLocaleString() + (u.cap ? ' / 상한 ' + Number(u.cap).toLocaleString() : '') : ''}${모델 ? '<br>' + 글(모델) : ''}</td>
-      <td class="작게">${h ? '<span class="빨강">⛔ ' + 글(보류말[h.kind] || h.kind) + '</span> — ' + 글(h.msg) : (w.lastError && j.status !== 'done' ? 글(w.lastError).slice(0, 160) : '')}</td></tr>`;
+      <td class="작게">${h ? '<span class="빨강">⛔ ' + 글(보류말[h.kind] || h.kind) + '</span> — ' + 글(h.msg) + 보류자세히(h) : (w.lastError && j.status !== 'done' ? 글(w.lastError).slice(0, 160) : '')}</td></tr>`;
   }).join('');
   const 초안 = Object.entries(a.drafts || {}).filter(([, d]) => d && d.studentId === a.u.id)
     .sort((x, y) => String(y[1].lessonDate).localeCompare(String(x[1].lessonDate)) || (y[1].planRev - x[1].planRev));
@@ -317,8 +345,11 @@ function 지난그리기(a) {
     ${줄.map(([id, d]) => `<div style="margin:4px 0" data-draft="${글(id)}">${d.kind === 'online' ? '홈페이지 숙제' : '종이 교재'} · 판 ${글(d.planRev)}
       ${d.sample ? '<span class="경고">표본</span>' : ''}${d.invalidatedByRev ? ' <span class="경고">무효(판 ' + 글(d.invalidatedByRev) + ')</span>' : ''}
       ${d.approval && d.approval.approved ? ' <span class="딱지 좋음">승인</span>' : ' <span class="작게">' + 글(d.status) + '</span>'}
-      <div>${(d.files || []).filter(f => 파일말[f.kind]).map(f => `<span style="display:inline-block;margin:2px 6px 2px 0">${파일말[f.kind]}${f.pages ? '(' + f.pages + '쪽)' : ''}
+      <div>${(d.files || []).filter(f => 파일말[f.kind] || f.where === 'drive').map(f => f.where === 'drive'
+        ? `<span style="display:inline-block;margin:2px 6px 2px 0"><a href="${C.driveSearchUrl(f.name)}" target="_blank" rel="noopener" title="드라이브 ${글('Solomon_교재보관/학생별 교재/' + f.rel + '/' + f.name)}">${글(파일말[f.kind] || ({ items: '원본 JSON', qa: '검수 기록' })[f.kind] || f.kind)}${f.pages ? '(' + f.pages + '쪽)' : ''} ↗</a></span>`
+        : `<span style="display:inline-block;margin:2px 6px 2px 0">${파일말[f.kind]}${f.pages ? '(' + f.pages + '쪽)' : ''}
         <button onclick="파일받기('${글(f.path)}','${글(날 + '_' + (a.u.name || a.u.id) + '_' + 파일말[f.kind])}.pdf',true)">보기</button><button onclick="파일받기('${글(f.path)}','${글(날 + '_' + (a.u.name || a.u.id) + '_' + 파일말[f.kind])}.pdf',false)">내려받기</button></span>`).join('')}
+      ${(d.files || []).some(f => f.where === 'drive') ? `<div class="작게">드라이브 폴더: Solomon_교재보관 › 학생별 교재 › ${글(((d.files || [])[0] || {}).rel || '')}</div>` : ''}
       ${d.kind === 'online' ? (d.sets || []).map(s => 글(s.title) + ' ' + ((s.questions || []).length) + '문항').join(' · ') : ''}</div></div>`).join('')}</div>`).join('');
   const 뷰 = 보는파일 ? `<div class="섹" id="파일보기"><h3>${글(보는파일.이름)} <button onclick="보는파일=null;카드그리기()">닫기</button></h3>
       <iframe src="${보는파일.url}" style="width:100%;height:70vh;border:1px solid #ccc"></iframe></div>` : '';
@@ -337,6 +368,7 @@ async function 자동바꿈(켬) {
 }
 /** 비공개 파일 — 원장 로그인 토큰으로 직접 받는다(공개 다운로드 주소를 만들지 않는다) */
 async function 파일받기(경로, 이름, 보기만) {
+  if (!저장소사용) return 알림('저장소는 꺼 두었습니다 — 드라이브에서 여세요');
   try {
     const t = await firebase.auth().currentUser.getIdToken();
     const base = _EMU ? 'http://127.0.0.1:9199' : 'https://firebasestorage.googleapis.com';
@@ -426,13 +458,14 @@ async function 약점반영(job) {
 let 커리편집 = null;
 function 커리그리기(a) {
   const 지금 = 현재커리(a);
-  const 자료 = Object.keys(a.sources).sort().map(id => { const s = a.sources[id]; return `<tr><td>${글(s.name || id)}</td><td>${글(s.status)}</td>
+  const 자료 = Object.keys(a.sources).sort().map(id => { const s = a.sources[id]; return `<tr><td>${s.via === 'drive' ? `<a href="${C.driveSearchUrl(s.name)}" target="_blank" rel="noopener">${글(s.name || id)}</a> <span class="작게">드라이브</span>` : 글(s.name || id)}</td><td>${글(s.status)}</td>
       <td>${s.draft ? 글(s.draft.range) + (s.draft.examDate ? ' · 시험 ' + 글(s.draft.examDate) : '') : ''}</td><td>${자료단추(id, s)}</td></tr>`; }).join('');
   const 편집 = 커리편집 ? 커리편집그리기(a) : `<button class="주" onclick="커리시작()">${지금 ? '✏️ 개정(새 판)' : '＋ 커리 만들기'}</button>`;
   return `<div class="섹"><h3>현재 커리 ${a.profile.currentCurriculum ? '<span class="작게">' + 글(a.profile.currentCurriculum) + '</span>' : ''}</h3>${지금 ? 커리요약(지금) : '<span class="작게">없음</span>'}</div>
     <div class="섹">${편집}</div>
     <div class="섹"><h3>학교 자료 <span class="작게">올리기 → 범위·날짜 초안 → 원장 확인 → 차이 보고 개정 승인 · 올리기만으로는 커리가 안 바뀝니다</span></h3>
-      <input type="file" id="자료파일" accept="image/*,application/pdf"> <button class="주" onclick="자료올리기()">올리기</button>
+      ${저장소사용 ? `<input type="file" id="자료파일" accept="image/*,application/pdf"> <button class="주" onclick="자료올리기()">올리기</button>` : `<div class="작게">휴대폰 드라이브 앱으로 <b>Solomon_교재보관 › 학생별 커리 › ${글(a.profile.driveFolder || '(폴더 이름)')} › 학교자료</b> 에 올리시면 PC 일꾼이 찾아 여기 「새 자료」로 올립니다.</div>`}
+      <div class="작게" style="margin:4px 0">드라이브 폴더 이름 <input id="폴더이름" value="${글(a.profile.driveFolder || '')}" placeholder="예: 민아" style="width:120px"> <button onclick="폴더저장()">저장</button></div>
       <table><tr><th>자료</th><th>단계</th><th>초안</th><th></th></tr>${자료 || '<tr><td class="작게" colspan="4">없음</td></tr>'}</table></div>`;
 }
 function 커리요약(c) {
@@ -499,6 +532,7 @@ function 자료단추(id, s) {
   return st === 'applied' ? '적용 ' + 글(s.appliedRev) : '';
 }
 async function 자료올리기() {
+  if (!저장소사용) return 알림('직접 올리기는 꺼 두었습니다 — 휴대폰 드라이브 앱으로 학교자료 폴더에 올려 주세요');
   const a = 아이자료, f = document.getElementById('자료파일').files[0];
   if (!f) return 알림('파일을 고르세요');
   const id = 'src' + Date.now();
@@ -536,6 +570,15 @@ function 개정시작(id) {
   커리시작(바탕); 커리편집.자료 = id;
 }
 /** 「커리 먼저 검토」 — 검토 안 끝난 자료가 있으면 제작 보류 칸을 켠다(일꾼이 본다 · 4단계) */
+/** 드라이브 폴더 이름 ↔ 학생 — 일꾼이 학생별 커리/<이름>/학교자료 를 이 학생 것으로 안다 */
+async function 폴더저장() {
+  const a = 아이자료, 이름 = String((document.getElementById('폴더이름') || {}).value || '').trim();
+  if (!이름 || /[.#$\[\]\/]/.test(이름)) return 알림('폴더 이름을 확인해 주세요(. # $ [ ] / 은 못 씀)');
+  const 고칠 = { ['students/' + a.u.id + '/profile/driveFolder']: 이름, ['driveFolders/' + 이름]: a.u.id };
+  if (a.profile.driveFolder && a.profile.driveFolder !== 이름) 고칠['driveFolders/' + a.profile.driveFolder] = null;
+  try { await db.ref(새뿌리).update(고칠); a.profile.driveFolder = 이름; 알림('✅ 드라이브 폴더 「' + 이름 + '」 연결'); 카드그리기(); }
+  catch (e) { 알림('❌ 저장 못 함 — ' + (e.code || e.message)); }
+}
 async function 보류맞추기() {
   const a = 아이자료; const 보류 = C.needsCurriculumReview(a.sources);
   await db.ref(새뿌리 + '/students/' + a.u.id + '/profile/holdForCurriculum').set(보류);

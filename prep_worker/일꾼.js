@@ -116,7 +116,14 @@ class 처리 {
       throw new 멈춤('token-cap', '토큰 상한 ' + this.cfg.maxTokensPerJob + ' — 지금까지 ' + this.usage.tokens + ' + 다음 어림 ' + est, { used: this.usage.tokens, cap: this.cfg.maxTokensPerJob });
     }
     this.확인();
-    const r = await CL.call(this.cfg, role, system, input, schema);
+    let r;
+    try { r = await CL.call(this.cfg, role, system, input, schema); }
+    catch (e) {
+      // Claude 안전 장치가 막거나 응답을 거절하면 재시도해도 같다 → 보류로 두고 까닭을 화면에(10-01 원장 지시)
+      if (/safeguards flagged|usage policy|refus/i.test(e.message)) throw new 멈춤('claude-blocked', (role === 'verify' ? '검증(재풀이)' : role === 'generate' ? '생성' : '형식 정리') + ' 호출이 막힘 — ' + e.message.slice(0, 160),
+        { role, slots: ((input && input.items) || []).map(x => x.slot) });
+      throw e;
+    }
     this.usage.tokens += r.tokens;
     this.usage.calls.push({ role, asked: r.asked, models: r.models, tokens: r.tokens, usage: r.usage, ms: r.ms, at: iso() });
     this.w.write('usage.json', this.usage);
@@ -210,6 +217,23 @@ class 처리 {
     return out;
   }
 
+  /** 드라이브(G: 동기화 폴더)에 복사 — 덮어쓰지 않고, 복사 뒤 다시 읽어 해시 확인. 같은 파일이 이미 있으면 그대로 */
+  드라이브저장(profile, list) {
+    const d = (this.cfg.drive || {});
+    if (!d.root) throw new Error('설정 drive.root 가 없습니다');
+    const folder = 폴더이름(profile, this.job.studentId);
+    const dest = C.driveDest(d.root, folder, this.job, !!this.opts.sample);
+    fs.mkdirSync(dest.dir, { recursive: true });
+    return list.map(f => {
+      const buf = fs.readFileSync(f.local), h = C.sha256(buf), name = C.driveFileName(folder, this.job, f.kind, f.ext, !!this.opts.sample);
+      const to = path.join(dest.dir, name);
+      if (fs.existsSync(to)) { if (C.sha256(fs.readFileSync(to)) !== h) throw new Error('같은 이름의 다른 파일이 있어 덮어쓰지 않음: ' + to); }
+      else fs.copyFileSync(f.local, to);
+      if (C.sha256(fs.readFileSync(to)) !== h) throw new Error('복사 뒤 다시 읽은 해시가 다름: ' + to);
+      return { kind: f.kind, name, rel: dest.rel, sha256: h, bytes: buf.length, pages: f.pages || null, where: 'drive' };
+    });
+  }
+
   /* ── prep-paper: 교재·테스트지·종이 숙제 PDF ── */
   async 종이() {
     const j = this.job;
@@ -220,6 +244,8 @@ class 처리 {
     const profile = (await this.fb.get(ROOT + '/students/' + j.studentId + '/profile')) || {};
     // 3단계 「커리 먼저 검토」 — 학교 자료 검토가 안 끝났으면 만들지 않는다(Claude 를 부르기 전에 멈춘다)
     if (profile.holdForCurriculum === true) throw new 멈춤('curriculum-review', '커리 먼저 검토 — 학교 자료 검토가 끝나지 않았습니다');
+    const 새자료 = Object.values((await this.fb.get(ROOT + '/inbox/' + j.studentId)) || {}).filter(x => x && x.status === 'new');
+    if (새자료.length) throw new 멈춤('curriculum-review', '새 학교 자료 ' + 새자료.length + '개 → 커리 먼저 검토(' + 새자료.map(x => x.name).slice(0, 3).join(', ') + ')');
     let prevUnit = null;
     const cur = profile.currentCurriculum ? await this.fb.get(ROOT + '/students/' + j.studentId + '/curricula/' + profile.currentCurriculum) : null;
     if (cur && Array.isArray(cur.lessons)) { const before = cur.lessons.filter(l => l && l.date < j.lessonDate).sort((a, b) => a.date < b.date ? 1 : -1)[0]; if (before) prevUnit = before.mr; }
@@ -266,12 +292,22 @@ class 처리 {
     fs.writeFileSync(path.join(out, 'items.json'), JSON.stringify({ draftId, slots, mr, ts, manifest }, null, 1));
     fs.writeFileSync(path.join(out, 'qa.json'), JSON.stringify({ qa, usage: this.usage }, null, 1));
 
+    const 낼것 = 보고.files.map(f => ({ kind: f.kind, local: path.join(out, f.file), ext: 'pdf', pages: f.pages }))
+      .concat([{ kind: 'items', local: path.join(out, 'items.json'), ext: 'json' }, { kind: 'qa', local: path.join(out, 'qa.json'), ext: 'json' }]);
+    let files;
+    if ((this.cfg.output || 'drive') === 'drive') {
+      // 10-01 원장 결정: 저장소(Storage) 안 씀 — 드라이브 Solomon_교재보관 학생별·주차별 폴더에 둔다(원장만 보고 인쇄)
+      await this.진행('drive-save', '');
+      files = this.드라이브저장(profile, 낼것);
+    } else {
+    // ⛔ 꺼 둔 길(저장소) — 설정 output:'storage' 일 때만. 지우지 않고 남겨 둠
     await this.진행('upload', '');
     const base = 'prep/' + j.studentId + '/drafts/' + draftId;
     const 종류 = { test: 'student/test.pdf', book: 'student/book.pdf', hw: 'student/hw.pdf', student: 'student/student.pdf', teacher: 'teacher/teacher.pdf' };
-    const files = await this.올리기(base, 보고.files.map(f => ({ kind: f.kind, local: path.join(out, f.file), dest: 종류[f.kind], type: 'application/pdf', pages: f.pages }))
+    files = await this.올리기(base, 보고.files.map(f => ({ kind: f.kind, local: path.join(out, f.file), dest: 종류[f.kind], type: 'application/pdf', pages: f.pages }))
       .concat([{ kind: 'items', local: path.join(out, 'items.json'), dest: 'data/items.json', type: 'application/json' },
                { kind: 'qa', local: path.join(out, 'qa.json'), dest: 'data/qa.json', type: 'application/json' }]));
+    }
 
     await this.초안쓰기(draftId, { kind: 'paper', specHash: hash, sample: !!this.opts.sample, files,
       counts: { mr: Object.keys(mr).length, ts: Object.keys(ts).length, slots: slots.length },
@@ -356,7 +392,7 @@ class 처리 {
       기록(this.cfg, { job: this.jobId, msg: '멈춤', kind, error: e.message, detail: e.detail });
       if (kind === 'lost') return { jobId: this.jobId, lost: e.message };
       if (kind === 'cancel') { await this.상태('cancelled', { lastError: '원장 판 변경으로 취소' }).catch(() => {}); return { jobId: this.jobId, cancelled: true }; }
-      const 보류 = ['token-cap', 'ts-short', 'mr-unverified', 'pdf-check', 'not-approved', 'bad-plan', 'curriculum-review'].indexOf(kind) >= 0;
+      const 보류 = ['token-cap', 'ts-short', 'mr-unverified', 'pdf-check', 'not-approved', 'bad-plan', 'curriculum-review', 'claude-blocked'].indexOf(kind) >= 0;
       const 다시 = !보류 && this.attempts < (this.job.maxAttempts || 3);
       await this.상태(보류 ? 'held' : (다시 ? 'queued' : 'failed'), { lastError: e.message.slice(0, 500), hold: 보류 ? { kind, msg: e.message.slice(0, 300), detail: JSON.parse(JSON.stringify(e.detail || null)) } : null,
         usage: { tokens: this.usage.tokens, calls: this.usage.calls.length, cap: this.cfg.maxTokensPerJob }, models: 모델모음(this.usage) }).catch(() => {});
@@ -407,8 +443,34 @@ const 스키마 = {
   재풀이: { type: 'object', required: ['answers'], properties: { answers: { type: 'array', items: { type: 'object', required: ['slot', 'answer'], properties: { slot: { type: 'string' }, answer: { type: 'string' }, working: { type: 'string' } } } } } },
 };
 
+function 폴더이름(profile, sid) { return (profile && (profile.driveFolder || profile.koName || profile.name)) || sid; }
+
+/** 학교 자료 찾기 — 원장님이 휴대폰 드라이브 앱으로 `학생별 커리/<학생>/학교자료` 에 올린 새 사진·PDF 를 inbox 에 적는다.
+ *  학생 연결은 /prep/ 에서 정한 driveFolders(폴더 이름 → 학생 id). 연결 안 된 폴더는 inbox/_미연결 에 적어 화면에 띄운다. */
+async function 학교자료찾기(cfg, fb) {
+  const root = (cfg.drive || {}).curriculumRoot;
+  if (!root || !fs.existsSync(root)) return { skipped: '학생별 커리 폴더 없음' };
+  const 연결 = (await fb.get(ROOT + '/driveFolders')) || {};
+  const 적음 = [], 미연결 = [];
+  for (const folder of fs.readdirSync(root)) {
+    const dir = path.join(root, folder, '학교자료');
+    if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) continue;
+    const files = fs.readdirSync(dir).map(name => { const st = fs.statSync(path.join(dir, name)); return st.isFile() ? { name, rel: folder + '/학교자료/' + name, size: st.size, mtime: st.mtimeMs } : null; }).filter(Boolean);
+    const sid = 연결[folder] || null;
+    const key = sid || '_미연결';
+    const known = (await fb.get(ROOT + '/inbox/' + key)) || {};
+    for (const f of C.schoolFileNews(files, known)) {
+      await fb.put(ROOT + '/inbox/' + key + '/' + f.id, { name: f.name, rel: f.rel, size: f.size, folder, status: 'new', foundAt: iso(), worker: cfg.workerId });
+      (sid ? 적음 : 미연결).push(folder + '/' + f.name);
+    }
+  }
+  if (적음.length || 미연결.length) 기록(cfg, { msg: '학교 자료 찾음', 적음, 미연결 });
+  return { 적음, 미연결 };
+}
+
 /* ── 주문 훑기 ── */
 async function 한바퀴(cfg, fb, opts) {
+  if (!opts.noScan) { try { const s = await 학교자료찾기(cfg, fb); if (s.적음 && (s.적음.length || s.미연결.length)) console.log('학교 자료: ' + JSON.stringify(s)); } catch (e) { 기록(cfg, { msg: '학교 자료 찾기 실패', error: e.message }); } }
   const jobs = (await fb.get(ROOT + '/jobs')) || {};
   const 결과 = [];
   const ids = Object.keys(jobs).filter(id => !opts.job || id === opts.job)
@@ -492,5 +554,5 @@ async function main() {
   console.log(JSON.stringify(r, null, 1));
 }
 
-module.exports = { 답모으기, 처리, 한바퀴, 설정읽기, 보관, 자동켜짐, 프롬프트, 스키마, 정리 };
+module.exports = { 학교자료찾기, 폴더이름, 답모으기, 처리, 한바퀴, 설정읽기, 보관, 자동켜짐, 프롬프트, 스키마, 정리 };
 if (require.main === module) main().catch(e => { console.error('⛔ ' + (e && e.stack || e)); process.exit(1); });
