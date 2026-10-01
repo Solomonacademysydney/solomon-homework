@@ -21,8 +21,9 @@
 1. Firebase 콘솔(https://console.firebase.google.com) 접속
 2. 프로젝트 `solomon-76715` → Realtime Database 열기
 3. 우상단 메뉴(⋮) → **"JSON 내보내기"** 클릭하여 전체 데이터 백업
-4. 백업 파일을 `g:/aa/hp/backup/` 폴더에 날짜 포함 이름으로 저장
+4. 백업 파일을 `E:/AA0/HP/backup/` 폴더에 날짜 포함 이름으로 저장
    (예: `firebase_backup_2026-04-06.json`)
+   ※ 이 폴더는 `.gitignore` 로 GitHub 에 올라가지 않는다. (2026-10-01 고침 — 예전 `g:/aa/hp/backup/` 은 없는 경로였다)
 5. 수정 작업 진행
 
 > 이 절차를 건너뛰면 Firebase 동기화 버그 수정 중 데이터 유실 위험이 있음.

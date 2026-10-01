@@ -42,7 +42,14 @@ console.log('\n── ⭐ 교사 화면이 그 값을 **읽는가** (안 읽으�
 console.log('\n── 실제로 골라지는가 (가짜 세상에서 돌려 본다)');
 const i = 교.indexOf('async function 첫판(){');
 const j = 교.indexOf('async function 다시읽기');
-const 소스 = 교.slice(i, j);
+// 「기준 날짜」(2026-09-29)가 들어오며 `첫판()` 이 날짜 도우미를 부른다 — 화면에 있는 것을 그대로 실어 온다.
+const 도우미 = ['function 진짜오늘(){', 'function 날짜글(d){'].map(머리 => {
+  const a = 교.indexOf(머리);
+  const b = 교.indexOf('\n}\n', a);
+  if (a < 0 || b < 0) throw new Error('날짜 도우미를 못 찾음: ' + 머리);
+  return 교.slice(a, b + 3);
+}).join('\n');
+const 소스 = "const 시드니 = 'Australia/Sydney';\n" + 도우미 + '\n' + 교.slice(i, j);
 const 불린것 = [];
 const 첫판 = new Function('일꾼상태', '학생읽기', '학생들', '아이고르기', '글', 'document', 'location', 'console',
   소스 + '\n; return 첫판;')(

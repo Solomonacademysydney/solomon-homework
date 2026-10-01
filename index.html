@@ -3382,15 +3382,16 @@ function _칸못맞춤알림(key) {
                 + '인터넷을 확인하고 다시 해 주십시오.');
 }
 
-function fbSetHomeworkSet(key, data, 빼기) {
+// [1단계] `끝` (선택) — 서버 쓰기 결과(true/false)를 받는다. MR 등록 확인이 기다린다.
+function fbSetHomeworkSet(key, data, 빼기, 끝) {
   const 뺄것 = new Set(빼기 || []);
   const updates = {};
   for (const k of Object.keys(data || {})) {
     if (뺄것.has(k)) continue;
     updates['homeworkSets/' + key + '/' + k] = data[k];
   }
-  if (!Object.keys(updates).length) return;
-  fbWrite(updates);
+  if (!Object.keys(updates).length) { if (끝) 끝(false); return; }
+  fbWrite(updates, 끝);
   _ensureGroupPlaceholders(key);
 }
 
@@ -3913,8 +3914,26 @@ function sha256js(str) {
 }
 function isHashed(pw) { return typeof pw === 'string' && /^[0-9a-f]{64}$/.test(pw); }
 
+// ★ [1단계 · 2026-10-01] 처음 읽기 결과를 넷으로 가른다 — 화면·콘솔이 까닭을 말할 수 있게.
+//   first   : 서버 자료 있음 · 이 브라우저는 처음(서랍 비어 있었음)
+//   ok      : 서버 자료 있음 · 서랍도 있었음
+//   empty   : 서버를 읽었는데 **자료가 없다**(새 프로젝트이거나 정말 비었다)
+//   denied  : 권한 거부 — 다시 해도 안 된다(로그인·규칙 문제)
+//   network : 그 밖의 실패(인터넷·시간 초과·익명 로그인 실패)
+function _storeLoadStateOf(r) {
+  if (r && r.ok) {
+    if (r.fbData == null) return 'empty';
+    return r.hadLocal ? 'ok' : 'first';
+  }
+  const 코드 = String((r && r.err && (r.err.code || r.err.message)) || '');
+  return /PERMISSION_DENIED|permission_denied|permission-denied/i.test(코드) ? 'denied' : 'network';
+}
+
 async function initStore() {
   /* seed accounts removed for production */
+  // ⛔⛔ [1단계 · 2026-10-01] **원격 뿌리에 쓰지 않는다.** 예전에는 여기서 FB_REF 에 set(d) 를 불러
+  //   solomon_hw_v3 뿌리 전체를 빈 자료로 덮으려 했다(규칙이 막아 줬을 뿐 — 5/8·5/15 사고와 같은 모양).
+  //   서버 자료는 서버에서만 만든다. 여기서는 **이 브라우저 서랍만** 비워서 화면이 뜨게 한다.
   const d = {
     users: [],
     currentPeriod: { year: new Date().getFullYear(), month: new Date().getMonth()+1, week: 1 },
@@ -3922,7 +3941,7 @@ async function initStore() {
     submissions: {}
   };
   saveStore(d);
-  if (window.fbReady && window.FB_REF) window.FB_REF.set(d);
+  console.warn('[initStore] 서버 자료 없음(' + (window._storeLoadState || '?') + ') — 이 브라우저에만 빈 자료를 둡니다. 서버에는 쓰지 않습니다.');
   return d;
 }
 
@@ -4556,9 +4575,11 @@ function calculateStudentAccuracy(studentId, options) {
   }
   let totalAttempts = 0, totalCorrect = 0;
   const breakdown = {};
-  for (const taxId in weaknessData.skills) {
-    const skill = weaknessData.skills[taxId];
-    if (!skill.history) continue;
+  // ★ [1단계] 열쇠는 안전 키 — 원문 분류 ID 로 묶어 읽는다(옛 점 열쇠도 함께 · 이중 읽기).
+  const _byTax = _weaknessSkillsByTaxId(weaknessData);
+  for (const taxId in _byTax) {
+    const skill = _byTax[taxId];
+    if (!skill.history.length) continue;
     let skillAttempts = 0, skillCorrect = 0;
     for (const entry of skill.history) {
       const ts = new Date(entry.ts);
@@ -4598,9 +4619,11 @@ function analyzeStudentStrengthsWeaknesses(studentId, options) {
   cutoff.setDate(cutoff.getDate() - recencyDays);
   const skillsAnalysis = [];
   const byStrand = {};
-  for (const taxId in weaknessData.skills) {
-    const skill = weaknessData.skills[taxId];
-    if (!skill.history) continue;
+  // ★ [1단계] 원문 분류 ID 로 나눈다 — 열쇠(안전 키)를 split('.') 하면 영역을 못 찾는다.
+  const _byTax = _weaknessSkillsByTaxId(weaknessData);
+  for (const taxId in _byTax) {
+    const skill = _byTax[taxId];
+    if (!skill.history.length) continue;
     const recentHistory = skill.history.filter(e => new Date(e.ts) >= cutoff);
     if (recentHistory.length < minAttempts) continue;
     const correct  = recentHistory.filter(e => e.correct).length;
@@ -4822,6 +4845,12 @@ async function ensureStore() {
       // Firebase 연결 전이면 initStore() 실행하지 않음
       // 빈 데이터로 Firebase를 덮어쓰는 사고를 방지
       // 연결 후 once('value') 콜백에서 처리됨
+      return;
+    }
+    // ★ [1단계] 서버가 「비었다」고 확인된 때만 빈 서랍을 만든다. 서버에 자료가 있는데 서랍이
+    //   비었으면(이 브라우저 저장 공간 부족 등) 빈 자료로 가리지 않고 그대로 멈춘다.
+    if (window._storeLoadState !== 'empty') {
+      console.warn('[ensureStore] 서랍이 비었지만 서버 상태는 「' + window._storeLoadState + '」 — 빈 자료를 만들지 않습니다.');
       return;
     }
     store = await initStore();
@@ -7969,6 +7998,8 @@ function doSubmit() {
   const set = hw?.sets?.[currentSetIdx??0];
   sub.submitted=true;
   sub.submitTime=new Date().toISOString();
+  // ★ [1단계 · 2026-10-01] 제출 판 번호(새 칸) — 다시 낼 때마다 오른다. 약점 반영을 한 번만 하는 데 쓴다.
+  sub.rev = (sub.rev || 0) + 1;
   // ★ [2026-09-05] 어느 숙제를 푼 것인지 답안지에 적어 둔다 — 나중에 대조용(subIsStale).
   const _hkNow = hwLookupKey(store, currentUser.year, currentUser.country||'AU', p, currentUser.group);
   if (_hkNow) sub.hwKey = _hkNow;
@@ -8030,11 +8061,13 @@ function doSubmit() {
       submittedAt: sub.submitTime
     };
 
-    // Phase C: taxonomy weakness accumulation (async, non-blocking)
-    if (window.TAXONOMY_MR) {
-      applyWeaknessUpdates(autoQs, sub.answers, currentUser.id).catch(e => {
-        console.warn('[Weakness] Update failed:', e);
-      });
+    // Phase C: taxonomy weakness accumulation
+    // ★ [1단계] 바로 더하지 않는다 — 줄에 **먼저** 넣고, 제출이 서버에 저장된 뒤에 반영한다.
+    //   (예전: 저장 전에 더해서 실패해도 늘었고, 다시 보내면 또 더했다)
+    //   다시 낸 제출(rev 2…)은 분류가 없어도 넣는다 — 옛 판의 기여분을 빼야 한다.
+    if (!window.isPreviewMode) {
+      const _wjob = _weaknessJobOf(autoQs, sub.answers, currentUser.id, key, sub.rev);
+      if (_wjob.items.length || sub.rev > 1) _weaknessEnqueue(_wjob);
     }
   }
   saveStore(store);
@@ -8050,6 +8083,9 @@ function doSubmit() {
   }, 10000);
 
   fbSetSubmission(key, store.submissions[key], (success) => {
+    // ★ [1단계] 저장이 확인된 뒤에만 약점을 반영한다(서버에서 이 판을 다시 읽어 본 뒤).
+    //   10초 안내가 먼저 떴어도(늦은 성공) 반영은 한다 — 그래서 아래 되돌아가기보다 앞에 둔다.
+    if (success) _weaknessFlush().catch(e => console.warn('[Weakness] 반영 실패 — 다음 접속 때 다시:', e));
     if (_submitResolved) return;
     _submitResolved = true;
     clearTimeout(_submitTimeoutId);
@@ -8064,31 +8100,166 @@ function doSubmit() {
   renderStudent();
 }
 
-async function applyWeaknessUpdates(questions, answers, studentId) {
-  if (!window.fbReady || !window.FB_REF) return;
-  const now = new Date().toISOString();
-  for (const q of questions) {
-    if (!q.taxonomy_id) continue;
-    const isCorrect = normAns(answers[q.id]) === normAns(q.answer);
-    const path = `weakness/${studentId}/skills/${q.taxonomy_id}`;
-    try {
-      await window.FB_REF.child(path).transaction(current => {
-        const base = current || { attempts: 0, correct: 0, wrong: 0, history: [] };
-        const newHistory = [...(base.history || []), { ts: now, correct: isCorrect }].slice(-50);
-        return {
-          attempts: (base.attempts || 0) + 1,
-          correct: (base.correct || 0) + (isCorrect ? 1 : 0),
-          wrong: (base.wrong || 0) + (isCorrect ? 0 : 1),
-          last_seen: now,
-          last_correct: isCorrect ? now : (base.last_correct || null),
-          history: newHistory
-        };
-      });
-    } catch (e) {
-      console.warn('[Weakness] Update failed for', path, e);
+// ═══ [1단계] 약점 반영 — 시작 ═══════════════════════════════════════════════
+// ⛔ 예전: doSubmit 이 제출을 서버에 보내기 **전에** 약점을 더했고(실패해도 늘었다),
+//    같은 제출을 다시 보내면 또 더했고, 분류 ID 의 점(.) 때문에 경로가 아예 못 쓰였다
+//    (운영 DB 에 weakness 가지가 0 — 2026-10-01 실측).
+// 이제:
+//   ① 분류 ID 는 **안전 키**로 바꿔 열쇠로 쓰고, 원문은 칸 안 `taxonomyId` 에 적는다(새 칸).
+//   ② 제출마다 「반영할 일」을 이 브라우저 줄(localStorage)에 **먼저** 넣는다.
+//      서버에서 그 제출(같은 rev 이상)을 읽어 확인한 뒤에만 반영한다 ⇒ 응답이 끊기거나
+//      창이 닫혀도 다음 접속 때 다시 한다.
+//   ③ 같은 제출(subKey)·같은 판(rev)은 한 번만 — 칸 안 `contrib/<제출>` 에 판을 적는다(새 칸).
+//      새 판이면 옛 기여분을 빼고 새로 더한다(고쳐 낸 제출이 두 번 세지지 않는다).
+//   ⛔ 기존 칸(attempts·correct·wrong·last_seen·last_correct·history)은 이름·뜻 그대로.
+const WEAK_QUEUE_KEY = 'solomon_weakness_queue';
+const WEAK_QUEUE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;   // 일주일 안에 서버 확인이 안 되면 버린다
+
+/** 분류 ID → 파이어베이스 열쇠. 금지 글자(. # $ [ ] /)와 % 를 %XX 로. 되돌릴 수 있다. */
+function taxSafeKey(taxId) {
+  return String(taxId).replace(/[%.#$\[\]\/]/g,
+    ch => '%' + ch.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0'));
+}
+/** 열쇠 → 분류 ID. 옛 점 열쇠(%없음)는 그대로 돌아온다 — 이중 읽기. */
+function taxFromSafeKey(key) {
+  return String(key).replace(/%([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+}
+/** 읽는 쪽: 아이 약점 자료를 **원문 분류 ID** 로 묶는다(새 열쇠 + 옛 열쇠를 합친다). */
+function _weaknessSkillsByTaxId(weaknessData) {
+  const out = {};
+  const skills = (weaknessData && weaknessData.skills) || {};
+  for (const key in skills) {
+    const skill = skills[key];
+    if (!skill) continue;
+    const taxId = skill.taxonomyId || taxFromSafeKey(key);
+    const hist = Array.isArray(skill.history) ? skill.history
+               : (skill.history ? Object.values(skill.history) : []);
+    if (!out[taxId]) out[taxId] = { taxId, history: [] };
+    out[taxId].history = out[taxId].history.concat(hist);
+  }
+  return out;
+}
+
+/** 한 분류 칸에 한 제출의 기여분을 넣는다(트랜잭션 안에서 부른다). undefined = 손대지 않음. */
+function _weaknessMerge(cur, cid, rev, v, now) {
+  const contrib0 = (cur && cur.contrib) || {};
+  const old = contrib0[cid];
+  if (old && (old.rev || 0) >= rev) return undefined;      // 이미 이 판(또는 더 새 판)이 들어 있다
+  if (!cur && !v.n) return null;                           // 빈 칸에 뺄 것만 — 만들지 않는다
+  const base = cur || { attempts: 0, correct: 0, wrong: 0, history: [] };
+  let attempts = base.attempts || 0, correct = base.correct || 0, wrong = base.wrong || 0;
+  let history = Array.isArray(base.history) ? base.history.slice()
+              : (base.history ? Object.values(base.history) : []);
+  if (old) {
+    attempts -= old.n || 0; correct -= old.c || 0; wrong -= (old.n || 0) - (old.c || 0);
+    history = history.filter(h => !h || h.sub !== cid);
+  }
+  const list = v.list || [];
+  for (const ok of list) history.push({ ts: now, correct: !!ok, sub: cid });
+  attempts += v.n; correct += v.c; wrong += v.n - v.c;
+  const contrib = Object.assign({}, contrib0, { [cid]: { rev, n: v.n, c: v.c } });
+  const out = {
+    attempts: Math.max(0, attempts), correct: Math.max(0, correct), wrong: Math.max(0, wrong),
+    last_seen: v.n ? now : (base.last_seen || null),
+    last_correct: v.c ? now : (base.last_correct || null),
+    history: history.slice(-50),
+    contrib
+  };
+  const tid = v.t || base.taxonomyId;
+  if (tid) out.taxonomyId = tid;
+  return out;
+}
+
+/** 제출 하나 → 반영할 일. 분류(taxonomy_id) 있는 자동채점 문항만. */
+function _weaknessJobOf(questions, answers, studentId, subKey, rev) {
+  const items = [];
+  for (const q of questions || []) {
+    if (!q || !q.taxonomy_id) continue;
+    items.push({ t: String(q.taxonomy_id), c: normAns((answers || {})[q.id]) === normAns(q.answer) });
+  }
+  return { sid: studentId, subKey, rev, items, queuedAt: Date.now() };
+}
+
+function _weaknessQueueRead() {
+  try {
+    const a = JSON.parse(localStorage.getItem(WEAK_QUEUE_KEY) || '[]');
+    return Array.isArray(a) ? a : [];
+  } catch (e) { return []; }
+}
+function _weaknessQueueWrite(q) {
+  try {
+    if (q.length) localStorage.setItem(WEAK_QUEUE_KEY, JSON.stringify(q));
+    else localStorage.removeItem(WEAK_QUEUE_KEY);
+  } catch (e) { console.warn('[Weakness] 줄 저장 실패:', e); }
+}
+/** 같은 제출의 낡은 판은 빼고 넣는다. */
+function _weaknessEnqueue(job) {
+  const q = _weaknessQueueRead().filter(j => !(j.subKey === job.subKey && (j.rev || 0) <= job.rev));
+  q.push(job);
+  _weaknessQueueWrite(q);
+}
+
+/** 한 일을 서버에 반영한다. 이미 반영됐으면 true. 실패하면 false(줄에 남긴다). */
+async function applyWeaknessUpdates(job) {
+  if (!window.fbReady || !window.FB_REF || !job) return false;
+  const cid = taxSafeKey(job.subKey);
+  const base = 'weakness/' + job.sid;
+  try {
+    const appliedRef = window.FB_REF.child(base + '/applied/' + cid);
+    const prev = (await appliedRef.once('value')).val();
+    if (prev && (prev.rev || 0) >= job.rev) return true;
+    const now = new Date().toISOString();
+    const bySkill = {};
+    for (const it of job.items || []) {
+      const k = taxSafeKey(it.t);
+      if (!bySkill[k]) bySkill[k] = { t: it.t, n: 0, c: 0, list: [] };
+      bySkill[k].n++; if (it.c) bySkill[k].c++; bySkill[k].list.push(!!it.c);
     }
+    const oldSkills = prev && prev.skills ? Object.values(prev.skills) : [];
+    for (const k of oldSkills) if (!bySkill[k]) bySkill[k] = { t: null, n: 0, c: 0, list: [] };
+    for (const k of Object.keys(bySkill)) {
+      const v = bySkill[k];
+      await window.FB_REF.child(base + '/skills/' + k).transaction(cur => _weaknessMerge(cur, cid, job.rev, v, now));
+    }
+    await appliedRef.set({ rev: job.rev, skills: Object.keys(bySkill).filter(k => bySkill[k].n > 0), at: now });
+    return true;
+  } catch (e) {
+    console.warn('[Weakness] 반영 실패 — 줄에 남깁니다:', job.subKey, e && (e.code || e.message) || e);
+    return false;
   }
 }
+
+/** 줄을 비운다 — 서버에 제출(같은 rev 이상)이 있는 일만 반영한다. 동시에 두 번 불려도 하나로. */
+let _weaknessFlushing = null, _weaknessAgain = false;
+function _weaknessFlush() {
+  // 도는 중에 또 불리면(그사이 새 제출이 저장됨) 한 바퀴 더 돈다 — 반영은 판으로 한 번만이라 안전하다.
+  if (_weaknessFlushing) { _weaknessAgain = true; return _weaknessFlushing; }
+  _weaknessFlushing = (async () => {
+    if (!window.fbReady || !window.FB_REF || window.isPreviewMode) return;
+    const 다룬것 = new Set(), 남길것 = new Set();
+    const 이름 = (j) => j.subKey + '#' + j.rev;
+    const 지금 = Date.now();
+    for (const job of _weaknessQueueRead()) {
+      if (!job || !job.subKey || !job.sid) continue;
+      다룬것.add(이름(job));
+      if (지금 - (job.queuedAt || 0) > WEAK_QUEUE_MAX_AGE_MS) continue;
+      let sub;
+      try { sub = (await window.FB_REF.child('submissions/' + job.subKey).once('value')).val(); }
+      catch (e) { 남길것.add(이름(job)); continue; }
+      const 서버판 = (sub && sub.submitted) ? (sub.rev || 0) : -1;
+      if (서버판 < job.rev) { 남길것.add(이름(job)); continue; }   // 아직 저장 확인 안 됨 → 다음에
+      if (서버판 > job.rev) continue;                              // 더 새 판이 있다 → 그쪽 일이 한다
+      if (!(await applyWeaknessUpdates(job))) 남길것.add(이름(job));
+    }
+    // 도는 동안 새로 들어온 일은 지키고, 이번에 다뤄 끝낸 일만 뺀다
+    _weaknessQueueWrite(_weaknessQueueRead().filter(j => j && (!다룬것.has(이름(j)) || 남길것.has(이름(j)))));
+  })().finally(() => {
+    _weaknessFlushing = null;
+    if (_weaknessAgain) { _weaknessAgain = false; return _weaknessFlush(); }
+  });
+  return _weaknessFlushing;
+}
+// ═══ [1단계] 약점 반영 — 끝 ═════════════════════════════════════════════════
 
 function detectWeakAreas(wrongQs) {
   const areas = {};
@@ -14115,6 +14286,9 @@ const firebaseConfig = {
         if (localData?.claudeApiKey) delete localData.claudeApiKey;
         _noteAllHomeworkKeys(fbData);   // 트리밍 전에 전체 키 기록 (읽기만, 저장 경로 영향 없음)
 
+        // ★ [1단계] 처음 읽기 결과를 가른다(first · ok · empty) — initStore·화면이 까닭을 안다.
+        window._storeLoadState = _storeLoadStateOf({ ok: true, fbData, hadLocal: !!localData });
+        if (window._storeLoadState === 'empty') console.warn('[Firebase] 서버 자료 없음(empty) — 서버에는 아무것도 쓰지 않습니다.');
         if (fbData) {
           // [Safety 2026-05-15] 데이터 손실 사고 후 부팅 시 wholesale upload 경로 제거.
           // localTs > fbTs 분기의 update(Object.assign(...))가 stale localData를 통째 푸시해서
@@ -14131,10 +14305,12 @@ const firebaseConfig = {
         window.fbReady = true;
         loadTaxonomy();
         // [Safety 2026-05-29] 이전 세션의 미저장 학생 답 자동 push (자기 submission 화이트리스트만)
-        _flushRetryQueue();
+        // ★ [1단계] 제출 재시도가 **끝난 뒤** 약점 줄을 비운다(서버에서 제출을 확인하고 반영).
+        _flushRetryQueue().then(() => _weaknessFlush()).catch(e => console.warn('[Weakness] 줄 비우기 실패:', e));
         finishInit();
       }, (err) => {
         console.warn('[Firebase] initial read failed:', err?.message || err);
+        window._storeLoadState = _storeLoadStateOf({ ok: false, err });   // ★ [1단계] denied / network
         _loadInFlight = false;
         clearTimeout(loadingTimeout);
         window.fbReady = false;
@@ -14167,6 +14343,7 @@ const firebaseConfig = {
       })
       .catch(e => {
         console.warn('[Auth] anonymous sign-in failed:', e.message);
+        window._storeLoadState = _storeLoadStateOf({ ok: false, err: e });   // ★ [1단계]
         // 인증 실패 → Firebase 사용 불가, localStorage만으로 동작
         clearTimeout(loadingTimeout);
         window.fbReady = false;
@@ -15161,26 +15338,39 @@ function importHwJsonForYear(input, yr) {
 }
 
 // 파일 구조 자동 감지 & 병합
+// ★ [1단계 · 2026-10-01] 병합이 문항 정보를 **잃지 않고**, 이상하면 **멈춘다.**
+//   ⛔ 운영 DB 실측: 숙제 문항 19,479 개 중 taxonomy_id 0 개 · weakness 가지 없음.
+//      여기서 id · taxonomy_id · 출처를 버리고 있었다(약점 분석이 한 번도 못 돌았다).
+//   ⛔ 정답 파일 매칭은 「맞는 것이 없으면 조용히 빈 정답」이었다 ⇒ 충돌 · 매칭 실패 · 중복은
+//      목록으로 보여 주고 null 을 돌려 **등록 단추가 아예 안 나오게** 한다.
+//   문항 열쇠는 `세트_번호`(set_number) — 정답 파일은 id 로도 찾는다(옛 형식 T2W2_A_01 끝맞춤 포함).
+function _hwJsonPickQuestion(q, data, num) {
+  return {
+    set: q.set || 'A',
+    number: num,
+    question_text: q.question_text || q.text || '',
+    question_katex: q.question_katex || '',
+    set_title: q.set_title || (data && data.title) || '',
+    type: q.type || 'SA',
+    choices: q.choices || q.options || null,
+    answer: q.answer || '',
+    explanation: q.explanation || '',
+    ...(q.id != null && q.id !== '' ? { id: String(q.id) } : {}),
+    ...(q.taxonomy_id ? { taxonomy_id: String(q.taxonomy_id) } : {}),
+    ...((q.source || q.src) ? { source: q.source || q.src } : {}),
+    ...(q.figure ? { figure: q.figure } : {})
+  };
+}
+
 function _mergeHwJsonFiles(results) {
-  let questions = null;   // [{ set, number, question_text, choices?, ... }]
-  let answers   = null;   // [{ id/set+number, correct_choice, correct_text, explanation }]
+  let questions = null;   // [{ set, number, question_text, choices?, id?, taxonomy_id?, source?, ... }]
+  let answers   = null;   // [{ id/set+number, correct_choice, correct_text, explanation, taxonomy_id?, source? }]
 
   for (const { name, data } of results) {
     // 형식 1: 배열 최상위 — [{ set, question_text, answer, ... }] (통합 파일)
     if (Array.isArray(data)) {
       if (data[0]?.question_text || data[0]?.text) {
-        questions = data.map(q => ({
-          set: q.set || 'A',
-          number: q.num || q.number || 0,
-          question_text: q.question_text || q.text || '',
-          question_katex: q.question_katex || '',
-          set_title: q.set_title || '',
-          type: q.type || 'SA',
-          choices: q.choices || q.options || null,
-          answer: q.answer || '',
-          explanation: q.explanation || '',
-          ...(q.figure ? { figure: q.figure } : {})
-        }));
+        questions = data.map(q => _hwJsonPickQuestion(q, null, q.num || q.number || 0));
       } else if (data[0]?.correct_choice || data[0]?.correct_text) {
         answers = data;
       }
@@ -15189,18 +15379,7 @@ function _mergeHwJsonFiles(results) {
 
     // 형식 2: { questions: [...] } (문제 파일)
     if (data.questions && Array.isArray(data.questions)) {
-      questions = data.questions.map(q => ({
-        set: q.set || 'A',
-        number: q.number || q.num || 0,
-        question_text: q.question_text || q.text || '',
-        question_katex: q.question_katex || '',
-        set_title: q.set_title || data.title || '',
-        type: q.type || 'SA',
-        choices: q.choices || q.options || null,
-        answer: q.answer || '',
-        explanation: q.explanation || '',
-        ...(q.figure ? { figure: q.figure } : {})
-      }));
+      questions = data.questions.map(q => _hwJsonPickQuestion(q, data, q.number || q.num || 0));
     }
 
     // 형식 3: { answers: [...] } (정답 파일)
@@ -15214,31 +15393,80 @@ function _mergeHwJsonFiles(results) {
     return null;
   }
 
+  const 문제들 = [];   // 멈출 까닭 — 다 모아서 한 번에 보여 준다
+  const 이름 = (q) => `Set ${q.set} ${q.number}번` + (q.id ? ` (${q.id})` : '');
+
+  // 문제 파일 안의 중복 — 같은 세트·번호, 같은 id
+  const 본자리 = {}, 본id = {};
+  questions.forEach(q => {
+    const k = `${q.set}_${q.number}`;
+    if (본자리[k]) 문제들.push(`중복: 문제 파일에 ${이름(q)} 이(가) 두 번 있습니다`);
+    본자리[k] = true;
+    if (q.id) {
+      if (본id[q.id]) 문제들.push(`중복: 문제 id ${q.id} 이(가) 두 번 있습니다`);
+      본id[q.id] = true;
+    }
+  });
+
   // 정답 파일이 있으면 문제에 병합
   if (answers && answers.length) {
     const ansMap = {};
     answers.forEach(a => {
       const key = a.id || `${a.set}_${a.number}`;
+      if (ansMap[key]) 문제들.push(`중복: 정답 파일에 ${key} 이(가) 두 번 있습니다`);
       ansMap[key] = a;
     });
+    const 쓴정답 = new Set();
     questions.forEach(q => {
       const key1 = `${q.set}_${q.number}`;
-      // id 형식 매칭: T2W2_A_01 등
-      const key2 = Object.keys(ansMap).find(k =>
-        k === key1 || k.endsWith(`_${q.set}_${String(q.number).padStart(2,'0')}`)
-      );
-      const a = ansMap[key2] || ansMap[key1];
-      if (a) {
-        if (!q.answer) q.answer = a.correct_choice || a.correct_text || '';
-        if (!q.explanation) q.explanation = a.explanation || '';
-        // MCQ인 경우 correct_choice를 answer로
-        if (q.type === 'MCQ' && a.correct_choice) q.answer = a.correct_choice;
-        // SA인 경우 answer에서 KaTeX 마크업 제거 (채점용)
-        if (q.type !== 'MCQ' && q.answer) {
-          q.answer = _stripKatexForAnswer(q.answer);
-        }
+      // 찾는 순서: 문제 id → 세트_번호 → 옛 id 끝맞춤(T2W2_A_01)
+      let 후보 = [];
+      if (q.id && ansMap[q.id]) 후보 = [q.id];
+      else if (ansMap[key1]) 후보 = [key1];
+      else 후보 = Object.keys(ansMap).filter(k => k.endsWith(`_${q.set}_${String(q.number).padStart(2,'0')}`));
+      if (후보.length > 1) {
+        문제들.push(`매칭 실패: ${이름(q)} 에 맞는 정답이 여럿입니다 (${후보.join(', ')})`);
+        return;
       }
+      const a = 후보.length ? ansMap[후보[0]] : null;
+      if (!a) {
+        // 문제 파일에 정답이 이미 있으면 정답 파일에 없어도 된다(예전과 같다).
+        if (!q.answer) 문제들.push(`매칭 실패: ${이름(q)} 의 정답이 어느 파일에도 없습니다`);
+        return;
+      }
+      쓴정답.add(후보[0]);
+
+      // 정답 — 둘 다 있으면 같아야 한다
+      let 파일정답 = (q.type === 'MCQ' && a.correct_choice) ? a.correct_choice : (a.correct_choice || a.correct_text || '');
+      if (q.type !== 'MCQ' && 파일정답) 파일정답 = _stripKatexForAnswer(String(파일정답));
+      let 문제정답 = q.answer || '';
+      if (q.type !== 'MCQ' && 문제정답) 문제정답 = _stripKatexForAnswer(String(문제정답));
+      if (문제정답 && 파일정답 && String(문제정답).trim() !== String(파일정답).trim()) {
+        문제들.push(`정답 충돌: ${이름(q)} — 문제 파일 「${문제정답}」 · 정답 파일 「${파일정답}」`);
+        return;
+      }
+      q.answer = 파일정답 || 문제정답;
+      if (!q.explanation) q.explanation = a.explanation || '';
+      // 분류 — 둘 다 있으면 같아야 한다
+      if (q.taxonomy_id && a.taxonomy_id && q.taxonomy_id !== a.taxonomy_id) {
+        문제들.push(`분류 충돌: ${이름(q)} — ${q.taxonomy_id} · ${a.taxonomy_id}`);
+        return;
+      }
+      if (!q.taxonomy_id && a.taxonomy_id) q.taxonomy_id = String(a.taxonomy_id);
+      if (!q.source && (a.source || a.src)) q.source = a.source || a.src;
+      if (!q.id && a.id) q.id = String(a.id);
     });
+    // 주인 없는 정답 — 문제 파일과 짝이 안 맞는다는 뜻
+    Object.keys(ansMap).forEach(k => {
+      if (!쓴정답.has(k)) 문제들.push(`매칭 실패: 정답 파일의 ${k} 에 맞는 문제가 없습니다`);
+    });
+  }
+
+  if (문제들.length) {
+    const 보일것 = 문제들.slice(0, 15);
+    alert('⛔ 등록을 멈췄습니다 — JSON 파일을 확인해 주세요 (' + 문제들.length + '건)\n\n'
+      + 보일것.join('\n') + (문제들.length > 15 ? `\n… 외 ${문제들.length - 15}건` : ''));
+    return null;
   }
 
   return questions;
@@ -15682,6 +15910,96 @@ function _katexToMixed(katex) {
   return parts.join(' ').replace(/\s+/g, ' ').trim();
 }
 
+// ★ [1단계 · 2026-10-01] JSON 문항 하나 → 숙제 세트 문항. doImportHwJson 에서 떼어 냈다(시험이 직접 돌린다).
+function _hwJsonToSetQuestion(q, i) {
+  // question_katex → renderMath 호환 text 변환
+  let katex = q.question_katex ? q.question_katex.replace(/^\$+|\$+$/g, '').trim() : '';
+  let text = '';
+
+  if (!katex) {
+    // katex 없음 → question_text만 사용
+    text = (q.question_text || '');
+  } else if (/\\text\{/.test(katex)) {
+    // \text{} 포함 → \text 부분은 plain text, 나머지는 \(math\)로 변환
+    text = _katexToMixed(katex);
+  } else {
+    // 순수 수식 → question_text에 이미 $가 있으면 중복 방지, 없으면 $$katex$$ 추가
+    const plain = (q.question_text || '');
+    if (/\$/.test(plain)) {
+      text = plain;
+    } else {
+      text = plain ? `${plain}\n$$${katex}$$` : `$$${katex}$$`;
+    }
+  }
+
+  // MCQ: choices를 options 배열로 변환
+  const isMCQ = q.type === 'MCQ' || (q.choices && q.choices.length > 0);
+  let options = null;
+  if (isMCQ && q.choices) {
+    options = q.choices.map(c => {
+      const raw = c.text || c.katex || c;
+      if (typeof raw !== 'string') return raw;
+      const hasLatex = raw.includes('\\') || raw.includes('^{') || raw.includes('_{');
+      if (!hasLatex) return raw;
+      if (/\\text\{/.test(raw)) return _katexToMixed(raw);
+      return '\\(' + raw + '\\)';
+    });
+  }
+
+  return {
+    id: `q${i}`,
+    text,
+    type: isMCQ ? 'mc' : 'sa',
+    answer: q.answer || '',
+    hint1: '',
+    hint2: '',
+    explanation: q.explanation || '',
+    options,
+    ...(q.figure ? { figure: q.figure } : {}),
+    // ★ [1단계] 파일의 정보를 **덧붙인다** — `id` 는 제출 답의 열쇠라 q0… 그대로 둔다.
+    ...(q.id ? { srcId: String(q.id) } : {}),
+    ...(q.taxonomy_id ? { taxonomy_id: String(q.taxonomy_id) } : {}),
+    ...(q.source ? { source: q.source } : {})
+  };
+}
+
+// ★ [1단계] 세트 문항의 **내용 지문** — 등록 뒤 서버에서 다시 읽어 견준다.
+//   그림(figure)은 보지 않는다: 쓰는 길에서 그림이 창고로 떼어지고 번호로 바뀌기 때문이다.
+function _hwContentHash(questions) {
+  const 알맹이 = (questions || []).map(q => [
+    q.id || '', q.srcId || '', q.text || '', q.type || '', q.answer == null ? '' : String(q.answer),
+    q.explanation || '', q.taxonomy_id || '', q.options || null
+  ]);
+  const s = JSON.stringify(알맹이);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+  }
+  return s.length + '_' + h.toString(16);
+}
+
+// ★ [1단계] MR 등록 확인 — 서버 쓰기가 끝난 뒤 **서버에서 다시 읽어** 세트마다 문항 수·지문을 견준다.
+//   기대 = [{ idx, n, hash }]. 돌려주는 값 = { ok, 문제: [까닭…] }. 못 읽으면 ok:false.
+async function _MR등록확인(key, 기대) {
+  const 문제 = [];
+  let sets;
+  try {
+    const snap = await window.FB_REF.child('homeworkSets/' + key + '/sets').once('value');
+    sets = snap.val() || [];
+  } catch (e) {
+    return { ok: false, 문제: ['서버에서 다시 읽지 못했습니다 (' + ((e && (e.code || e.message)) || e) + ')'] };
+  }
+  for (const k of 기대) {
+    const 세트 = sets[k.idx];
+    const qs = 세트 && 세트.questions ? Object.values(세트.questions) : [];
+    if (!세트) { 문제.push('세트 ' + (k.idx + 1) + ' 이(가) 서버에 없습니다'); continue; }
+    if (qs.length !== k.n) { 문제.push('세트 ' + (k.idx + 1) + ' 문항 수 ' + qs.length + ' (기대 ' + k.n + ')'); continue; }
+    if (_hwContentHash(qs) !== k.hash) 문제.push('세트 ' + (k.idx + 1) + ' 내용이 보낸 것과 다릅니다');
+  }
+  return { ok: 문제.length === 0, 문제 };
+}
+
 async function doImportHwJson(yr) {
   const previewEl = document.getElementById(`hwJsonPreview_${yr}`);
   if (!previewEl || !previewEl.dataset.parsed) {
@@ -15763,61 +16081,17 @@ async function doImportHwJson(yr) {
   for (const [setKey, info] of setEntries) {
     const questions = info.questions
       .sort((a, b) => (a.number || a.num || 0) - (b.number || b.num || 0))
-      .map((q, i) => {
-        // question_katex → renderMath 호환 text 변환
-        let katex = q.question_katex ? q.question_katex.replace(/^\$+|\$+$/g, '').trim() : '';
-        let text = '';
-
-        if (!katex) {
-          // katex 없음 → question_text만 사용
-          text = (q.question_text || '');
-        } else if (/\\text\{/.test(katex)) {
-          // \text{} 포함 → \text 부분은 plain text, 나머지는 \(math\)로 변환
-          text = _katexToMixed(katex);
-        } else {
-          // 순수 수식 → question_text에 이미 $가 있으면 중복 방지, 없으면 $$katex$$ 추가
-          const plain = (q.question_text || '');
-          if (/\$/.test(plain)) {
-            text = plain;
-          } else {
-            text = plain ? `${plain}\n$$${katex}$$` : `$$${katex}$$`;
-          }
-        }
-
-        // MCQ: choices를 options 배열로 변환
-        const isMCQ = q.type === 'MCQ' || (q.choices && q.choices.length > 0);
-        let options = null;
-        if (isMCQ && q.choices) {
-          options = q.choices.map(c => {
-            const raw = c.text || c.katex || c;
-            if (typeof raw !== 'string') return raw;
-            const hasLatex = raw.includes('\\') || raw.includes('^{') || raw.includes('_{');
-            if (!hasLatex) return raw;
-            if (/\\text\{/.test(raw)) return _katexToMixed(raw);
-            return '\\(' + raw + '\\)';
-          });
-        }
-
-        return {
-          id: `q${i}`,
-          text,
-          type: isMCQ ? 'mc' : 'sa',
-          answer: q.answer || '',
-          hint1: '',
-          hint2: '',
-          explanation: q.explanation || '',
-          options,
-          ...(q.figure ? { figure: q.figure } : {})
-        };
-      });
+      .map((q, i) => _hwJsonToSetQuestion(q, i));
 
     const setIdx   = hw.sets.length;
     const setTitle = `Set ${setIdx + 1} (${info.title})`;
 
     // Phase C: auto-tag imported questions
-    if (window.TAXONOMY_MR) {
+    // ★ [1단계] 파일에 분류가 있는 문항은 태깅이 덮지 않는다 — **분류 없는 문항만** 보낸다.
+    const _태깅할것 = questions.filter(q => !q.taxonomy_id);
+    if (window.TAXONOMY_MR && _태깅할것.length) {
       showBackupToast(`🏷️ 태깅 중... (${setTitle})`);
-      await tagQuestions(questions, yr);
+      await tagQuestions(_태깅할것, yr);
     }
 
     // [제출 정리 안전망] 이 자리의 기존 제출 기록 정리 (보관 후 삭제)
@@ -15840,9 +16114,22 @@ async function doImportHwJson(yr) {
   //   (이전엔 saveStore가 quota로 던지면 그 다음 fbSetHomeworkSet이 실행 안 돼
   //    로컬·Firebase 둘 다 등록 실패하고 조용히 멈췄음.)
   if (Object.keys(_subFbUpdates).length > 0) fbWrite(_subFbUpdates);
-  fbSetHomeworkMaths(key, store.homeworkSets[key]);   // [R-0] ts 는 안 쓴다
+  // ★ [1단계 · 2026-10-01] 서버 쓰기가 **끝난 것을 기다리고**, 다시 읽어 세트 수·내용 지문이
+  //   맞아야 「완료」를 띄운다. 예전에는 보내자마자 「등록 완료」를 띄웠다(실패해도).
+  const _기대 = addedIdxs.map(i => ({ idx: i, n: hw.sets[i].questions.length,
+                                      hash: _hwContentHash(hw.sets[i].questions) }));
+  const _썼나 = await new Promise(res =>
+    fbSetHomeworkSet(key, store.homeworkSets[key], ['ts'], res));   // [R-0] ts 는 안 쓴다
   const localOk = saveStore(store);   // quota 초과 시 false 반환(경고 배너) — 더 이상 throw 안 함
   renderTeacher();
+  const _확인 = !_썼나
+    ? { ok: false, 문제: ['서버 저장 실패 — 인터넷·권한을 확인해 주세요'] }
+    : (window.isPreviewMode ? { ok: true, 문제: [] } : await _MR등록확인(key, _기대));
+  if (!_확인.ok) {
+    alert('❌ 등록 확인 실패 — 「완료」가 아닙니다.\n\n' + _확인.문제.join('\n')
+      + '\n\n숙제 관리 화면에서 이 칸을 다시 확인해 주세요.');
+    return;
+  }
 
   // [2026-05 lazy caching 전환] 다중 세트 자동 사전생성 제거
 

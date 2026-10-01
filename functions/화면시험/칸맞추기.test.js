@@ -44,7 +44,7 @@ function 세상만들기(서버, 로컬) {
   return env;
 }
 
-const 도우미소스 = 떼기('async function _칸맞추기(key) {', 'function fbSetHomeworkSet(key, data, 빼기)');
+const 도우미소스 = 떼기('async function _칸맞추기(key) {', 'function fbSetHomeworkSet(key, data, 빼기');
 
 function 만들기(env) {
   const 이름 = Object.keys(env).filter(k => k !== '서버' && k !== '쓴것' && k !== '알림');

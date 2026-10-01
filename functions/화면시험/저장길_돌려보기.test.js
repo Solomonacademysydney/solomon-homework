@@ -17,7 +17,7 @@ function 떼기(시작, 끝표) {
 }
 
 const 소스 =
-  떼기('async function _칸맞추기(key) {', 'function fbSetHomeworkSet(key, data, 빼기)') +
+  떼기('async function _칸맞추기(key) {', 'function fbSetHomeworkSet(key, data, 빼기') +
   떼기('async function deleteSet(idx) {', '\nfunction togglePublishYear') +
   떼기('async function confirmMoveSet(fromIdx) {', '\nfunction ');
 
