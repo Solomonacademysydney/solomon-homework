@@ -82,10 +82,13 @@
     const ds = Object.keys(attendance || {}).filter(d => d <= t && attendance[d] && attendance[d][sid]).sort().reverse();
     return ds.slice(0, n || 2);
   }
-  /** 「지난주」 = 직전 수업과 그 앞 수업 사이(분석 기간). 출석 기록이 없으면 요일로 짐작(표시에 「짐작」). */
+  /** 「지난주」 = 직전 수업과 그 앞 수업 사이(분석 기간). 출석 기록이 없으면 요일로 짐작(표시에 「짐작」).
+   *  [10-02] 최근 출석이 14일보다 오래됐으면 믿지 않고 요일로 짐작한다 — 출석부가 4-24 에서 끊겨
+   *  7명의 「지난주」가 4월로 나왔다(운영 실측). */
+  const 출석유효일 = 14;
   function analysisWindow(user, attendance, attendanceDays, today) {
     const 기록 = pastClassDates(user.id, attendance, today, 2);
-    if (기록.length) {
+    if (기록.length && parseYmd(기록[0]) >= addDays(today, -출석유효일)) {
       const last = parseYmd(기록[0]);
       const prev = 기록[1] ? parseYmd(기록[1]) : addDays(last, -7);
       return { lastClass: 기록[0], prevClass: 기록[1] || null, from: ymd(addDays(prev, 1)), to: 기록[0], source: 'attendance',

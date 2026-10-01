@@ -198,7 +198,7 @@ function 카드그리기() {
 function 현황그리기(a) {
   const w = a.win;
   const 지난주 = w.lastClass
-    ? `직전 수업 <b>${w.lastClass}</b>${w.status === 'absent' ? ' <span class="빨강">(결석)</span>' : ''}${w.source === 'weekday' ? ' <span class="작게">(출석 기록 없음 — 요일로 짐작)</span>' : ''} · 분석 기간 <b>${w.from} ~ ${w.to}</b>`
+    ? `직전 수업 <b>${w.lastClass}</b>${w.status === 'absent' ? ' <span class="빨강">(결석)</span>' : ''}${w.source === 'weekday' ? ' <span class="작게">(최근 출석 기록 없음 — 요일로 짐작)</span>' : ''} · 분석 기간 <b>${w.from} ~ ${w.to}</b>`
     : '수업 기록이 없습니다';
   const 줄 = a.분석.weeks.map(wk => {
     const 머리 = `<tr><th colspan="7">${C.periodKey(wk.period)} · ${({ personal: '📌 개인 숙제', group: '그룹 숙제', pending: '⏳ 준비 중(비공개)', none: '숙제 없음' })[wk.kind]}${wk.ref ? ' <span class="작게">' + 글(wk.ref) + '</span>' : ''}</th></tr>`;
@@ -286,8 +286,13 @@ function 설정그리기(a) {
 function 설정바꿈(p, v) {
   const s = 설정편집.settings; 값넣기(s, p, v);
   if (p === 'paperHw.sets') { const n = Math.max(0, v | 0), last = s.paperHw.perSet[s.paperHw.perSet.length - 1] || { mr: 20, ts: 10 }; while (s.paperHw.perSet.length < n) s.paperHw.perSet.push(JSON.parse(JSON.stringify(last))); s.paperHw.perSet.length = n; }
-  카드그리기();
+  // [10-02] 글칸에 적고 바로 단추를 누르면 change 가 누르는 도중에 와서, 여기서 카드를 다시 그리면
+  //   누르던 단추가 바뀌어 클릭이 사라졌다(운영 실측 — 확정이 함수까지 안 감). 누르는 중이면 뗀 뒤에 그린다.
+  if (누르는중) 다시그릴것 = true; else 카드그리기();
 }
+let 누르는중 = false, 다시그릴것 = false;
+document.addEventListener('pointerdown', () => { 누르는중 = true; }, true);
+for (const 뗌 of ['pointerup', 'pointercancel']) document.addEventListener(뗌, () => setTimeout(() => { 누르는중 = false; if (다시그릴것) { 다시그릴것 = false; 카드그리기(); } }, 0), true);
 function 이번주만(p, on) { if (on) 설정편집.thisWeekOnly.add(p); else 설정편집.thisWeekOnly.delete(p); 카드그리기(); }
 function 자유해석() {
   const t = document.getElementById('자유지시').value;

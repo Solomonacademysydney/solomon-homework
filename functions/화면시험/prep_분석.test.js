@@ -61,6 +61,11 @@ console.log('\n── ③ 목록 차례 · 「지난주」');
   재기('결석도 알린다', w.status === 'absent');
   const w2 = C.analysisWindow({ id: 'X', days: ['tue'] }, {}, {}, 오늘);
   재기('출석 기록이 없으면 요일로 짐작(표시)', w2.source === 'weekday' && w2.lastClass === '2026-09-29', JSON.stringify(w2));
+  // [10-02] 출석부가 4월에서 끊긴 아이 — 낡은 기록 대신 요일로 짐작
+  const w3 = C.analysisWindow({ id: 'Old', days: ['fri'] }, { '2026-04-17': { Old: 'present' }, '2026-04-24': { Old: 'present' } }, {}, 오늘);
+  재기('14일보다 오래된 출석은 버리고 요일로 짐작', w3.source === 'weekday' && w3.lastClass === '2026-09-25', JSON.stringify(w3));
+  const w4 = C.analysisWindow({ id: 'Mon', days: ['mon'] }, { '2026-09-17': { Mon: 'present' } }, {}, 오늘);
+  재기('14일 안의 출석은 그대로 믿는다', w4.source === 'attendance' && w4.lastClass === '2026-09-17', JSON.stringify(w4));
   const ps = C.periodsInWindow({ from: '2026-09-23', to: '2026-09-29' });
   재기('분석 기간의 숙제 주차(겹치지 않게)', ps.length === 2 && C.periodKey(ps[0]) === '2026_m09_w4' && C.periodKey(ps[1]) === '2026_m10_w1', JSON.stringify(ps));
 }
