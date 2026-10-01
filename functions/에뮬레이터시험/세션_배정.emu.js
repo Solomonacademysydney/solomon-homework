@@ -71,8 +71,8 @@ const 거절 = (r, 말) => !!(r && r.err && r.err.includes(말));
     { id: 'MinaMom', role: 'parent', childIds: ['Mina'], status: 'active' },
     { id: 'T', role: 'teacher' },
   ]);
-  const 문항 = [{ id: 'q0', text: '2+3?', type: 'mc', options: ['4', '5'], answer: 'B', explanation: '5' },
-                { id: 'q1', text: '10-4?', type: 'sa', answer: '6', answerKey: '6' }];
+  const 문항 = [{ id: 'q0', text: '2+3?', type: 'mc', options: ['4', '5'], answer: 'B', explanation: '5', taxonomy_id: 'MR.Y5.NA.add' },
+                { id: 'q1', text: '10-4?', type: 'sa', answer: '6', answerKey: '6', taxonomy_id: 'MR.Y5.NA.sub' }];
   await db.ref('sol_prep_v1/releases').set({
     A1: { studentId: 'Mina', published: true, title: '민아 10월 1주', period: { year: 2026, month: 10, week: 1 }, sets: { s1: { title: 'Set 1', questions: 문항 } } },
     A2: { studentId: 'Mina', published: false, title: '민아 10월 2주(비공개)', period: { year: 2026, month: 10, week: 2 }, sets: { s1: { title: 'Set 1', questions: 문항 } } },
@@ -149,6 +149,14 @@ const 거절 = (r, 말) => !!(r && r.err && r.err.includes(말));
   재기('[2-B] 그래도 정답은 안 온다', !JSON.stringify(g2).match(/"answer"|"answerKey"|"explanation"/));
   const L2 = await 부름(P.prepListMyAssignments, 'u-mina', {});
   재기('[2-B] 목록에 내 제출 요약(mine)이 온다', L2.assignments[0].mine && L2.assignments[0].mine.s1 && L2.assignments[0].mine.s1.latest === 2 && L2.assignments[0].mine.s1.score === 50, JSON.stringify(L2.assignments[0].mine));
+  // ── [3-D] 개인 배정 약점 반영 — 서버가 제출 때 반영 · 같은 제출 한 번 · 새 판은 옛 기여분 대체
+  const 약점 = (await db.ref('solomon_hw_v3/weakness/Mina').once('value')).val() || {};
+  const 덧 = (약점.skills || {})['MR%2EY5%2ENA%2Eadd'] || {}, 뺄 = (약점.skills || {})['MR%2EY5%2ENA%2Esub'] || {};
+  재기('[3-D] 개인 배정 제출이 약점에 들어간다(안전 키 · 원문 taxonomyId)', 덧.taxonomyId === 'MR.Y5.NA.add' && 뺄.taxonomyId === 'MR.Y5.NA.sub', JSON.stringify(Object.keys(약점.skills || {})));
+  재기('[3-D] 판 2 가 판 1 기여분을 대체(덧셈: 1회 0정답 · 뺄셈: 1회 1정답)', 덧.attempts === 1 && 덧.correct === 0 && 뺄.attempts === 1 && 뺄.correct === 1, JSON.stringify([덧, 뺄]));
+  재기('[3-D] 같은 판 재시도는 두 번 세지 않는다(위 재시도 뒤에도 1회)', 덧.attempts === 1);
+  재기('[3-D] 기여분 열쇠 = prep_<배정>_<세트> · 판 2', 덧.contrib && 덧.contrib['prep_A1_s1'] && 덧.contrib['prep_A1_s1'].rev === 2, JSON.stringify(덧.contrib));
+  재기('[3-D] 반영 기록(applied)', ((약점.applied || {})['prep_A1_s1'] || {}).rev === 2);
   재기('새 판(2)은 옛 판을 덮지 않고 쌓인다', r2 && r2.ok && 칸2.latest === 2 && 칸2.revs['1'] && 칸2.revs['1'].answers.q0 === 'B' && 칸2.revs['2'].answers.q0 === 'A', JSON.stringify(칸2));
   재기('옛 판 번호로 새 답 → 거절', 거절(await 부름(P.prepSubmit, 'u-mina', { assignmentId: 'A1', setId: 's1', rev: 1, answers: { q0: 'C' } }), 'REV-CONFLICT'));
   재기('마스터로 제출 → 거절', 거절(await 부름(P.prepSubmit, 'u-master', { assignmentId: 'A1', setId: 's1', rev: 3, answers: 답 }), 'MASTER-READONLY'));

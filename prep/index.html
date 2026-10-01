@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>수업 준비</title>
+<!--
+  수업 준비 화면 /prep/ — 3단계(2026-10-01): 학생 현황 · 종이 시험 · 커리·학교 자료
+  셈은 전부 prep_core.js(시험이 같은 파일을 돌린다). 이 파일은 읽기·쓰기·그리기만.
+
+  ⛔ 지키는 선 (/ts/ 와 같다)
+    · 익명 로그인을 하지 않는다 — 홈페이지에서 **원장 로그인**을 한 뒤 이 창을 연다. 원장 uid 가 아니면 잠근다.
+    · 통째로 읽지 않는다 — 학생·주차 단위로 좁혀 읽는다.
+    · 옛 숙제 칸(homeworkSets)·제출(submissions)에 **쓰지 않는다.** 쓰는 곳은 sol_prep_v1 · weakness(종이 시험 기여분)뿐.
+    · 학교 자료는 비공개 저장소(Firebase Storage `prep/…`)에만 — 공개 링크를 만들지 않는다.
+-->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+<script src="prep_core.js"></script>
+<style>
+:root{ --바탕:#f7f7f9; --판:#fff; --글:#1c1c1e; --흐린글:#6b6b70; --선:#e3e3e8; --짙은파랑:#2b4c7e; --파랑:#3a6ea5;
+  --녹색:#2e7d5b; --주황:#b26a00; --빨강:#b3261e; --보라:#5b21b6; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --바탕:#17171a; --판:#202024; --글:#eceff4; --흐린글:#a0a0a8;
+  --선:#33333a; --짙은파랑:#9ec1ee; --파랑:#7aa9dd; --녹색:#6fd3a5; --주황:#e0a44a; --빨강:#f2837a; --보라:#c4b5fd; } }
+:root[data-theme="dark"]{ --바탕:#17171a; --판:#202024; --글:#eceff4; --흐린글:#a0a0a8; --선:#33333a; --짙은파랑:#9ec1ee;
+  --파랑:#7aa9dd; --녹색:#6fd3a5; --주황:#e0a44a; --빨강:#f2837a; --보라:#c4b5fd; }
+*{box-sizing:border-box} body{margin:0;background:var(--바탕);color:var(--글);font:14px/1.5 "Noto Sans KR",system-ui,sans-serif}
+header{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 16px;background:var(--판);border-bottom:1px solid var(--선)}
+header h1{font-size:18px;margin:0}
+.딱지{font-size:12px;padding:2px 8px;border-radius:99px;border:1px solid var(--선)} .좋음{color:var(--녹색)} .나쁨{color:var(--빨강)}
+main{display:grid;grid-template-columns:260px 1fr;gap:12px;padding:12px 16px} @media(max-width:760px){main{grid-template-columns:1fr}}
+.판{background:var(--판);border:1px solid var(--선);border-radius:10px;padding:12px}
+#학생목록 button{display:block;width:100%;text-align:left;margin:0 0 6px;padding:8px 10px;border:1px solid var(--선);border-radius:8px;background:var(--판);color:var(--글);cursor:pointer}
+#학생목록 button.고름{border-color:var(--파랑);outline:2px solid var(--파랑)} .작게{font-size:12px;color:var(--흐린글)}
+.탭{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap} .탭 button{padding:6px 12px;border-radius:8px;border:1px solid var(--선);background:var(--판);color:var(--글);cursor:pointer}
+.탭 button.고름{background:var(--짙은파랑);color:#fff}
+table{border-collapse:collapse;width:100%} td,th{border-bottom:1px solid var(--선);padding:5px 6px;text-align:left;font-size:13px;vertical-align:top}
+input,select,textarea{font:inherit;padding:5px 7px;border:1px solid var(--선);border-radius:6px;background:var(--판);color:var(--글)}
+button.주{padding:6px 12px;border-radius:8px;border:none;background:var(--짙은파랑);color:#fff;cursor:pointer} button:disabled{opacity:.5;cursor:not-allowed}
+.경고{color:var(--주황);font-weight:700} .빨강{color:var(--빨강);font-weight:700} .보라{color:var(--보라);font-weight:700}
+#잠금막{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;align-items:center;justify-content:center}
+#잠금막.보임{display:flex} #잠금막 div{background:var(--판);padding:24px;border-radius:12px;max-width:520px}
+#알림{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:10px;display:none;z-index:60}
+.섹{margin-bottom:14px} .섹 h3{margin:0 0 6px;font-size:15px}
+</style>
+</head>
+<body>
+<header>
+  <h1>📋 수업 준비</h1>
+  <span id="누구" class="딱지 나쁨">확인 중</span>
+  <label class="작게">기준 날짜 <input type="date" id="기준날짜" onchange="다시그리기()"></label>
+  <span class="작게" id="읽은수"></span>
+</header>
+<div id="잠금막"><div><b>🔒 잠김</b><p id="잠금말"></p><p class="작게">홈페이지에서 원장 로그인 → 이 창을 새로 고치십시오.</p></div></div>
+<main>
+  <section class="판"><div class="작게" style="margin-bottom:6px">내일 수업 학생이 먼저</div><div id="학생목록">불러오는 중…</div></section>
+  <section class="판" id="카드"><div class="작게">왼쪽에서 학생을 고르세요.</div></section>
+</main>
+<div id="알림"></div>
+<script>
+'use strict';
+const C = window.PrepCore;
+// ── 운영 설정 + 시험 환경 스위치(학생 화면과 같은 규칙: localhost·127.0.0.1 + ?emu=1 만) ──
+const 운영설정 = { apiKey: "AIzaSyDvj7CDHZ7_Wci0palB9KpbjvCUkvcCRZY", authDomain: "solomon-76715.firebaseapp.com",
+  databaseURL: "https://solomon-76715-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "solomon-76715", storageBucket: "solomon-76715.appspot.com" };
+function _emuModeOf(loc) {
+  const h = String((loc && loc.hostname) || '');
+  if (h !== 'localhost' && h !== '127.0.0.1') return false;
+  return /[?&]emu=1(&|$)/.test(String((loc && loc.search) || ''));
+}
+const _EMU = _emuModeOf(location);
+firebase.initializeApp(_EMU ? { apiKey: 'demo-key', authDomain: 'demo-solomon.firebaseapp.com', databaseURL: 'http://127.0.0.1:9000?ns=demo-solomon',
+  projectId: 'demo-solomon', storageBucket: 'demo-solomon.appspot.com' } : 운영설정);
+if (_EMU) {
+  firebase.database().useEmulator('127.0.0.1', 9000); firebase.auth().useEmulator('http://127.0.0.1:9099');
+  firebase.storage().useEmulator('127.0.0.1', 9199); document.title = '[시험] ' + document.title;
+  document.addEventListener('DOMContentLoaded', () => { const b = document.createElement('div'); b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;background:#7c2d12;color:#fff;text-align:center;padding:8px;font-weight:900;z-index:99;pointer-events:none'; b.textContent = '🧪 시험 환경 (에뮬레이터) — 운영 자료가 아닙니다'; document.body.appendChild(b); });
+}
+const OPERATOR_UID = '62bxWubzDLMrhHjjv2oNfAQiyaD2';   // index.html 과 같아야 한다
+const db = firebase.database();
+const 뿌리 = 'solomon_hw_v3', 새뿌리 = 'sol_prep_v1';
+
+let 잠겼나 = true, 읽은경로 = 0;
+const 판 = { users: [], attendance: {}, attendanceDays: {}, releases: {}, prepSubs: {}, paperTests: {}, 차례: [] };
+let 고른 = null, 고른탭 = '현황', 아이자료 = null;
+
+function 알림(말) { const a = document.getElementById('알림'); a.textContent = 말; a.style.display = 'block'; clearTimeout(알림.t); 알림.t = setTimeout(() => a.style.display = 'none', 3500); }
+function 글(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+async function 읽기(경로, q) {
+  읽은경로++; document.getElementById('읽은수').textContent = '읽은 경로 ' + 읽은경로;
+  try { const s = await (q ? q(db.ref(경로)) : db.ref(경로)).get(); return s.exists() ? s.val() : null; }
+  catch (e) { console.warn('[읽기 실패]', 경로, e.code || e.message); return null; }
+}
+function 오늘() {
+  const v = document.getElementById('기준날짜').value;
+  return v ? C.parseYmd(v) : new Date(new Date().toLocaleString('en-US', { timeZone: 'Australia/Sydney' }));
+}
+
+// ── 원장 문지기 — 계속 지켜보다가 바뀌면 잠근다 ──
+function 잠그기(말) { 잠겼나 = true; document.getElementById('잠금막').classList.add('보임'); document.getElementById('잠금말').textContent = 말;
+  const n = document.getElementById('누구'); n.textContent = '잠김'; n.className = '딱지 나쁨'; }
+firebase.auth().onAuthStateChanged(u => {
+  if (!u) return 잠그기('로그인돼 있지 않습니다.');
+  if (u.isAnonymous || u.uid !== OPERATOR_UID) return 잠그기(u.isAnonymous ? '이 브라우저는 익명(학생 화면)으로 로그인돼 있습니다.' : '원장 계정이 아닙니다.');
+  잠겼나 = false; document.getElementById('잠금막').classList.remove('보임');
+  const n = document.getElementById('누구'); n.textContent = '원장님'; n.className = '딱지 좋음';
+  첫판();
+});
+
+async function 첫판() {
+  document.getElementById('기준날짜').value = document.getElementById('기준날짜').value || C.ymd(오늘());
+  const [users, att, attDays, rel, sub, tests] = await Promise.all([
+    읽기(뿌리 + '/users'), 읽기(뿌리 + '/attendance'), 읽기(뿌리 + '/attendance_days'),
+    읽기(새뿌리 + '/releases'), 읽기(새뿌리 + '/submissions'), 읽기(새뿌리 + '/paperTests')]);
+  const 목록 = Array.isArray(users) ? users : Object.values(users || {});
+  판.users = 목록.filter(u => u && u.role === 'student' && u.status !== 'inactive' && !u.isTest);
+  판.attendance = att || {}; 판.attendanceDays = attDays || {}; 판.releases = rel || {}; 판.prepSubs = sub || {}; 판.paperTests = tests || {};
+  목록그리기();
+}
+function 다시그리기() { 목록그리기(); if (고른) 아이고르기(고른); }
+function 목록그리기() {
+  판.차례 = C.orderStudents(판.users, 판.attendanceDays, 오늘());
+  document.getElementById('학생목록').innerHTML = 판.차례.map(x =>
+    `<button class="${x.user.id === 고른 ? '고름' : ''}" onclick="아이고르기('${글(x.user.id)}')">${x.tomorrow ? '🔔 ' : ''}<b>${글(x.user.name || x.user.id)}</b>
+      <span class="작게">Y${글(x.user.year)} · ${x.days.map(d => C.요일말[d]).join('') || '요일?'}${x.nextClass ? ' · 다음 ' + x.nextClass.slice(5) : ''}</span></button>`).join('')
+    || '<div class="작게">학생이 없습니다.</div>';
+}
+
+// ── 한 학생 자료 — 좁혀서 읽는다 ──
+async function 아이고르기(sid) {
+  고른 = sid; 목록그리기();
+  const u = 판.users.find(x => x.id === sid); if (!u) return;
+  const win = C.analysisWindow(u, 판.attendance, 판.attendanceDays, 오늘());
+  const periods = C.periodsInWindow(win);
+  const 열쇠들 = new Set();
+  periods.forEach(p => { 열쇠들.add(C.hwKey(u.year, u.country || 'AU', p, u.group || '')); if (u.group) 열쇠들.add(C.hwKey(u.year, u.country || 'AU', p, '')); });
+  const hw = {};
+  await Promise.all(Array.from(열쇠들).map(async k => { const v = await 읽기(뿌리 + '/homeworkSets/' + k); if (v) hw[k] = v; }));
+  const 범위 = (앞) => (r) => r.orderByKey().startAt(앞).endAt(앞 + '');
+  const [mr, ts, weak, prof, curs, srcs, results, drafts] = await Promise.all([
+    읽기(뿌리 + '/submissions', 범위(sid + '_')), 읽기(뿌리 + '/submissions', 범위('ts_' + sid + '_')), 읽기(뿌리 + '/weakness/' + sid),
+    읽기(새뿌리 + '/students/' + sid + '/profile'), 읽기(새뿌리 + '/students/' + sid + '/curricula'), 읽기(새뿌리 + '/students/' + sid + '/sources'),
+    읽기(새뿌리 + '/paperResults/' + sid), 읽기(새뿌리 + '/drafts')]);
+  const submissions = Object.assign({}, mr || {}, ts || {});
+  const 분석 = C.analyzeHomework({ user: u, periods, homeworkSets: hw, submissions, releases: 판.releases, prepSubs: 판.prepSubs, normAns: C.normAns });
+  아이자료 = { u, win, periods, 분석, weak: weak || {}, profile: prof || {}, curricula: curs || {}, sources: srcs || {}, results: results || {}, drafts: drafts || {} };
+  카드그리기();
+}
+
+function 카드그리기() {
+  const a = 아이자료; if (!a) return;
+  const 탭 = ['현황', '종이 시험', '커리·학교 자료'].map(t => `<button class="${t === 고른탭 ? '고름' : ''}" onclick="고른탭='${t}';카드그리기()">${t}</button>`).join('');
+  const 검토 = C.needsCurriculumReview(a.sources);
+  let 몸 = '';
+  if (고른탭 === '현황') 몸 = 현황그리기(a);
+  else if (고른탭 === '종이 시험') 몸 = 시험그리기(a);
+  else 몸 = 커리그리기(a);
+  document.getElementById('카드').innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <h2 style="margin:0">${글(a.u.name || a.u.id)} <span class="작게">Y${글(a.u.year)} ${글(a.u.group || '')}</span></h2>
+      ${검토 ? '<span class="경고" id="커리검토">⚠️ 커리 먼저 검토 — 관련 제작 보류</span>' : ''}</div>
+    <div class="탭">${탭}</div>${몸}`;
+}
+
+// ── 현황 ──
+function 현황그리기(a) {
+  const w = a.win;
+  const 지난주 = w.lastClass
+    ? `직전 수업 <b>${w.lastClass}</b>${w.status === 'absent' ? ' <span class="빨강">(결석)</span>' : ''}${w.source === 'weekday' ? ' <span class="작게">(출석 기록 없음 — 요일로 짐작)</span>' : ''} · 분석 기간 <b>${w.from} ~ ${w.to}</b>`
+    : '수업 기록이 없습니다';
+  const 줄 = a.분석.weeks.map(wk => {
+    const 머리 = `<tr><th colspan="7">${C.periodKey(wk.period)} · ${({ personal: '📌 개인 숙제', group: '그룹 숙제', pending: '⏳ 준비 중(비공개)', none: '숙제 없음' })[wk.kind]}${wk.ref ? ' <span class="작게">' + 글(wk.ref) + '</span>' : ''}</th></tr>`;
+    const 세트 = wk.sets.map(s => `<tr><td>${글(s.title)}</td><td>${s.manual ? '<span class="보라">원장 처리</span>' : s.submitted ? '✅' : '—'}</td>
+      <td>${s.submittedAt ? 글(String(s.submittedAt).slice(0, 16).replace('T', ' ')) : ''}</td><td>${s.score == null ? '' : s.score + '%'}</td>
+      <td>${s.correct == null ? '' : s.correct + '/' + s.total}</td><td>${s.unanswered == null ? '' : '미답 ' + s.unanswered}</td><td class="작게">${s.manual ? 글(s.markedReason) : ''}</td></tr>`).join('');
+    const ts = wk.ts ? `<tr><td colspan="7" class="작게">🧠 TS ${wk.ts.done}/${wk.ts.days}일 · 첫 시도 ${wk.ts.firstTryRate == null ? '-' : wk.ts.firstTryRate + '%'} · 힌트 ${wk.ts.hintRate == null ? '-' : wk.ts.hintRate + '%'} (${wk.ts.questions}문항)</td></tr>` : '';
+    return 머리 + 세트 + ts;
+  }).join('');
+  const t = a.분석.totals;
+  const 약 = C.weakTop(a.weak, 3, 2).map(x => `<li>${글(x.taxId)} — ${x.accuracy}% (${x.correct}/${x.attempts})</li>`).join('') || '<li class="작게">아직 기록이 적습니다</li>';
+  const 시험 = Object.keys(a.results).map(tid => ({ tid, r: a.results[tid] })).sort((x, y) => String(y.tid).localeCompare(String(x.tid))).slice(0, 3)
+    .map(({ tid, r }) => `<li>${글((판.paperTests[tid] || {}).title || tid)} — ${r.current.status === 'absent' ? '<span class="작게">미응시</span>' : r.current.percent + '% (' + r.current.score + '/' + r.current.max + ')'}${r.current.rev > 1 ? ' <span class="작게">수정 ' + (r.current.rev - 1) + '번</span>' : ''}</li>`).join('') || '<li class="작게">없음</li>';
+  const 커리 = 현재커리(a);
+  const 무효 = C.staleDrafts(a.drafts, a.u.id, a.profile.currentCurriculum);
+  const 제작 = Object.keys(a.drafts).filter(k => a.drafts[k] && a.drafts[k].studentId === a.u.id);
+  return `<div class="섹"><h3>지난주</h3>${지난주}</div>
+    <div class="섹"><h3>지난 숙제 <span class="작게">세트 ${t.sets} · 제출 ${t.submitted}${t.manual ? ' (원장 처리 ' + t.manual + ')' : ''} · 평균 ${t.avgScore == null ? '-' : t.avgScore + '%'} · 미답 ${t.unanswered}</span></h3>
+      <table>${줄 || '<tr><td class="작게">숙제 없음</td></tr>'}</table></div>
+    <div class="섹"><h3>약점</h3><ul>${약}</ul></div>
+    <div class="섹"><h3>지난 시험</h3><ul>${시험}</ul></div>
+    <div class="섹"><h3>현재 커리</h3>${커리 ? `<b>${글(a.profile.currentCurriculum)}</b> · 시험 ${글((커리.long || {}).targetExamDate || '')} · 범위 ${글((커리.short || {}).confirmedRange || '-')}` : '<span class="작게">없음</span>'}</div>
+    <div class="섹"><h3>제작 상태</h3>${제작.length ? 제작.map(k => `${글(k)}${무효.includes(k) ? ' <span class="경고">(옛 커리 — 무효)</span>' : ''}`).join(' · ') : '<span class="작게">제작 중인 것 없음</span>'}</div>`;
+}
+function 현재커리(a) { const r = a.profile.currentCurriculum; return r ? a.curricula[r] || null : null; }
+
+// ── 종이 시험 ──
+let 명세편집 = null;   // { testId, title, date, items:[] }
+function 시험그리기(a) {
+  const 목록 = Object.keys(판.paperTests).sort().reverse();
+  const 고른시험 = 시험그리기.고른 && 판.paperTests[시험그리기.고른] ? 판.paperTests[시험그리기.고른] : null;
+  const 편집 = 명세편집 ? 명세편집그리기() : '<button class="주" onclick="새명세()">＋ 새 시험 명세</button>';
+  let 입력 = '';
+  if (고른시험) {
+    const 지금 = (a.results[고른시험.testId] || {}).current;
+    입력 = `<div class="섹"><h3>${글(고른시험.title)} — 결과 입력 ${지금 ? '<span class="작게">(지금 판 ' + 지금.rev + ' · 고치면 이전 결과를 대체하고 이력에 남습니다)</span>' : ''}</h3>
+      <label><input type="radio" name="응시" value="taken" ${!지금 || 지금.status === 'taken' ? 'checked' : ''}> 응시</label>
+      <label><input type="radio" name="응시" value="absent" ${지금 && 지금.status === 'absent' ? 'checked' : ''}> 미응시(0점으로 안 셈)</label>
+      <table><tr><th>번</th><th>유형</th><th>배점</th><th>학생 답 / 점수</th></tr>${고른시험.items.map(it => {
+        const 옛 = 지금 && 지금.items ? 지금.items[it.no] : null;
+        const 값 = it.type === 'partial' ? (옛 ? 옛.score : '') : (옛 && 옛.answer != null ? 옛.answer : '');
+        return `<tr><td>${it.no}</td><td>${({ mc: '객관식', sa: '단답', partial: '부분점수' })[it.type]}</td><td>${it.points}</td>
+          <td><input data-no="${it.no}" data-type="${it.type}" value="${글(값)}" style="width:120px" placeholder="${it.type === 'partial' ? '점수(빈칸=미답)' : '답(빈칸=미답)'}"></td></tr>`; }).join('')}</table>
+      <button class="주" onclick="결과저장()">결과 저장</button></div>`;
+  }
+  return `<div class="섹"><h3>시험 명세</h3>${목록.map(t => `<button onclick="시험그리기.고른='${글(t)}';카드그리기()">${글(판.paperTests[t].title)} <span class="작게">${글(t)}</span></button>`).join(' ') || '<span class="작게">아직 없음</span>'}</div>
+    <div class="섹">${편집}</div>${입력}`;
+}
+function 새명세() {
+  const d = C.ymd(오늘());
+  명세편집 = { testId: C.newTestId(d, Object.keys(판.paperTests)), title: '', date: d, items: [{ no: 1, type: 'mc', answer: '', points: 1, taxonomyId: '' }] };
+  카드그리기();
+}
+function 명세편집그리기() {
+  const m = 명세편집;
+  return `<h3>새 명세 <span class="작게">${글(m.testId)} (고정 — 바꾸지 않음)</span></h3>
+    <input id="명세제목" placeholder="시험 이름" value="${글(m.title)}" oninput="명세편집.title=this.value">
+    <table><tr><th>번</th><th>유형</th><th>정답</th><th>배점</th><th>분류(taxonomy)</th></tr>${m.items.map((it, i) => `<tr><td>${it.no}</td>
+      <td><select onchange="명세편집.items[${i}].type=this.value">${['mc', 'sa', 'partial'].map(t => `<option ${t === it.type ? 'selected' : ''} value="${t}">${({ mc: '객관식', sa: '단답', partial: '부분점수' })[t]}</option>`).join('')}</select></td>
+      <td><input value="${글(it.answer)}" oninput="명세편집.items[${i}].answer=this.value" style="width:90px"></td>
+      <td><input type="number" min="1" value="${it.points}" oninput="명세편집.items[${i}].points=Number(this.value)" style="width:60px"></td>
+      <td><input value="${글(it.taxonomyId)}" oninput="명세편집.items[${i}].taxonomyId=this.value" style="width:180px"></td></tr>`).join('')}</table>
+    <button onclick="명세편집.items.push({no:명세편집.items.length+1,type:'mc',answer:'',points:1,taxonomyId:''});카드그리기()">＋ 문항</button>
+    <button class="주" onclick="명세저장()">명세 저장</button> <button onclick="명세편집=null;카드그리기()">취소</button>`;
+}
+async function 명세저장() {
+  const m = JSON.parse(JSON.stringify(명세편집));
+  m.items.forEach(it => { if (!it.taxonomyId) delete it.taxonomyId; if (it.type === 'partial') delete it.answer; });
+  const 검사 = C.validateTestSpec(m);
+  if (!검사.ok) return 알림('⚠️ ' + 검사.problems.join(' · '));
+  m.createdAt = new Date().toISOString();
+  try { await db.ref(새뿌리 + '/paperTests/' + m.testId).set(m); 판.paperTests[m.testId] = m; 명세편집 = null; 시험그리기.고른 = m.testId; 카드그리기(); 알림('✅ 명세 저장'); }
+  catch (e) { 알림('❌ 저장 실패 — ' + (e.code || e.message)); }
+}
+async function 결과저장() {
+  const a = 아이자료, spec = 판.paperTests[시험그리기.고른];
+  const 응시 = (document.querySelector('input[name=응시]:checked') || {}).value || 'taken';
+  const entry = { status: 응시, answers: {}, partial: {} };
+  document.querySelectorAll('#카드 input[data-no]').forEach(i => { const no = Number(i.dataset.no); if (i.dataset.type === 'partial') entry.partial[no] = i.value; else entry.answers[no] = i.value; });
+  const graded = C.gradePaper(spec, entry);
+  const 경로 = 새뿌리 + '/paperResults/' + a.u.id + '/' + spec.testId;
+  try {
+    let 새것 = null;
+    await db.ref(경로).transaction(prev => (새것 = C.nextPaperRecord(prev, graded, { at: new Date().toISOString(), by: 'operator' })));
+    await 약점반영(C.paperWeaknessJob(spec, graded, a.u.id, 새것.current.rev));
+    a.results[spec.testId] = 새것; 카드그리기(); 알림('✅ 저장 — 판 ' + 새것.current.rev + (graded.status === 'absent' ? ' (미응시)' : ' · ' + graded.percent + '%'));
+  } catch (e) { 알림('❌ 저장 실패 — ' + (e.code || e.message)); }
+}
+/** 약점 기여분 대체 — 학생 화면 applyWeaknessUpdates 와 같은 순서(applied 판 → 분류별 합치기 → applied 기록) */
+async function 약점반영(job) {
+  const cid = C.taxSafeKey(job.subKey), base = 뿌리 + '/weakness/' + job.sid;
+  const prev = await 읽기(base + '/applied/' + cid);
+  if (prev && (prev.rev || 0) >= job.rev) return;
+  const now = new Date().toISOString(), by = {};
+  for (const it of job.items) { const k = C.taxSafeKey(it.t); if (!by[k]) by[k] = { t: it.t, n: 0, c: 0, list: [] }; by[k].n++; if (it.c) by[k].c++; by[k].list.push(!!it.c); }
+  for (const k of (prev && prev.skills ? Object.values(prev.skills) : [])) if (!by[k]) by[k] = { t: null, n: 0, c: 0, list: [] };
+  for (const k of Object.keys(by)) await db.ref(base + '/skills/' + k).transaction(cur => C.weaknessMerge(cur, cid, job.rev, by[k], now));
+  await db.ref(base + '/applied/' + cid).set({ rev: job.rev, skills: Object.keys(by).filter(k => by[k].n > 0), at: now });
+}
+
+// ── 커리 · 학교 자료 ──
+let 커리편집 = null;
+function 커리그리기(a) {
+  const 지금 = 현재커리(a);
+  const 자료 = Object.keys(a.sources).sort().map(id => { const s = a.sources[id]; return `<tr><td>${글(s.name || id)}</td><td>${글(s.status)}</td>
+      <td>${s.draft ? 글(s.draft.range) + (s.draft.examDate ? ' · 시험 ' + 글(s.draft.examDate) : '') : ''}</td><td>${자료단추(id, s)}</td></tr>`; }).join('');
+  const 편집 = 커리편집 ? 커리편집그리기(a) : `<button class="주" onclick="커리시작()">${지금 ? '✏️ 개정(새 판)' : '＋ 커리 만들기'}</button>`;
+  return `<div class="섹"><h3>현재 커리 ${a.profile.currentCurriculum ? '<span class="작게">' + 글(a.profile.currentCurriculum) + '</span>' : ''}</h3>${지금 ? 커리요약(지금) : '<span class="작게">없음</span>'}</div>
+    <div class="섹">${편집}</div>
+    <div class="섹"><h3>학교 자료 <span class="작게">올리기 → 범위·날짜 초안 → 원장 확인 → 차이 보고 개정 승인 · 올리기만으로는 커리가 안 바뀝니다</span></h3>
+      <input type="file" id="자료파일" accept="image/*,application/pdf"> <button class="주" onclick="자료올리기()">올리기</button>
+      <table><tr><th>자료</th><th>단계</th><th>초안</th><th></th></tr>${자료 || '<tr><td class="작게" colspan="4">없음</td></tr>'}</table></div>`;
+}
+function 커리요약(c) {
+  return `시작 ${글(c.long.startDate)} · 시험 ${글(c.long.targetExamDate)} · 휴강 ${(c.long.holidays || []).length} · 완충 ${c.long.bufferWeeks}주
+    ${c.short ? `<br>단기: 남은 수업 ${글(c.short.remainingClasses)} · 범위 ${글(c.short.confirmedRange)} · 형식 ${글(c.short.examFormat || '')}` : ''}
+    <table><tr><th>날짜</th><th>MR</th><th>TS</th><th>복습</th><th>목표</th></tr>${(c.lessons || []).map(l => `<tr><td>${글(l.date)}</td><td>${글(l.mr)}</td><td>${글(l.ts)}</td><td>${l.reviewRatio}%</td><td>L${l.targetLevel}</td></tr>`).join('')}</table>`;
+}
+function 커리시작(바탕) {
+  const a = 아이자료, 지금 = 현재커리(a);
+  커리편집 = JSON.parse(JSON.stringify(바탕 || 지금 || { long: { startDate: C.ymd(오늘()), targetExamDate: '', holidays: [], bufferWeeks: 1 },
+    short: { remainingClasses: 0, confirmedRange: '', examDate: '', examFormat: '', sourceIds: [] }, lessons: [] }));
+  카드그리기();
+}
+function 커리편집그리기(a) {
+  const c = 커리편집, 지금 = 현재커리(a);
+  const 차이 = 지금 ? C.diffCurriculum(지금, c) : [];
+  const 검사 = C.validateCurriculum(c);
+  return `<h3>${지금 ? '개정 — 새 판' : '새 커리'}</h3>
+    장기: 시작 <input type="date" value="${글(c.long.startDate)}" onchange="커리편집.long.startDate=this.value;카드그리기()">
+    시험 <input type="date" value="${글(c.long.targetExamDate)}" onchange="커리편집.long.targetExamDate=this.value;카드그리기()">
+    휴강 <input value="${글((c.long.holidays || []).join(','))}" placeholder="YYYY-MM-DD,…" onchange="커리편집.long.holidays=this.value.split(',').map(s=>s.trim()).filter(Boolean);카드그리기()">
+    완충 <input type="number" min="0" value="${c.long.bufferWeeks}" style="width:50px" onchange="커리편집.long.bufferWeeks=Number(this.value);카드그리기()">주
+    <button onclick="수업날짜짜기()">수업 날짜 짜기</button><br>
+    단기: 범위 <input value="${글(c.short.confirmedRange)}" onchange="커리편집.short.confirmedRange=this.value;카드그리기()">
+    시험 형식 <input value="${글(c.short.examFormat)}" onchange="커리편집.short.examFormat=this.value">
+    남은 수업 <input type="number" value="${c.short.remainingClasses}" style="width:50px" onchange="커리편집.short.remainingClasses=Number(this.value);카드그리기()">
+    <table><tr><th>날짜</th><th>MR 단원</th><th>TS 단원</th><th>복습%</th><th>목표 L</th></tr>${c.lessons.map((l, i) => `<tr><td>${글(l.date)}</td>
+      ${['mr', 'ts'].map(f => `<td><input value="${글(l[f])}" onchange="커리편집.lessons[${i}].${f}=this.value"></td>`).join('')}
+      <td><input type="number" min="0" max="100" value="${l.reviewRatio}" style="width:60px" onchange="커리편집.lessons[${i}].reviewRatio=Number(this.value)"></td>
+      <td><input type="number" min="1" max="5" value="${l.targetLevel}" style="width:50px" onchange="커리편집.lessons[${i}].targetLevel=Number(this.value)"></td></tr>`).join('')}</table>
+    ${검사.problems.length ? '<div class="빨강">' + 검사.problems.map(글).join('<br>') + '</div>' : ''}${검사.warnings.length ? '<div class="경고">' + 검사.warnings.map(글).join('<br>') + '</div>' : ''}
+    ${지금 ? `<div class="섹"><b>지금 판과의 차이 ${차이.length}</b><ul>${차이.map(d => `<li>${d.kind === 'field' ? 글(d.what) + ': ' + 글(JSON.stringify(d.from)) + ' → ' + 글(JSON.stringify(d.to))
+        : d.kind === 'changed' ? 글(d.date) + ' ' + 글(d.field) + ': ' + 글(d.from) + ' → ' + 글(d.to) : (d.kind === 'added' ? '＋ ' : '－ ') + 글(d.date)}</li>`).join('')}</ul></div>` : ''}
+    <button class="주" ${검사.ok ? '' : 'disabled'} onclick="커리저장()">${지금 ? '개정 승인(새 판 저장)' : '저장'}</button> <button onclick="커리편집=null;카드그리기()">취소</button>`;
+}
+function 수업날짜짜기() {
+  const a = 아이자료, c = 커리편집;
+  const 날 = C.planLessonDates(Object.assign({}, c.long, { days: C.classDaysOf(a.u, 판.attendanceDays) }));
+  const 옛 = {}; c.lessons.forEach(l => 옛[l.date] = l);
+  c.lessons = 날.map(d => 옛[d] || { date: d, mr: '', ts: '', reviewRatio: 20, targetLevel: 3 });
+  c.short.remainingClasses = 날.filter(d => d >= C.ymd(오늘())).length;
+  카드그리기();
+}
+async function 커리저장(자료id) {
+  const a = 아이자료, c = JSON.parse(JSON.stringify(커리편집));
+  delete c.자료;   // 화면 안 표시(어느 학교 자료로 연 개정인지)는 저장하지 않는다
+  const 검사 = C.validateCurriculum(c); if (!검사.ok) return 알림('⚠️ ' + 검사.problems[0]);
+  const rev = C.nextCurriculumRev(a.curricula);
+  c.createdAt = new Date().toISOString(); c.basedOn = a.profile.currentCurriculum || null;
+  try {
+    await db.ref(새뿌리 + '/students/' + a.u.id + '/curricula/' + rev).set(c);   // 규칙: 새 판만(덮어쓰기 거절)
+    await db.ref(새뿌리 + '/students/' + a.u.id + '/profile').update({ currentCurriculum: rev, curriculumUpdatedAt: c.createdAt });
+    const 쓸자료 = 자료id || (커리편집 && 커리편집.자료);
+    if (쓸자료) await 자료단계(쓸자료, 'apply', { rev }, true);
+    커리편집 = null; 알림('✅ 커리 ' + rev + ' 저장'); await 아이고르기(a.u.id);
+  } catch (e) { 알림('❌ 저장 실패 — ' + (e.code || e.message)); }
+}
+function 자료단추(id, s) {
+  const st = s.status || 'uploaded';
+  if (초안편집 === id) return `<input id="초안범위" placeholder="범위(예: Ch 5-8)" value="${글((s.draft || {}).range || '')}" style="width:140px">
+      <input id="초안날짜" type="date" value="${글((s.draft || {}).examDate || '')}"> <button class="주" onclick="초안저장('${글(id)}')">초안 저장</button>`;
+  if (st === 'uploaded' || st === 'drafted') return `<button onclick="초안넣기('${글(id)}')">초안</button>${st === 'drafted' ? ` <button onclick="자료단계('${글(id)}','confirm')">원장 확인</button>` : ''} <button onclick="자료단계('${글(id)}','reject',{why:'원장 거절'})">거절</button>`;
+  if (st === 'confirmed') return `<button class="주" onclick="개정시작('${글(id)}')">차이 보고 개정</button> <button onclick="자료단계('${글(id)}','reject',{why:'원장 거절'})">거절</button>`;
+  return st === 'applied' ? '적용 ' + 글(s.appliedRev) : '';
+}
+async function 자료올리기() {
+  const a = 아이자료, f = document.getElementById('자료파일').files[0];
+  if (!f) return 알림('파일을 고르세요');
+  const id = 'src' + Date.now();
+  const 경로 = 'prep/' + a.u.id + '/' + id + '/' + f.name.replace(/[^\w.\-가-힣]/g, '_');
+  try {
+    await firebase.storage().ref(경로).put(f, { contentType: f.type });   // 비공개 — 공개 링크를 만들지 않는다
+    const 기록 = { name: f.name, path: 경로, size: f.size, type: f.type, uploadedAt: new Date().toISOString(), status: 'uploaded' };
+    await db.ref(새뿌리 + '/students/' + a.u.id + '/sources/' + id).set(기록);
+    a.sources[id] = 기록;   // ⛔ 보류 칸을 셈하기 전에 넣는다(안 그러면 방금 올린 자료를 못 보고 「보류 아님」으로 쓴다 — 브라우저 시험 실측)
+    await 보류맞추기(); 알림('✅ 올림 — 초안을 넣어 주세요(커리는 아직 안 바뀜)'); await 아이고르기(a.u.id);
+  } catch (e) { 알림('❌ 올리기 실패 — ' + (e.code || e.message)); }
+}
+let 초안편집 = null;   // 초안을 적는 자료 id — 그 줄에 입력칸을 연다(브라우저 기본 창을 쓰지 않는다)
+function 초안넣기(id) { 초안편집 = id; 카드그리기(); }
+function 초안저장(id) {
+  const 범위 = (document.getElementById('초안범위') || {}).value || '';
+  const 날 = (document.getElementById('초안날짜') || {}).value || null;
+  초안편집 = null;
+  자료단계(id, 'draft', { range: 범위, examDate: 날 });
+}
+async function 자료단계(id, action, data, 조용) {
+  const a = 아이자료;
+  const r = C.sourceStep(a.sources[id], action, data);
+  if (!r.ok) { 알림('⚠️ ' + r.why); return; }
+  await db.ref(새뿌리 + '/students/' + a.u.id + '/sources/' + id).set(r.source);
+  a.sources[id] = r.source; await 보류맞추기();
+  if (!조용) { 알림('✅ ' + ({ draft: '초안', confirm: '원장 확인', reject: '거절', apply: '적용' })[action]); await 아이고르기(a.u.id); }
+}
+/** 확인된 자료 → 그 범위·날짜를 넣은 개정안을 연다(차이가 보인다) → 승인하면 새 판 + 자료 applied */
+function 개정시작(id) {
+  const a = 아이자료, s = a.sources[id], 지금 = 현재커리(a);
+  const 바탕 = JSON.parse(JSON.stringify(지금 || { long: { startDate: C.ymd(오늘()), targetExamDate: (s.draft && s.draft.examDate) || '', holidays: [], bufferWeeks: 1 }, short: { remainingClasses: 0, confirmedRange: '', examDate: '', examFormat: '', sourceIds: [] }, lessons: [] }));
+  바탕.short = Object.assign({}, 바탕.short, { confirmedRange: s.draft.range, sourceIds: Array.from(new Set(((바탕.short || {}).sourceIds || []).concat([id]))) });
+  if (s.draft.examDate) { 바탕.short.examDate = s.draft.examDate; 바탕.long.targetExamDate = s.draft.examDate; }
+  커리시작(바탕); 커리편집.자료 = id;
+}
+/** 「커리 먼저 검토」 — 검토 안 끝난 자료가 있으면 제작 보류 칸을 켠다(일꾼이 본다 · 4단계) */
+async function 보류맞추기() {
+  const a = 아이자료; const 보류 = C.needsCurriculumReview(a.sources);
+  await db.ref(새뿌리 + '/students/' + a.u.id + '/profile/holdForCurriculum').set(보류);
+}
+</script>
+</body>
+</html>

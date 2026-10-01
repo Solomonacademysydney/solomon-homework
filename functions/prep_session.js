@@ -28,6 +28,7 @@ const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const admin = require('firebase-admin');
 const S = require('./auth')._shared;
 const { normAns } = require('./norm_answer');   // [2-B] 화면과 같은 채점 규칙
+const { applyWeaknessJob } = require('./weakness_merge');   // [3-D] 화면과 같은 약점 합치기
 
 const ROOT = 'sol_prep_v1';
 const SESSION_MS = 12 * 60 * 60 * 1000;                 // 원장 결정 2026-10-01: 12시간
@@ -315,6 +316,19 @@ exports.prepSubmit = onCall({ region: S.REGION }, async (req) => {
   }
   if (결과 === 'conflict') throw new HttpsError('already-exists', 'REV-CONFLICT');
   await base.child('latest').transaction(cur => (Number(cur) || 0) >= rev ? undefined : rev);
+  // ★ [3-D · 2026-10-01 원장 결정] 개인 배정 약점 반영 — 학생 화면 그룹 숙제와 같은 칸·같은 규칙.
+  //   같은 제출(prep_<배정>_<세트>)·같은 판은 한 번 · 새 판은 옛 기여분 대체. 실패해도 제출은 성공으로 둔다
+  //   (다음 판이나 같은 판 재시도 때 다시 반영된다 — applied 판으로 거른다).
+  try {
+    const qs = Array.isArray(r.sets[setId].questions) ? r.sets[setId].questions : Object.values(r.sets[setId].questions || {});
+    const items = qs.filter(q => q && q.type !== 'written' && q.taxonomy_id)
+      .map(q => ({ t: String(q.taxonomy_id), c: normAns(answers[q.id]) === normAns(q.answer) }));
+    if (items.length || rev > 1) {
+      await applyWeaknessJob(admin.database().ref(), { sid, subKey: 'prep_' + aid + '_' + setId, rev, items });
+    }
+  } catch (e) {
+    console.warn('[prep] 약점 반영 실패(제출은 저장됨):', aid, setId, rev, e && e.message);
+  }
   // 점수만 돌려준다 — 어느 문항을 틀렸는지(id)는 주되 정답은 안 준다
   const 저장된 = (await base.child('revs/' + rev + '/grade').once('value')).val() || grade;
   return { ok: true, assignmentId: aid, setId, rev, duplicate: 결과 === 'dup',

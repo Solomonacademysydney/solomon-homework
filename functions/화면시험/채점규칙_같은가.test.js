@@ -18,6 +18,11 @@ for (const a of 답들) {
   else { 실패++; console.log('  ⛔ 다름: ' + JSON.stringify(a) + ' → 화면 ' + JSON.stringify(x) + ' · 서버 ' + JSON.stringify(y)); }
 }
 console.log('  ' + (실패 ? '⛔' : '✅') + ' 답 ' + 답들.length + '꼴 중 같음 ' + 통과);
+// [3단계] /prep/ 종이 시험 채점(prep/prep_core.js)도 같은 규칙이어야 한다
+const 준비 = require('../../prep/prep_core.js').normAns;
+const 준비다름 = 답들.filter(a => 화면(a) !== 준비(a));
+if (준비다름.length) { 실패++; console.log('  ⛔ prep_core 채점이 화면과 다르다: ' + JSON.stringify(준비다름.slice(0, 3))); }
+else { 통과++; console.log('  ✅ prep_core 채점도 답 ' + 답들.length + '꼴 모두 같다'); }
 // 글자째 같은지도 본다(규칙 한 줄만 바뀌어도 잡히게)
 const 서버글 = fs.readFileSync(require.resolve('../norm_answer'), 'utf8');
 const 화면글 = html.slice(i, html.indexOf('\n}\n', i) + 3);
