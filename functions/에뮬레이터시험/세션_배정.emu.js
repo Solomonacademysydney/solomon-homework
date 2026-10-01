@@ -74,8 +74,8 @@ const 거절 = (r, 말) => !!(r && r.err && r.err.includes(말));
   const 문항 = [{ id: 'q0', text: '2+3?', type: 'mc', options: ['4', '5'], answer: 'B', explanation: '5' },
                 { id: 'q1', text: '10-4?', type: 'sa', answer: '6', answerKey: '6' }];
   await db.ref('sol_prep_v1/releases').set({
-    A1: { studentId: 'Mina', published: true, title: '민아 10월 1주', sets: { s1: { title: 'Set 1', questions: 문항 } } },
-    A2: { studentId: 'Mina', published: false, title: '민아 10월 2주(비공개)', sets: { s1: { title: 'Set 1', questions: 문항 } } },
+    A1: { studentId: 'Mina', published: true, title: '민아 10월 1주', period: { year: 2026, month: 10, week: 1 }, sets: { s1: { title: 'Set 1', questions: 문항 } } },
+    A2: { studentId: 'Mina', published: false, title: '민아 10월 2주(비공개)', period: { year: 2026, month: 10, week: 2 }, sets: { s1: { title: 'Set 1', questions: 문항 } } },
     B1: { studentId: 'Aron', published: true, title: '아론 10월 1주', sets: { s1: { title: 'Set 1', questions: 문항 } } },
   });
   for (const uid of ['u-mina', 'u-aron', 'u-master', 'u-mom', 'u-x', 'u-gone', 'u-solo', 'u-t']) {
@@ -112,6 +112,8 @@ const 거절 = (r, 말) => !!(r && r.err && r.err.includes(말));
   const L = await 부름(P.prepListMyAssignments, 'u-mina', {});
   재기('민아: 공개된 자기 배정만(A1)', L && L.status === 'ok' && L.assignments.map(a => a.assignmentId).join() === 'A1', JSON.stringify(L));
   재기('민아: 비공개 배정이 있다는 것은 수로만 알린다', L && L.hiddenCount === 1, JSON.stringify(L));
+  재기('[2-B] 목록에 배정의 주(period)가 있다', L && L.assignments[0].period && L.assignments[0].period.week === 1, JSON.stringify(L && L.assignments));
+  재기('[2-B] 비공개는 주만 알린다(제목·내용 없음)', L && L.hidden.length === 1 && L.hidden[0].period.week === 2 && !('title' in L.hidden[0]), JSON.stringify(L && L.hidden));
   재기('주소의 학생 ID 를 Aron 으로 바꾸면 거절', 거절(await 부름(P.prepListMyAssignments, 'u-mina', { studentId: 'Aron' }), 'NOT-YOURS'));
   const 솔로 = await 부름(P.prepListMyAssignments, 'u-solo', {});
   재기('배정이 하나도 없으면 「none」(실패와 구별)', 솔로 && 솔로.status === 'none' && 솔로.assignments.length === 0, JSON.stringify(솔로));
@@ -132,6 +134,7 @@ const 거절 = (r, 말) => !!(r && r.err && r.err.includes(말));
   const 답 = { q0: 'B', q1: '6' };
   const r1 = await 부름(P.prepSubmit, 'u-mina', { assignmentId: 'A1', setId: 's1', rev: 1, answers: 답 });
   재기('자기 배정 제출 → 됨', r1 && r1.ok && r1.rev === 1, JSON.stringify(r1));
+  재기('[2-B] 서버가 채점한다(B·6 → 100)', r1 && r1.score === 100 && r1.correctCount === 2 && r1.total === 2 && r1.wrong.length === 0, JSON.stringify(r1));
   const 칸 = (await db.ref('sol_prep_v1/submissions/A1/Mina/s1').once('value')).val() || {};
   재기('판 1 이 저장된다(누가·언제 포함)', 칸.revs && 칸.revs['1'] && 칸.revs['1'].answers.q1 === '6' && 칸.revs['1'].uid === 'u-mina' && 칸.latest === 1, JSON.stringify(칸));
   const r1b = await 부름(P.prepSubmit, 'u-mina', { assignmentId: 'A1', setId: 's1', rev: 1, answers: 답 });
@@ -139,6 +142,13 @@ const 거절 = (r, 말) => !!(r && r.err && r.err.includes(말));
   재기('같은 판에 다른 답 → 거절(덮지 않는다)', 거절(await 부름(P.prepSubmit, 'u-mina', { assignmentId: 'A1', setId: 's1', rev: 1, answers: { q0: 'A' } }), 'REV-CONFLICT'));
   const r2 = await 부름(P.prepSubmit, 'u-mina', { assignmentId: 'A1', setId: 's1', rev: 2, answers: { q0: 'A', q1: '6' } });
   const 칸2 = (await db.ref('sol_prep_v1/submissions/A1/Mina/s1').once('value')).val() || {};
+  재기('[2-B] 판 2 채점(A·6 → 50 · 틀린 문항 q0 · 정답은 안 준다)', r2 && r2.score === 50 && JSON.stringify(r2.wrong) === '["q0"]' && !JSON.stringify(r2).includes('"answer"'), JSON.stringify(r2));
+  재기('[2-B] 같은 판 재시도는 처음 점수 그대로', r1b && r1b.score === 100, JSON.stringify(r1b));
+  const g2 = await 부름(P.prepGetAssignment, 'u-mina', { assignmentId: 'A1' });
+  재기('[2-B] 배정을 다시 열면 마지막 판 점수·내 답이 온다', g2.submitted && g2.submitted.s1 && g2.submitted.s1.latest === 2 && g2.submitted.s1.grade.score === 50 && g2.submitted.s1.answers.q0 === 'A', JSON.stringify(g2.submitted));
+  재기('[2-B] 그래도 정답은 안 온다', !JSON.stringify(g2).match(/"answer"|"answerKey"|"explanation"/));
+  const L2 = await 부름(P.prepListMyAssignments, 'u-mina', {});
+  재기('[2-B] 목록에 내 제출 요약(mine)이 온다', L2.assignments[0].mine && L2.assignments[0].mine.s1 && L2.assignments[0].mine.s1.latest === 2 && L2.assignments[0].mine.s1.score === 50, JSON.stringify(L2.assignments[0].mine));
   재기('새 판(2)은 옛 판을 덮지 않고 쌓인다', r2 && r2.ok && 칸2.latest === 2 && 칸2.revs['1'] && 칸2.revs['1'].answers.q0 === 'B' && 칸2.revs['2'].answers.q0 === 'A', JSON.stringify(칸2));
   재기('옛 판 번호로 새 답 → 거절', 거절(await 부름(P.prepSubmit, 'u-mina', { assignmentId: 'A1', setId: 's1', rev: 1, answers: { q0: 'C' } }), 'REV-CONFLICT'));
   재기('마스터로 제출 → 거절', 거절(await 부름(P.prepSubmit, 'u-master', { assignmentId: 'A1', setId: 's1', rev: 3, answers: 답 }), 'MASTER-READONLY'));

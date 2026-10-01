@@ -204,8 +204,11 @@ function 약점세상(서버) {
       fbSetSubmission: (key, data, cb) => { 기록.push('저장:' + data.rev); 저장콜백 = cb; },
       setTimeout: () => 0, clearTimeout: () => {},
       renderStudent: () => {}, qIdx: 0,
+      // [2-B] doSubmit 이 세션 상태를 본다(마스터 = 보기만)
+      prepSessionState: () => 세션상태, showBackupToast: (m) => 기록.push('알림'),
       console,
     };
+    let 세션상태 = 'ok';
     const 이름 = Object.keys(값);
     const doSubmit = new Function(...이름, doSubmit소스 + '\n; return doSubmit;')(...이름.map(k => 값[k]));
     doSubmit();
@@ -221,6 +224,11 @@ function 약점세상(서버) {
     재기('제출 기록의 기존 열쇠는 그대로(answers·submitted·reportData)',
          ['answers', 'submitted', 'submitTime', 'reportData'].every(k => k in 서랍값.submissions.Mina_2026_m10_w1_s0),
          Object.keys(서랍값.submissions.Mina_2026_m10_w1_s0).join(','));
+    // [2-B] 마스터 세션이면 제출·줄 넣기 둘 다 안 한다
+    const 전 = 기록.length;
+    세션상태 = 'master';
+    doSubmit();
+    재기('[2-B] 마스터는 제출 못 한다(저장·줄 0 · 알림만)', 기록.slice(전).join() === '알림', 기록.slice(전).join(' → '));
   }
 
   console.log('\n── ⑤ 읽는 쪽 — 원문으로 나누고 옛 자료도 읽는다');

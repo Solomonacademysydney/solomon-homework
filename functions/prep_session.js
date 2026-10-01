@@ -27,6 +27,7 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const admin = require('firebase-admin');
 const S = require('./auth')._shared;
+const { normAns } = require('./norm_answer');   // [2-B] 화면과 같은 채점 규칙
 
 const ROOT = 'sol_prep_v1';
 const SESSION_MS = 12 * 60 * 60 * 1000;                 // 원장 결정 2026-10-01: 12시간
@@ -173,26 +174,60 @@ exports.prepListMyAssignments = onCall({ region: S.REGION }, async (req) => {
   const snap = await admin.database().ref(ROOT + '/releases').orderByChild('studentId').equalTo(sid).once('value');
   const all = snap.val() || {};
   const assignments = [];
+  const hidden = [];   // [2-B] 비공개는 「어느 주가 준비 중인지」만 — 제목·내용은 안 준다
   let hiddenCount = 0;
   for (const [assignmentId, r] of Object.entries(all)) {
     if (!r || r.studentId !== sid) continue;
-    if (r.published !== true) { hiddenCount++; continue; }
+    if (r.published !== true) { hiddenCount++; hidden.push({ assignmentId, period: periodOf(r) }); continue; }
     const sets = r.sets || {};
+    // [2-B] 내 제출 요약(세트마다 마지막 판·점수) — 학생 홈·학부모 화면이 한 번에 그린다
+    const subs = (await admin.database().ref(ROOT + '/submissions/' + assignmentId + '/' + sid).once('value')).val() || {};
+    const mine = {};
+    for (const setId of Object.keys(subs)) {
+      const m = subs[setId] || {};
+      const last = m.latest && m.revs ? m.revs[String(m.latest)] : null;
+      mine[setId] = { latest: m.latest || 0, score: last && last.grade ? last.grade.score : null,
+        correctCount: last && last.grade ? last.grade.correctCount : null, total: last && last.grade ? last.grade.total : null,
+        submittedAt: last ? last.submittedAt || null : null };
+    }
     assignments.push({
-      assignmentId, title: r.title || '', releasedAt: r.releasedAt || null,
+      assignmentId, title: r.title || '', releasedAt: r.releasedAt || null, period: periodOf(r),
       sets: Object.keys(sets).map(setId => ({ setId, title: (sets[setId] && sets[setId].title) || '',
-        n: Object.keys((sets[setId] && sets[setId].questions) || {}).length }))
+        n: Object.keys((sets[setId] && sets[setId].questions) || {}).length })),
+      mine
     });
   }
   // 「none」 = 서버를 읽었고 이 아이 몫이 하나도 없다(실패와 다르다) · 「ok」 = 공개된 것이 있다
   //  · 「hidden」 = 있는데 아직 비공개뿐
   const status = assignments.length ? 'ok' : (hiddenCount ? 'hidden' : 'none');
-  return { status, studentId: sid, assignments, hiddenCount };
+  return { status, studentId: sid, assignments, hiddenCount, hidden };
 });
 
 // ─────────────────────────────────────────────
 // ④ 배정 하나 — 정답·해설은 빼고
 // ─────────────────────────────────────────────
+/** 배정의 주(period) — { year, month, week } 꼴만 받는다. 없으면 null. */
+function periodOf(r) {
+  const p = r && r.period;
+  if (!p) return null;
+  const y = Number(p.year), m = Number(p.month), w = Number(p.week);
+  return (Number.isInteger(y) && Number.isInteger(m) && Number.isInteger(w)) ? { year: y, month: m, week: w } : null;
+}
+
+/** [2-B] 서버 채점 — 화면 doSubmit 과 같은 규칙(서술형 빼고 · normAns). */
+function gradeSet(set, answers) {
+  const qs = set && set.questions ? (Array.isArray(set.questions) ? set.questions : Object.values(set.questions)) : [];
+  const autoQs = qs.filter(q => q && q.type !== 'written');
+  const wrong = [];
+  let correctCount = 0;
+  for (const q of autoQs) {
+    if (normAns(answers[q.id]) === normAns(q.answer)) correctCount++;
+    else wrong.push(q.id);
+  }
+  const total = autoQs.length;
+  return { score: total > 0 ? Math.round(correctCount / total * 100) : 0, correctCount, total, wrong };
+}
+
 async function readMine(sess, assignmentId, askedStudent) {
   const sid = targetStudent(sess, askedStudent);
   const aid = safeKey(assignmentId, 'assignmentId');
@@ -208,9 +243,17 @@ exports.prepGetAssignment = onCall({ region: S.REGION }, async (req) => {
   const { sid, aid, r } = await readMine(sess, req.data && req.data.assignmentId, req.data && req.data.studentId);
   const mine = (await admin.database().ref(ROOT + '/submissions/' + aid + '/' + sid).once('value')).val() || {};
   const submitted = {};
-  for (const setId of Object.keys(mine)) submitted[setId] = { latest: (mine[setId] && mine[setId].latest) || 0 };
+  for (const setId of Object.keys(mine)) {
+    const m = mine[setId] || {};
+    const last = m.latest && m.revs ? m.revs[String(m.latest)] : null;
+    submitted[setId] = { latest: m.latest || 0,
+      grade: last && last.grade ? last.grade : null, submittedAt: last ? last.submittedAt || null : null,
+      // 학생이 낸 답(자기 것) — 결과 화면용. 정답은 안 준다.
+      answers: last ? last.answers || {} : {},
+      manual: m.manual || null };
+  }
   return {
-    assignmentId: aid, studentId: sid, title: r.title || '', releasedAt: r.releasedAt || null,
+    assignmentId: aid, studentId: sid, title: r.title || '', releasedAt: r.releasedAt || null, period: periodOf(r),
     manifestHash: r.manifestHash || null,
     sets: stripForStudent(r.sets || {}),
     submitted,
@@ -253,6 +296,7 @@ exports.prepSubmit = onCall({ region: S.REGION }, async (req) => {
   if (!r.sets || !r.sets[setId]) throw new HttpsError('not-found', 'NO-SET');
 
   const base = admin.database().ref(ROOT + '/submissions/' + aid + '/' + sid + '/' + setId);
+  const grade = gradeSet(r.sets[setId], answers);   // [2-B] 서버가 채점한다(학생은 정답을 모른다)
   const now = new Date().toISOString();
   let 결과 = null;
   const res = await base.child('revs/' + rev).transaction(cur => {
@@ -261,7 +305,7 @@ exports.prepSubmit = onCall({ region: S.REGION }, async (req) => {
       return;   // 이미 있는 판은 손대지 않는다
     }
     결과 = 'new';
-    return { answers, submittedAt: now, uid: req.auth.uid, manifestHash: r.manifestHash || null };
+    return { answers, submittedAt: now, uid: req.auth.uid, manifestHash: r.manifestHash || null, grade };
   });
   if (!res.committed) {
     // 트랜잭션이 그만둔 까닭 — 마지막으로 본 값으로 가른다
@@ -271,8 +315,11 @@ exports.prepSubmit = onCall({ region: S.REGION }, async (req) => {
   }
   if (결과 === 'conflict') throw new HttpsError('already-exists', 'REV-CONFLICT');
   await base.child('latest').transaction(cur => (Number(cur) || 0) >= rev ? undefined : rev);
-  return { ok: true, assignmentId: aid, setId, rev, duplicate: 결과 === 'dup' };
+  // 점수만 돌려준다 — 어느 문항을 틀렸는지(id)는 주되 정답은 안 준다
+  const 저장된 = (await base.child('revs/' + rev + '/grade').once('value')).val() || grade;
+  return { ok: true, assignmentId: aid, setId, rev, duplicate: 결과 === 'dup',
+    score: 저장된.score, correctCount: 저장된.correctCount, total: 저장된.total, wrong: 저장된.wrong || [] };
 });
 
 // 시험용(일꾼 동작에는 안 쓰인다)
-exports._internals = { sessionOf, targetStudent, stripForStudent, safeKey, SESSION_MS };
+exports._internals = { sessionOf, targetStudent, stripForStudent, safeKey, SESSION_MS, gradeSet, periodOf };

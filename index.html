@@ -3027,6 +3027,16 @@ function _notifyStudentSaveFailure() {
   document.body.appendChild(banner);
 }
 
+// [2-B] 세션(12시간)이 끝났을 때 — 답은 이 기기 줄에 남아 있고, 다시 로그인하면 보내진다.
+function _notifySessionExpired() {
+  if (document.getElementById('fbSessionExpiredBanner')) return;
+  const b = document.createElement('div');
+  b.id = 'fbSessionExpiredBanner';
+  b.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#b45309;color:#fff;padding:14px 20px;text-align:center;font-weight:800;font-size:15px;z-index:99999;font-family:"Noto Sans KR",sans-serif;';
+  b.textContent = '⏰ 로그인 시간이 끝났습니다 — 답은 이 기기에 남아 있습니다. 로그아웃 후 다시 로그인해 주세요.';
+  document.body.appendChild(b);
+}
+
 function _clearStudentSaveFailure() {
   document.getElementById('fbSaveErrorBanner')?.remove();
 }
@@ -3105,6 +3115,9 @@ async function _retryTeacherHomeworkSync() {
 
 async function _flushRetryQueue() {
   if (!window.fbReady || !window.FB_REF) return;
+  // ⛔ [2-B] 로그인 전에는 손대지 않는다 — 예전에는 여기서 「누구 것인지 모른다」로 **줄을 버렸다**
+  //   (페이지를 열 때마다 currentUser 가 없어서). 로그인한 뒤(doLogin) 다시 부른다.
+  if (!currentUser) return;
   try {
     const raw = localStorage.getItem(FB_RETRY_QUEUE_KEY);
     if (!raw) return;
@@ -3285,6 +3298,23 @@ function fbWrite(updates, onSuccess) {
   //     그 지름길들도 다 fbWrite 를 지난다. 한 곳만 막으면 나머지로 샌다.
   //   ⇒ 하나라도 못 되돌렸으면 **쓰지 않는다.** 저장을 미루는 것은 되돌릴 수 있다.
   if (!_figGuardOk(updates)) { if (onSuccess) onSuccess(false); return; }
+  // ★ [2-B] 세션 문지기 — 학생·학부모 화면에서만
+  //   마스터(원장님이 아이 ID 로 들어오심) = 보기만 · 학생 세션이 끝났으면(12시간) 보내지 않고 줄에 넣는다.
+  //   (보내면 새 규칙이 거절하고, 거절된 칸은 서버 값으로 되돌아가 **아이 답이 사라진다**.)
+  if (currentUser && (currentUser.role === 'student' || currentUser.role === 'parent')) {
+    const _st = prepSessionState();
+    if (_st === 'master') {
+      showBackupToast('👀 마스터로 보는 중 — 보기 전용이라 저장하지 않습니다.');
+      if (onSuccess) onSuccess(false);
+      return;
+    }
+    if (_st === 'expired' && currentUser.role === 'student') {
+      _addToRetryQueue(updates);
+      _notifySessionExpired();
+      if (onSuccess) onSuccess(false);
+      return;
+    }
+  }
   if (!window.fbReady || !window.FB_REF) {
     // [Safety 2026-05-29] silent skip 방지 — 학생 자기 submission이면 queue + 알림
     _addToRetryQueue(updates);
@@ -4001,6 +4031,120 @@ function subIsStale(store, sub, yearLevel, country, p, group) {
   const now = hwLookupKey(store, yearLevel, country, p, group);
   return !!now && sub.hwKey !== now;
 }
+
+// ═══ [2-B] 공통 조회 장치 — 시작 ═══════════════════════════════════════════
+// [2026-10-01 원장 지시] 숙제는 **이 장치 하나**를 거쳐 고른다 — 학생 홈·지난주·학부모·리포트·교사 표가
+//   같은 학생·같은 주에 대해 **같은 배정**을 보게 하려고.
+//   personal  개인 배정(sol_prep_v1 · 서버 함수로 받음)이 그 주에 있다 → 그것만
+//   group     개인 배정이 없을 때만 → 옛 그룹 숙제(hwLookup + visibleHw · 옛 열쇠 그대로)
+//   pending   개인 배정 비공개 · 그룹 숙제 비공개 → 「준비 중」
+//   error     조회 실패(연결·권한·세션 만료) → 「연결 실패」  ⛔ 그룹 숙제로 **바꿔 보여주지 않는다**
+//   loading   아직 못 물어봄 → 「불러오는 중」(그룹으로 안 바꾼다)
+//   none      아무것도 없음
+// 교사(와 교사 미리보기)는 서버 함수 대신 sol_prep_v1 을 직접 읽은 교사 캐시로 같은 판정을 한다.
+//   교사 캐시를 못 읽으면 그룹으로 보되 personalUnknown 표시(교사 화면이 멈추지 않게).
+let _prepAssignBySid = {};     // 학생·학부모: { status, list, hidden, error, at }
+let _prepTeacherCache = null;  // 교사: { status, releases, subs }
+function _setPrepCache(sid, c) { _prepAssignBySid[sid] = c; }
+function _setTeacherCache(c) { _prepTeacherCache = c; }
+function samePeriod(a, b) {
+  return !!(a && b && +a.year === +b.year && +a.month === +b.month && +a.week === +b.week);
+}
+/** 이 기기의 세션 — none · ok · master · expired */
+function prepSessionState() {
+  const s = window._prepSession;
+  if (!s) return 'none';
+  if (!(Number(s.exp) > Date.now())) return 'expired';
+  return s.master ? 'master' : 'ok';
+}
+function _teacherView(sid) {
+  const c = _prepTeacherCache;
+  if (!c || c.status !== 'ok') return c ? { status: c.status, error: c.error } : null;
+  const list = [], hidden = [];
+  for (const aid of Object.keys(c.releases || {})) {
+    const r = c.releases[aid];
+    if (!r || r.studentId !== sid) continue;
+    if (r.published !== true) { hidden.push({ assignmentId: aid, period: r.period || null }); continue; }
+    const subs = ((c.subs || {})[aid] || {})[sid] || {};
+    const mine = {};
+    for (const setId of Object.keys(subs)) {
+      const m = subs[setId] || {};
+      const last = m.latest && m.revs ? m.revs[String(m.latest)] : null;
+      mine[setId] = { latest: m.latest || 0, score: last && last.grade ? last.grade.score : null,
+        correctCount: last && last.grade ? last.grade.correctCount : null, total: last && last.grade ? last.grade.total : null,
+        submittedAt: last ? last.submittedAt || null : null };
+    }
+    const sets = r.sets || {};
+    list.push({ assignmentId: aid, period: r.period || null, title: r.title || '',
+      sets: Object.keys(sets).map(setId => ({ setId, title: (sets[setId] && sets[setId].title) || '',
+        n: Object.keys((sets[setId] && sets[setId].questions) || {}).length })), mine });
+  }
+  return { status: list.length ? 'ok' : (hidden.length ? 'hidden' : 'none'), list, hidden };
+}
+function _prepCacheFor(sid) {
+  const 교사쪽 = window.isPreviewMode || (currentUser && currentUser.role === 'teacher');
+  return 교사쪽 ? _teacherView(sid) : (_prepAssignBySid[sid] || null);
+}
+/** 공통 조회 — 같은 (학생·주)면 어디서 불러도 같은 답 */
+function hwViewFor(store, user, p) {
+  const 교사쪽 = window.isPreviewMode || (currentUser && currentUser.role === 'teacher');
+  const c = _prepCacheFor(user.id);
+  let personalUnknown = false;
+  if (!c || c.status === 'loading') {
+    if (!교사쪽) return { kind: 'loading' };
+    personalUnknown = true;
+  } else if (c.status === 'error') {
+    if (!교사쪽) {
+      const e = String(c.error || '');
+      return { kind: 'error', why: e, relogin: /SESSION-EXPIRED|NO-SESSION|NO-AUTH|unauthenticated/i.test(e) };
+    }
+    personalUnknown = true;
+  } else {
+    const per = (c.list || []).find(a => samePeriod(a.period, p));
+    if (per) return { kind: 'personal', assignmentId: per.assignmentId, assignment: per };
+    if ((c.hidden || []).some(h => samePeriod(h.period, p))) return { kind: 'pending', reason: 'personal-hidden' };
+  }
+  const raw = hwLookup(store, user.year, user.country || 'AU', p, user.group);
+  const hw = visibleHw(raw);
+  if (hw) return { kind: 'group', hw, hwKey: hwLookupKey(store, user.year, user.country || 'AU', p, user.group), personalUnknown };
+  if (raw && raw.published === false) return { kind: 'pending', reason: 'group-hidden', personalUnknown };
+  return { kind: 'none', personalUnknown };
+}
+/** 학생·학부모: 서버에서 내(또는 자녀의) 배정 목록을 받아 둔다. 학부모는 studentId 를 함께 보낸다. */
+async function prepLoadAssignments(sid, asParent) {
+  _prepAssignBySid[sid] = { status: 'loading' };
+  try {
+    const d = await callAuthWorker('prepListMyAssignments', asParent ? { studentId: sid } : {}, 12000);
+    _prepAssignBySid[sid] = { status: (d && d.status) || 'none', list: (d && d.assignments) || [], hidden: (d && d.hidden) || [], at: Date.now() };
+  } catch (e) {
+    console.warn('[2-B] 배정 목록을 못 받음:', sid, e && e.message);
+    _prepAssignBySid[sid] = { status: 'error', error: String((e && e.message) || e) };
+  }
+  return _prepAssignBySid[sid];
+}
+/** 교사: sol_prep_v1 의 공개 판·제출을 직접 읽는다(원장 계정만 읽을 수 있다). */
+async function prepLoadTeacher() {
+  try {
+    const root = window.FB_REF.root;
+    const [r, s] = await Promise.all([root.child('sol_prep_v1/releases').once('value'),
+                                      root.child('sol_prep_v1/submissions').once('value')]);
+    _prepTeacherCache = { status: 'ok', releases: r.val() || {}, subs: s.val() || {} };
+  } catch (e) {
+    console.warn('[2-B] 교사 캐시를 못 읽음(새 규칙 배포 전이면 정상):', e && (e.code || e.message));
+    _prepTeacherCache = { status: 'error', error: String((e && (e.code || e.message)) || e) };
+  }
+  return _prepTeacherCache;
+}
+/** 로그아웃·학생 전환 — 세션을 푼다(서버에 알리는 것은 기다리지 않는다). */
+function prepEndSessionClient() {
+  const had = window._prepSession;
+  window._prepSession = null;
+  _prepAssignBySid = {};
+  _prepDetail = {};
+  if (had) callAuthWorker('prepEndSession', {}, 8000).catch(e => console.warn('[2-B] 세션 끝내기 알림 실패:', e && e.message));
+}
+let _prepDetail = {};   // 개인 배정 내용(정답 없음) — assignmentId → prepGetAssignment 결과
+// ═══ [2-B] 공통 조회 장치 — 끝 ═════════════════════════════════════════════
 
 // 어긋났을 때 보여줄 '제출 순간에 찍힌 진짜 점수'. 없으면 null.
 function subTrueScore(sub) {
@@ -5086,6 +5230,23 @@ async function doLogin() {
     document.getElementById('loginError').style.display='block';
     return;
   }
+  // ★ [2-B · 2026-10-01] 학생·학부모는 **세션**을 받는다 — 서버가 이 기기에 「누구로 들어왔는지」를 묶는다(12시간).
+  //   이것이 있어야 새 쓰기 규칙(남의 제출 칸 막기)을 지나고, 개인 배정을 받는다.
+  //   못 받으면 들여보내지 않는다 — 세션 없이 들어가면 저장이 거절되어 아이 답이 사라질 수 있다.
+  if (user.role === 'student' || user.role === 'parent') {
+    try {
+      const d = await callAuthWorker('prepStartSession', { id, role: loginRole, pw }, 12000);
+      await firebase.auth().currentUser.getIdToken(true);   // 클레임을 실은 새 토큰 — 규칙이 이것을 본다
+      window._prepSession = { sid: d.sid, role: d.role, master: !!d.master, exp: Number(d.exp) };
+    } catch (e) {
+      console.error('[2-B] 세션을 못 받음:', e && e.message);
+      window._prepSession = null;
+      document.getElementById('loginError').textContent =
+        '지금 로그인 서버(세션)에 연결하지 못했습니다. 잠시 뒤 다시 시도해 주세요.';
+      document.getElementById('loginError').style.display = 'block';
+      return;
+    }
+  }
   currentUser = user;
 
   // [Phase 2A] 옛 API 키 localStorage 잔여 1회 청소 (모든 역할 대상)
@@ -5117,6 +5278,7 @@ async function doLogin() {
       _s.currentPeriod = todayPeriod;
       saveStore(_s);
       fbSetPeriod(_s.currentPeriod);
+      await prepLoadTeacher();   // [2-B] 개인 배정(sol_prep_v1)을 교사 캐시로 — 실패해도 교사 화면은 뜬다
       renderTeacher();
       checkNewLtResults();
       // [Security 2026-05] 옛 키 정리 (1회만, 플래그로 보장)
@@ -5124,14 +5286,21 @@ async function doLogin() {
       await cleanupLegacyBackupKeys();
       autoBackupToFirebase();
     }
-    else if (user.role==='parent') renderParent();
+    else if (user.role==='parent') {
+      // [2-B] 자녀마다 배정 목록을 먼저 받아 둔다(공통 조회 장치가 쓴다)
+      await Promise.all((user.childIds || []).map(k => prepLoadAssignments(k, true)));
+      renderParent();
+    }
     else {
       document.getElementById('btnBackupDownload').style.display = 'none';
       qIdx=0; currentSetIdx=null; currentTSDay=null; studentView=null;
       const _stored = getStore().currentPeriod;
       const _today = getTodayPeriod();
       studentPeriod = (!_stored || !periodGte(_stored, _today)) ? _today : _stored;
+      await prepLoadAssignments(user.id);   // [2-B] 내 배정 목록 — 그다음에 그린다
       renderStudent();
+      // [2-B] 세션을 받은 뒤 — 못 보낸 답 → 약점 순으로 다시 보낸다(로그인 전에는 줄을 지킨다)
+      _flushRetryQueue().then(() => _weaknessFlush()).catch(e => console.warn('[2-B] 줄 다시 보내기 실패:', e));
     }
   } catch(e) {
     const errDiv = document.createElement('div');
@@ -5148,6 +5317,7 @@ async function doLogin() {
 }
 
 function doLogout() {
+  prepEndSessionClient();   // [2-B] 이 기기의 학생 묶음을 푼다(다음 사람을 위해)
   // [Auth 2026-05-16] 원장이었다면 익명 Auth로 복귀 (다음 사용자 위해, fire-and-forget)
   try {
     if (firebase.auth().currentUser?.uid === OPERATOR_UID) {
@@ -5626,6 +5796,8 @@ function renderTeacher() {
                  + `<span class="score-pill pill-b" style="font-size:11px;" title="다른 숙제(${escHtml(subTrueTitle(sub))})를 푼 기록 — 다시 채점하지 않음">`
                  + `⚠️${_ts === null ? '?' : _ts + '%'}</span>`;
           }
+          // [2-B] 원장 처리 칸은 점수 대신 표시만
+          if (isManualDone(sub)) return `<span style="font-size:12px;">Set${idx+1}:</span><span class="score-pill" style="font-size:11px;background:#ede9fe;color:#5b21b6;" title="${escHtml(sub.markedReason||'')}">원장 처리</span>`;
           const autoQs = set.questions.filter(q=>q.type!=='written');
           const correct = autoQs.filter(q=>normAns(sub.answers?.[q.id])===normAns(q.answer)).length;
           const pct = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
@@ -5640,6 +5812,21 @@ function renderTeacher() {
           if (anyAnswered) status = '🔄 In progress';
         }
         scoreHtml = `<div style="display:flex;gap:6px;flex-wrap:wrap;">${setResults.join('')}</div>`;
+      }
+      // ★ [2-B] 공통 조회 장치 — 이 아이가 이 주에 **개인 배정**을 받았으면 그것으로 보인다(학생 화면과 같은 배정).
+      const _pv = hwViewFor(store, s, p);
+      if (_pv.kind === 'personal') {
+        const _a = _pv.assignment;
+        const _done = _a.sets.filter(x => ((_a.mine || {})[x.setId] || {}).latest > 0).length;
+        status = `📌 개인 숙제 ${_done}/${_a.sets.length}`;
+        scoreHtml = `<div style="display:flex;gap:6px;flex-wrap:wrap;" data-personal="${escHtml(_a.assignmentId)}">` + _a.sets.map(x => {
+          const m = (_a.mine || {})[x.setId];
+          return m && m.latest > 0
+            ? `<span style="font-size:12px;">${escHtml(x.title || x.setId)}:</span><span class="score-pill ${m.score>=80?'pill-a':m.score>=60?'pill-b':'pill-c'}" style="font-size:11px;">${m.score == null ? '✓' : m.score + '%'}</span>`
+            : `<span style="color:var(--muted);font-size:12px;">${escHtml(x.title || x.setId)}:⏳</span>`;
+        }).join('') + `</div>`;
+      } else if (_pv.kind === 'pending' && _pv.reason === 'personal-hidden') {
+        status = '📌 개인 숙제 준비 중(비공개)';
       }
       // [2026-08-28] TS(띵킹) 진도 열. 이 표는 MR만 세고 있어서, 띵킹만 한 학생은
       //   "No homework"로 보였다 — 실제로는 하경이가 8월 3주 6일치를 다 푼 상태였다.
@@ -5685,7 +5872,9 @@ function renderTeacher() {
       //   그 아이·그 주로 바로 열린다. 새 창이라 이 화면의 로그인은 그대로 둔다.
       const tsLink = ` <a href="/ts/?student=${encodeURIComponent(s.id)}&week=${p.year}_m${String(p.month).padStart(2,'0')}_w${p.week}" target="_blank" rel="noopener"
         style="font-size:11px;font-weight:800;color:#4c1d95;text-decoration:none;white-space:nowrap;" title="TS 교사 화면에서 이 아이 열기">TS ↗</a>`;
-      html += `<tr><td><b>${escHtml(s.name)}</b>${s.isTest?' <span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;">TEST</span>':''}${tsLink}</td><td>${s.id}</td><td>${status}</td><td>${scoreHtml}</td><td>${tsHtml}</td><td>${reportBtn}</td><td style="white-space:nowrap;">${resetBtns||'-'}</td><td style="white-space:nowrap;">${manualBtns||'-'}</td></tr>`;
+      // [2-B] 개인 배정 주에는 그룹 숙제의 초기화·제출 처리 단추를 숨긴다(아이에게 안 보이는 칸이다)
+      const _개인주 = _pv.kind === 'personal';
+      html += `<tr><td><b>${escHtml(s.name)}</b>${s.isTest?' <span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;">TEST</span>':''}${tsLink}</td><td>${s.id}</td><td>${status}</td><td>${scoreHtml}</td><td>${tsHtml}</td><td>${reportBtn}</td><td style="white-space:nowrap;">${(_개인주 ? '' : resetBtns)||'-'}</td><td style="white-space:nowrap;">${(_개인주 ? '' : manualBtns)||'-'}</td></tr>`;
     });
     html += `</tbody></table></div>`;
   });
@@ -6134,95 +6323,105 @@ async function restoreSubmission(archiveKey) {
   console.log('✅ 복원 완료:', origKey);
 }
 
-function manualMarkSubmission(sid, setIdx) {
+// ═══ [2-B] 제출 처리 — 시작 ═══════════════════════════════════════════════
+// [2026-10-01 원장 결정] 홈페이지 오류로 학생이 냈는데 안 보일 때 원장님이 「한 걸로」 처리한다.
+//   ⛔ 옛 모습: 사유를 손으로 적고(prompt) 점수 0 으로 남겨 학생·학부모 화면에 **0%** 로 보였다.
+//   이제: 이유를 **고르고**(기타는 적기) → 「원장 처리 · 시각 · 이유」 · 학생·학부모 = 「완료 (원장 처리)」 ·
+//         점수 없음 · **약점 분석에 안 넣는다**(약점 줄을 안 거친다) · 리포트 평균에서도 뺀다.
+//   기존 칸 이름(manuallyMarked · markedBy · markedAt · markedReason) 그대로 · 새 칸 markedReasonCode.
+//   ⛔ 원장님 계정(OPERATOR)으로 쓰므로 「남의 제출 칸 막기」 규칙을 켜도 이 길은 열려 있다.
+const MANUAL_REASONS = [
+  { code: 'site-error',   label: '홈페이지 오류 — 학생이 냈는데 저장이 안 됨' },
+  { code: 'paper-done',   label: '종이·교재로 풀었음(원장 확인)' },
+  { code: 'device-issue', label: '기기·인터넷 문제로 못 냄' },
+  { code: 'other',        label: '기타(직접 적기)' },
+];
+function isManualDone(sub) { return !!(sub && sub.submitted && sub.manuallyMarked); }
+function manualDoneLabel(sub) {
+  return '✅ 완료 (원장 처리)' + (sub && sub.markedReason ? ' · ' + sub.markedReason : '');
+}
+
+/** 처리 본체 — 창 없이도 부를 수 있다(시험용). 돌려주는 값 = { ok, why }. */
+function markSubmissionByTeacher(sid, setIdx, reasonCode, otherText) {
   const store = getStore();
   const p = store.currentPeriod;
-  const student = store.users.find(u=>u.id===sid);
-
-  if (!student) {
-    alert('학생 정보를 찾을 수 없습니다.');
-    return;
-  }
-
-  const setLabel = `Set ${setIdx+1}`;
+  const student = (store.users || []).find(u => u.id === sid);
+  if (!student) return { ok: false, why: '학생 정보를 찾을 수 없습니다.' };
+  const r = MANUAL_REASONS.find(x => x.code === reasonCode);
+  if (!r) return { ok: false, why: '이유를 골라 주세요.' };
+  const 이유 = r.code === 'other' ? String(otherText || '').trim() : r.label;
+  if (!이유) return { ok: false, why: '기타 이유를 적어 주세요.' };
   const sk = subKey(sid, p, setIdx);
   const existing = store.submissions[sk];
-
-  if (existing?.submitted && !existing?.manuallyMarked) {
-    alert(`${student.name || sid} 학생은 ${setLabel}을 이미 정상 제출했습니다.`);
-    return;
+  if (existing && existing.submitted && !existing.manuallyMarked) {
+    return { ok: false, why: (student.name || sid) + ' 학생은 Set ' + (setIdx + 1) + ' 을(를) 이미 정상 제출했습니다.' };
   }
-
-  if (existing?.submitted && existing?.manuallyMarked) {
-    if (!confirm(
-      `${student.name || sid} 학생의 ${setLabel}은 이미 수동 처리되었습니다.\n\n` +
-      `기존 사유: ${existing.markedReason || '(없음)'}\n` +
-      `처리 시각: ${existing.markedAt || '(없음)'}\n\n` +
-      `덮어쓰시겠습니까?`
-    )) return;
-  }
-
-  const reason = prompt(
-    `${student.name || sid} 학생의 ${setLabel}을 수동 완료 처리합니다.\n\n` +
-    `사유를 입력해주세요 (예: 학생이 풀었다고 보고함, 시스템 미저장):`,
-    '학생이 풀었다고 보고함'
-  );
-  if (reason === null) return;
-  if (!reason.trim()) {
-    alert('사유는 비워둘 수 없습니다.');
-    return;
-  }
-
-  if (!confirm(
-    `다음 내용으로 완료 처리하시겠습니까?\n\n` +
-    `학생: ${student.name || sid}\n` +
-    `세트: ${setLabel}\n` +
-    `사유: ${reason}\n\n` +
-    `※ 점수는 0점으로 기록되며, 데이터에 '수동 완료' 표시가 남습니다.\n` +
-    `※ 다음 세트 진행이 가능해집니다.`
-  )) return;
-
-  const hw = hwLookup(store, student.year, student.country||'AU', p, student.group);
-  const set = hw?.sets?.[setIdx];
-  const totalQs = set?.questions?.length || 0;
+  const hw = hwLookup(store, student.year, student.country || 'AU', p, student.group);
+  const set = hw && hw.sets ? hw.sets[setIdx] : null;
   const now = new Date().toISOString();
-
   store.submissions[sk] = {
-    answers: existing?.answers || {},
+    answers: (existing && existing.answers) || {},
     submitted: true,
     submitTime: now,
     manuallyMarked: true,
-    markedBy: currentUser?.id || 'unknown',
+    markedBy: (currentUser && currentUser.id) || 'unknown',
     markedAt: now,
-    markedReason: reason.trim(),
+    markedReason: 이유,
+    markedReasonCode: r.code,
     reportData: {
       studentId: sid,
       studentName: student.name || sid,
       year: student.year,
-      setTitle: set?.title || setLabel,
+      setTitle: (set && set.title) || ('Set ' + (setIdx + 1)),
       period: p,
       manuallyMarked: true,
-      markedReason: reason.trim(),
+      markedReason: 이유,
       submittedAt: now,
-      score: 0,
-      correctCount: 0,
-      totalQuestions: totalQs,
-      wrongQuestions: [],
-      weakAreas: []
+      totalQuestions: (set && set.questions ? set.questions.length : 0)
     }
   };
-
   saveStore(store);
-
   fbSetSubmission(sk, store.submissions[sk], (success) => {
-    if (success) {
-      showBackupToast(`✅ ${student.name || sid} ${setLabel} 완료 처리됨`);
-    } else {
-      showBackupToast(`⚠️ Firebase 저장 실패 — 로컬에만 저장됨. 인터넷 확인 후 재시도하세요.`);
-    }
+    showBackupToast(success
+      ? '✅ ' + (student.name || sid) + ' Set ' + (setIdx + 1) + ' — 원장 처리로 완료'
+      : '⚠️ 서버 저장 실패 — 이 브라우저에만 남았습니다. 인터넷 확인 후 다시 해 주세요.');
     renderTeacher();
   });
+  return { ok: true };
 }
+
+/** 단추(✓ Set n) → 이유 고르는 창 */
+function manualMarkSubmission(sid, setIdx) {
+  const store = getStore();
+  const student = (store.users || []).find(u => u.id === sid);
+  const sub = store.submissions[subKey(sid, store.currentPeriod, setIdx)];
+  const 옛것 = sub && sub.manuallyMarked
+    ? '<div style="font-size:12px;color:#7c3aed;margin-bottom:8px;">이미 원장 처리됨 — ' + escHtml(sub.markedReason || '') + ' · ' + escHtml(sub.markedAt || '') + ' (다시 처리하면 바뀝니다)</div>'
+    : '';
+  document.getElementById('modalContent').innerHTML =
+    '<h3 style="margin-bottom:10px;">✓ 제출 처리 — ' + escHtml((student && student.name) || sid) + ' · Set ' + (setIdx + 1) + '</h3>'
+    + 옛것
+    + '<div style="font-size:13px;color:#475569;margin-bottom:10px;">학생·학부모 화면에는 「완료 (원장 처리)」로 보이고, 점수와 약점 분석에는 넣지 않습니다.</div>'
+    + '<label style="font-weight:800;font-size:13px;">이유</label>'
+    + '<select id="mmReason" style="width:100%;padding:8px;margin:6px 0 10px;">'
+    + MANUAL_REASONS.map(x => '<option value="' + x.code + '">' + escHtml(x.label) + '</option>').join('')
+    + '</select>'
+    + '<input id="mmOther" placeholder="기타를 고르셨으면 이유를 적어 주세요" style="width:100%;padding:8px;margin-bottom:12px;">'
+    + '<div style="display:flex;gap:8px;justify-content:flex-end;">'
+    + '<button class="btn-sm" onclick="closeModal()">취소</button>'
+    + '<button class="btn-sm btn-navy" onclick="confirmManualMark(\'' + escHtml(sid) + '\',' + Number(setIdx) + ')">처리하기</button>'
+    + '</div>';
+  document.getElementById('modal').classList.add('open');
+}
+
+function confirmManualMark(sid, setIdx) {
+  const code = document.getElementById('mmReason').value;
+  const other = document.getElementById('mmOther').value;
+  const r = markSubmissionByTeacher(sid, setIdx, code, other);
+  if (!r.ok) { showBackupToast('⚠️ ' + r.why); return; }
+  closeModal();
+}
+// ═══ [2-B] 제출 처리 — 끝 ═══════════════════════════════════════════════
 
 // Convert saved questions back to text for editing
 function questionsToText(qs) {
@@ -6820,7 +7019,7 @@ function renderStudentManagementSection(store) {
       </details>` : ''}
       <h3 style="font-family:'Noto Serif KR',serif;color:var(--navy);margin-bottom:14px;">Add Student</h3>
       <div class="field-row">
-        <div class="field"><label>ID</label><input id="ns_id" placeholder="student06"></div>
+        <div class="field"><label>ID <span style="font-size:11px;color:var(--muted);font-weight:600;">(밑줄(_) 안 됨)</span></label><input id="ns_id" placeholder="student06"></div>
         <div class="field"><label>Name</label><input id="ns_name" placeholder="Full name"></div>
       </div>
       <div class="field-row">
@@ -6870,6 +7069,17 @@ function renderStudentManagementSection(store) {
     </div>`;
 }
 
+// ★ [2-B · 2026-10-01 원장 결정] 학생 아이디에 밑줄(_) 금지 — 제출 칸 열쇠 `<ID>_…` 의 앞머리로
+//   주인을 가리는 쓰기 규칙이 겹치지 않게. 파이어베이스 열쇠에 못 쓰는 글자도 함께 막는다.
+//   돌려주는 값 = 문제 설명(막을 때) · null(괜찮을 때).
+function studentIdProblem(id) {
+  const s = String(id == null ? '' : id).trim();
+  if (!s) return '아이디를 입력해 주세요.';
+  if (s.includes('_')) return '학생 아이디에는 밑줄(_)을 쓸 수 없습니다. (예: Kim_A → KimA 또는 Kim-A)';
+  if (/[.#$\[\]\/]/.test(s)) return '학생 아이디에는 . # $ [ ] / 를 쓸 수 없습니다.';
+  return null;
+}
+
 async function saveStudentEdit(oldId) {
   const store  = getStore();
   const u      = store.users.find(u=>u.id===oldId);
@@ -6887,6 +7097,8 @@ async function saveStudentEdit(oldId) {
 
   const newId  = document.getElementById(`se_id_${oldId}`).value.trim();
   if (!newId) { alert('Please enter an ID.'); return; }
+  // [2-B] 바꿀 때만 검사한다 — 옛 아이디를 그대로 두는 저장은 막지 않는다
+  if (newId !== oldId && studentIdProblem(newId)) { alert(studentIdProblem(newId)); return; }
   if (newId !== oldId && store.users.find(u=>u.id===newId)) {
     alert('This ID already exists.'); return;
   }
@@ -7103,6 +7315,7 @@ async function addStudent() {
   const country=document.getElementById('ns_country').value||'AU';
   const pw=document.getElementById('ns_pw').value.trim();
   if(!id||!name||!pw){alert('Please fill in all fields.');return;}
+  if(studentIdProblem(id)){alert(studentIdProblem(id));return;}   // [2-B] 밑줄 금지
   const store=getStore();
   if(store.users.find(u=>u.id===id)){alert('This ID already exists.');return;}
   // [순서 4 · 2026-09-11] 공책에는 비번을 넣지 않는다 — 아래 ensureVaultPassword 가 금고에 넣는다.
@@ -7173,12 +7386,161 @@ function getTrackByYear(year) {
   return 'default';
 }
 
+// ═══ [2-B] 개인 배정 화면 — 시작 ═══════════════════════════════════════════
+// 개인 배정(sol_prep_v1)은 **서버가 채점**한다 — 학생에게 정답을 안 보내므로(교사 답지 보호).
+//   그래서 옛 그룹 숙제 화면(문항마다 바로 맞음/틀림)과 따로 둔다: 다 풀고 → 제출 → 서버 점수.
+//   풀던 답은 이 기기 서랍(prep_draft_…)에 남는다 — 제출이 실패해도 안 사라진다.
+//   제출은 판 1 하나(다시 내기는 교사가 풀어 줄 때 · 2-B 범위 밖).
+let _personalOpen = null;    // { aid, setId } — 푸는 중인 세트
+let _personalResult = null;  // { aid, setId, grade } — 방금 낸 결과
+function _draftKey(aid, setId) { return 'prep_draft_' + aid + '_' + setId; }
+function _draftRead(aid, setId) { try { return JSON.parse(localStorage.getItem(_draftKey(aid, setId)) || '{}') || {}; } catch (e) { return {}; } }
+function _draftWrite(aid, setId, d) { try { localStorage.setItem(_draftKey(aid, setId), JSON.stringify(d)); } catch (e) { /* 서랍이 꽉 차도 화면은 돈다 */ } }
+
+/** 준비 중 · 연결 실패 · 불러오는 중 — 그룹 숙제로 바꾸지 않고 그대로 말한다 */
+function renderHwState(view, p, store) {
+  let 아이콘 = '⏳', 제목 = 'Preparing · 준비 중', 말 = '선생님이 이번 주 숙제를 준비하고 있어요. 조금 뒤에 다시 들어와 주세요.', 단추 = '';
+  if (view.kind === 'loading') { 아이콘 = '⏳'; 제목 = 'Loading · 불러오는 중'; 말 = '숙제를 불러오는 중입니다.'; 단추 = '<button class="btn-nav" onclick="prepRetryStudent()">🔄 다시 불러오기</button>'; }
+  if (view.kind === 'error') {
+    아이콘 = '⚠️'; 제목 = 'Connection failed · 연결 실패';
+    말 = view.relogin ? '로그인 시간이 끝났습니다. 로그아웃한 뒤 다시 로그인해 주세요.' : '숙제를 불러오지 못했습니다. 인터넷을 확인하고 다시 시도해 주세요.';
+    단추 = view.relogin ? '<button class="btn-nav" onclick="doLogout()">로그아웃</button>' : '<button class="btn-nav" onclick="prepRetryStudent()">🔄 다시 시도</button>';
+  }
+  document.getElementById('mainContent').innerHTML = `
+    <div class="exam-wrap">
+      ${renderPeriodNav(p, store.currentPeriod)}
+      <div class="empty" id="hwStateCard" data-kind="${view.kind}" style="background:#fff;border-radius:var(--radius);padding:50px;box-shadow:0 2px 10px rgba(0,0,0,.06);">
+        <div style="font-size:44px;margin-bottom:14px;">${아이콘}</div>
+        <div style="font-size:18px;font-weight:800;color:var(--navy);">${제목}</div>
+        <div style="margin-top:8px;color:var(--muted);">${말}</div>
+        <div style="margin-top:16px;">${단추}</div>
+      </div>
+    </div>` + renderGameCard() + renderMyAccountCard();
+}
+async function prepRetryStudent() {
+  if (!currentUser) return;
+  await prepLoadAssignments(currentUser.id);
+  renderStudent();
+}
+
+function renderPersonalHw(view, p) {
+  const a = view.assignment;
+  const store = getStore();
+  if (_personalOpen && _personalOpen.aid === a.assignmentId) { renderPersonalSet(a, p); return; }
+  const 카드 = a.sets.map(s => {
+    const m = (a.mine || {})[s.setId];
+    const 냈다 = m && m.latest > 0;
+    const 결과 = 냈다 ? `<span class="score-pill ${m.score >= 80 ? 'pill-a' : m.score >= 60 ? 'pill-b' : 'pill-c'}" style="margin-left:8px;">${m.score == null ? '✓' : m.score + '%'}</span>` : '';
+    return `<div class="set-card ${냈다 ? 'done' : 'unlocked'}" data-set="${escHtml(s.setId)}" style="cursor:pointer;" onclick="openPersonalSet('${escHtml(a.assignmentId)}','${escHtml(s.setId)}')">
+      <div style="font-weight:800;color:var(--navy);">${냈다 ? '✅' : '📖'} ${escHtml(s.title || s.setId)}${결과}</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:4px;">${s.n} questions · ${냈다 ? 'Completed' : 'Start →'}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('mainContent').innerHTML = `
+    <div class="exam-wrap" id="personalHome" data-assignment="${escHtml(a.assignmentId)}">
+      ${renderPeriodNav(p, store.currentPeriod)}
+      <div style="font-size:20px;font-weight:900;color:var(--navy);margin:10px 0;">📌 ${escHtml(a.title || 'My homework')}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">개인 숙제 · 다 풀고 제출하면 점수가 나옵니다</div>
+      ${카드}
+    </div>` + renderGameCard() + renderMyAccountCard();
+}
+
+async function openPersonalSet(aid, setId) {
+  _personalResult = null;
+  if (!_prepDetail[aid]) {
+    try { _prepDetail[aid] = await callAuthWorker('prepGetAssignment', { assignmentId: aid }, 12000); }
+    catch (e) { showBackupToast('⚠️ 숙제를 열지 못했습니다 — ' + ((e && e.message) || e)); return; }
+  }
+  _personalOpen = { aid, setId };
+  renderStudent();
+}
+function closePersonalSet() { _personalOpen = null; _personalResult = null; renderStudent(); }
+
+function renderPersonalSet(a, p) {
+  const { aid, setId } = _personalOpen;
+  const d = _prepDetail[aid];
+  const set = d && d.sets ? d.sets[setId] : null;
+  if (!set) { _personalOpen = null; renderStudent(); return; }
+  const qs = Array.isArray(set.questions) ? set.questions : Object.values(set.questions || {});
+  const 낸것 = (d.submitted || {})[setId];
+  const mine = (a.mine || {})[setId];
+  const 냈다 = (mine && mine.latest > 0) || (낸것 && 낸것.latest > 0) || !!_personalResult;
+  const 결과 = _personalResult || (낸것 && 낸것.grade) || (mine && mine.score != null ? mine : null);
+  const 답 = 냈다 ? ((낸것 && 낸것.answers) || _draftRead(aid, setId)) : _draftRead(aid, setId);
+  const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+  const 틀림 = new Set((결과 && 결과.wrong) || []);
+  const 문항 = qs.map((q, i) => {
+    const 내답 = 답[q.id];
+    const 표 = 냈다 && 결과 && 결과.wrong ? (틀림.has(q.id) ? ' ❌' : ' ✅') : '';
+    let 입력 = '';
+    if (q.type === 'mc' && Array.isArray(q.options)) {
+      입력 = q.options.map((o, j) => `<button class="opt-btn${내답 === letters[j] ? ' selected' : ''}" ${냈다 ? 'disabled' : ''}
+        onclick="personalAnswer('${escHtml(q.id)}','${letters[j]}')">${letters[j]}. ${renderMath(String(o))}</button>`).join('');
+    } else {
+      입력 = `<input id="pa_${escHtml(q.id)}" value="${escHtml(내답 == null ? '' : 내답)}" ${냈다 ? 'disabled' : ''}
+        oninput="personalAnswer('${escHtml(q.id)}', this.value)" style="width:100%;padding:8px;">`;
+    }
+    return `<div class="q-card" style="margin-bottom:14px;"><div style="font-weight:800;margin-bottom:6px;">Q${i + 1}${표}</div>
+      <div style="margin-bottom:8px;">${renderMath(q.text || '')}</div>${입력}</div>`;
+  }).join('');
+  const 머리 = 냈다 && 결과
+    ? `<div class="score-banner" id="personalResult"><div class="score-big">${결과.score}%</div>
+        <div class="score-msg">${결과.correctCount}/${결과.total} correct · 제출 완료</div></div>`
+    : '';
+  const 꼬리 = 냈다 ? '' : `<button class="btn-nav" id="personalSubmitBtn" onclick="submitPersonalSet()">Submit ✓</button>`;
+  document.getElementById('mainContent').innerHTML = `
+    <div class="exam-wrap" id="personalSet" data-assignment="${escHtml(aid)}" data-set="${escHtml(setId)}">
+      <button class="btn-nav" onclick="closePersonalSet()">← Set List</button>
+      <div style="font-size:18px;font-weight:900;color:var(--navy);margin:10px 0;">📝 ${escHtml(set.title || setId)}</div>
+      ${머리}${문항}
+      <div style="text-align:center;margin:16px 0;">${꼬리}</div>
+    </div>`;
+}
+function personalAnswer(qid, val) {
+  if (!_personalOpen) return;
+  const { aid, setId } = _personalOpen;
+  const d = _draftRead(aid, setId);
+  d[qid] = String(val);
+  _draftWrite(aid, setId, d);
+  // 객관식은 고른 칸을 바로 보이게 다시 그린다(입력칸은 글자 칠 때마다 다시 그리지 않는다)
+  if (!/^pa_/.test((document.activeElement && document.activeElement.id) || '')) renderStudent();
+}
+async function submitPersonalSet() {
+  if (!_personalOpen) return;
+  if (prepSessionState() === 'master') { showBackupToast('👀 마스터로 보는 중 — 제출은 할 수 없습니다(보기 전용).'); return; }
+  if (prepSessionState() === 'expired') { _notifySessionExpired(); return; }
+  const { aid, setId } = _personalOpen;
+  const answers = _draftRead(aid, setId);
+  const btn = document.getElementById('personalSubmitBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 제출 중…'; }
+  try {
+    const r = await callAuthWorker('prepSubmit', { assignmentId: aid, setId, rev: 1, answers }, 15000);
+    _personalResult = { score: r.score, correctCount: r.correctCount, total: r.total, wrong: r.wrong || [] };
+    // 목록 캐시도 고쳐 둔다 — 학생 홈·지난주가 바로 「완료」를 본다
+    const c = _prepAssignBySid[currentUser.id];
+    const a = c && c.list ? c.list.find(x => x.assignmentId === aid) : null;
+    if (a) { a.mine = a.mine || {}; a.mine[setId] = { latest: 1, score: r.score, correctCount: r.correctCount, total: r.total }; }
+    if (_prepDetail[aid]) { _prepDetail[aid].submitted = _prepDetail[aid].submitted || {}; _prepDetail[aid].submitted[setId] = { latest: 1, grade: _personalResult, answers }; }
+    showBackupToast('✅ 제출 완료 — ' + r.score + '%');
+  } catch (e) {
+    showBackupToast('⚠️ 제출이 안 됐습니다 — 답은 이 기기에 남아 있어요. 다시 눌러 주세요. (' + ((e && e.message) || e) + ')');
+  }
+  renderStudent();
+}
+// ═══ [2-B] 개인 배정 화면 — 끝 ═════════════════════════════════════════════
+
 function renderStudent() {
   const store = getStore();
   const p     = studentPeriod || store.currentPeriod;
   _cachedStudentPeriod = p;
   _migrateTSAnswers(store, p);
-  const hw    = visibleHw(hwLookup(store, currentUser.year, currentUser.country||'AU', p, currentUser.group));
+  // ★ [2-B] 공통 조회 장치 — 개인 배정이 있으면 그것 · 없을 때만 그룹 숙제.
+  //   준비 중·연결 실패·불러오는 중은 **그대로 말한다**(그룹 숙제로 바꿔 보여주지 않는다).
+  const _view = hwViewFor(store, currentUser, p);
+  if (_view.kind === 'personal') { renderPersonalHw(_view, p); return; }
+  _personalOpen = null;
+  if (_view.kind === 'error' || _view.kind === 'loading' || _view.kind === 'pending') { renderHwState(_view, p, store); return; }
+  const hw    = _view.kind === 'group' ? _view.hw : null;
 
   const hasSets = hw && hw.sets && hw.sets.length > 0;
   const hasTS   = !!(hw?.ts?.enabled && hw?.ts?.questions?.length > 0);
@@ -7241,6 +7603,19 @@ function renderStudent() {
   //   옛 답을 새 숙제에 미리 채워 넣어서도 안 되고, 조용히 지워서도 안 된다.
   if (subIsStale(store, sub, currentUser.year, currentUser.country||'AU', p, currentUser.group)) {
     renderStaleSlot(sub, set, p, currentSetIdx);
+    return;
+  }
+
+  // [2-B] 원장 처리 칸 — 점수·풀이 없이 「완료」만
+  if (isManualDone(sub)) {
+    document.getElementById('mainContent').innerHTML = `
+      <div class="exam-wrap">
+        <div class="score-banner"><div class="score-big" style="font-size:34px;">✅ Completed</div>
+          <div class="score-msg">완료 (원장 처리)</div></div>
+        <div style="text-align:center;margin-bottom:20px;">
+          <button class="btn-nav" onclick="currentSetIdx=null;renderStudent()">← Back to Set List</button>
+        </div>
+      </div>`;
     return;
   }
 
@@ -7684,6 +8059,10 @@ function renderSetList(hw, store, p) {
     if (isLocked) {
       iconClass='set-icon-locked'; iconEmoji='🔒'; cardClass='locked';
       statusText='Complete the previous set to unlock';
+    } else if (isSubmitted && isManualDone(sub)) {
+      // [2-B] 원장 처리 — 점수 없이 완료
+      iconClass='set-icon-done'; iconEmoji='✅'; cardClass='done';
+      statusText='Completed · 완료 (원장 처리)';
     } else if (isSubmitted) {
       const autoQs = set.questions.filter(q=>q.type!=='written');
       const correct = autoQs.filter(q=>normAns(sub.answers?.[q.id])===normAns(q.answer)).length;
@@ -7987,6 +8366,11 @@ function showSubmitConfirmModal(state) {
 }
 
 function doSubmit() {
+  // ★ [2-B · 원장 결정] 마스터로 들어와 대신 풀어 내는 것은 막는다 — 안 보이는 제출은 교사 「제출 처리」로.
+  if (prepSessionState() === 'master') {
+    showBackupToast('👀 마스터로 보는 중 — 제출은 할 수 없습니다(보기 전용). 교사 화면의 「제출 처리」를 쓰세요.');
+    return;
+  }
   const store=getStore();
   const p = studentPeriod||store.currentPeriod;
   const key=subKey(currentUser.id,p,currentSetIdx??0);
@@ -8408,6 +8792,29 @@ function restoreTextareaValues(childId) {
   delete state._tempInputs;
 }
 
+// [2-B] 학부모: 개인 배정·준비 중·연결 실패 카드
+function parentViewCard(view, p) {
+  if (view.kind === 'personal') {
+    const a = view.assignment;
+    const 줄 = a.sets.map(s => {
+      const m = (a.mine || {})[s.setId];
+      const 냈다 = m && m.latest > 0;
+      return `<div style="background:${냈다 ? '#fff' : '#f8f6ef'};border-radius:10px;padding:14px 18px;margin-bottom:10px;${냈다 ? 'border:2px solid var(--green);' : ''}">
+        <div style="font-weight:800;color:var(--navy);">${escHtml(s.title || s.setId)}</div>
+        <div style="font-size:14px;color:var(--muted);margin-top:4px;">${냈다 ? '✅ Completed' + (m.score == null ? '' : ' · ' + m.score + '%') : '⏳ Not started yet'}</div>
+      </div>`;
+    }).join('');
+    const 끝 = a.sets.filter(s => ((a.mine || {})[s.setId] || {}).latest > 0).length;
+    return `<div class="info-card" id="parentPersonal" data-assignment="${escHtml(a.assignmentId)}">
+      <h3>📌 ${escHtml(a.title || periodLabel(p))} · 개인 숙제</h3>
+      <div style="font-size:15px;color:var(--muted);margin-bottom:16px;">${끝}/${a.sets.length} sets completed</div>${줄}</div>`;
+  }
+  const 말 = view.kind === 'pending' ? '⏳ 준비 중 — 선생님이 숙제를 준비하고 있습니다.'
+         : view.kind === 'loading' ? '⏳ 불러오는 중입니다.'
+         : (view.relogin ? '⚠️ 로그인 시간이 끝났습니다 — 다시 로그인해 주세요.' : '⚠️ 연결 실패 — 숙제 정보를 불러오지 못했습니다. 잠시 뒤 다시 열어 주세요.');
+  return `<div class="info-card" id="parentState" data-kind="${view.kind}"><div class="empty">${말}</div></div>`;
+}
+
 function renderParent() {
   // [v3.2] 선생이 학부모 시점에서 본 후 학부모 계정으로 다시 로그인했을 때 마커 정리
   if (window._teacherViewingAsParent && currentUser?.role === 'parent') {
@@ -8431,7 +8838,9 @@ function renderParent() {
   }
   const child = children.find(c=>c.id===currentParentChildId);
   const p = store.currentPeriod;
-  const hw = visibleHw(hwLookup(store, child.year, child.country||'AU', p, child.group));
+  // ★ [2-B] 공통 조회 장치 — 학생 화면과 **같은 배정**
+  const _view = hwViewFor(store, child, p);
+  const hw = _view.kind === 'group' ? _view.hw : null;
 
   // ── 헤더 + 자녀 탭 ──
   let html = `
@@ -8463,6 +8872,12 @@ function renderParent() {
     html += `</div>`;
   }
 
+  // [2-B] 개인 배정 · 준비 중 · 연결 실패는 따로 보인다(그룹 숙제로 바꾸지 않는다)
+  if (_view.kind !== 'group' && _view.kind !== 'none') {
+    html += parentViewCard(_view, p);
+    document.getElementById('mainContent').innerHTML=html;
+    return;
+  }
   if (!hw || !hw.sets || hw.sets.length === 0) {
     html += `<div class="info-card"><div class="empty">No homework assigned yet.</div></div>`;
     document.getElementById('mainContent').innerHTML=html;
@@ -8485,6 +8900,12 @@ function renderParent() {
         <div style="font-size:14px;color:var(--muted);margin-top:4px;">
           ${answered>0 ? `🔄 In progress (${answered}/${set.questions.length} questions)` : '⏳ Not started yet'}
         </div>
+      </div>`;
+    } else if (isManualDone(sub)) {
+      // [2-B] 원장 처리 — 학부모에게도 「완료」로(점수 없음)
+      html += `<div style="background:#fff;border-radius:12px;padding:16px 18px;margin-bottom:14px;border:2px solid #a78bfa;">
+        <div style="font-weight:800;color:var(--navy);">${set.title}</div>
+        <div style="font-size:14px;color:#5b21b6;margin-top:4px;font-weight:700;">${escHtml(manualDoneLabel(sub))}</div>
       </div>`;
     } else {
       const autoQs = set.questions.filter(q=>q.type!=='written');
@@ -9378,10 +9799,40 @@ function buildTSReportData(studentId, period, store) {
   };
 }
 
+// [2-B] 개인 배정 리포트 — 서버가 매긴 점수(교사 캐시)로. 문항 내용은 교사 캐시의 공개 판에서.
+function buildPersonalReportData(student, view) {
+  const a = view.assignment;
+  const r = (_prepTeacherCache && _prepTeacherCache.releases || {})[a.assignmentId] || {};
+  const subs = (((_prepTeacherCache && _prepTeacherCache.subs) || {})[a.assignmentId] || {})[student.id] || {};
+  const results = [];
+  a.sets.forEach((s, idx) => {
+    const m = (a.mine || {})[s.setId];
+    if (!m || !(m.latest > 0)) return;
+    const rev = ((subs[s.setId] || {}).revs || {})[String(m.latest)] || {};
+    const qs = Object.values(((r.sets || {})[s.setId] || {}).questions || {}).filter(q => q && q.type !== 'written');
+    const ans = rev.answers || {};
+    results.push({
+      setIdx: idx, setId: s.setId, setTitle: s.title, personal: true, assignmentId: a.assignmentId,
+      score: m.score, correct: m.correctCount, total: m.total, attempted: Object.keys(ans).length,
+      completionRate: m.total ? Math.round(Object.keys(ans).length / m.total * 100) : 0,
+      finalData: null, wrongCount: (m.total || 0) - (m.correctCount || 0),
+      wrongQs: qs.filter(q => normAns(ans[q.id]) !== normAns(q.answer)).map((q, i) => ({ num: i + 1, text: String(q.text || '').substring(0, 60) })),
+      allQuestions: qs.map((q, i) => ({ num: i + 1, text: q.text, type: q.type, answer: q.answer,
+        studentAnswer: ans[q.id] || '(no answer)', ok: normAns(ans[q.id]) === normAns(q.answer) })),
+      weakAreas: [], remediation: [], submittedAt: m.submittedAt || rev.submittedAt || null, kakaoMsg: null
+    });
+  });
+  return { student, results, personal: true, assignmentId: a.assignmentId };
+}
+
 function buildReportDataForStudent(studentId, period, store) {
   const student = store.users.find(u=>u.id===studentId && u.role==='student');
   if (!student) return null;
-  const hw = hwLookup(store, student.year, student.country||'AU', period, student.group);
+  // ★ [2-B] 공통 조회 장치 — 학생 화면과 같은 배정. 개인 배정이면 그 점수로 리포트를 만든다.
+  const _view = hwViewFor(store, student, period);
+  if (_view.kind === 'personal') return buildPersonalReportData(student, _view);
+  // 옛 리포트는 공개 여부와 상관없이 그 칸을 봤다(교사용) — 그룹·비공개 그룹 모두 같은 칸을 쓴다
+  const hw = (_view.kind === 'group') ? _view.hw : hwLookup(store, student.year, student.country||'AU', period, student.group);
   if (!hw?.sets?.length) return null;
 
   const results = [];
@@ -9392,6 +9843,8 @@ function buildReportDataForStudent(studentId, period, store) {
     // ★ [2026-09-05] 다른 숙제를 푼 기록은 리포트에서 뺀다 — 다시 채점하면 틀린 숫자가 나온다.
     //   (교사 화면에는 ⚠️ 와 그때의 진짜 점수가 뜬다.)
     if (subIsStale(store, sub, student.year, student.country||'AU', period, student.group)) return;
+    // [2-B] 원장 처리 칸은 점수·평균에서 뺀다(풀이 기록이 아니다)
+    if (isManualDone(sub)) return;
     const autoQs = set.questions.filter(q=>q.type!=='written');
     const correct = autoQs.filter(q=>normAns(sub.answers?.[q.id])===normAns(q.answer)).length;
     const score = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;

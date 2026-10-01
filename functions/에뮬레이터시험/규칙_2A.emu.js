@@ -5,7 +5,7 @@
 //
 // ⛔ 규칙 파일은 공개 저장소에 안 올린다(firebase.json 주의 글) — backup/ 에 있다:
 //      backup/database.rules.2A_sol_prep_v1.json       ← 2-A 판(운영 LIVE 10-01 + sol_prep_v1)
-//      backup/database.rules.2B_제출잠금초안.json        ← 2-B 에서 켤 판(지금은 안 씀)
+//      backup/database.rules.2B_잠금켬.json            ← 2-B 「남의 제출 칸 막기」를 켠 판(배포 때 이것을 올린다 · 10-01 초안과 같은 내용)
 //    이 시험은 그 파일을 에뮬레이터에 **올려 놓고** 돈다(운영 규칙과 무관).
 // 사용자 토큰은 서명 없는 JWT 로 만든다 — 에뮬레이터는 서명을 안 본다(운영에서는 통하지 않는다).
 
@@ -22,7 +22,7 @@ if (!DB || !/^(127\.0\.0\.1|localhost):\d+$/.test(DB)) {
 }
 const 뿌리 = path.join(__dirname, '..', '..');
 const 규칙2A = path.join(뿌리, 'backup', 'database.rules.2A_sol_prep_v1.json');
-const 규칙2B = path.join(뿌리, 'backup', 'database.rules.2B_제출잠금초안.json');
+const 규칙2B = path.join(뿌리, 'backup', 'database.rules.2B_잠금켬.json');
 for (const f of [규칙2A, 규칙2B]) if (!fs.existsSync(f)) { console.log('⛔ 규칙 파일 없음: ' + f); console.log('\n셈 — 통과 0 · 실패 1'); process.exit(1); }
 
 const OP = '62bxWubzDLMrhHjjv2oNfAQiyaD2';

@@ -30,8 +30,14 @@ const admin = require('firebase-admin');
 // Phase 1.5: Realtime Database 기반 Rate Limit 사용을 위한 admin 초기화
 // 솔로몬 RTDB는 asia-southeast1 지역 인스턴스 → databaseURL 명시 필수
 if (!admin.apps.length) {
+  // [2-B · 2026-10-01] **함수 에뮬레이터 안에서만** 화면과 같은 칸(데모 프로젝트)을 쓴다.
+  //   운영(FUNCTIONS_EMULATOR 없음)은 아래 운영 주소 그대로다. 에뮬레이터에서 운영 주소를 쓰면
+  //   일꾼이 에뮬레이터의 **다른 칸**을 봐서, 교사 화면(데모 칸)이 개인 제출을 못 봤다(실측).
+  const _emu = process.env.FUNCTIONS_EMULATOR === 'true' && /^demo-/.test(process.env.GCLOUD_PROJECT || '');
   admin.initializeApp({
-    databaseURL: 'https://solomon-76715-default-rtdb.asia-southeast1.firebasedatabase.app'
+    databaseURL: _emu
+      ? 'https://' + process.env.GCLOUD_PROJECT + '.firebaseio.com'
+      : 'https://solomon-76715-default-rtdb.asia-southeast1.firebasedatabase.app'
   });
 }
 
