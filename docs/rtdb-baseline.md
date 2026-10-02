@@ -8,7 +8,7 @@
 |---|---|---|
 | `index.html` | ✅ 같다 · SHA-256 `283950aa041af4a3…69e5e7` · 885,488바이트 | solomonacademy.com.au 를 받아 해시 / 로컬 해시 |
 | DB 규칙 | ✅ 같다 (8,225자) | `firebase database:get /.settings/rules` → `backup/rtdb_bandwidth_20261002/live_rules.json` 과 `backup/database.rules.json` 을 JSON 으로 견줌 |
-| 함수 | ⏸ **아직 못 견줌** | `functions:list` 로 이름만 봄. 배포된 소스·배포 시각을 읽으려면 원장님 로그인 열쇠를 꺼내야 해서 멈춤 → 원장님이 콘솔에서 확인하시거나 허락 필요 |
+| 함수 | ✅ 같다 (17:58 이후) | Cloud Run 목록의 배포 시각(원장님 화면, 17:51 기준)과 파일별 마지막 커밋 시각을 견줌. `prepCorrectRelease`·`prepAdoptImport`(~15:50) ✅ · `prepStartSession`(어제 ~18:50, 그 뒤 같은 파일의 `prepConfirmOrder` 만 바뀜) ✅ · `loginCheck`(9/11, 그 뒤 `auth.js` 는 `_shared` 내보내기 한 덩이만 덧붙음) ✅ · ⚠️ `prepConfirmOrder` 는 ~10:50 배포라 `order_core.js` 14:28 고침(주제 B·C 미리 채움)이 빠져 있었음 → 원장님 승인으로 그 함수 하나만 다시 배포함(2026-10-02 저녁, Successful update) |
 | 자동 검사 | ✅ 통과 676 · 실패 0 | `node functions/화면시험/돌리기.js` |
 
 ## 2. 청구 기준선
