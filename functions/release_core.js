@@ -175,7 +175,7 @@ function releaseDecision(s) {
   const aid = s.planId + '_hw';
 
   // ⑥ 아직 공개 안 됨 — 맨 먼저(이미 공개면 다른 까닭은 볼 필요가 없다)
-  if (s.release && s.release.published === true) { 막('already', '이미 공개되었습니다'); return { ok: false, reasons: R, aid }; }
+  if ((s.release && s.release.published === true) || (plan.released && plan.released.slot)) { 막('already', '이미 공개되었습니다'); return { ok: false, reasons: R, aid }; }
   if (!v) { 막('no-plan', '확정된 제작 방향이 없습니다'); return { ok: false, reasons: R, aid }; }
 
   // ① 시각 · 휴강 · 보류
@@ -205,6 +205,14 @@ function releaseDecision(s) {
     for (const m of checkOnlineDraft(od, ap.online && ap.online.config)) 막('incomplete', m);
   }
   if (sch && v && sch.studentId && sch.studentId !== v.studentId) 막('wrong-target', '예약의 학생이 판과 다릅니다');
+  // [10-02 B] 숙제 칸 — 숙제 관리와 같은 자리에 덧붙이므로 그 칸의 사정을 본다
+  if (s.slot) {
+    if (s.slot.noUser) 막('no-student', '학생 명단에서 이 학생을 못 찾았습니다');
+    else {
+      if (s.slot.hidden) 막('slot-hidden', '숙제 관리에서 이 주 숙제 칸(' + s.slot.key + ')이 비공개입니다 — 공개로 바꾼 뒤 다시');
+      if ((s.slot.stale || []).length) 막('slot-stale', '숙제 칸의 덧붙일 자리에 옛 제출 기록이 ' + s.slot.stale.length + '건 있습니다 — 숙제 관리에서 정리 뒤 다시');
+    }
+  }
   // ⑥ 스위치(자동만)
   if (auto && s.autoRelease !== true) 막('switch-off', '자동 공개 스위치가 꺼져 있습니다');
   return { ok: R.length === 0, reasons: R, aid };

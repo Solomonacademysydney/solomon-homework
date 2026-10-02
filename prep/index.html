@@ -554,7 +554,7 @@ function 계획카드(a, planId, pl) {
   return `<div class="판" style="margin-bottom:12px">
     <h3 style="margin:0 0 4px">${글(날)} 수업 · 제작 방향 판 ${rev}</h3>
     <div class="섹">${예약}${단추}</div>
-    ${공개 ? 공개됨그리기(planId, aid, 공개) : `
+    ${pl.released && pl.released.slot ? 칸공개됨그리기(pl) : 공개 ? 공개됨그리기(planId, aid, 공개) : `
       ${교재그리기(a, planId, rev, ap, 교재)}
       ${수량그리기(a, planId, pl, rev, ap, 교재)}
       ${온 ? 온라인그리기(planId, 온) : ''}
@@ -732,7 +732,7 @@ function 공개조건그리기(planId, st) {
     <button onclick="delete 검토.상태['${글(planId)}'];카드그리기()">조건 다시 보기</button></div>`;
 }
 async function 지금공개(planId) {
-  if (!confirm('지금 학생에게 공개할까요? 공개한 뒤에는 「정정」으로만 고칩니다.')) return;
+  if (!confirm('지금 학생에게 공개할까요? 숙제 관리의 그 주 칸에 세트로 들어갑니다(숙제 관리에서 등록한 것과 같음).')) return;
   try { const r = await 부르기('prepRelease', { planId }); 알림(r.already ? '이미 공개되어 있습니다' : '✅ 공개했습니다'); await 검토새로(아이자료.u.id, planId); }
   catch (e) { 알림('❌ ' + e.message); }
 }
@@ -751,6 +751,13 @@ async function 자동공개바꿈(켬) {
   카드그리기();
 }
 
+/** [10-02 B] 숙제 관리와 같은 칸에 들어간 공개 */
+function 칸공개됨그리기(pl) {
+  const r = pl.released, k = r.slot;
+  return `<div class="섹"><b>✅ 공개됨</b> ${글(String(r.at || '').replace('T', ' ').slice(0, 16))} UTC · ${r.cause === 'scheduled' ? '20:00 자동 공개' : '원장 공개'}
+    <div>홈페이지 <b>숙제 관리</b>의 ${글(k.key)} 칸에 <b>Set ${k.from + 1}${k.count > 1 ? '~' + (k.from + k.count) : ''}</b> 로 들어갔습니다 — 숙제 관리에서 등록한 것과 똑같이 보이고, TS 숙제도 그대로 함께 보입니다.</div>
+    <div class="작게">고칠 것이 있으면 숙제 관리에서 그 세트를 고치거나 지우세요(여기서는 정정하지 않습니다).</div></div>`;
+}
 // ── 공개 뒤 정정 ──
 function 공개됨그리기(planId, aid, r) {
   const 세트 = Object.entries(r.sets || {}).sort((x, y) => (x[1].order || 0) - (y[1].order || 0));

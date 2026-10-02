@@ -254,10 +254,12 @@ async function 주문(날, s) {
     const jO = await 값('sol_prep_v1/jobs/' + 수량.jobId);
     const oD = jO.w && jO.w.resultRef ? await 값('sol_prep_v1/drafts/' + jO.w.resultRef) : null;
     재기('확인한 수량(MR 1세트 × 2) 그대로 · 명세(1+1 × 3)가 아님 · 주문 id 가 초안에', oD && oD.sets.length === 1 && oD.sets[0].questions.length === 2 && oD.jobId === 수량.jobId && oD.sourceDraftId === v2id, JSON.stringify(jO.w));
+    await db.ref('solomon_hw_v3/users').set([{ id: 'emu5', role: 'student', year: 5, country: 'AU', group: '', status: 'active' }]);   // [10-02 B] 숙제 칸을 찾으려면 명단이 있어야 한다
     const 공 = await 원장(R6.prepRelease, { planId: o4.planId });
-    const 묶 = await 값('sol_prep_v1/releases/' + o4.planId + '_hw');
-    재기('일꾼이 만든 초안 → 원장 공개 → 학생 묶음(세트 1 · 문항 2)', 공.ok && 묶 && 묶.published === true && Object.keys(묶.sets).length === 1 && 묶.sets.s1.questions.length === 2, JSON.stringify(공));
-    재기('일꾼은 공개 묶음을 못 읽는다(정답 있음)', await 거절됨(() => fb.get('sol_prep_v1/releases/' + o4.planId + '_hw')));
+    const 칸key = await 값('sol_prep_v1/plans/' + o4.planId + '/released/slot/key');
+    const 칸값 = 칸key ? await 값('solomon_hw_v3/homeworkSets/' + 칸key) : null;
+    재기('일꾼이 만든 초안 → 원장 공개 → 숙제 관리와 같은 칸에 1세트 · 문항 2', 공.ok && 칸key === 'AU_y5_2026_m10_w4' && 칸값 && 칸값.sets.length === 1 && 칸값.sets[0].questions.length === 2 && 칸값.sets[0].prep.planId === o4.planId, JSON.stringify(공) + ' ' + 칸key);
+    재기('일꾼은 숙제 칸에 못 쓴다(규칙)', await 거절됨(() => fb.put('solomon_hw_v3/homeworkSets/' + 칸key + '/sets/0/title', 'x')));
   }
 
   console.log('\n── [10-02] 프로젝트 결과물 찾기 — 임시 「교재보관」 폴더에 진짜 별이 9-20 JSON 을 복사해 둔다');

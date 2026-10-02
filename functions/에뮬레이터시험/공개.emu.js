@@ -59,6 +59,17 @@ async function 준비(sid, lessonDate, scope) {
 (async () => {
   await db.ref().set(null);
   await db.ref(ROOT + '/students').set({ Mina: { profile: { currentCurriculum: 'r1', driveFolder: '민아' } }, Aron: { profile: { currentCurriculum: 'r1' } } });
+  // [10-02 B] 공개는 숙제 관리와 같은 칸에 들어간다 — 명단(반·학년)과 그 주 칸(기존 세트 + TS 가지)을 심어 둔다
+  await db.ref('solomon_hw_v3/users').set([
+    { id: 'Mina', role: 'student', year: 5, country: 'AU', group: '', status: 'active' },
+    { id: 'Aron', role: 'student', year: 9, country: 'AU', group: '', status: 'active' },
+    { id: 'Kim5', role: 'student', year: 5, country: 'AU', group: 'K반', status: 'active' },
+    { id: 't5', role: 'student', year: 5, country: 'AU', group: '', status: 'active', isTest: true }]);
+  await db.ref('solomon_hw_v3/homeworkSets/AU_y5_2026_m10_w2').set({ country: 'AU', year: 5, group: '', period: { year: 2026, month: 10, week: 2 }, published: true,
+    sets: [{ setIdx: 0, title: 'Set 1 (숙제 관리에서 올린 것)', questions: [{ id: 'q0', text: 'old', type: 'sa', answer: '1' }] }], ts: { questions: [{ id: 'ts-x' }], published: true } });
+  const 칸 = async (k) => (await db.ref('solomon_hw_v3/homeworkSets/' + k).once('value')).val();
+  const 공개됨 = async (planId) => !!(await v('plans/' + planId + '/released/slot'));
+  const 들어간 = async (planId) => { const sl = await v('plans/' + planId + '/released/slot'); if (!sl) return null; const k = await 칸(sl.key); return { sl, sets: ((k && k.sets) || []).filter(x => x.prep && x.prep.planId === planId) }; };
 
   console.log('── 문지기 — 원장만');
   for (const [이름, fn, data] of [['교재 승인', R.prepApprovePaper, { draftId: 'x', scope: 'thisWeek' }], ['수량 확인', R.prepConfirmOnline, { paperDraftId: 'x' }],
@@ -106,63 +117,63 @@ async function 준비(sid, lessonDate, scope) {
 
   console.log('\n── ⑦ 매분 예약 — 19:59 · 20:00(스위치 꺼짐) · 보류');
   let r = await R._internals.tickOnce(Z('2026-10-09T08:59:00Z'));
-  재기('19:59 → 줄에서 안 꺼냄(공개 0)', r.length === 0 && !(await v('releases/' + c1.planId + '_hw')));
+  재기('19:59 → 줄에서 안 꺼냄(공개 0)', r.length === 0 && !(await 공개됨(c1.planId)));
   r = await R._internals.tickOnce(Z('2026-10-09T09:00:00Z'));
   const lc1 = await v('plans/' + c1.planId + '/schedule/lastCheck');
-  재기('20:00 · 스위치 꺼짐 → 공개 안 함 · 까닭을 남김', !(await v('releases/' + c1.planId + '_hw')) && lc1 && lc1.reasons.some(x => x.key === 'switch-off'), JSON.stringify(lc1));
+  재기('20:00 · 스위치 꺼짐 → 공개 안 함 · 까닭을 남김', !(await 공개됨(c1.planId)) && lc1 && lc1.reasons.some(x => x.key === 'switch-off'), JSON.stringify(lc1));
   await R._internals.tickOnce(Z('2026-10-09T09:01:00Z'));
   재기('같은 까닭이면 다시 쓰지 않는다(매분 쓰기 없음)', (await v('plans/' + c1.planId + '/schedule/lastCheck/at')) === lc1.at);
   await db.ref(ROOT + '/config/autoRelease').set(true);
   재기('보류', (await 부름(R.prepLessonControl, OP, { planId: c1.planId, action: 'hold' })).ok && (await v('releaseQueue/' + c1.planId)) === null);
   await R._internals.tickOnce(Z('2026-10-09T09:02:00Z'));
-  재기('보류 중 20:02 → 공개 안 함', !(await v('releases/' + c1.planId + '_hw')));
+  재기('보류 중 20:02 → 공개 안 함', !(await 공개됨(c1.planId)));
   const 보류중수동 = await 부름(R.prepRelease, OP, { planId: c1.planId });
   재기('보류 중 원장 공개도 막힘(먼저 해제)', 거절(보류중수동, 'NOT-READY') && 보류중수동.details.reasons.some(x => x.key === 'held'));
   재기('보류는 저절로 안 풀린다 — 원장이 해제', (await v('plans/' + c1.planId + '/schedule/state')) === 'held' && (await 부름(R.prepLessonControl, OP, { planId: c1.planId, action: 'unhold' })).ok
     && (await v('releaseQueue/' + c1.planId)) === Z('2026-10-09T09:00:00Z'));
 
-  console.log('\n── 공개 경쟁 — 원장 공개와 예약이 동시에');
+  console.log('\n── 공개 경쟁 — 원장 공개와 예약이 동시에 · [10-02 B] 숙제 관리와 같은 칸에 덧붙인다');
   const [가, 나, 다] = await Promise.all([R._internals.releaseCore(c1.planId, 'manual', Z('2026-10-09T09:03:00Z'), OP), R._internals.tickOnce(Z('2026-10-09T09:03:00Z')), R._internals.releaseCore(c1.planId, 'manual', Z('2026-10-09T09:03:00Z'), OP)]);
-  const 공개 = await v('releases/' + c1.planId + '_hw');
+  const 민칸 = await 칸('AU_y5_2026_m10_w2');
   const 기록들 = Object.values((await v('releaseLog')) || {}).filter(x => x.aid === c1.planId + '_hw');
-  재기('공개 묶음은 하나 · 공개 기록도 하나', 공개 && 공개.published === true && 기록들.length === 1, JSON.stringify({ 가, 나, 다, n: 기록들.length }));
-  재기('묶음: 학생·판·초안·주차(10월 2주)·세트 둘·원인', 공개.studentId === 'Mina' && 공개.planRev === 2 && 공개.draftId === 온1 && 공개.period.week === 2 && 공개.period.month === 10
-    && Object.keys(공개.sets).join() === 's1,s2' && ['manual', 'scheduled'].indexOf(공개.cause) >= 0, JSON.stringify(공개.period));
+  const 새세트 = (민칸.sets || []).filter(x => x.prep && x.prep.aid === c1.planId + '_hw');
+  재기('동시에 셋이 와도 칸에는 한 번만(세트 둘) · 공개 기록도 하나', 새세트.length === 2 && 기록들.length === 1, JSON.stringify({ 가, 나, 다, n: 기록들.length, sets: (민칸.sets || []).length }));
+  재기('숙제 관리 칸 그대로: 기존 Set 1 뒤에 Set 2·3 으로 덧붙음(제목 · 순번)', 민칸.sets.length === 3 && 민칸.sets[0].title === 'Set 1 (숙제 관리에서 올린 것)' && 민칸.sets[1].setIdx === 1 && /^Set 2 \(/.test(민칸.sets[1].title) && 민칸.sets[2].setIdx === 2, JSON.stringify(민칸.sets.map(x => x.title)));
+  재기('TS 가지(TS 교사 화면 몫)는 손대지 않음 · 칸은 공개 그대로', 민칸.ts && 민칸.ts.published === true && Object.keys(민칸.ts).length === 2 && 민칸.ts.questions.length === 1 && 민칸.ts.questions[0].id === 'ts-x' && 민칸.published === true);
+  재기('문항은 홈페이지 꼴(정답 글자·해설·그림·hint 칸) — 숙제 관리 등록과 같은 모양', 새세트[1].questions[0].answer === 'B' && 새세트[1].questions[0].figure && 새세트[0].questions[0].hint1 === '' && 새세트[0].createdAt && Array.isArray(새세트[0].calculatorRanges) === false);
+  재기('계획에 들어간 자리 기록(칸 · Set 2~3) · 개인 숙제 길(releases)은 안 씀', JSON.stringify(await v('plans/' + c1.planId + '/released/slot/key')) === '"AU_y5_2026_m10_w2"' && (await v('plans/' + c1.planId + '/released/slot/from')) === 1 && !(await v('releases/' + c1.planId + '_hw')));
   재기('초안 = 공개됨 · 줄에서 빠짐 · 예약 상태 published', (await v('drafts/' + 온1 + '/published')) === true && (await v('releaseQueue/' + c1.planId)) === null && (await v('plans/' + c1.planId + '/schedule/state')) === 'published');
-  재기('다시 공개 → 「이미」(두 번째 묶음 없음)', (await 부름(R.prepRelease, OP, { planId: c1.planId })).already === true);
-  재기('공개 뒤 제작 방향 다시 확정 → 거절(정정을 쓰라)', 거절(await 부름(P.prepConfirmOrder, OP, { studentId: 'Mina', lessonDate: '2026-10-09', settings: 설정() }), 'PUBLISHED'));
+  재기('다시 공개 → 「이미」(칸에 또 안 넣음)', (await 부름(R.prepRelease, OP, { planId: c1.planId })).already === true && ((await 칸('AU_y5_2026_m10_w2')).sets || []).length === 3);
+  재기('공개 뒤 제작 방향 다시 확정 → 거절', 거절(await 부름(P.prepConfirmOrder, OP, { studentId: 'Mina', lessonDate: '2026-10-09', settings: 설정() }), 'PUBLISHED'));
   재기('공개 뒤 보류 → 거절', 거절(await 부름(R.prepLessonControl, OP, { planId: c1.planId, action: 'hold' }), 'PUBLISHED'));
   재기('자동 공개는 기본값을 건드리지 않는다(교재 기본값 없음 그대로)', !(await v('students/Mina/preferences/paper')));
-
-  console.log('\n── 학생이 받는다(서버 경유) · 남은 못 받는다');
   const 목록 = await 부름(P.prepListMyAssignments, 'u-mina', {}, 학생('Mina'));
-  재기('민아 목록에 이 숙제(10월 2주) · 세트 둘', 목록.status === 'ok' && 목록.assignments.some(a => a.assignmentId === c1.planId + '_hw' && a.period.week === 2 && a.sets.length === 2), JSON.stringify(목록));
-  const 받음 = await 부름(P.prepGetAssignment, 'u-mina', { assignmentId: c1.planId + '_hw' }, 학생('Mina'));
-  재기('민아가 받은 문항에는 정답·해설이 없다 · 그림은 있다', 받음.sets && !JSON.stringify(받음.sets).includes('"answer"') && !JSON.stringify(받음.sets).includes('explanation') && JSON.stringify(받음.sets).includes('<svg'), JSON.stringify(받음).slice(0, 300));
-  재기('아론이 민아 것을 달라면 「없음」', 거절(await 부름(P.prepGetAssignment, 'u-aron', { assignmentId: c1.planId + '_hw' }, 학생('Aron')), 'NO-ASSIGNMENT'));
+  재기('학생 개인 숙제 길에는 아무것도 없다 → 아이 화면은 숙제 칸(MR + TS)을 그대로 쓴다', 목록.status === 'none', JSON.stringify(목록));
+  재기('공개 뒤 정정 함수는 칸 공개에 쓰지 않는다(숙제 관리에서 고침)', 거절(await 부름(R.prepCorrectRelease, OP, { assignmentId: c1.planId + '_hw', setId: 's1', qid: 'q0', changes: { answer: 'C' }, reason: 'x' }), 'NO-RELEASE'));
+  재기('반 없는 아이(민아)의 공통 칸 → 반 있는 같은 학년 아이(K반)에게 빈 칸막이 · 테스트 계정은 안 세움', (await 칸('AU_y5-K반_2026_m10_w2') || {})._placeholder === true);
   await db.ref(ROOT + '/config/autoRelease').set(false);
-  재기('자동 공개 스위치를 꺼도 공개된 숙제는 그대로 읽힌다', !!(await 부름(P.prepGetAssignment, 'u-mina', { assignmentId: c1.planId + '_hw' }, 학생('Mina'))).sets);
 
-  console.log('\n── ⑨ 공개된 내용 정정 — 옛 판 기록 · 지난 제출은 당시 채점 그대로');
-  const 제출1 = await 부름(P.prepSubmit, 'u-mina', { assignmentId: c1.planId + '_hw', setId: 's2', rev: 1, answers: { q0: 'C', q1: 'C' } }, 학생('Mina'));
-  재기('정정 전 제출: q0 정답 B → C 는 틀림(50점)', 제출1.ok && 제출1.score === 50, JSON.stringify(제출1));
-  재기('까닭 없이 정정 → 거절', 거절(await 부름(R.prepCorrectRelease, OP, { assignmentId: c1.planId + '_hw', setId: 's2', qid: 'q0', changes: { answer: 'C' } }), 'NO-REASON'));
-  const 정정 = await 부름(R.prepCorrectRelease, OP, { assignmentId: c1.planId + '_hw', setId: 's2', qid: 'q0', changes: { answer: 'C' }, reason: '정답 표기 잘못' });
-  const 뒤 = await v('releases/' + c1.planId + '_hw');
-  재기('정정 → 판 2 · 기록(전·후·까닭) · 검증값 바뀜', 정정.ok && 뒤.releaseRev === 2 && 뒤.manifestHash !== 공개.manifestHash && Object.values(뒤.corrections)[0].reason === '정답 표기 잘못' && Object.values(뒤.corrections)[0].before.answer === 'B', JSON.stringify(정정));
-  재기('옛 판(1) 전체가 releaseHistory 에 남는다', (await v('releaseHistory/' + c1.planId + '_hw/1/manifestHash')) === 공개.manifestHash);
-  const 지난 = await v('submissions/' + c1.planId + '_hw/Mina/s2/revs/1/grade');
-  재기('지난 제출은 당시 정답표 점수 그대로(50 · 다시 채점 안 함)', 지난 && 지난.score === 50, JSON.stringify(지난));
-  const 제출2 = await 부름(P.prepSubmit, 'u-mina', { assignmentId: c1.planId + '_hw', setId: 's2', rev: 2, answers: { q0: 'C', q1: 'C' } }, 학생('Mina'));
-  재기('정정 뒤 새 제출은 새 정답표로(100)', 제출2.ok && 제출2.score === 100, JSON.stringify(제출2));
-  재기('바뀐 것이 없으면 정정 거절', 거절(await 부름(R.prepCorrectRelease, OP, { assignmentId: c1.planId + '_hw', setId: 's2', qid: 'q0', changes: { answer: 'C' }, reason: 'x' }), 'NOTHING'));
+  console.log('\n── [10-02 B] 숙제 칸 사정 — 비공개 칸 · 옛 제출이 있으면 멈춘다');
+  {
+    const 숨 = await 준비('Mina', '2027-02-19');
+    await db.ref('solomon_hw_v3/homeworkSets/AU_y5_2027_m02_w3').set({ country: 'AU', year: 5, group: '', period: { year: 2027, month: 2, week: 3 }, published: false, sets: [] });
+    const 숨r = await 부름(R.prepRelease, OP, { planId: 숨.planId });
+    재기('숙제 관리에서 그 주 칸을 비공개로 해 두었으면 멈춤(원장 뜻을 안 바꿈)', 거절(숨r, 'NOT-READY') && 숨r.details.reasons.some(x => x.key === 'slot-hidden'), JSON.stringify(숨r.details));
+    await db.ref('solomon_hw_v3/homeworkSets/AU_y5_2027_m02_w3/published').set(true);
+    await db.ref('solomon_hw_v3/submissions/Mina_2027_m02_w3_s1').set({ submitted: true, answers: { q0: 'A' } });
+    const 옛r = await 부름(R.prepRelease, OP, { planId: 숨.planId });
+    재기('덧붙일 자리(Set 2)에 옛 제출 기록이 있으면 멈춤(숙제 관리에서 정리)', 거절(옛r, 'NOT-READY') && 옛r.details.reasons.some(x => x.key === 'slot-stale'), JSON.stringify(옛r.details));
+    await db.ref('solomon_hw_v3/submissions/Mina_2027_m02_w3_s1').remove();
+    const 됨r = await 부름(R.prepRelease, OP, { planId: 숨.planId });
+    재기('정리하고 다시 → 공개(Set 1~2)', 됨r.ok && 됨r.slot === 'AU_y5_2027_m02_w3' && 됨r.from === 0 && 됨r.count === 2, JSON.stringify(됨r));
+  }
 
   console.log('\n── 휴강 · 수업일 변경 · 공개 직전 판 변경 · 미완성 · 이어 쓰기 (일꾼 없이 서버만 — PC 꺼짐)');
   await db.ref(ROOT + '/config/autoRelease').set(true);
   const 휴 = await 준비('Mina', '2026-10-16');
   재기('휴강', (await 부름(R.prepLessonControl, OP, { planId: 휴.planId, action: 'cancel' })).ok && (await v('releaseQueue/' + 휴.planId)) === null);
   await R._internals.tickOnce(Z('2026-10-16T09:05:00Z'));
-  재기('휴강이면 20:05 에도 공개 안 함', !(await v('releases/' + 휴.aid)));
+  재기('휴강이면 20:05 에도 공개 안 함', !(await 공개됨(휴.planId)));
   const 휴수동 = await 부름(R.prepRelease, OP, { planId: 휴.planId });
   재기('휴강이면 원장 공개도 막힘', 거절(휴수동, 'NOT-READY') && 휴수동.details.reasons.some(x => x.key === 'cancelled'));
   재기('휴강 되살리기 → 다시 줄에', (await 부름(R.prepLessonControl, OP, { planId: 휴.planId, action: 'restore' })).ok && (await v('releaseQueue/' + 휴.planId)) === Z('2026-10-16T09:00:00Z'));
@@ -172,30 +183,30 @@ async function 준비(sid, lessonDate, scope) {
   재기('수업일 변경 10-30 → 11-02 · 공개 시각 다시 셈(월 넘김)', 바꿈.ok && 바꿈.schedule.releaseAt === Z('2026-11-02T09:00:00Z') && (await v('releaseQueue/' + 바.planId)) === Z('2026-11-02T09:00:00Z'), JSON.stringify(바꿈.schedule));
   재기('옛 날짜·옛 시각은 기록에만(바뀐 전후)', Object.values((await v('plans/' + 바.planId + '/schedule/history')) || {}).some(h => h.from === '2026-10-30' && h.to === '2026-11-02'));
   await R._internals.tickOnce(Z('2026-10-30T09:05:00Z'));
-  재기('옛 시각(10-30 20:05)에는 공개 안 함', !(await v('releases/' + 바.aid)));
+  재기('옛 시각(10-30 20:05)에는 공개 안 함', !(await 공개됨(바.planId)));
   await R._internals.tickOnce(Z('2026-11-02T09:00:30Z'));
-  const 바공개 = await v('releases/' + 바.aid);
-  재기('새 시각(11-02 20:00)에 공개 · 주차는 새 수업일(11월 1주)', 바공개 && 바공개.cause === 'scheduled' && 바공개.period.month === 11 && 바공개.period.week === 1 && 바공개.lessonDate === '2026-11-02', JSON.stringify(바공개 && 바공개.period));
+  const 바공개 = await 들어간(바.planId);
+  재기('새 시각(11-02 20:00)에 공개 · 칸은 새 수업일 주(11월 1주 · Y9)', 바공개 && 바공개.sl.key === 'AU_y9_2026_m11_w1' && 바공개.sets.length === 2 && 바공개.sets[0].prep.cause === 'scheduled', JSON.stringify(바공개 && 바공개.sl));
 
   const 직전 = await 준비('Mina', '2026-10-23');
   const 새판 = await 부름(P.prepConfirmOrder, OP, { studentId: 'Mina', lessonDate: '2026-10-23', settings: 설정() });
   await R._internals.tickOnce(Z('2026-10-23T09:00:00Z'));
   const 직전까닭 = await v('plans/' + 직전.planId + '/schedule/lastCheck');
-  재기('공개 직전에 판이 바뀜 → 옛 초안은 공개 안 함(까닭: 승인 없음/판 다름)', 새판.ok && !(await v('releases/' + 직전.aid)) && 직전까닭 && 직전까닭.reasons.some(x => x.key === 'no-paper-approval' || /stale/.test(x.key)), JSON.stringify(직전까닭));
+  재기('공개 직전에 판이 바뀜 → 옛 초안은 공개 안 함(까닭: 승인 없음/판 다름)', 새판.ok && !(await 공개됨(직전.planId)) && 직전까닭 && 직전까닭.reasons.some(x => x.key === 'no-paper-approval' || /stale/.test(x.key)), JSON.stringify(직전까닭));
 
   const 덜 = await 준비('Aron', '2026-12-31');
   await db.ref(ROOT + '/drafts/' + 덜.online + '/sets/1/questions/1').remove();
   const 덜수동 = await 부름(R.prepRelease, OP, { planId: 덜.planId });
   재기('미완성(TS 세트 문항 하나 빠짐) → 원장 공개도 막힘', 거절(덜수동, 'NOT-READY') && 덜수동.details.reasons.some(x => x.key === 'incomplete'), JSON.stringify(덜수동.details));
   await R._internals.tickOnce(Z('2026-12-31T09:00:00Z'));
-  재기('연말 12-31 20:00 예약도 미완성이면 공개 안 함', !(await v('releases/' + 덜.aid)));
+  재기('연말 12-31 20:00 예약도 미완성이면 공개 안 함', !(await 공개됨(덜.planId)));
 
   const 이어 = await 준비('Mina', '2027-01-08');
   // 문지기는 통과했는데(released 적힘) 묶음을 쓰기 전에 함수가 죽은 경우
   await db.ref(ROOT + '/plans/' + 이어.planId).update({ released: { rev: 이어.rev, draftId: 이어.online, aid: 이어.aid, cause: 'scheduled', at: '2027-01-08T09:00:00.000Z', manifestHash: 'x' }, 'schedule/state': 'published' });
   await R._internals.tickOnce(Z('2027-01-08T09:01:00Z'));
-  const 이어공개 = await v('releases/' + 이어.aid);
-  재기('반쯤 된 공개 → 다음 분에 이어 써서 하나로 끝남', 이어공개 && 이어공개.published === true && (await v('releaseQueue/' + 이어.planId)) === null, JSON.stringify(이어공개 && 이어공개.cause));
+  const 이어공개 = await 들어간(이어.planId);
+  재기('반쯤 된 공개 → 다음 분에 이어 써서 칸에 한 번만', 이어공개 && 이어공개.sets.length === 2 && (await v('releaseQueue/' + 이어.planId)) === null, JSON.stringify(이어공개 && 이어공개.sl));
 
   console.log('\n── ④ 홈페이지 초안 고치기 · ③ 교재 부분 수정 요청');
   const 고 = await 준비('Aron', '2027-02-05');
@@ -205,7 +216,8 @@ async function 준비(sid, lessonDate, scope) {
     && (await v('drafts/' + 고.online + '/sets/0/questions/0/text')) === 'Q0' && 새초안.manifest[0].verify === 'teacher-edited' && 새초안.manifest[0].itemRevision === 2, JSON.stringify(고침));
   재기('옛 초안을 또 고치려면 거절(새 것을 고쳐라)', 거절(await 부름(R.prepEditOnline, OP, { draftId: 고.online, edits: [{ set: 0, q: 1, text: 'x' }] }), 'SUPERSEDED'));
   const 고공개 = await 부름(R.prepRelease, OP, { planId: 고.planId });
-  재기('공개는 고친 초안으로(원장 조기 공개 · 10-?? 전)', 고공개.ok && (await v('releases/' + 고.aid + '/draftId')) === 고침.draftId && (await v('releases/' + 고.aid + '/cause')) === 'manual', JSON.stringify(고공개));
+  const 고칸 = await 들어간(고.planId);
+  재기('공개는 고친 초안으로(원장 조기 공개)', 고공개.ok && 고칸.sets[0].prep.draftId === 고침.draftId && 고칸.sets[0].prep.cause === 'manual' && 고칸.sets[0].questions[0].text === 'Q0 (fixed)', JSON.stringify(고공개));
 
   const 수 = await 부름(P.prepConfirmOrder, OP, { studentId: 'Aron', lessonDate: '2027-02-12', settings: 설정() });
   const 수종이 = await 종이초안(수.planId, 수.rev, 'Aron', '2027-02-12');
@@ -242,8 +254,8 @@ async function 준비(sid, lessonDate, scope) {
     const st = await 부름(R.prepReleaseStatus, OP, { planId: 등.planId });
     재기('등록하자마자 원장 공개 조건 ✅(교재 승인·수량 확인·초안 다 있음)', st.manual.ok, JSON.stringify(st.manual.reasons));
     const 공 = await 부름(R.prepRelease, OP, { planId: 등.planId });
-    const 묶 = await v('releases/' + 등.planId + '_hw');
-    재기('지금 공개 → 학생 묶음 2세트 · 수업일 주(3월 1주)', 공.ok && Object.keys(묶.sets).length === 2 && 묶.period.month === 3, JSON.stringify(묶 && 묶.period));
+    const 묶 = await 들어간(등.planId);
+    재기('지금 공개 → 숙제 칸(3월 1주 · Y5)에 2세트 · 문항 id·분류 그대로', 공.ok && 묶.sl.key === 'AU_y5_2027_m03_w1' && 묶.sets.length === 2 && 묶.sets[0].questions[1].srcId === 'Y7-W4-ST1-Q01' && 묶.sets[0].questions[0].source === 'toolchain', JSON.stringify(묶 && 묶.sl));
     재기('결과물 = 등록됨 · 두 번 등록 막힘', (await v('imports/imp1/status')) === 'adopted' && 거절(await 부름(R.prepAdoptImport, OP, { importId: 'imp1', studentId: 'Mina', lessonDate: '2027-03-12' }), 'ALREADY'));
     await db.ref(ROOT + '/imports/imp2').set({ folder: 'y', folderDate: '2026-09-20', questions: 'z_questions.json', students: [], ok: true, setSizes: [2], count: 2, status: 'new' });
     await db.ref(ROOT + '/importSets/imp2').set([{ setIdx: 0, title: 'S', questions: [q(0), q(1)] }]);

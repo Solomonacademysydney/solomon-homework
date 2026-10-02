@@ -55,6 +55,80 @@ async function 예약확보(planId, studentId, lessonDate, now) {
   return t.snapshot.val();
 }
 
+// ─────────────────── [10-02 원장 결정 B] 숙제 칸에 넣기 ───────────────────
+//   「지금 공개」·20:00 공개는 **홈페이지 숙제 관리에서 등록한 것과 같은 자리**(solomon_hw_v3/homeworkSets/<칸>/sets)에
+//   세트를 **뒤에 덧붙인다** — 그래서 어느 길로 올려도 아이 화면·TS·성적·리포트가 같다.
+//   규칙(홈페이지 doImportHwJson · fbSetHomeworkMaths · _ensureGroupPlaceholders 그대로):
+//     · 칸 = 학생의 학년·나라·반 + 수업일이 든 주(hwKey · sanitizeGroup 과 같은 셈)
+//     · ts 가지는 건드리지 않는다(TS 교사 화면 몫) · 칸이 없으면 뼈대만 「비었을 때만」 세운다
+//     · 덧붙일 자리에 옛 제출 기록(같은 반 학생 · 테스트·퇴원 포함)이 있으면 멈춘다(숙제 관리에서 정리)
+//     · 반 없는 학생의 공통 칸에 쓰면 반 있는 아이들에게 빈 칸막이를 세운다(공통 숙제가 대신 보이는 것을 막는다)
+//     · 숙제 관리에서 그 칸을 비공개로 해 두었으면 멈춘다(원장 뜻을 바꾸지 않는다)
+const HW = 'solomon_hw_v3';
+const hwRef = (p) => db().ref(HW + '/' + p);
+const 둘 = (n) => String(n).padStart(2, '0');
+const 반이름 = (v) => String(v == null ? '' : v).replace(/[_\r\n\t]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 20);
+const 칸열쇠 = (y, c, p, g) => c + '_y' + y + (g ? '-' + g : '') + '_' + p.year + '_m' + 둘(p.month) + '_w' + p.week;
+const 제출열쇠 = (sid, p, i) => sid + '_' + p.year + '_m' + 둘(p.month) + '_w' + p.week + '_s' + i;
+async function 명단() { const v = (await hwRef('users').once('value')).val() || []; return (Array.isArray(v) ? v : Object.values(v)).filter(Boolean); }
+/** 공개할 칸 살피기 — 학생 · 칸 · 덧붙일 자리 · 옛 제출 */
+async function 칸살피기(sid, lessonDate, 개수) {
+  const 사람들 = await 명단();
+  const u = 사람들.find(x => x.id === sid && x.role === 'student');
+  if (!u) return { noUser: true };
+  const p = RC.periodOfYmd(lessonDate), c = u.country || 'AU', g = 반이름(u.group);
+  const key = 칸열쇠(u.year, c, p, g);
+  const 칸 = (await hwRef('homeworkSets/' + key).once('value')).val();
+  const n = 칸 ? asArr(칸.sets).length : 0;
+  const 같은반 = 사람들.filter(x => x.role === 'student' && x.year === u.year && (x.country || 'AU') === c && 반이름(x.group) === g).map(x => x.id);
+  const stale = [];
+  for (const a of 같은반) for (let i = 0; i < (개수 || 0); i++) {
+    const k = 제출열쇠(a, p, n + i);
+    const v = (await hwRef('submissions/' + k).once('value')).val();
+    if (v) stale.push(k);
+  }
+  return { key, period: p, year: u.year, country: c, group: g, exists: !!칸, hidden: !!(칸 && 칸.published === false && !칸._placeholder), from: n, stale, 같은반 };
+}
+/** 덧붙이기 — 같은 공개(aid)가 이미 들어 있으면 다시 넣지 않는다 */
+async function 칸에넣기(slot, aid, od, 이긴, planId, rev) {
+  const 뼈대 = { country: slot.country, year: slot.year, group: slot.group, period: { year: slot.period.year, month: slot.period.month, week: slot.period.week }, sets: [] };
+  await hwRef('homeworkSets/' + slot.key).transaction(cur => (cur === null ? 뼈대 : undefined));
+  const d = new Date(Date.parse(이긴.at)), 만든날 = (d.getUTCMonth() + 1) + '/' + d.getUTCDate() + '/' + d.getUTCFullYear();
+  let 이미 = null, from = null;
+  const w = await hwRef('homeworkSets/' + slot.key + '/sets').transaction(cur => {
+    이미 = null; from = null;
+    const 있는 = asArr(cur);
+    const 같은 = 있는.filter(x => x && x.prep && x.prep.aid === aid);
+    if (같은.length) { 이미 = 같은.map(x => x.setIdx); return; }
+    from = 있는.length;
+    const 새 = RC.setsOf(od).map((st, i) => ({
+      setIdx: from + i, title: 'Set ' + (from + i + 1) + ' (' + String(st.title || ('Set ' + (i + 1))).replace(/^Set \d+ \((.*)\)$/, '$1') + ')',
+      questions: asArr(st.questions).map(q => { const o = {}; for (const k of RC.Q_FIELDS) if (q[k] != null) o[k] = q[k]; if (o.hint1 == null) o.hint1 = ''; if (o.hint2 == null) o.hint2 = ''; if (o.options === undefined) o.options = null; return o; }),
+      createdAt: 만든날, calculatorRanges: [],
+      prep: { aid, planId, planRev: rev, draftId: od._id, at: 이긴.at, cause: 이긴.cause } }));
+    return 있는.concat(새);
+  });
+  if (이미) return { key: slot.key, from: Math.min.apply(null, 이미), count: 이미.length, already: true };
+  if (!w.committed) throw new Error('숙제 칸에 못 넣음: ' + slot.key);
+  // 반 없는 학생의 공통 칸이면 — 반 있는 아이들에게 빈 칸막이(홈페이지와 같은 조건: 이번 주 이후 · 그 주에 푼 흔적 없음 · 칸 없음)
+  if (!slot.group) await 칸막이세우기(slot);
+  return { key: slot.key, from, count: RC.setsOf(od).length, already: false };
+}
+async function 칸막이세우기(slot) {
+  const 오늘주 = RC.periodOfYmd(RC.sydneyText(Date.now()).slice(0, 10));
+  const 뒤 = (a, b) => a.year !== b.year ? a.year > b.year : a.month !== b.month ? a.month > b.month : a.week >= b.week;
+  if (!뒤(slot.period, 오늘주)) return;
+  const 사람들 = await 명단();
+  for (const k of 사람들.filter(x => x.role === 'student' && x.status !== 'inactive' && !x.isTest && x.year === slot.year && (x.country || 'AU') === slot.country && 반이름(x.group))) {
+    const g = 반이름(k.group), gkey = 칸열쇠(k.year, slot.country, slot.period, g);
+    let 푼 = !!(await hwRef('submissions/ts_' + k.id + '_' + slot.period.year + '_m' + 둘(slot.period.month) + '_w' + slot.period.week).once('value')).val();
+    for (let i = 0; i < 12 && !푼; i++) { const v = (await hwRef('submissions/' + 제출열쇠(k.id, slot.period, i)).once('value')).val(); if (v && (v.submitted || Object.keys(v.answers || {}).length)) 푼 = true; }
+    if (푼) continue;
+    await hwRef('homeworkSets/' + gkey).transaction(cur => (cur === null ? { country: slot.country, year: k.year, group: g, period: slot.period, published: true, sets: [], _placeholder: true,
+      _note: '공통 숙제가 대신 보이는 것을 막는 빈 칸 — 이 반 숙제를 올리면 여기 채워진다(수업 준비 공개가 세움)' } : undefined));
+  }
+}
+
 // ─────────────────── 모으기 ───────────────────
 /** 공개 판단에 쓸 상태를 한 번에 모은다 */
 async function 모으기(planId) {
@@ -70,8 +144,10 @@ async function 모으기(planId) {
   const ap = (plan.approvals && plan.approvals[rev]) || {};
   const paperDraft = ap.paper && drafts[ap.paper.draftId] ? Object.assign({ _id: ap.paper.draftId }, drafts[ap.paper.draftId]) : null;
   const onlineDraft = 온라인초안고르기(drafts, ap.online && ap.online.jobId);
+  const 날 = (plan.schedule && plan.schedule.lessonDate) || (v && v.lessonDate);
+  const slot = sid && 날 && !(plan.released && plan.released.slot) ? await 칸살피기(sid, 날, onlineDraft ? RC.setsOf(onlineDraft).length : 0) : null;
   return { planId, plan, profile: profile || {}, inboxNew: Object.values(inbox || {}).filter(x => x && x.status === 'new'),
-    autoRelease: autoRelease === true, paperDraft, onlineDraft, release, drafts };
+    autoRelease: autoRelease === true, paperDraft, onlineDraft, release, drafts, slot };
 }
 /** 확인한 수량 주문(jobId)으로 만든 홈페이지 초안 가운데 가장 나중 고친 판 */
 function 온라인초안고르기(drafts, jobId) {
@@ -96,7 +172,7 @@ async function releaseCore(planId, cause, now, by) {
   if (!s.plan) return { ok: false, reasons: [{ key: 'no-plan', msg: '계획이 없습니다' }], aid: planId + '_hw' };
   const d = RC.releaseDecision(Object.assign({ now, cause }, s));
   const aid = d.aid;
-  if (s.release && s.release.published === true) {
+  if ((s.release && s.release.published === true) || (s.plan.released && s.plan.released.slot)) {
     await 정리(planId).catch(() => {});
     return { ok: false, already: true, aid, reasons: d.reasons };
   }
@@ -128,27 +204,23 @@ async function releaseCore(planId, cause, now, by) {
   });
   if (!g.committed || 막힘) {
     // 겨루다 진 쪽 — 이긴 쪽이 이미 공개했으면 「이미」로 끝낸다(까닭을 남기지 않는다)
-    const 지금공개 = await val('releases/' + aid);
-    if (지금공개 && 지금공개.published === true) return { ok: false, already: true, aid };
+    const 지금공개 = await val('plans/' + planId + '/released/slot');
+    if (지금공개) return { ok: false, already: true, aid };
     return { ok: false, reasons: [{ key: 'race', msg: 막힘 || '다른 처리와 겹쳤습니다' }], aid };
   }
   const 이긴 = g.snapshot.val().released;
   if (이긴.draftId !== od._id) return { ok: false, reasons: [{ key: 'race', msg: '다른 초안이 공개되었습니다' }], aid };
 
-  // 묶음 — 없을 때만
-  let 이미 = false;
-  const w = await ref('releases/' + aid).transaction(cur => {
-    if (cur && cur.published === true) { 이미 = true; return; }
-    return Object.assign({}, 묶음, { cause: 이긴.cause, releasedAt: 이긴.at });
-  });
-  if (!w.committed && 이미) { await 정리(planId).catch(() => {}); return { ok: false, already: true, aid }; }
-  if (!w.committed) throw new Error('공개 묶음을 못 씀');
+  // [10-02 B] 숙제 칸(숙제 관리와 같은 자리)에 덧붙인다 — 같은 공개는 한 번만(세트의 prep.aid 로 가린다)
+  const 칸 = await 칸에넣기(s.slot, aid, od, 이긴, planId, rev);
+  if (칸.already) { await ref('plans/' + planId + '/released/slot').set({ key: 칸.key, from: 칸.from, count: 칸.count }); await 정리(planId).catch(() => {}); return { ok: false, already: true, aid }; }
   await Promise.all([
+    ref('plans/' + planId + '/released/slot').set({ key: 칸.key, from: 칸.from, count: 칸.count, period: s.slot.period }),
     정리(planId),
     ref('drafts/' + od._id).update({ status: 'published', published: true, publishedAt: 이긴.at }),
-    ref('releaseLog').push({ aid, planId, studentId: v.studentId, cause: 이긴.cause, at: 이긴.at, by: by || null, manifestHash: 이긴.manifestHash, draftId: od._id, planRev: rev })
+    ref('releaseLog').push({ aid, planId, studentId: v.studentId, cause: 이긴.cause, at: 이긴.at, by: by || null, manifestHash: 이긴.manifestHash, draftId: od._id, planRev: rev, slot: 칸.key, from: 칸.from, count: 칸.count })
   ]);
-  return { ok: true, released: true, aid, cause: 이긴.cause, at: 이긴.at, manifestHash: 이긴.manifestHash };
+  return { ok: true, released: true, aid, cause: 이긴.cause, at: 이긴.at, manifestHash: 이긴.manifestHash, slot: 칸.key, from: 칸.from, count: 칸.count };
 }
 async function 정리(planId) { await ref('releaseQueue/' + planId).remove(); }
 
