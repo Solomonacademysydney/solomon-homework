@@ -217,6 +217,40 @@ async function 준비(sid, lessonDate, scope) {
   재기('조판만 → 내용 유지 안내', 조판만.ok && 조판만.affects.notes.some(x => /조판만/.test(x)));
   재기('조판 값이 범위 밖이면 거절', 거절(await 부름(R.prepRequestRevision, OP, { draftId: 수종이, layout: { fontSize: 40 } }), 'BAD-LAYOUT'));
 
+  console.log('\n── [10-02] 프로젝트 결과물 등록(prepAdoptImport)');
+  {
+    const q = (i, x) => Object.assign({ id: 'q' + i, text: 'P' + i, type: 'sa', answer: String(i), hint1: '', hint2: '', explanation: 'e', srcId: 'Y7-W4-ST1-Q0' + i, taxonomy_id: 'MR.Y7.MEAS.AREA.RECT', source: 'toolchain' }, x || {});
+    await db.ref(ROOT + '/importSets/imp1').set([{ setIdx: 0, title: 'Set 1 (Y7 M2 Area - Set 1)', questions: [q(0), q(1, { type: 'mc', options: ['1', '2', '3', '4'], answer: 'B' })] },
+      { setIdx: 1, title: 'Set 2 (Y7 M2 Area - Set 2)', questions: [q(2), q(3)] }]);
+    await db.ref(ROOT + '/imports/imp1').set({ folder: '2026-09/2026-09-20', folderDate: '2026-09-20', questions: 'Y7_M2_Area_2026-09-W4_Stella_questions.json', students: ['Mina'],
+      files: [{ name: 'Y7_T4_M2_Area_Workbook_Stella_2026-09-W4.pdf', students: ['Mina'] }, { name: 'Y7_T4_M2_Area_KeyIdeas_EN-KO_2026-09-W4.pdf', students: [] }, { name: 'X_Minjun.pdf', students: ['Aron'] }],
+      ok: true, setSizes: [2, 2], count: 4, status: 'new' });
+    await db.ref(ROOT + '/imports/bad').set({ folder: 'x', folderDate: '2026-09-20', questions: 'bad_questions.json', students: [], ok: false, problems: ['정답 충돌'], status: 'new' });
+    재기('원장 아니면 거절', 거절(await 부름(R.prepAdoptImport, 'u-mina', { importId: 'imp1', studentId: 'Mina', lessonDate: '2027-03-05' }, 학생('Mina')), 'OPERATOR-ONLY'));
+    재기('못 바꾼 결과물은 등록 안 됨(까닭과 함께)', 거절(await 부름(R.prepAdoptImport, OP, { importId: 'bad', studentId: 'Mina', lessonDate: '2027-03-05' }), 'BAD-IMPORT'));
+    // 같은 수업일에 주간 설정으로 확정해 둔 주문이 있으면 → 등록이 새 판이 되고 옛 주문·초안은 멈춘다
+    const 앞 = await 부름(P.prepConfirmOrder, OP, { studentId: 'Mina', lessonDate: '2027-03-05', settings: 설정() });
+    await 종이초안(앞.planId, 앞.rev, 'Mina', '2027-03-05');
+    const 등 = await 부름(R.prepAdoptImport, OP, { importId: 'imp1', studentId: 'Mina', lessonDate: '2027-03-05' });
+    재기('등록 → 새 판(2) · 교재 초안 · 홈페이지 초안 · 2세트 4문항 · 이 학생 PDF 2개(남의 것 뺌)', 등.ok && 등.rev === 2 && 등.sets === 2 && 등.count === 4 && 등.files === 2, JSON.stringify(등));
+    const 판2 = (await v('plans/' + 등.planId + '/revisions/2')) || {};
+    재기('판에 출처 = 프로젝트 · 결과물 id · 폴더', 판2.source === 'import' && 판2.importId === 'imp1' && 판2.folder === '2026-09/2026-09-20');
+    재기('옛 판 대기 주문은 취소 · 옛 교재 초안은 무효', (await v('jobs/' + 앞.jobId + '/status')) === 'cancelled' && (await v('drafts/' + 앞.planId + '_r1_paper_aaaa/invalidatedByRev')) === 2);
+    const 교 = await v('drafts/' + 등.paperId), 온 = await v('drafts/' + 등.onlineId);
+    재기('교재 초안 = 승인됨(이번 주만 · 등록으로) · 파일 종류(교재·핵심정리)', 교.approval.approved === true && 교.approval.via === 'import' && 교.files.map(f => f.kind).join() === 'book,keyideas', JSON.stringify(교.files));
+    재기('홈페이지 초안: 문항 id·분류·출처 그대로 · 검증 = 툴체인 재유도', 온.sets[0].questions[1].srcId === 'Y7-W4-ST1-Q01' && 온.sets[0].questions[1].taxonomy_id === 'MR.Y7.MEAS.AREA.RECT' && 온.manifest.every(m => m.verify === 'toolchain-verified'));
+    const st = await 부름(R.prepReleaseStatus, OP, { planId: 등.planId });
+    재기('등록하자마자 원장 공개 조건 ✅(교재 승인·수량 확인·초안 다 있음)', st.manual.ok, JSON.stringify(st.manual.reasons));
+    const 공 = await 부름(R.prepRelease, OP, { planId: 등.planId });
+    const 묶 = await v('releases/' + 등.planId + '_hw');
+    재기('지금 공개 → 학생 묶음 2세트 · 수업일 주(3월 1주)', 공.ok && Object.keys(묶.sets).length === 2 && 묶.period.month === 3, JSON.stringify(묶 && 묶.period));
+    재기('결과물 = 등록됨 · 두 번 등록 막힘', (await v('imports/imp1/status')) === 'adopted' && 거절(await 부름(R.prepAdoptImport, OP, { importId: 'imp1', studentId: 'Mina', lessonDate: '2027-03-12' }), 'ALREADY'));
+    await db.ref(ROOT + '/imports/imp2').set({ folder: 'y', folderDate: '2026-09-20', questions: 'z_questions.json', students: [], ok: true, setSizes: [2], count: 2, status: 'new' });
+    await db.ref(ROOT + '/importSets/imp2').set([{ setIdx: 0, title: 'S', questions: [q(0), q(1)] }]);
+    재기('공개된 수업에는 등록 못 함', 거절(await 부름(R.prepAdoptImport, OP, { importId: 'imp2', studentId: 'Mina', lessonDate: '2027-03-05' }), 'PUBLISHED'));
+    재기('숨기기', (await 부름(R.prepDismissImport, OP, { importId: 'imp2' })).ok && (await v('imports/imp2/status')) === 'dismissed');
+  }
+
   await db.ref().set(null);
   console.log('\n셈 — 통과 ' + 통과 + ' · 실패 ' + 실패);
   process.exit(실패 ? 1 : 0);

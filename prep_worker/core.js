@@ -295,6 +295,31 @@ function schoolFileNews(files, known) {
     .filter(f => !(known || {})[f.id]);
 }
 
+/**
+ * [10-02] 프로젝트 결과물 파일 이름 → 주인 학생(여럿일 수 있음).
+ *   이름이 들어 있으면 이름으로, 없으면 학년·커리 표시로(Y3 = 유준 · Y4_C1W = 하경).
+ *   모르면 빈 목록 → 화면에서 원장이 고른다. 표는 설정 importNames 로 덮을 수 있다.
+ */
+const 결과물이름표 = [
+  ['Stella07', /stella/i], ['RYAN', /minjun|_MJ(\d|_|REV)/i], ['Yuel07', /yuel|_YU(\d|_)/i], ['Irene08', /irene/i],
+  ['Sean05', /sean/i], ['Hayley04', /hakyung|hayley|^Y4_C1W/i], ['Youjun03', /yujun|youjun|^Y3_/i],
+  ['Minah', /minah|_mina_/i], ['Minsu09', /minsu/i], ['MinjaeAaron', /aaron/i],
+];
+function guessStudents(fileName, table) {
+  const t = table ? Object.entries(table).map(([sid, re]) => [sid, new RegExp(re, 'i')]) : 결과물이름표;
+  return t.filter(([, re]) => re.test(String(fileName || ''))).map(([sid]) => sid);
+}
+/** 질문 파일과 짝 정답 파일 — `…_questions.json` ↔ `…_answers.json` */
+function pairJson(names) {
+  const out = [];
+  for (const n of names) {
+    if (!/_questions\.json$/i.test(n)) continue;
+    const a = n.replace(/_questions\.json$/i, '_answers.json');
+    out.push({ questions: n, answers: names.includes(a) ? a : null });
+  }
+  return out;
+}
+
 /** [6단계] 초안에 담을 문항 내용 — 원장 화면에서 미리 보고 고를 수 있게(교사·서버만 읽는 자리) */
 function itemsForDraft(slots, mr, ts) {
   const o = {};
@@ -316,5 +341,5 @@ function applyMrEdit(it, e) {
   return n;
 }
 
-module.exports = { itemsForDraft, applyMrEdit, driveDest, driveFileName, schoolFileNews, KNOWN_TYPES, LEASE_MS, canon, sha256, specHash, draftIdFor, apportion, slotsFromSpec, sampleSlots, valueOf, evalExact, sameAnswer,
+module.exports = { guessStudents, pairJson, itemsForDraft, applyMrEdit, driveDest, driveFileName, schoolFileNews, KNOWN_TYPES, LEASE_MS, canon, sha256, specHash, draftIdFor, apportion, slotsFromSpec, sampleSlots, valueOf, evalExact, sameAnswer,
   resolveChoice, checkMrItems, compareSolve, leaseDecision, usageTokens, overCap, itemIdFor, buildManifest, checkPdfText, archivePlan, safeName };

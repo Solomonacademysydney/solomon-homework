@@ -83,7 +83,7 @@ function canon(v) {
 const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
 
 // ─────────────────── 온라인 초안 → 공개 묶음 ───────────────────
-const Q_FIELDS = ['id', 'text', 'type', 'options', 'answer', 'explanation', 'hint1', 'hint2', 'srcId', 'figure', 'taxonomy_id'];
+const Q_FIELDS = ['id', 'text', 'type', 'options', 'answer', 'explanation', 'hint1', 'hint2', 'srcId', 'figure', 'taxonomy_id', 'source'];   // source = 프로젝트 결과물의 출처 칸(홈페이지 JSON 등록과 같음)
 const asArr = (x) => Array.isArray(x) ? x.filter(v => v != null) : Object.values(x || {}).filter(v => v != null);
 
 /** 초안의 세트 차례 그대로 s1, s2 … (화면 표시 차례와 setId 를 나눈다) */
@@ -149,7 +149,7 @@ function checkOnlineDraft(draft, cfg) {
       if (typeof q.figure === 'string' && /<script|\son\w+\s*=/i.test(q.figure)) p.push(이름 + ': 그림에 실행 코드');
       const m = q.srcId ? 검증[q.srcId] : null;
       if (!m) p.push(이름 + ': 명세(manifest)에 없는 문항');
-      else if (m.src === 'mr' && m.verify !== 'verified-agree' && m.verify !== 'teacher-edited') p.push(이름 + ': MR 검증 안 됨(' + (m.verify || '없음') + ')');
+      else if (m.src === 'mr' && m.verify !== 'verified-agree' && m.verify !== 'teacher-edited' && m.verify !== 'toolchain-verified') p.push(이름 + ': MR 검증 안 됨(' + (m.verify || '없음') + ')');
       for (const k of Object.keys(q)) if (Q_FIELDS.indexOf(k) < 0) p.push(이름 + ': 모르는 칸 ' + k);
     });
   });

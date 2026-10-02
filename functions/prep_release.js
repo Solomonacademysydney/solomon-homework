@@ -466,5 +466,80 @@ exports.prepCorrectRelease = onCall({ region: S.REGION }, async (req) => {
   return { ok: true, assignmentId: aid, releaseRev: 바뀜.toRev };
 });
 
+// ─────────────────── ⑩ [10-02] 프로젝트 결과물 등록 ───────────────────
+//   원장님이 프로젝트에서 만든 교재(드라이브)를 PC 일꾼이 imports/<id> 로 올려 둔다(숙제 JSON 은 홈페이지 꼴로 바꿔 둠).
+//   원장이 「이 수업으로 등록」하면: 그 학생·수업일 계획에 새 판(출처 = 프로젝트) · 교재 초안(승인됨) · 홈페이지 초안 ·
+//   승인 자리(교재 + 수량) · 20:00 예약 → 이후는 같은 공개 셈(지금 공개 / 20:00 자동).
+//   교재 문항은 프로젝트 툴체인이 정답을 따로 다시 셈해 맞춘 것 → 검증 표시 'toolchain-verified'.
+const 파일종류 = (n) => /MarkingGuide|Answer|정답|교사/i.test(n) ? 'teacher' : /KeyIdeas|EN-KO/i.test(n) ? 'keyideas' : /Workbook|교재/i.test(n) ? 'book'
+  : /Homework|숙제|HW/i.test(n) ? 'hw' : /Test|테스트/i.test(n) ? 'test' : 'other';
+exports.prepAdoptImport = onCall({ region: S.REGION }, async (req) => {
+  const uid = 원장만(req);
+  const d = req.data || {};
+  const id = 열쇠(d.importId, 'importId');
+  const sid = 열쇠(d.studentId, 'studentId');
+  if (!날짜꼴(d.lessonDate)) throw new HttpsError('invalid-argument', 'BAD-INPUT:lessonDate');
+  const lessonDate = String(d.lessonDate);
+  const imp = await val('imports/' + id);
+  if (!imp) throw new HttpsError('not-found', 'NO-IMPORT');
+  if (imp.status === 'adopted') throw new HttpsError('failed-precondition', 'ALREADY', { why: '이미 등록한 결과물입니다(' + ((imp.adopted || {}).planId || '') + ')' });
+  const impSets = imp.ok === true ? await val('importSets/' + id) : null;
+  if (imp.ok !== true || !impSets || !asArr(impSets).length) throw new HttpsError('failed-precondition', 'BAD-IMPORT', { why: '숙제 JSON 을 바꾸지 못한 결과물입니다 — ' + (imp.problems || []).slice(0, 3).join(' · ') });
+  const now = Date.now(), at = iso(now);
+  const planId = sid + '_' + lessonDate.replace(/-/g, '') + '_1';
+  // 판 — 공개된 수업이면 막는다(공개 문지기와 같은 자리를 겨룬다)
+  let 공개됨 = false;
+  const sets = asArr(impSets).map((s, i) => Object.assign({}, s, { setIdx: i, questions: asArr(s.questions).map(q => Object.assign({}, q)) }));
+  const man = [];
+  sets.forEach((s, si) => s.questions.forEach((q, qi) => {
+    if (!q.srcId) q.srcId = 'imp-' + id.slice(0, 8) + '-' + si + '-' + qi;
+    man.push({ itemId: q.srcId, itemRevision: 1, src: 'mr', set: si, verify: 'toolchain-verified' });
+  }));
+  const 크기 = sets.map(s => s.questions.length);
+  const config = { mrSets: sets.length, tsSets: 0, perSet: 크기.every(n => n === 크기[0]) ? 크기[0] : 0, daily: false, dupPolicy: 'avoid' };
+  const t = await ref('plans/' + planId).transaction(cur => {
+    공개됨 = false;
+    const c = cur || {};
+    if (c.released) { 공개됨 = true; return; }
+    const rev = (Number(c.latest) || 0) + 1;
+    const revs = Object.assign({}, c.revisions || {});
+    revs[rev] = { rev, studentId: sid, lessonDate, confirmedAt: at, by: uid, source: 'import', importId: id, folder: imp.folder,
+      spec: { studentId: sid, lessonDate, parts: [Object.assign({ kind: 'online-hw', afterPaperApproval: true }, config)] } };
+    return Object.assign({}, c, { latest: rev, revisions: revs });
+  });
+  if (공개됨 || !t.committed) throw new HttpsError('failed-precondition', 'PUBLISHED', { why: '이미 공개된 수업입니다 — 공개된 숙제는 「정정」으로' });
+  const rev = Number(t.snapshot.val().latest);
+  const paperId = planId + '_r' + rev + '_paper_imp_' + id.slice(0, 8);
+  const onlineId = planId + '_r' + rev + '_online_imp_' + id.slice(0, 8);
+  const files = (imp.files || []).filter(f => f && (!(f.students || []).length || (f.students || []).includes(sid)))
+    .map(f => ({ kind: 파일종류(f.name), name: f.name, rel: imp.folder, where: 'drive-project' }));
+  const 고칠 = {};
+  고칠['drafts/' + paperId] = { kind: 'paper', source: 'import', importId: id, planId, planRev: rev, studentId: sid, lessonDate, files,
+    qa: { ok: true, via: 'toolchain' }, status: 'paperApproved', approval: { approved: true, scope: 'thisWeek', at, by: uid, via: 'import' }, published: false, createdAt: at };
+  고칠['drafts/' + onlineId] = { kind: 'online', source: 'import', importId: id, jobId: 'import:' + id, sourceDraftId: paperId, planId, planRev: rev, studentId: sid, lessonDate,
+    sets, manifest: man, status: 'onlineReview', published: false, createdAt: at };
+  고칠['plans/' + planId + '/approvals/' + rev] = { paper: { draftId: paperId, at, by: uid, scope: 'thisWeek', via: 'import' },
+    online: { config, scope: 'thisWeek', at, by: uid, jobId: 'import:' + id, via: 'import' } };
+  고칠['imports/' + id + '/status'] = 'adopted';
+  고칠['imports/' + id + '/adopted'] = { studentId: sid, planId, rev, lessonDate, at, by: uid };
+  // 옛 판 초안 무효 · 이 계획의 대기 주문 취소(일꾼이 따로 만들지 않게)
+  const 옛초안 = (await db().ref(ROOT + '/drafts').orderByChild('planId').equalTo(planId).once('value')).val() || {};
+  for (const [k, x] of Object.entries(옛초안)) if (x && Number(x.planRev) < rev && x.published !== true && !x.invalidatedByRev) { 고칠['drafts/' + k + '/invalidatedByRev'] = rev; 고칠['drafts/' + k + '/invalidatedAt'] = at; }
+  const 옛주문 = (await db().ref(ROOT + '/jobs').orderByChild('planId').equalTo(planId).once('value')).val() || {};
+  for (const [k, j] of Object.entries(옛주문)) { if (!j) continue; if (j.status === 'queued') 고칠['jobs/' + k + '/status'] = 'cancelled'; else if (j.status === 'running') 고칠['jobs/' + k + '/status'] = 'cancel-requested'; }
+  await ref(null).update(고칠);
+  await 예약확보(planId, sid, lessonDate, now);
+  return { ok: true, planId, rev, paperId, onlineId, sets: sets.length, count: man.length, files: files.length };
+});
+exports.prepDismissImport = onCall({ region: S.REGION }, async (req) => {
+  원장만(req);
+  const id = 열쇠(req.data && req.data.importId, 'importId');
+  const imp = await val('imports/' + id);
+  if (!imp) throw new HttpsError('not-found', 'NO-IMPORT');
+  if (imp.status === 'adopted') throw new HttpsError('failed-precondition', 'ALREADY');
+  await ref('imports/' + id + '/status').set('dismissed');
+  return { ok: true };
+});
+
 // 시험용
-exports._internals = { releaseCore, tickOnce, 모으기, 예약확보, 온라인초안고르기, affectsOf };
+exports._internals = { releaseCore, tickOnce, 모으기, 예약확보, 온라인초안고르기, affectsOf, 파일종류 };

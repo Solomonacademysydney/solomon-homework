@@ -377,3 +377,5 @@ exports.prepRelease = _rel.prepRelease;
 exports.prepReleaseTick = _rel.prepReleaseTick;
 exports.prepLessonControl = _rel.prepLessonControl;
 exports.prepCorrectRelease = _rel.prepCorrectRelease;
+exports.prepAdoptImport = _rel.prepAdoptImport;     // [10-02] 프로젝트 결과물 → 이 수업으로 등록
+exports.prepDismissImport = _rel.prepDismissImport; // [10-02] 들어온 결과물 숨기기

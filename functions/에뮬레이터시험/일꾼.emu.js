@@ -73,7 +73,7 @@ async function 주문(날, s) {
 
 (async () => {
   await db.ref().set(null);
-  const 규칙 = fs.readFileSync(path.join(__dirname, '..', '..', 'backup', process.env.RULES_FILE || 'database.rules.6단계b.json'), 'utf8');
+  const 규칙 = fs.readFileSync(path.join(__dirname, '..', '..', 'backup', process.env.RULES_FILE || 'database.rules.6단계c.json'), 'utf8');
   const rr = await fetch(`http://${DB}/.settings/rules.json?ns=demo-solomon`, { method: 'PUT', headers: { Authorization: 'Bearer owner' }, body: 규칙 });
   if (!rr.ok) throw new Error('규칙 올리기 실패 ' + rr.status);
   await db.ref('sol_prep_v1/students/emu5').set({ profile: { currentCurriculum: 'r1', name: 'Emu Five', koName: '시험오', year: 'Year 5' },
@@ -258,6 +258,32 @@ async function 주문(날, s) {
     const 묶 = await 값('sol_prep_v1/releases/' + o4.planId + '_hw');
     재기('일꾼이 만든 초안 → 원장 공개 → 학생 묶음(세트 1 · 문항 2)', 공.ok && 묶 && 묶.published === true && Object.keys(묶.sets).length === 1 && 묶.sets.s1.questions.length === 2, JSON.stringify(공));
     재기('일꾼은 공개 묶음을 못 읽는다(정답 있음)', await 거절됨(() => fb.get('sol_prep_v1/releases/' + o4.planId + '_hw')));
+  }
+
+  console.log('\n── [10-02] 프로젝트 결과물 찾기 — 임시 「교재보관」 폴더에 진짜 별이 9-20 JSON 을 복사해 둔다');
+  {
+    const 원본 = 'G:/내 드라이브/Solomon_교재보관/2026-09/2026-09-20';
+    if (fs.existsSync(원본 + '/Y7_M2_Area_2026-09-W4_Stella_questions.json')) {
+      const 보관 = path.join(바탕, '교재보관'), 오늘폴더 = new Date().toISOString().slice(0, 10), 달 = 오늘폴더.slice(0, 7);
+      const 폴더 = path.join(보관, 달, 오늘폴더); fs.mkdirSync(폴더, { recursive: true });
+      for (const n of ['Y7_M2_Area_2026-09-W4_Stella_questions.json', 'Y7_M2_Area_2026-09-W4_Stella_answers.json']) fs.copyFileSync(원본 + '/' + n, path.join(폴더, n));
+      fs.writeFileSync(path.join(폴더, 'Y7_T4_M2_Area_Workbook_Stella_2026-09-W4.pdf'), '%PDF');
+      fs.writeFileSync(path.join(폴더, 'Y7_T4_M2_Area_KeyIdeas_EN-KO_2026-09-W4.pdf'), '%PDF');
+      fs.writeFileSync(path.join(폴더, 'Y5_W39_questions.json'), JSON.stringify({ questions: [{ set: 'A', number: 1, type: 'SA', question_text: 'x' }] }));   // 주인 모름 · 정답 파일 없음
+      const 옛달 = path.join(보관, '2020-01', '2020-01-05'); fs.mkdirSync(옛달, { recursive: true }); fs.copyFileSync(원본 + '/Y7_M2_Area_2026-09-W4_Stella_questions.json', path.join(옛달, 'old_questions.json'));
+      const cI = 설정('결과물', { drive: { root: path.join(보관, '학생별 교재'), curriculumRoot: path.join(바탕, '찾기없음') }, importState: path.join(바탕, '결과물상태.json') });
+      const g1 = await W.결과물찾기(cI, fb);
+      const 목록 = (await 값('sol_prep_v1/imports')) || {};
+      const 별 = Object.values(목록).find(m => /Stella_questions/.test(m.questions));
+      재기('별이 JSON → 결과물 하나(주인 Stella07 · 6세트 120문항 · PDF 2개 · 상태 new)', 별 && 별.ok && JSON.stringify(별.students) === '["Stella07"]' && 별.setSizes.length === 6 && 별.count === 120 && 별.files.length === 2 && 별.status === 'new', JSON.stringify(g1) + JSON.stringify(별 && Object.assign({}, 별, { files: undefined })));
+      const 별id = Object.keys(목록).find(k => 목록[k] === 별);
+      const 문항 = (await 값('sol_prep_v1/importSets/' + 별id)) || [];
+      재기('문항 본문은 따로(importSets) · 홈페이지 꼴(q0 · 정답 글자 · 분류)', 문항.length === 6 && 문항[0].questions[0].id === 'q0' && /^[A-D]$/.test(문항[0].questions[0].answer) && !!문항[0].questions[0].taxonomy_id);
+      const 모름 = Object.values(목록).find(m => /Y5_W39/.test(m.questions));
+      재기('이름 없는 Y5 JSON → 주인 모름(원장이 고름)', 모름 && (모름.students || []).length === 0);
+      재기('30일보다 옛 폴더는 안 봄', !Object.values(목록).some(m => /old_questions/.test(m.questions)));
+      재기('다시 돌려도 같은 결과물은 또 안 올림', (await W.결과물찾기(cI, fb)).올림.length === 0);
+    } else 재기('(드라이브 원본이 없어 건너뜀)', true);
   }
 
   console.log('\n── [10-02] 툴체인 챙기기 — 드라이브의 진짜 툴체인을 임시 폴더에 풀어 단원 목록을 올린다(드라이브는 읽기만)');

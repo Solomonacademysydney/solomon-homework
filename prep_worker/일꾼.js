@@ -566,9 +566,55 @@ async function 툴체인챙기기(cfg, fb, force) {
   return { rev, 단원수: units.length };
 }
 
+/**
+ * [10-02] 프로젝트 결과물 찾기 — 원장님이 프로젝트에서 만든 교재를 드라이브 `Solomon_교재보관/<YYYY-MM>/<YYYY-MM-DD>/` 에
+ *   저장하면, 그 폴더의 플랫폼 숙제 JSON(…_questions.json + …_answers.json)을 홈페이지 꼴로 바꿔(mr_변환 = 홈페이지와 같은 규칙)
+ *   sol_prep_v1/imports/<id> 에 올린다. 같은 폴더의 PDF 이름도 함께 — 「검토·공개」에서 원장이 「이 수업으로 등록」한다.
+ *   ⛔ 드라이브는 읽기만 · 일꾼은 imports 에 새로 적기만(규칙) · 등록·공개는 원장(서버 함수)
+ */
+async function 결과물찾기(cfg, fb) {
+  const 바탕 = path.dirname(String((cfg.drive || {}).root || ''));
+  if (!바탕 || !fs.existsSync(바탕)) return { skipped: '교재보관 폴더 없음' };
+  const 며칠 = (cfg.importDays || 30), 끝 = new Date(Date.now() - 며칠 * 86400000).toISOString().slice(0, 10);
+  const 상태파일 = cfg.importState || 'C:/솔로몬제작/결과물_상태.json';
+  const 본 = fs.existsSync(상태파일) ? JSON.parse(fs.readFileSync(상태파일, 'utf8')) : {};
+  const 올림 = [], 실패 = [];
+  for (const 달 of fs.readdirSync(바탕).filter(x => /^\d{4}-\d{2}$/.test(x)).sort()) {
+    for (const 날 of fs.readdirSync(path.join(바탕, 달)).filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x) && x >= 끝).sort()) {
+      const 폴더 = path.join(바탕, 달, 날);
+      if (!fs.statSync(폴더).isDirectory()) continue;
+      const 이름들 = fs.readdirSync(폴더);
+      const pdf = 이름들.filter(n => /\.pdf$/i.test(n));
+      for (const 짝 of C.pairJson(이름들)) {
+        const qp = path.join(폴더, 짝.questions), 크기 = fs.statSync(qp).size;
+        const id = C.sha256(달 + '/' + 날 + '/' + 짝.questions + '|' + 크기).slice(0, 16);
+        if (본[id]) continue;
+        const outp = path.join(cfg.workRoot, '_결과물', id + '.json');
+        fs.mkdirSync(path.dirname(outp), { recursive: true });
+        const r = spawnSync(cfg.python || 'python', [path.join(__dirname, '결과물_변환.py'), cfg.tsRoot || 'C:/TS작업', qp, 짝.answers ? path.join(폴더, 짝.answers) : '', outp],
+          { encoding: 'utf8', env: Object.assign({}, process.env, { PYTHONUTF8: '1' }) });
+        if (r.status !== 0 || !fs.existsSync(outp)) { 실패.push(짝.questions + ': ' + (r.stderr || '').slice(-200)); continue; }
+        const 변환 = JSON.parse(fs.readFileSync(outp, 'utf8'));
+        const 주인 = C.guessStudents(짝.questions, cfg.importNames);
+        const 자료 = { folder: 달 + '/' + 날, folderDate: 날, questions: 짝.questions, answers: 짝.answers, size: 크기,
+          students: 주인, files: pdf.map(n => ({ name: n, students: C.guessStudents(n, cfg.importNames) })),
+          ok: 변환.ok === true, problems: 변환.ok ? null : (변환.problems || []).slice(0, 30), setSizes: 변환.ok ? 변환.sets.map(x => x.questions.length) : null,
+          count: 변환.count || 0, status: 'new', foundAt: iso(), worker: cfg.workerId };
+        try { if (변환.ok) await fb.put(ROOT + '/importSets/' + id, 변환.sets); await fb.put(ROOT + '/imports/' + id, 자료); }
+        catch (e) { if (e.status === 401 || e.status === 403) { 본[id] = '이미 있음'; continue; } throw e; }
+        본[id] = 날 + ' ' + 짝.questions; 올림.push(짝.questions);
+      }
+    }
+  }
+  fs.writeFileSync(상태파일, JSON.stringify(본));
+  if (올림.length || 실패.length) 기록(cfg, { msg: '프로젝트 결과물 찾음', 올림, 실패 });
+  return { 올림, 실패 };
+}
+
 /* ── 주문 훑기 ── */
 async function 한바퀴(cfg, fb, opts) {
   if (!opts.noScan) { try { const s = await 학교자료찾기(cfg, fb); if (s.적음 && (s.적음.length || s.미연결.length)) console.log('학교 자료: ' + JSON.stringify(s)); } catch (e) { 기록(cfg, { msg: '학교 자료 찾기 실패', error: e.message }); } }
+  if (!opts.noScan) { try { const g = await 결과물찾기(cfg, fb); if (g.올림 && (g.올림.length || g.실패.length)) console.log('결과물: ' + JSON.stringify(g)); } catch (e) { 기록(cfg, { msg: '결과물 찾기 실패', error: e.message }); } }
   if (!opts.noScan) { try { const k = await 툴체인챙기기(cfg, fb, false); if (k.rev) console.log('툴체인: ' + JSON.stringify(k)); } catch (e) { 기록(cfg, { msg: '툴체인 챙기기 실패', error: e.message }); } }
   const jobs = (await fb.get(ROOT + '/jobs')) || {};
   const 결과 = [];
@@ -657,5 +703,5 @@ async function main() {
   console.log(JSON.stringify(r, null, 1));
 }
 
-module.exports = { 툴체인챙기기, 학교자료찾기, 폴더이름, 답모으기, 처리, 한바퀴, 설정읽기, 보관, 자동켜짐, 프롬프트, 스키마, 정리 };
+module.exports = { 결과물찾기, 툴체인챙기기, 학교자료찾기, 폴더이름, 답모으기, 처리, 한바퀴, 설정읽기, 보관, 자동켜짐, 프롬프트, 스키마, 정리 };
 if (require.main === module) main().catch(e => { console.error('⛔ ' + (e && e.stack || e)); process.exit(1); });
