@@ -159,6 +159,9 @@ async function 아이고르기(sid) {
   // [5단계] 이 학생 주문만(계획 id 가 「학생_」로 시작) · 완전 자동 스위치
   const [jobs, auto] = await Promise.all([읽기(새뿌리 + '/jobs', (r) => r.orderByChild('planId').startAt(sid + '_').endAt(sid + '_\uf8ff')), 읽기(새뿌리 + '/config/autoProduce')]);
   판.autoProduce = auto === true;
+  // [6단계] 기본값(수동 승인 때만 저장) · 자동 공개 스위치
+  const [prefs, autoRel] = await Promise.all([읽기(새뿌리 + '/students/' + sid + '/preferences'), 읽기(새뿌리 + '/config/autoRelease')]);
+  판.autoRelease = autoRel === true;
   const submissions = Object.assign({}, mr || {}, ts || {});
   const 분석 = C.analyzeHomework({ user: u, periods, homeworkSets: hw, submissions, releases: 판.releases, prepSubs: 판.prepSubs, normAns: C.normAns });
   설정편집 = null;
@@ -174,19 +177,20 @@ async function 아이고르기(sid) {
     if ((판.inbox || {})[sid]) 새것.forEach(x => { if (판.inbox[sid][x.inboxId]) 판.inbox[sid][x.inboxId].status = 'imported'; });
     목록그리기();
   }
-  아이자료 = { u, win, periods, 분석, plans: plans || {}, jobs: jobs || {}, weak: weak || {}, profile: prof || {}, curricula: curs || {}, sources: srcs || {}, results: results || {}, drafts: drafts || {} };
+  아이자료 = { u, win, periods, 분석, prefs: prefs || {}, plans: plans || {}, jobs: jobs || {}, weak: weak || {}, profile: prof || {}, curricula: curs || {}, sources: srcs || {}, results: results || {}, drafts: drafts || {} };
   카드그리기();
 }
 
 function 카드그리기() {
   const a = 아이자료; if (!a) return;
-  const 탭 = ['현황', '주간 설정', '종이 시험', '커리·학교 자료', '지난 교재'].map(t => `<button class="${t === 고른탭 ? '고름' : ''}" onclick="고른탭='${t}';카드그리기()">${t}</button>`).join('');
+  const 탭 = ['현황', '주간 설정', '검토·공개', '종이 시험', '커리·학교 자료', '지난 교재'].map(t => `<button class="${t === 고른탭 ? '고름' : ''}" onclick="고른탭='${t}';카드그리기()">${t}</button>`).join('');
   const 검토 = C.needsCurriculumReview(a.sources);
   let 몸 = '';
   if (고른탭 === '현황') 몸 = 현황그리기(a);
   else if (고른탭 === '주간 설정') 몸 = 설정그리기(a);
   else if (고른탭 === '종이 시험') 몸 = 시험그리기(a);
   else if (고른탭 === '지난 교재') 몸 = 지난그리기(a);
+  else if (고른탭 === '검토·공개') 몸 = 검토그리기(a);
   else 몸 = 커리그리기(a);
   document.getElementById('카드').innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
       <h2 style="margin:0">${글(a.u.name || a.u.id)} <span class="작게">Y${글(a.u.year)} ${글(a.u.group || '')}</span></h2>
@@ -228,8 +232,11 @@ function 현재커리(a) { const r = a.profile.currentCurriculum; return r ? a.c
 // ── 주간 설정 · 제작 주문 (4단계) ──
 const OC = window.OrderCore;
 let 설정편집 = null;   // { lessonDate, settings, base, source, thisWeekOnly:Set, free, 결과, 승인판 }
-/** 이 학생의 가장 최근 **확정** 판(취소 초안·마지막 입력값이 아니다) */
+/** 지난 승인값 — [6단계] 교재 승인 때 「다음 주 기본값에도」로 저장한 값이 먼저(자동 공개는 기본값을 안 바꾼다).
+ *  없으면 이 학생의 가장 최근 **확정** 판(취소 초안·마지막 입력값이 아니다) */
 function 지난승인(a) {
+  const p = a.prefs && a.prefs.paper;
+  if (p && p.settings) return { settings: p.settings, thisWeekOnly: p.thisWeekOnly || [], rev: p.rev, lessonDate: p.planId, 기본값: true };
   let 최근 = null;
   for (const id of Object.keys(a.plans || {})) {
     const pl = a.plans[id]; const v = pl && pl.revisions && pl.latest ? pl.revisions[pl.latest] : null;
@@ -383,6 +390,295 @@ async function 파일받기(경로, 이름, 보기만) {
     if (보기만) { if (보는파일) URL.revokeObjectURL(보는파일.url); 보는파일 = { url, 이름 }; 카드그리기(); }
     else { const l = document.createElement('a'); l.href = url; l.download = 이름; document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000); }
   } catch (e) { 알림('❌ 파일을 못 받음 — ' + e.message); }
+}
+
+// ── 검토·공개 (6단계) ──
+//   미리보기 → 부분 수정(다시 만들기·고치기·조판만) → 교재 승인(이번 주만 / 기본값에도) → 홈페이지 숙제 수량 확인 →
+//   홈페이지 숙제 미리보기·고치기 → 공개 조건 → 지금 공개 · 공개 보류 · 휴강 · 수업일 변경 · 공개 뒤 정정
+//   ⛔ 쓰기는 전부 서버 함수로(승인·예약·공개는 규칙이 화면 쓰기를 막는다). 이 화면이 직접 쓰는 것은 자동 공개 스위치 하나.
+//   ⛔ 글칸은 oninput 으로 값만 담는다 — 카드를 다시 그리지 않는다(10-02 「확정 클릭이 사라짐」과 같은 함정을 피한다).
+const 검토 = { 상태: {}, 다시: {}, 고칠: {}, 조판: {}, 수량: {}, 온고칠: {}, 정정: {}, 정답보기: {}, 열린고치기: {} };
+const 구역말 = { test: '테스트지', book: '교재', hw: '숙제' };
+const 파일이름말 = { test: '테스트지', book: '교재', hw: '숙제', student: '학생용 전체', teacher: '교사용 답지', items: '원본 JSON', qa: '검수 기록' };
+const 예약말 = { scheduled: '예약됨', held: '⏸ 원장 보류', cancelled: '🚫 휴강', published: '✅ 공개됨' };
+async function 부르기(이름, data) {
+  const fn = firebase.app().functions('australia-southeast1').httpsCallable(이름);
+  try { return (await fn(data)).data; }
+  catch (e) {
+    const d = e.details || {};
+    const 까닭 = d.why || (d.reasons || []).map(x => x.msg).join(' · ') || (d.problems || []).join(' · ') || '';
+    throw new Error((e.message || e.code) + (까닭 ? ' — ' + 까닭 : ''));
+  }
+}
+async function 검토새로(sid, planId) {
+  if (planId) delete 검토.상태[planId];
+  const 새공개 = await 읽기(새뿌리 + '/releases', r => r.orderByChild('studentId').equalTo(sid));
+  if (새공개) 판.releases = Object.assign({}, 판.releases, 새공개);
+  await 아이고르기(sid);
+}
+function 그림(svg) {
+  const s = String(svg || '');
+  if (!/^\s*<svg[\s>]/i.test(s) || /<script|\son\w+\s*=|javascript:/i.test(s)) return '<div class="작게">[그림 — 안전하지 않아 생략]</div>';
+  return '<div style="max-width:320px;margin:4px 0">' + s + '</div>';
+}
+/** 이 계획의 지금 교재 초안 — 지금 판 · 무효 아님 · 고친 새 초안이 없는 것 */
+function 지금교재(a, planId, rev) {
+  const 줄 = Object.entries(a.drafts || {}).filter(([, d]) => d && d.planId === planId && d.kind === 'paper' && Number(d.planRev) === Number(rev) && !d.invalidatedByRev);
+  const 부모 = new Set(줄.map(([, d]) => d.parentDraftId).filter(Boolean));
+  const 끝 = 줄.filter(([id]) => !부모.has(id)).sort((x, y) => (Number(y[1].revision) || 0) - (Number(x[1].revision) || 0));
+  return 끝.length ? { id: 끝[0][0], d: 끝[0][1], 옛: 줄.filter(([id]) => id !== 끝[0][0]) } : null;
+}
+function 지금온라인(a, jobId) {
+  let 고름 = null;
+  for (const [id, d] of Object.entries(a.drafts || {})) if (d && d.kind === 'online' && jobId && d.jobId === jobId && (!고름 || (Number(d.editRev) || 0) > (Number(고름.d.editRev) || 0))) 고름 = { id, d };
+  return 고름;
+}
+function 검토그리기(a) {
+  const 계획 = Object.entries(a.plans || {}).filter(([, p]) => p && p.latest && p.revisions && p.revisions[p.latest])
+    .sort((x, y) => String(y[1].revisions[y[1].latest].lessonDate).localeCompare(String(x[1].revisions[x[1].latest].lessonDate))).slice(0, 3);
+  const 스위치 = `<div class="섹 작게">자동 공개(수업일 시드니 20:00): <label><input type="checkbox" ${판.autoRelease === true ? 'checked' : ''} onchange="자동공개바꿈(this.checked)"> 켜기</label>
+    — 켜면 <b>조건을 다 갖춘 숙제만</b> 서버가 공개합니다(PC 가 꺼져 있어도). 원장 공개(지금 공개)는 스위치와 상관없이 됩니다. 자동 공개는 기본값을 바꾸지 않습니다.</div>`;
+  if (!계획.length) return 스위치 + '<div class="작게">확정한 제작 방향이 없습니다 — 「주간 설정」에서 먼저 확정하세요.</div>';
+  return 스위치 + 계획.map(([planId, pl]) => 계획카드(a, planId, pl)).join('');
+}
+function 계획카드(a, planId, pl) {
+  const rev = Number(pl.latest), v = pl.revisions[rev], sch = pl.schedule || null, ap = (pl.approvals || {})[rev] || {};
+  const aid = planId + '_hw', 공개 = 판.releases[aid];
+  const st = 검토.상태[planId];
+  if (!st && !검토.상태['_불러옴_' + planId]) { 검토.상태['_불러옴_' + planId] = true; 부르기('prepReleaseStatus', { planId }).then(r => { 검토.상태[planId] = r; delete 검토.상태['_불러옴_' + planId]; if (고른탭 === '검토·공개') 카드그리기(); }).catch(e => { 검토.상태[planId] = { error: e.message }; delete 검토.상태['_불러옴_' + planId]; }); }
+  const 교재 = 지금교재(a, planId, rev);
+  const 온 = 지금온라인(a, ap.online && ap.online.jobId);
+  const 날 = (sch && sch.lessonDate) || v.lessonDate;
+  const 예약 = sch ? `공개 예정 <b>${글(sch.releaseAtSydney || '')}</b>(시드니) · <b>${글(예약말[sch.state] || sch.state)}</b>
+      ${sch.lastCheck && sch.state === 'scheduled' ? '<div class="경고">20:00 에 공개 못 함 — ' + 글((sch.lastCheck.reasons || []).map(x => x.msg).join(' · ')) + '</div>' : ''}` : '<span class="작게">공개 예약 없음(확정하면 생깁니다)</span>';
+  const 단추 = !sch || sch.state === 'published' ? '' : `<div style="margin-top:4px">
+      ${sch.state === 'held' ? `<button onclick="수업다루기('${글(planId)}','unhold')">보류 해제</button>` : sch.state === 'scheduled' ? `<button onclick="수업다루기('${글(planId)}','hold')">공개 보류</button>` : ''}
+      ${sch.state === 'cancelled' ? `<button onclick="수업다루기('${글(planId)}','restore')">휴강 되살리기</button>` : `<button onclick="수업다루기('${글(planId)}','cancel')">휴강</button>`}
+      <input type="date" id="새날_${글(planId)}" value="${글(날)}"> <button onclick="수업다루기('${글(planId)}','changeDate')">수업일 변경</button>
+      <span class="작게">보류·휴강은 저절로 풀리지 않습니다 · 수업일을 바꾸면 공개 시각을 다시 셉니다</span></div>`;
+  return `<div class="판" style="margin-bottom:12px">
+    <h3 style="margin:0 0 4px">${글(날)} 수업 · 제작 방향 판 ${rev}</h3>
+    <div class="섹">${예약}${단추}</div>
+    ${공개 ? 공개됨그리기(planId, aid, 공개) : `
+      ${교재그리기(a, planId, rev, ap, 교재)}
+      ${수량그리기(a, planId, pl, rev, ap, 교재)}
+      ${온 ? 온라인그리기(planId, 온) : ''}
+      ${공개조건그리기(planId, st)}`}
+  </div>`;
+}
+
+// ── 교재 ──
+function 교재그리기(a, planId, rev, ap, 교재) {
+  if (!교재) {
+    const 주문 = Object.values(a.jobs || {}).filter(j => j.planId === planId && Number(j.rev) === rev && j.type !== 'prep-online').sort((x, y) => String(y.createdAt).localeCompare(String(x.createdAt)))[0];
+    return `<div class="섹"><b>교재</b> — <span class="작게">아직 없음${주문 ? ' · 주문 ' + 글(상태말[주문.status] || 주문.status) + (주문.status === 'queued' ? ' (Claude Code 에 「확정 주문 처리해」)' : '') : ''}</span></div>`;
+  }
+  const { id, d } = 교재;
+  const 승인됨 = d.approval && d.approval.approved;
+  const 파일 = (d.files || []).map(f => f.where === 'drive' ? `<a href="${C.driveSearchUrl(f.name)}" target="_blank" rel="noopener">${글(파일이름말[f.kind] || f.kind)}${f.pages ? '(' + f.pages + '쪽)' : ''} ↗</a>` : 글(파일이름말[f.kind] || f.kind)).join(' · ');
+  const 수정주문 = Object.values(a.jobs || {}).filter(j => j.type === 'prep-revise' && j.sourceDraftId === id && ['queued', 'running', 'held', 'failed'].indexOf(j.status) >= 0);
+  const 바뀐것 = (d.changes || []).length ? '<div class="작게">이번 수정: ' + d.changes.map(c => 글(c.slot) + ' ' + (c.action === 'edit' ? '고침' : '다시 만듦')).join(' · ') + (d.contentKept ? ' · 조판만' : '') + '</div>' : (d.contentKept ? '<div class="작게">이번 수정: 조판만(내용 그대로)</div>' : '');
+  const 경고 = (d.warnings || []).length ? '<div class="경고">⚠ ' + d.warnings.map(글).join('<br>⚠ ') + '</div>' : '';
+  const 표 = d.items ? 문항표(id, d, 승인됨) : '<div class="작게">이 초안에는 문항 내용이 없습니다(6단계 전에 만든 초안) — PDF 로 보세요. 부분 수정은 새로 만든 초안부터 됩니다.</div>';
+  const 승인단추 = 승인됨 ? `<span class="딱지 좋음">교재 승인 (${글(d.approval.scope === 'default' ? '기본값에도' : '이번 주만')})</span>`
+    : `<button class="주" ${d.sample || !(d.qa && d.qa.ok) || 수정주문.length ? 'disabled' : ''} onclick="교재승인('${글(id)}','thisWeek')">교재 승인 — 이번 주만</button>
+       <button class="주" ${d.sample || !(d.qa && d.qa.ok) || 수정주문.length ? 'disabled' : ''} onclick="교재승인('${글(id)}','default')">교재 승인 — 다음 주 기본값에도</button>
+       ${d.sample ? '<span class="경고">표본은 승인할 수 없습니다</span>' : ''}${수정주문.length ? '<span class="경고">수정 주문이 남아 있습니다(' + 글(상태말[수정주문[0].status] || 수정주문[0].status) + ')</span>' : ''}`;
+  return `<div class="섹"><b>교재</b> ${d.revision ? '<span class="딱지">수정 ' + d.revision + '</span>' : ''} ${d.sample ? '<span class="경고">표본</span>' : ''}
+    <div>${파일}</div>${바뀐것}${경고}
+    ${(d.files || []).some(f => f.where === 'drive') ? `<div class="작게">드라이브: Solomon_교재보관 › 학생별 교재 › ${글(((d.files || [])[0] || {}).rel || '')}</div>` : ''}
+    ${표}<div style="margin-top:6px">${승인단추}</div></div>`;
+}
+function 문항표(id, d, 승인됨) {
+  const 다시 = 검토.다시[id] || (검토.다시[id] = new Set());
+  const 고칠 = 검토.고칠[id] || (검토.고칠[id] = {});
+  const 줄 = (d.manifest || []).map(m => {
+    const it = (d.items || {})[m.slot] || {};
+    const 열림 = 검토.열린고치기[id + '|' + m.slot];
+    const 고침칸 = 열림 && it.src === 'mr' ? `<tr><td colspan="6" style="background:var(--바탕)">
+        <div class="작게">문제</div><textarea style="width:100%" rows="2" oninput="고칠값('${글(id)}','${글(m.slot)}','stem',this.value)">${글((고칠[m.slot] || {}).stem != null ? 고칠[m.slot].stem : it.stem)}</textarea>
+        ${it.type === 'mc' ? '<div class="작게">보기 4개</div>' + [0, 1, 2, 3].map(k => `<input style="width:24%" value="${글(((고칠[m.slot] || {}).choices || it.choices || [])[k] || '')}" oninput="고칠보기('${글(id)}','${글(m.slot)}',${k},this.value)">`).join('') : ''}
+        <div class="작게">정답</div><input value="${글((고칠[m.slot] || {}).answer != null ? 고칠[m.slot].answer : it.answer)}" oninput="고칠값('${글(id)}','${글(m.slot)}','answer',this.value)">
+        <div class="작게">풀이</div><textarea style="width:100%" rows="2" oninput="고칠값('${글(id)}','${글(m.slot)}','working',this.value)">${글((고칠[m.slot] || {}).working != null ? 고칠[m.slot].working : (it.working || ''))}</textarea></td></tr>` : '';
+    return `<tr><td>${글(m.slot)}</td><td>${글(구역말[m.section] || m.section)}</td><td>${it.src === 'ts' ? 'TS L' + 글(it.level || '') : 'MR'}</td>
+      <td>${글(String(it.stem || '').slice(0, 140))}${it.figure ? ' <span class="작게">[그림]</span>' : ''}${it.choices ? '<div class="작게">' + it.choices.map((c, k) => 'ABCD'[k] + '. ' + 글(c)).join(' · ') + '</div>' : ''}</td>
+      <td>${글(it.answer)}<div class="작게">${글(it.verify === 'verified-agree' ? '검증 일치' : it.verify === 'teacher-edited' ? '원장 고침' : (it.verify || ''))}</div></td>
+      <td>${승인됨 ? '' : `<label class="작게"><input type="checkbox" ${다시.has(m.slot) ? 'checked' : ''} onchange="다시토글('${글(id)}','${글(m.slot)}',this.checked)"> ${it.src === 'ts' ? '다시 고르기' : '다시 만들기'}</label>
+        ${it.src === 'mr' ? `<button onclick="고치기열기('${글(id)}','${글(m.slot)}')">${열림 ? '닫기' : '고치기'}</button>` : ''}`}</td></tr>${고침칸}`;
+  }).join('');
+  const 조판 = 검토.조판[id] || (검토.조판[id] = {});
+  return `<details ${Object.keys(검토.열린고치기).some(k => k.startsWith(id + '|')) || 다시.size ? 'open' : ''}><summary>문항 ${(d.manifest || []).length}개 보기${승인됨 ? '' : ' · 부분 수정'}</summary>
+    <table><tr><th>칸</th><th>구역</th><th>출처</th><th>문항</th><th>정답</th><th></th></tr>${줄}</table>
+    ${승인됨 ? '' : `<div style="margin-top:6px" class="작게">조판만 바꾸기(빈칸 = 그대로):
+      글자 크기 <input type="number" min="9" max="14" style="width:60px" value="${글(조판.fontSize || '')}" oninput="조판값('${글(id)}','fontSize',this.value)">
+      답지 단 <select onchange="조판값('${글(id)}','answerCols',this.value)"><option value="">그대로</option><option ${조판.answerCols == 1 ? 'selected' : ''}>1</option><option ${조판.answerCols == 2 ? 'selected' : ''}>2</option></select>
+      여백(mm) <input type="number" min="10" max="25" style="width:60px" value="${글(조판.margin || '')}" oninput="조판값('${글(id)}','margin',this.value)"></div>
+      <div id="영향_${글(id)}" class="작게" style="margin:4px 0">${영향글(id, d)}</div>
+      <button onclick="수정요청('${글(id)}')">수정 요청(새 초안 만들기)</button>`}</details>`;
+}
+function 수정모음(id, d) {
+  const 고칠 = 검토.고칠[id] || {}, 다시 = 검토.다시[id] || new Set();
+  const edits = [];
+  for (const slot of 다시) edits.push({ slot, action: 'regenerate' });
+  for (const [slot, f] of Object.entries(고칠)) {
+    if (다시.has(slot)) continue;
+    const it = (d.items || {})[slot] || {}, e = { slot, action: 'edit' };
+    if (f.stem != null && f.stem !== it.stem) e.stem = f.stem;
+    if (f.answer != null && f.answer !== it.answer) e.answer = f.answer;
+    if (f.working != null && f.working !== (it.working || '')) e.working = f.working;
+    if (f.choices && JSON.stringify(f.choices) !== JSON.stringify(it.choices)) e.choices = f.choices;
+    if (Object.keys(e).length > 2) edits.push(e);
+  }
+  const 조 = {}; for (const [k, x] of Object.entries(검토.조판[id] || {})) if (x !== '' && x != null) 조[k] = Number(x);
+  return { edits, layout: Object.keys(조).length ? 조 : null };
+}
+function 영향글(id, d) {
+  const { edits, layout } = 수정모음(id, d);
+  if (!edits.length && !layout) return '고칠 것을 고르면 무엇이 다시 만들어지는지 여기 나옵니다.';
+  const r = C.affectedAreas(d.manifest || [], edits, layout, { approved: !!(d.approval && d.approval.approved) });
+  return '다시 만들어지는 것: <b>' + r.files.map(f => 파일이름말[f] || f).join(' · ') + '</b>' + (r.notes.length ? ' — ' + r.notes.map(글).join(' · ') : '') + (r.voids.length ? ' <span class="빨강">무효: ' + r.voids.join(' · ') + '</span>' : '');
+}
+function 영향다시(id) { const a = 아이자료; const d = a && a.drafts[id]; const el = document.getElementById('영향_' + id); if (d && el) el.innerHTML = 영향글(id, d); }
+function 다시토글(id, slot, on) { const s = 검토.다시[id] || (검토.다시[id] = new Set()); if (on) s.add(slot); else s.delete(slot); 영향다시(id); }
+function 고치기열기(id, slot) { const k = id + '|' + slot; if (검토.열린고치기[k]) delete 검토.열린고치기[k]; else 검토.열린고치기[k] = true; 카드그리기(); }
+function 고칠값(id, slot, k, v) { const g = 검토.고칠[id] || (검토.고칠[id] = {}); (g[slot] = g[slot] || {})[k] = v; 영향다시(id); }
+function 고칠보기(id, slot, i, v) { const a = 아이자료; const it = ((a.drafts[id] || {}).items || {})[slot] || {}; const g = 검토.고칠[id] || (검토.고칠[id] = {}); const f = (g[slot] = g[slot] || {}); f.choices = (f.choices || (it.choices || []).slice()); f.choices[i] = v; 영향다시(id); }
+function 조판값(id, k, v) { (검토.조판[id] = 검토.조판[id] || {})[k] = v; 영향다시(id); }
+async function 수정요청(id) {
+  const a = 아이자료, d = a.drafts[id];
+  const { edits, layout } = 수정모음(id, d);
+  if (!edits.length && !layout) return 알림('고칠 것을 먼저 고르세요');
+  try {
+    const r = await 부르기('prepRequestRevision', { draftId: id, edits, layout });
+    검토.다시[id] = new Set(); 검토.고칠[id] = {}; 검토.조판[id] = {}; for (const k of Object.keys(검토.열린고치기)) if (k.startsWith(id + '|')) delete 검토.열린고치기[k];
+    알림('✅ 수정 주문 — Claude Code 에 「확정 주문 처리해」라고 하시면 새 초안을 만듭니다 (' + r.affects.files.map(f => 파일이름말[f] || f).join(', ') + ')');
+    await 검토새로(a.u.id, d.planId);
+  } catch (e) { 알림('❌ ' + e.message); }
+}
+async function 교재승인(id, scope) {
+  const a = 아이자료, d = a.drafts[id];
+  if (!confirm(scope === 'default' ? '교재를 승인하고, 이 설정을 다음 주 기본값으로도 쓸까요?' : '교재를 승인할까요? (이번 주만 — 기본값은 그대로)')) return;
+  try { await 부르기('prepApprovePaper', { draftId: id, scope }); 알림('✅ 교재 승인'); await 검토새로(a.u.id, d.planId); } catch (e) { 알림('❌ ' + e.message); }
+}
+
+// ── 홈페이지 숙제 수량 ──
+function 수량그리기(a, planId, pl, rev, ap, 교재) {
+  const 승인 = 교재 && 교재.d.approval && 교재.d.approval.approved;
+  if (!승인) return `<div class="섹"><b>홈페이지 숙제 수량</b> — <span class="작게">교재 승인 뒤에 정합니다</span></div>`;
+  const 명세 = ((pl.revisions[rev].spec || {}).parts || []).find(p => p.kind === 'online-hw') || {};
+  const 기본 = (a.prefs && a.prefs.online && a.prefs.online.config) || 명세;
+  const q = 검토.수량[planId] || (검토.수량[planId] = { mrSets: 기본.mrSets != null ? 기본.mrSets : 6, tsSets: 기본.tsSets != null ? 기본.tsSets : 0, perSet: 기본.perSet || 20, daily: !!기본.daily, dupPolicy: 기본.dupPolicy || 'avoid' });
+  const 확인 = ap.online ? `<div class="작게">확인함: MR ${ap.online.config.mrSets}세트 · TS ${ap.online.config.tsSets}세트 · 세트당 ${ap.online.config.perSet}문항 (${ap.online.scope === 'default' ? '기본값에도' : '이번 주만'}) — 주문 ${글(상태말[((a.jobs || {})[ap.online.jobId] || {}).status] || ((a.jobs || {})[ap.online.jobId] || {}).status || '')}${((a.jobs || {})[ap.online.jobId] || {}).status === 'queued' ? ' (Claude Code 에 「확정 주문 처리해」)' : ''}</div>` : '';
+  return `<div class="섹"><b>홈페이지 숙제 수량</b> <span class="작게">${a.prefs && a.prefs.online ? '지난 수동 승인값에서' : '제작 방향 판에서'}</span>
+    <div>MR 세트 <input type="number" min="0" max="20" style="width:60px" value="${q.mrSets}" oninput="수량값('${글(planId)}','mrSets',this.value)">
+      TS 세트 <input type="number" min="0" max="20" style="width:60px" value="${q.tsSets}" oninput="수량값('${글(planId)}','tsSets',this.value)">
+      세트당 문항 <input type="number" min="1" max="60" style="width:60px" value="${q.perSet}" oninput="수량값('${글(planId)}','perSet',this.value)">
+      중복 <select onchange="수량값('${글(planId)}','dupPolicy',this.value)"><option value="avoid" ${q.dupPolicy === 'avoid' ? 'selected' : ''}>피함</option><option value="allow" ${q.dupPolicy === 'allow' ? 'selected' : ''}>허용</option></select></div>
+    ${확인}
+    <button onclick="수량확인('${글(planId)}','${글(교재.id)}','thisWeek')">수량 확인 → 초안 만들기(이번 주만)</button>
+    <button onclick="수량확인('${글(planId)}','${글(교재.id)}','default')">수량 확인 → 초안 만들기(다음 주 기본값에도)</button></div>`;
+}
+function 수량값(planId, k, v) { const q = 검토.수량[planId]; q[k] = k === 'dupPolicy' ? v : Number(v); }
+async function 수량확인(planId, paperId, scope) {
+  const a = 아이자료, q = 검토.수량[planId];
+  try { const r = await 부르기('prepConfirmOnline', { paperDraftId: paperId, online: q, scope }); 알림('✅ 수량 확인 — 홈페이지 숙제 초안 주문(Claude Code 에 「확정 주문 처리해」)'); void r; await 검토새로(a.u.id, planId); }
+  catch (e) { 알림('❌ ' + e.message); }
+}
+
+// ── 홈페이지 숙제 미리보기 · 고치기 ──
+function 온라인그리기(planId, 온) {
+  const { id, d } = 온, 보기 = !!검토.정답보기[id];
+  const 고칠 = 검토.온고칠[id] || (검토.온고칠[id] = {});
+  const 세트 = (d.sets || []).slice().sort((x, y) => (x.setIdx || 0) - (y.setIdx || 0));
+  const 몸 = 세트.map((s, si) => `<div style="margin:6px 0"><b>${글(s.title)}</b> <span class="작게">${(s.questions || []).length}문항</span>
+    ${(s.questions || []).map((q, qi) => { const k = si + '|' + qi, 열림 = 검토.열린고치기[id + '|' + k], f = 고칠[k] || {};
+      return `<div style="border:1px solid var(--선);border-radius:8px;padding:6px 8px;margin:4px 0"><b>Q${qi + 1}</b> ${글(q.text)}
+        ${q.figure ? 그림(q.figure) : ''}
+        ${q.type === 'mc' && q.options ? '<div>' + q.options.map((o, j) => '<span style="display:inline-block;margin-right:10px">' + 'ABCDEF'[j] + '. ' + 글(o) + '</span>').join('') + '</div>' : '<div class="작게">[답 쓰는 칸]</div>'}
+        ${보기 ? '<div class="작게">정답 <b>' + 글(q.answer) + '</b> · ' + 글(String(q.explanation || '').slice(0, 300)) + '</div>' : ''}
+        <button onclick="온고치기열기('${글(id)}','${k}')">${열림 ? '닫기' : '고치기'}</button>
+        ${열림 ? `<div style="background:var(--바탕);padding:6px;margin-top:4px">
+          <div class="작게">문제</div><textarea style="width:100%" rows="2" oninput="온고칠값('${글(id)}','${k}','text',this.value)">${글(f.text != null ? f.text : q.text)}</textarea>
+          ${q.type === 'mc' ? '<div class="작게">보기</div>' + (q.options || []).map((o, j) => `<input style="width:23%" value="${글((f.options || q.options)[j])}" oninput="온고칠보기('${글(id)}','${k}',${j},this.value)">`).join('') : ''}
+          <div class="작게">정답${q.type === 'mc' ? '(글자 A~' + 'ABCDEF'[(q.options || []).length - 1] + ')' : ''}</div><input value="${글(f.answer != null ? f.answer : q.answer)}" oninput="온고칠값('${글(id)}','${k}','answer',this.value)">
+          <div class="작게">해설</div><textarea style="width:100%" rows="2" oninput="온고칠값('${글(id)}','${k}','explanation',this.value)">${글(f.explanation != null ? f.explanation : (q.explanation || ''))}</textarea></div>` : ''}</div>`; }).join('')}</div>`).join('');
+  return `<div class="섹"><b>홈페이지 숙제 미리보기</b> ${d.editRev ? '<span class="딱지">원장 고침 ' + d.editRev + '</span>' : ''} <span class="작게">학생 화면 모양 · 제출은 만들지 않습니다</span>
+    <label class="작게"><input type="checkbox" ${보기 ? 'checked' : ''} onchange="검토.정답보기['${글(id)}']=this.checked;카드그리기()"> 정답·해설 보기</label>
+    <details><summary>세트 ${세트.length}개 펼치기</summary>${몸}</details>
+    ${Object.keys(검토.열린고치기).some(x => x.startsWith(id + '|')) ? `<button class="주" onclick="온고친판저장('${글(id)}')">고친 판 저장(새 초안)</button>` : ''}</div>`;
+}
+function 온고치기열기(id, k) { const kk = id + '|' + k; if (검토.열린고치기[kk]) delete 검토.열린고치기[kk]; else 검토.열린고치기[kk] = true; 카드그리기(); }
+function 온고칠값(id, k, f, v) { const g = 검토.온고칠[id] || (검토.온고칠[id] = {}); (g[k] = g[k] || {})[f] = v; }
+function 온고칠보기(id, k, j, v) { const a = 아이자료; const [si, qi] = k.split('|').map(Number); const s = ((a.drafts[id] || {}).sets || []).slice().sort((x, y) => (x.setIdx || 0) - (y.setIdx || 0))[si]; const q = s.questions[qi];
+  const g = 검토.온고칠[id] || (검토.온고칠[id] = {}); const f = (g[k] = g[k] || {}); f.options = f.options || q.options.slice(); f.options[j] = v; }
+async function 온고친판저장(id) {
+  const a = 아이자료, d = a.drafts[id];
+  const edits = Object.entries(검토.온고칠[id] || {}).map(([k, f]) => { const [set, q] = k.split('|').map(Number); return Object.assign({ set, q }, f); });
+  if (!edits.length) return 알림('고친 칸이 없습니다');
+  try { const r = await 부르기('prepEditOnline', { draftId: id, edits }); 검토.온고칠[id] = {}; for (const k of Object.keys(검토.열린고치기)) if (k.startsWith(id + '|')) delete 검토.열린고치기[k];
+    알림('✅ 고친 판 저장 — ' + r.changed + '문항'); await 검토새로(a.u.id, d.planId); }
+  catch (e) { 알림('❌ ' + e.message); }
+}
+
+// ── 공개 ──
+function 공개조건그리기(planId, st) {
+  if (!st) return '<div class="섹 작게">공개 조건을 읽는 중…</div>';
+  if (st.error) return '<div class="섹 빨강">공개 조건을 못 읽음 — ' + 글(st.error) + '</div>';
+  const 줄 = (r) => r.ok ? '<span class="좋음">✅ 됨</span>' : '<ul style="margin:2px 0 0 16px;padding:0">' + r.reasons.map(x => '<li>' + 글(x.msg) + '</li>').join('') + '</ul>';
+  return `<div class="섹"><b>공개</b>
+    <div>원장 공개(지금): ${줄(st.manual)}</div>
+    <div>자동 공개(${글((st.schedule || {}).releaseAtSydney || '?')}): ${줄(st.auto)}</div>
+    <button class="주" ${st.manual.ok ? '' : 'disabled'} onclick="지금공개('${글(planId)}')">지금 공개</button>
+    <button onclick="delete 검토.상태['${글(planId)}'];카드그리기()">조건 다시 보기</button></div>`;
+}
+async function 지금공개(planId) {
+  if (!confirm('지금 학생에게 공개할까요? 공개한 뒤에는 「정정」으로만 고칩니다.')) return;
+  try { const r = await 부르기('prepRelease', { planId }); 알림(r.already ? '이미 공개되어 있습니다' : '✅ 공개했습니다'); await 검토새로(아이자료.u.id, planId); }
+  catch (e) { 알림('❌ ' + e.message); }
+}
+async function 수업다루기(planId, action) {
+  const 말 = { hold: '공개를 보류할까요? (저절로 안 풀립니다)', unhold: '보류를 풀까요?', cancel: '휴강으로 막을까요? (공개하지 않습니다)', restore: '휴강을 되살릴까요?', changeDate: '수업일을 바꿀까요? (공개 시각을 다시 셉니다)' }[action];
+  if (!confirm(말)) return;
+  const data = { planId, action };
+  if (action === 'changeDate') data.newDate = (document.getElementById('새날_' + planId) || {}).value;
+  try { const r = await 부르기('prepLessonControl', data); 알림('✅ ' + (예약말[r.schedule.state] || r.schedule.state) + ' · 공개 예정 ' + r.schedule.releaseAtSydney); await 검토새로(아이자료.u.id, planId); }
+  catch (e) { 알림('❌ ' + e.message); }
+}
+async function 자동공개바꿈(켬) {
+  if (켬 && !confirm('자동 공개를 켤까요? 수업일 20:00 에 조건을 다 갖춘 숙제를 서버가 공개합니다.')) { 카드그리기(); return; }
+  try { await db.ref(새뿌리 + '/config/autoRelease').set(!!켬); 판.autoRelease = !!켬; 검토.상태 = {}; 알림(켬 ? '자동 공개를 켰습니다' : '자동 공개를 껐습니다'); }
+  catch (e) { 알림('❌ 바꾸지 못함 — ' + (e.code || e.message)); }
+  카드그리기();
+}
+
+// ── 공개 뒤 정정 ──
+function 공개됨그리기(planId, aid, r) {
+  const 세트 = Object.entries(r.sets || {}).sort((x, y) => (x[1].order || 0) - (y[1].order || 0));
+  const 정정목록 = Object.values(r.corrections || {});
+  return `<div class="섹"><b>✅ 공개됨</b> ${글(String(r.releasedAt || '').replace('T', ' ').slice(0, 16))} UTC · ${r.cause === 'scheduled' ? '20:00 자동 공개' : '원장 공개'} · 판 ${글(r.releaseRev || 1)}
+    ${정정목록.length ? '<div class="작게">정정 ' + 정정목록.length + '번: ' + 정정목록.map(c => 글(c.setId + ' ' + c.qid + ' — ' + c.reason)).join(' · ') + '</div>' : ''}
+    <details><summary>공개된 문항 · 정정</summary>${세트.map(([setId, s]) => `<div style="margin:6px 0"><b>${글(s.title)}</b>
+      ${(Array.isArray(s.questions) ? s.questions : Object.values(s.questions || {})).map(q => { const k = aid + '|' + setId + '|' + q.id, f = 검토.정정[k];
+        return `<div style="border:1px solid var(--선);border-radius:8px;padding:6px 8px;margin:4px 0">${글(q.id)} · ${글(q.text)}${q.figure ? 그림(q.figure) : ''}
+          ${q.options ? '<div class="작게">' + q.options.map((o, j) => 'ABCDEF'[j] + '. ' + 글(o)).join(' · ') + '</div>' : ''}<div class="작게">정답 <b>${글(q.answer)}</b></div>
+          ${f ? `<div style="background:var(--바탕);padding:6px">
+            <div class="작게">문제</div><textarea style="width:100%" rows="2" oninput="검토.정정['${글(k)}'].text=this.value">${글(f.text)}</textarea>
+            <div class="작게">정답</div><input value="${글(f.answer)}" oninput="검토.정정['${글(k)}'].answer=this.value">
+            <div class="작게">정정 까닭(꼭)</div><input style="width:100%" oninput="검토.정정['${글(k)}'].reason=this.value">
+            <button class="주" onclick="정정보내기('${글(aid)}','${글(setId)}','${글(q.id)}')">정정(옛 판은 기록에 남김)</button></div>`
+          : `<button onclick="정정열기('${글(aid)}','${글(setId)}','${글(q.id)}')">정정</button>`}</div>`; }).join('')}</div>`).join('')}</details>
+    <div class="작게">정정해도 지난 제출은 제출할 때의 정답표 점수 그대로입니다(다시 채점하지 않음). 새 제출부터 고친 정답표로 채점합니다.</div></div>`;
+}
+function 정정열기(aid, setId, qid) {
+  const s = ((판.releases[aid] || {}).sets || {})[setId]; const q = s && (Array.isArray(s.questions) ? s.questions : Object.values(s.questions || {})).find(x => x.id === qid);
+  if (!q) return; 검토.정정[aid + '|' + setId + '|' + qid] = { text: q.text, answer: q.answer, reason: '' }; 카드그리기();
+}
+async function 정정보내기(aid, setId, qid) {
+  const k = aid + '|' + setId + '|' + qid, f = 검토.정정[k];
+  const r0 = 판.releases[aid]; const s = (r0.sets || {})[setId]; const q = (Array.isArray(s.questions) ? s.questions : Object.values(s.questions || {})).find(x => x.id === qid);
+  const changes = {}; if (f.text !== q.text) changes.text = f.text; if (f.answer !== q.answer) changes.answer = f.answer;
+  try { const r = await 부르기('prepCorrectRelease', { assignmentId: aid, setId, qid, changes, reason: f.reason }); delete 검토.정정[k]; 알림('✅ 정정 — 판 ' + r.releaseRev); await 검토새로(아이자료.u.id, aid.replace(/_hw$/, '')); }
+  catch (e) { 알림('❌ ' + e.message); }
 }
 
 // ── 종이 시험 ──

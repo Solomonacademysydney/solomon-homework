@@ -255,14 +255,19 @@ class 처리 {
     const year = profile.year || profile.grade || 'Year 5';
     const mr = await this.MR만들기(slots.filter(s => s.src === 'mr'), year, 'paper');
     const ts = await this.TS고르기(slots.filter(s => s.src === 'ts'), spec, 'paper', []);
+    return this.조판저장({ slots, mr, ts, spec, layout: spec.layout, profile, hash, draftId: C.draftIdFor(j, 'paper', hash), extra: {} });
+  }
 
+  /** 조판 → PDF 검사 → 원본 JSON → 드라이브(또는 저장소) → 초안 기록. 종이·부분 수정이 함께 쓴다 */
+  async 조판저장({ slots, mr, ts, spec, layout, profile, hash, draftId, extra }) {
+    const j = this.job;
     // 조판
     const out = this.w.p('pdf');
     if (!this.w.has('pdf/조판보고.json')) {
       await this.진행('typeset', '');
       const inp = this.w.p('조판_in.json');
       fs.writeFileSync(inp, JSON.stringify({ coreDir: this.cfg.coreDir, outDir: out, edge: this.cfg.edge, title: 'Weekly Pack', studentName: profile.name || j.studentId,
-        lessonDate: j.lessonDate, layout: spec.layout, figureScale: spec.composition.figureScale, order: slots, mr, ts }));
+        lessonDate: j.lessonDate, layout, figureScale: spec.composition.figureScale, order: slots, mr, ts }));
       const r = spawnSync(this.cfg.python || 'python', [path.join(__dirname, '조판.py'), inp], { encoding: 'utf8', env: Object.assign({}, process.env, { PYTHONUTF8: '1' }), timeout: 20 * 60 * 1000 });
       if (r.status !== 0) throw new 멈춤('typeset', '조판 실패: ' + (r.stderr || r.stdout || '').slice(-400));
     }
@@ -288,8 +293,7 @@ class 처리 {
 
     // 원본 JSON — 문항·정답·manifest(문항 하나하나가 명세의 어느 칸인지)
     const manifest = C.buildManifest(slots, mr, ts);
-    const draftId = C.draftIdFor(j, 'paper', hash);
-    fs.writeFileSync(path.join(out, 'items.json'), JSON.stringify({ draftId, slots, mr, ts, manifest }, null, 1));
+    fs.writeFileSync(path.join(out, 'items.json'), JSON.stringify({ draftId, slots, mr, ts, manifest, layout }, null, 1));
     fs.writeFileSync(path.join(out, 'qa.json'), JSON.stringify({ qa, usage: this.usage }, null, 1));
 
     const 낼것 = 보고.files.map(f => ({ kind: f.kind, local: path.join(out, f.file), ext: 'pdf', pages: f.pages }))
@@ -309,12 +313,70 @@ class 처리 {
                { kind: 'qa', local: path.join(out, 'qa.json'), dest: 'data/qa.json', type: 'application/json' }]));
     }
 
-    await this.초안쓰기(draftId, { kind: 'paper', specHash: hash, sample: !!this.opts.sample, files,
+    await this.초안쓰기(draftId, Object.assign({ kind: 'paper', specHash: hash, sample: !!this.opts.sample, files, layout,
       counts: { mr: Object.keys(mr).length, ts: Object.keys(ts).length, slots: slots.length },
-      manifest: manifest.map(m => ({ slot: m.slot, section: m.section, part: m.part, set: m.set, src: m.src, itemId: m.itemId, itemRevision: m.itemRevision, verify: m.verify ? m.verify.status : null })),
-      qa: { ok: qa.ok, files: Object.fromEntries(Object.entries(qa.files).map(([k, v]) => [k, { pages: v.pages, count: v.count, overfullMaxPt: v.overfullMaxPt }])) } });
+      manifest: manifest.map(m => ({ slot: m.slot, section: m.section, part: m.part, set: m.set, src: m.src, itemId: m.itemId, itemRevision: m.itemRevision, verify: m.verify ? (m.verify.status || m.verify) : null })),
+      items: C.itemsForDraft(slots, mr, ts),   // [6단계] 원장 화면 미리보기·부분 수정용(교사·서버만 읽음)
+      qa: { ok: qa.ok, files: Object.fromEntries(Object.entries(qa.files).map(([k, v]) => [k, { pages: v.pages, count: v.count, overfullMaxPt: v.overfullMaxPt }])) } }, extra || {}));
     this.후보적립(mr, draftId);
     return draftId;
+  }
+
+  /* ── [6단계] prep-revise: 교재 부분 수정 — 고친 칸만 새로, 나머지는 그대로. 조판만이면 내용 유지 ── */
+  async 수정() {
+    const j = this.job;
+    const src = await this.fb.get(ROOT + '/drafts/' + j.sourceDraftId);
+    const plan = await this.fb.get(ROOT + '/plans/' + j.planId + '/revisions/' + j.rev);
+    if (!src || !plan || !plan.spec) throw new 멈춤('bad-plan', '원래 교재 초안 또는 판을 못 읽음');
+    if (src.planRev !== j.rev || src.studentId !== j.studentId) throw new 멈춤('bad-plan', '초안과 주문의 판·학생이 다름');
+    const latest = await this.fb.get(ROOT + '/plans/' + j.planId + '/latest');
+    if (Number(latest) !== Number(j.rev)) throw new 멈춤('bad-plan', '판이 바뀌었습니다 — 새 판에서 다시 만드세요');
+    const profile = (await this.fb.get(ROOT + '/students/' + j.studentId + '/profile')) || {};
+    // 원본 JSON 은 드라이브에 있다 — 해시로 같은 파일인지 확인
+    const f = (src.files || []).find(x => x.kind === 'items');
+    if (!f) throw new 멈춤('bad-plan', '원래 초안에 원본 JSON 이 없음');
+    const 원본길 = path.join((this.cfg.drive || {}).root || '', f.rel || '', f.name || '');
+    if (!fs.existsSync(원본길)) throw new 멈춤('bad-plan', '원본 JSON 을 못 찾음: ' + 원본길);
+    const buf = fs.readFileSync(원본길);
+    if (C.sha256(buf) !== f.sha256) throw new 멈춤('bad-plan', '원본 JSON 해시가 초안 기록과 다름');
+    const 옛 = JSON.parse(buf.toString('utf8'));
+    const slots = 옛.slots, mr = Object.assign({}, 옛.mr), ts = Object.assign({}, 옛.ts);
+    const spec = plan.spec, hash = C.specHash(spec);
+    const year = profile.year || profile.grade || 'Year 5';
+    const 칸 = {}; for (const s of slots) 칸[s.id] = s;
+    const 바뀜 = [];
+    for (const e of j.edits || []) {
+      const s = 칸[e.slot];
+      if (!s) throw new 멈춤('bad-plan', '없는 칸: ' + e.slot);
+      if (e.action === 'regenerate' && s.src === 'mr') {
+        const 새것 = await this.MR만들기([s], year, 'rev' + j.revision + '_' + s.id);
+        바뀜.push({ slot: s.id, action: e.action, before: mr[s.id] ? mr[s.id].stem : null, after: 새것[s.id].stem });
+        mr[s.id] = 새것[s.id];
+      } else if (e.action === 'regenerate' && s.src === 'ts') {
+        const 쓴것 = Object.values(ts).map(t => t.id);
+        const 새것 = await this.TS고르기([s], spec, 'rev' + j.revision + '_' + s.id, 쓴것);
+        바뀜.push({ slot: s.id, action: e.action, before: ts[s.id] ? ts[s.id].id : null, after: 새것[s.id].id });
+        ts[s.id] = 새것[s.id];
+      } else if (e.action === 'edit' && s.src === 'mr') {
+        const it = C.applyMrEdit(mr[s.id], e);
+        const chk = C.checkMrItems([Object.assign({}, it, { slot: s.id })], [s]);
+        if (!chk.ok) throw new 멈춤('mr-unverified', '고친 문항이 검사를 못 넘음', [{ slot: s.id, problems: chk.bad[s.id] }]);
+        // 원장이 고친 답은 원장이 기준이다 — 다시 풀어 보고 다르면 막지 않고 「경고」로 남긴다
+        const 풀칸 = 'rev' + j.revision + '_solve_' + s.id + '.json';
+        const sv = this.w.has(풀칸) ? this.w.read(풀칸) : await this.부름('verify', 프롬프트.재풀이, { task: 'Please solve this worksheet question for a ' + year + ' maths class and give your answer.', items: [{ slot: s.id, stem: it.stem, choices: it.type === 'mc' ? it.choices : undefined }] }, null);
+        this.w.write(풀칸, sv);
+        const 대조 = C.compareSolve([Object.assign({}, it, { slot: s.id })], 답모으기(sv))[s.id] || {};
+        it._verify = { status: 'teacher-edited', agree: !!대조.agree, theirs: 대조.theirs || null };
+        if (it.type === 'mc') it.answerIndex = it.choices.findIndex(c => C.sameAnswer(c, it.answer));
+        it._ok = true;
+        바뀜.push({ slot: s.id, action: e.action, before: mr[s.id] ? mr[s.id].answer : null, after: it.answer, 재풀이일치: !!대조.agree, 재풀이답: 대조.theirs || null });
+        mr[s.id] = it;
+      } else throw new 멈춤('bad-plan', '할 수 없는 수정: ' + e.slot + ' ' + e.action);
+    }
+    const layout = Object.assign({}, src.layout || spec.layout, j.layout || {});
+    const 경고 = 바뀜.filter(x => x.재풀이일치 === false).map(x => x.slot + ': 원장이 고친 답(' + x.after + ')과 재풀이(' + x.재풀이답 + ')가 다름');
+    return this.조판저장({ slots, mr, ts, spec, layout, profile, hash, draftId: C.draftIdFor(j, 'paper_v' + j.revision, hash),
+      extra: { parentDraftId: j.sourceDraftId, revision: j.revision, changes: 바뀜, contentKept: !(j.edits || []).length, warnings: 경고, affects: j.affects || null } });
   }
 
   /* ── prep-online: 교재 승인 뒤 홈페이지 MR/TS 숙제 초안 ── */
@@ -324,7 +386,9 @@ class 처리 {
     const src = await this.fb.get(ROOT + '/drafts/' + j.sourceDraftId);
     if (!plan || !src) throw new 멈춤('bad-plan', '판 또는 교재 초안을 못 읽음');
     if (!src.approval || src.approval.approved !== true) throw new 멈춤('not-approved', '교재가 아직 승인되지 않음');
-    const on = plan.spec.parts.find(p => p.kind === 'online-hw');
+    const 명세몫 = plan.spec.parts.find(p => p.kind === 'online-hw');
+    // [6단계] 원장이 「수량 확인」에서 정한 값이 먼저 — 없으면(옛 주문) 명세 그대로
+    const on = j.onlineConfig ? Object.assign({}, 명세몫 || {}, j.onlineConfig) : 명세몫;
     if (!on) throw new 멈춤('bad-plan', '명세에 홈페이지 숙제가 없음');
     const profile = (await this.fb.get(ROOT + '/students/' + j.studentId + '/profile')) || {};
     const unit = (plan.spec.parts.find(p => p.kind === 'mr-unit') || {}).title || '';
@@ -350,7 +414,9 @@ class 처리 {
       }
     }
     const hash = C.specHash(plan.spec);
-    const draftId = C.draftIdFor(j, 'online', hash);
+    // [6단계] 수량을 다시 확인하면(새 주문) 새 초안이어야 한다 — 주문 id 를 초안 id 에 넣는다.
+    //   공개는 「승인 자리에 적힌 주문(jobId)」의 초안만 고른다(prep_release 온라인초안고르기)
+    const draftId = C.draftIdFor(j, 'online' + (j.onlineConfig ? '_' + String(this.jobId).replace(/[^A-Za-z0-9]/g, '').slice(-8) : ''), hash);
     const manifest = C.buildManifest(slots, mr, ts);
     await this.초안쓰기(draftId, { kind: 'online', sourceDraftId: j.sourceDraftId, specHash: hash, sample: !!this.opts.sample, sets: Object.values(sets),
       manifest: manifest.map(m => ({ slot: m.slot, set: m.set, src: m.src, itemId: m.itemId, itemRevision: m.itemRevision, verify: m.verify ? m.verify.status : null })) });
@@ -382,7 +448,7 @@ class 처리 {
     if (!d.take) return { jobId: this.jobId, skipped: d.why };
     기록(this.cfg, { job: this.jobId, type: this.job.type, msg: '쥠 — ' + d.why, attempts: this.attempts, sample: this.opts.sample || 0 });
     try {
-      const draftId = this.job.type === 'prep-paper' ? await this.종이() : await this.온라인();
+      const draftId = this.job.type === 'prep-paper' ? await this.종이() : this.job.type === 'prep-revise' ? await this.수정() : await this.온라인();
       this.확인();
       await this.상태('done', { resultRef: draftId, finishedAt: iso(), usage: { tokens: this.usage.tokens, calls: this.usage.calls.length, cap: this.cfg.maxTokensPerJob }, models: 모델모음(this.usage) });
       기록(this.cfg, { job: this.jobId, msg: '끝', draftId, tokens: this.usage.tokens, models: 모델모음(this.usage) });

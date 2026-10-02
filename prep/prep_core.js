@@ -526,7 +526,31 @@
     }).sort();
   }
 
+  // ───────────────────────── 6단계 · 부분 수정의 영향 영역 ─────────────────────────
+  /**
+   * 무엇을 고치면 무엇이 다시 만들어지는가 — 원장이 「수정 요청」을 누르기 전에 본다.
+   *   manifest: 초안의 문항 목록 [{slot, section(test|book|hw), src}] · edits: [{slot, action}] · layout: 조판만 바꿀 값
+   *   opts.approved: 이미 승인한 교재인가(승인·홈페이지 초안이 무효가 된다)
+   * → { files:[test|book|hw|student|teacher|items|qa], contentKept, voids:[], notes:[] }
+   * 서버(prep_release.js affectsOf)와 같은 셈 — 주문에도 적힌다.
+   */
+  function affectedAreas(manifest, edits, layout, opts) {
+    const 칸 = {}; (manifest || []).forEach(m => { if (m && m.slot) 칸[m.slot] = m; });
+    const files = new Set(), notes = [], voids = [];
+    for (const e of edits || []) {
+      const m = 칸[e.slot] || {};
+      files.add({ test: 'test', book: 'book', hw: 'hw' }[m.section] || 'book');
+      ['student', 'teacher', 'items', 'qa'].forEach(f => files.add(f));
+    }
+    const contentKept = !(edits || []).length;
+    if (layout && Object.keys(layout).length) { ['test', 'book', 'hw', 'student', 'teacher'].forEach(f => files.add(f)); notes.push('조판만 — 문항 내용·정답은 그대로'); }
+    if (!contentKept) notes.push('문항·정답이 바뀌면 답지·원본 JSON·검수 기록을 함께 다시 만듭니다');
+    if (opts && opts.approved && files.size) voids.push('교재 승인', '홈페이지 숙제 초안');
+    return { files: Array.from(files).sort(), contentKept, voids, notes };
+  }
+
   const PrepCore = {
+    affectedAreas,
     요일말, ymd, parseYmd, addDays, periodOfDate, periodKey, samePeriod,
     classDaysOf, nextClassDate, pastClassDates, analysisWindow, periodsInWindow, orderStudents,
     hwKey, subKey, tsSubKey, viewForTeacher, analyzeHomework,

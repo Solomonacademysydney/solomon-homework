@@ -378,9 +378,17 @@ exports.prepConfirmOrder = onCall({ region: S.REGION }, async (req) => {
   const planId = sid + '_' + lessonDate.replace(/-/g, '') + '_1';
   const planRef = db.ref(ROOT + '/plans/' + planId);
 
-  // 판 번호 — latest 를 하나 올린다(동시 확정도 겹치지 않게)
-  const t = await planRef.child('latest').transaction(cur => (Number(cur) || 0) + 1);
-  const rev = Number(t.snapshot.val());
+  // [6단계] 이미 공개된 수업은 다시 확정하지 않는다 — 공개된 내용은 「정정」(prepCorrectRelease)으로 고친다
+  // 판 번호 — latest 를 하나 올린다(동시 확정도 겹치지 않게). 공개 문지기(prepRelease)와 같은 자리(plans/<planId>)를 겨룬다
+  let 공개됨 = false;
+  const t = await planRef.transaction(cur => {
+    공개됨 = false;
+    const c = cur || {};
+    if (c.released) { 공개됨 = true; return; }
+    return Object.assign({}, c, { latest: (Number(c.latest) || 0) + 1 });
+  });
+  if (공개됨 || !t.committed) throw new HttpsError('failed-precondition', 'PUBLISHED', { problems: ['이미 공개된 수업입니다 — 공개된 숙제는 「정정」으로 고치세요'], conflicts: [] });
+  const rev = Number(t.snapshot.val().latest);
 
   // 무효로 할 초안 — 이 계획의 옛 판 · 미공개만
   const 초안 = (await db.ref(ROOT + '/drafts').orderByChild('planId').equalTo(planId).once('value')).val() || {};
@@ -410,6 +418,8 @@ exports.prepConfirmOrder = onCall({ region: S.REGION }, async (req) => {
   }
   for (const k of invalidated) { 고칠['drafts/' + k + '/invalidatedByRev'] = rev; 고칠['drafts/' + k + '/invalidatedAt'] = now; }
   if (Object.keys(고칠).length) await db.ref(ROOT).update(고칠);
+  // [6단계] 수업일 시드니 20:00 공개 예약 — 없을 때만 만든다(보류·휴강·수업일 변경은 그대로 둔다)
+  await require('./prep_release')._internals.예약확보(planId, sid, lessonDate, Date.now());
   return { ok: true, planId, rev, jobId: jobRef.key, invalidated, spec: 판.spec };
 });
 exports.specHashOf = specHashOf;   // 시험용(일꾼의 core.specHash 와 같은지) — index.js 는 내보내지 않는다

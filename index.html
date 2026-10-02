@@ -7513,6 +7513,12 @@ async function openPersonalSet(aid, setId) {
 }
 function closePersonalSet() { _personalOpen = null; _personalResult = null; renderStudent(); }
 
+/** [6단계 · 2026-10-02] 개인 배정 TS 그림 — 그룹 숙제(qc-figure)와 같은 모양. SVG 만 · 실행 코드가 섞이면 그리지 않는다 */
+function _personalFig(f) {
+  const t = typeof f === 'string' ? f : '';
+  if (!t || !/^\s*<svg[\s>]/i.test(t) || /<script|\son\w+\s*=|javascript:/i.test(t)) return '';
+  return `<div class="qc-figure">${t}</div>`;
+}
 function renderPersonalSet(a, p) {
   const { aid, setId } = _personalOpen;
   const d = _prepDetail[aid];
@@ -7538,7 +7544,7 @@ function renderPersonalSet(a, p) {
         oninput="personalAnswer('${escHtml(q.id)}', this.value)" style="width:100%;padding:8px;">`;
     }
     return `<div class="q-card" style="margin-bottom:14px;"><div style="font-weight:800;margin-bottom:6px;">Q${i + 1}${표}</div>
-      <div style="margin-bottom:8px;">${renderMath(q.text || '')}</div>${입력}</div>`;
+      <div style="margin-bottom:8px;">${renderMath(q.text || '')}${_personalFig(q.figure)}</div>${입력}</div>`;
   }).join('');
   const 머리 = 냈다 && 결과
     ? `<div class="score-banner" id="personalResult"><div class="score-big">${결과.score}%</div>

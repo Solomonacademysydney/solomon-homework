@@ -361,3 +361,19 @@ exports.prepListMyAssignments = _prep.prepListMyAssignments;
 exports.prepGetAssignment = _prep.prepGetAssignment;
 exports.prepSubmit = _prep.prepSubmit;
 exports.prepConfirmOrder = _prep.prepConfirmOrder;   // [4단계] 제작 주문 확정(원장만)
+
+// ============================================================
+// [6단계 · 2026-10-02] 승인 · 조정 · 20:00 공개 — functions/prep_release.js 맨 위에 적어 뒀다.
+//   ⛔ 배포할 때도 이름을 찍어서만(예약 함수 prepReleaseTick 은 매분 돈다 — 자동 공개 스위치가 꺼져 있으면 공개하지 않는다):
+//        firebase deploy --only functions:prepApprovePaper,functions:prepConfirmOnline,functions:prepRequestRevision,functions:prepEditOnline,functions:prepReleaseStatus,functions:prepRelease,functions:prepReleaseTick,functions:prepLessonControl,functions:prepCorrectRelease,functions:prepConfirmOrder
+// ============================================================
+const _rel = require('./prep_release');
+exports.prepApprovePaper = _rel.prepApprovePaper;
+exports.prepConfirmOnline = _rel.prepConfirmOnline;
+exports.prepRequestRevision = _rel.prepRequestRevision;
+exports.prepEditOnline = _rel.prepEditOnline;
+exports.prepReleaseStatus = _rel.prepReleaseStatus;
+exports.prepRelease = _rel.prepRelease;
+exports.prepReleaseTick = _rel.prepReleaseTick;
+exports.prepLessonControl = _rel.prepLessonControl;
+exports.prepCorrectRelease = _rel.prepCorrectRelease;

@@ -10,7 +10,7 @@
 'use strict';
 const crypto = require('crypto');
 
-const KNOWN_TYPES = ['prep-paper', 'prep-online'];
+const KNOWN_TYPES = ['prep-paper', 'prep-online', 'prep-revise'];   // [6단계] prep-revise = 교재 부분 수정
 const LEASE_MS = 10 * 60 * 1000;           // 잠금 10분 — 생존 표시로 늘린다
 const LEVELS = ['basic', 'standard', 'challenge'];
 
@@ -258,13 +258,14 @@ function archivePlan(root, studentName, lessonDate, files) {
 
 /* ── 구글 드라이브 저장(10-01 원장 결정: 저장소(Storage) 안 씀 · PDF 는 원장만 보고 인쇄) ── */
 /** 학생/수업일/판N(표본이면 판N_표본) */
+const 판이름 = (job) => '판' + job.rev + (job.revision ? '_수정' + job.revision : '');   // [6단계] 부분 수정은 판N_수정K
 function driveDest(root, folder, job, sample) {
-  const rel = safeName(folder) + '/' + job.lessonDate + '/판' + job.rev + (sample ? '_표본' : '');
+  const rel = safeName(folder) + '/' + job.lessonDate + '/' + 판이름(job) + (sample ? '_표본' : '');
   return { dir: String(root).replace(/[\\/]+$/, '') + '/' + rel, rel };
 }
 const 종류이름 = { test: '테스트지', book: '교재', hw: '숙제', student: '학생용전체', teacher: '교사용답지', items: '원본', qa: '검수기록' };
 /** 날짜_학생_판N_종류.확장자 — 드라이브 검색으로 하나만 찾히게 이름에 다 넣는다 */
-function driveFileName(folder, job, kind, ext, sample) { return job.lessonDate + '_' + safeName(folder) + '_판' + job.rev + (sample ? '_표본' : '') + '_' + (종류이름[kind] || kind) + '.' + ext; }
+function driveFileName(folder, job, kind, ext, sample) { return job.lessonDate + '_' + safeName(folder) + '_' + 판이름(job) + (sample ? '_표본' : '') + '_' + (종류이름[kind] || kind) + '.' + ext; }
 /** 학교 자료 폴더에서 새로 생긴 사진·PDF — id = 경로+크기(같은 파일은 같은 id · 새로 찍어 덮으면 새 id) */
 function schoolFileNews(files, known) {
   return (files || []).filter(f => /\.(jpe?g|png|heic|webp|pdf)$/i.test(f.name) && !/^(~\$|\.)/.test(f.name))
@@ -272,5 +273,26 @@ function schoolFileNews(files, known) {
     .filter(f => !(known || {})[f.id]);
 }
 
-module.exports = { driveDest, driveFileName, schoolFileNews, KNOWN_TYPES, LEASE_MS, canon, sha256, specHash, draftIdFor, apportion, slotsFromSpec, sampleSlots, valueOf, evalExact, sameAnswer,
+/** [6단계] 초안에 담을 문항 내용 — 원장 화면에서 미리 보고 고를 수 있게(교사·서버만 읽는 자리) */
+function itemsForDraft(slots, mr, ts) {
+  const o = {};
+  for (const s of slots) {
+    if (s.src === 'mr') { const it = mr[s.id]; if (!it) continue;
+      o[s.id] = { src: 'mr', section: s.section, part: s.part, stem: it.stem, choices: it.choices || null, answer: it.answer, working: it.working || '', unit: it.unit || '', difficulty: it.difficulty, type: it.type, verify: it._verify ? it._verify.status : null }; }
+    else { const t = ts[s.id]; if (!t) continue;
+      o[s.id] = { src: 'ts', section: s.section, part: s.part, id: t.id, stem: t.stem_en, choices: (t.options || []).map(x => x.en), answer: t.answerLetter, level: t.level, type: t.type, figure: !!t.figureSvg }; }
+  }
+  return o;
+}
+/** [6단계] 원장이 고친 MR 문항 — 고친 칸만 덮고 객관식이면 정답을 보기 글로 맞춘다 */
+function applyMrEdit(it, e) {
+  const n = Object.assign({}, it);
+  for (const k of ['stem', 'answer', 'working']) if (e[k] != null) n[k] = String(e[k]);
+  if (Array.isArray(e.choices)) n.choices = e.choices.map(String);
+  if (n.type === 'mc' && Array.isArray(n.choices)) n.answer = String(resolveChoice(n.answer, n.choices) || '');
+  if (e.answer != null || e.stem != null || e.choices != null) n.check = '';   // 셈식은 옛 정답의 것 — 버린다
+  return n;
+}
+
+module.exports = { itemsForDraft, applyMrEdit, driveDest, driveFileName, schoolFileNews, KNOWN_TYPES, LEASE_MS, canon, sha256, specHash, draftIdFor, apportion, slotsFromSpec, sampleSlots, valueOf, evalExact, sameAnswer,
   resolveChoice, checkMrItems, compareSolve, leaseDecision, usageTokens, overCap, itemIdFor, buildManifest, checkPdfText, archivePlan, safeName };

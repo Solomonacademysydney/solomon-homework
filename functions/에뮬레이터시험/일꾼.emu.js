@@ -73,7 +73,7 @@ async function 주문(날, s) {
 
 (async () => {
   await db.ref().set(null);
-  const 규칙 = fs.readFileSync(path.join(__dirname, '..', '..', 'backup', 'database.rules.5단계.json'), 'utf8');
+  const 규칙 = fs.readFileSync(path.join(__dirname, '..', '..', 'backup', process.env.RULES_FILE || 'database.rules.6단계.json'), 'utf8');
   const rr = await fetch(`http://${DB}/.settings/rules.json?ns=demo-solomon`, { method: 'PUT', headers: { Authorization: 'Bearer owner' }, body: 규칙 });
   if (!rr.ok) throw new Error('규칙 올리기 실패 ' + rr.status);
   await db.ref('sol_prep_v1/students/emu5').set({ profile: { currentCurriculum: 'r1', name: 'Emu Five', koName: '시험오', year: 'Year 5' },
@@ -217,6 +217,48 @@ async function 주문(날, s) {
   await ju.set({ type: 'prep-online', planId: o4.planId, rev: o4.rev, studentId: 'emu5', lessonDate: '2026-10-20', sourceDraftId: (await 값('sol_prep_v1/jobs/' + o4.jobId + '/w/resultRef')), status: 'queued', maxAttempts: 3, createdAt: new Date().toISOString() });
   await W.한바퀴(설정('미승인', { fake: 가짜().fake }), fb, { job: ju.key });
   재기('승인 안 된 교재로는 온라인을 안 만든다(보류 not-approved)', (await 값('sol_prep_v1/jobs/' + ju.key + '/w/hold/kind')) === 'not-approved');
+
+  console.log('\n── [6단계] 부분 수정(prep-revise) · 확인한 수량으로 홈페이지 초안 · 일꾼에서 공개까지 한 줄');
+  {
+    const R6 = require(path.join(__dirname, '..', 'prep_release'));
+    const 원장 = (fn, data) => fn.run({ auth: { uid: OP, token: { uid: OP } }, data }).catch(e => ({ err: (e.code || '') + '/' + e.message, details: e.details }));
+    재기('교재 초안에 칸마다 문항 내용(원장 미리보기용)', d1.items && 칸.every(s => d1.items[s.id] && d1.items[s.id].stem && d1.items[s.id].answer), Object.keys(d1.items || {}).length + ' / ' + 칸.length);
+    const 종이4 = await 값('sol_prep_v1/jobs/' + o4.jobId + '/w/resultRef');
+    const d4 = await 값('sol_prep_v1/drafts/' + 종이4);
+    const mr칸 = d4.manifest.find(m => m.src === 'mr' && d4.items[m.slot].type === 'sa');
+    const ts칸 = d4.manifest.find(m => m.src === 'ts');
+    const 요청 = await 원장(R6.prepRequestRevision, { draftId: 종이4, edits: [{ slot: mr칸.slot, action: 'edit', answer: '99' }, { slot: ts칸.slot, action: 'regenerate' }], layout: { fontSize: 12 } });
+    재기('부분 수정 요청 → prep-revise 주문', 요청.ok && (await 값('sol_prep_v1/jobs/' + 요청.jobId + '/type')) === 'prep-revise', JSON.stringify(요청));
+    const gR = 가짜();
+    const cR = 설정('이어', { fake: gR.fake });   // 같은 드라이브(임시) — 원본 JSON 을 거기서 읽는다
+    await W.한바퀴(cR, fb, { job: 요청.jobId, noScan: true });
+    const jR = await 값('sol_prep_v1/jobs/' + 요청.jobId);
+    const v1 = jR.w && jR.w.resultRef ? await 값('sol_prep_v1/drafts/' + jR.w.resultRef) : null;
+    재기('새 초안(판1_수정1) · 원래 초안을 가리킴 · 원래 초안은 그대로', jR.status === 'done' && v1 && v1.parentDraftId === 종이4 && v1.revision === 1 && v1.files.every(f => f.rel === '시험오/2026-10-20/판1_수정1')
+      && (await 값('sol_prep_v1/drafts/' + 종이4 + '/items/' + mr칸.slot + '/answer')) === d4.items[mr칸.slot].answer, JSON.stringify(jR.w) + JSON.stringify(v1 && v1.files && v1.files[0]));
+    재기('고친 MR: 답 99 · 원장 고침 표시 · 재풀이와 다르면 「경고」(막지 않음)', v1 && v1.items[mr칸.slot].answer === '99' && v1.manifest.find(m => m.slot === mr칸.slot).verify === 'teacher-edited' && v1.warnings.length === 1, JSON.stringify(v1 && v1.warnings));
+    재기('다시 고른 TS 는 다른 문항 · 다른 칸은 문항 id 그대로', v1 && v1.items[ts칸.slot].id !== d4.items[ts칸.slot].id
+      && v1.manifest.filter(m => m.slot !== mr칸.slot && m.slot !== ts칸.slot).every(m => m.itemId === d4.manifest.find(x => x.slot === m.slot).itemId));
+    재기('조판 값(글자 12) 반영 · 모든 PDF 다시 검사 통과', v1 && v1.layout.fontSize === 12 && v1.qa.ok === true);
+    재기('고친 칸만 Claude 를 불렀다(생성 0 · 재풀이 1)', gR.n.generate === 0 && gR.n.verify === 1, JSON.stringify(gR.n));
+    const 조판 = await 원장(R6.prepRequestRevision, { draftId: v1 && jR.w.resultRef, layout: { answerCols: 1 } });
+    await W.한바퀴(cR, fb, { job: 조판.jobId, noScan: true });
+    const v2id = await 값('sol_prep_v1/jobs/' + 조판.jobId + '/w/resultRef');
+    const v2 = v2id ? await 값('sol_prep_v1/drafts/' + v2id) : null;
+    재기('조판만 고치기 → 내용 그대로(모든 문항 id 같음) · 판1_수정2', v2 && v2.contentKept === true && v2.revision === 2 && v2.manifest.every(m => m.itemId === v1.manifest.find(x => x.slot === m.slot).itemId) && v2.layout.answerCols === 1, JSON.stringify(v2 && { r: v2.revision, k: v2.contentKept }));
+    재기('옛 판(수정1)은 승인 안 됨(고친 새 초안이 있다)', ((await 원장(R6.prepApprovePaper, { draftId: jR.w.resultRef, scope: 'thisWeek' })).err || '').includes('SUPERSEDED'));
+    const 승 = await 원장(R6.prepApprovePaper, { draftId: v2id, scope: 'default' });
+    재기('최신(수정2) 교재 승인 · 「기본값에도」 → 기본값 저장', 승.ok && (await 값('sol_prep_v1/students/emu5/preferences/paper/draftId')) === v2id);
+    const 수량 = await 원장(R6.prepConfirmOnline, { paperDraftId: v2id, online: { mrSets: 1, tsSets: 0, perSet: 2 }, scope: 'thisWeek' });
+    await W.한바퀴(설정('온라인6', { fake: 가짜().fake }), fb, { job: 수량.jobId, noScan: true });
+    const jO = await 값('sol_prep_v1/jobs/' + 수량.jobId);
+    const oD = jO.w && jO.w.resultRef ? await 값('sol_prep_v1/drafts/' + jO.w.resultRef) : null;
+    재기('확인한 수량(MR 1세트 × 2) 그대로 · 명세(1+1 × 3)가 아님 · 주문 id 가 초안에', oD && oD.sets.length === 1 && oD.sets[0].questions.length === 2 && oD.jobId === 수량.jobId && oD.sourceDraftId === v2id, JSON.stringify(jO.w));
+    const 공 = await 원장(R6.prepRelease, { planId: o4.planId });
+    const 묶 = await 값('sol_prep_v1/releases/' + o4.planId + '_hw');
+    재기('일꾼이 만든 초안 → 원장 공개 → 학생 묶음(세트 1 · 문항 2)', 공.ok && 묶 && 묶.published === true && Object.keys(묶.sets).length === 1 && 묶.sets.s1.questions.length === 2, JSON.stringify(공));
+    재기('일꾼은 공개 묶음을 못 읽는다(정답 있음)', await 거절됨(() => fb.get('sol_prep_v1/releases/' + o4.planId + '_hw')));
+  }
 
   console.log('\n── 드라이브 저장(임시 폴더로만) · 실행 방식 스위치');
   const 덮기 = new W.처리(설정('덮기'), fb, 'jx-덮기', { studentId: 'emu5', lessonDate: '2026-10-06', rev: 9 }, {});
