@@ -2882,6 +2882,8 @@ async function _ensurePeriodLoaded(p) {
   try {
     if (_recentPeriodKeySet().has(_periodCanon(p))) { window._extraPeriodData = null; return; }
     if (!window.FB_REF || !window.fbReady) { window._extraPeriodData = null; return; }
+    // ★ [묶음 3] 학생·학부모는 그 주의 **자기 숙제 칸과 자기 제출만** 받는다(전에는 숙제·제출 전체 두 덩이).
+    if (window._scope) { await _scopeLoadPeriod(p); return; }
     const canon = _periodCanon(p);
     const re = new RegExp('_' + canon.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(_|$)');
     const [hwSnap, subSnap] = await Promise.all([
@@ -2897,6 +2899,181 @@ async function _ensurePeriodLoaded(p) {
     console.warn('[ensurePeriodLoaded] 과거 주차 로드 실패:', e);
     window._extraPeriodData = null;
   }
+}
+
+// ═══ [RTDB 요금 묶음 3 · 2026-10-02] 학생·학부모 — **본인 몫만** 받는다 ═══════════════════
+//   전에는 로그인할 때마다 앱 뿌리 전체(10-02 실측 15MB)를 받았다. 서랍(_localMirror)은 어차피
+//   4주 창만 남기므로, 그 창에 드는 **자기 칸만** 서버에서 받아 같은 꼴의 서랍을 만든다.
+//
+//   ⛔ 「안 받은 것」을 「없는 것」으로 읽지 않게 하는 세 가지
+//     ① 반 칸과 공통 칸을 **함께** 받는다 — 서버가 null 을 줘야 「없음」이다(hwLookup 폴백 · 9/5 션 사고 꼴).
+//     ② 제출은 그 아이 것을 **주차 가리지 않고 전부** 받는다(열쇠 앞머리 범위 읽기) — 서랍에 없으면 정말 없다.
+//     ③ fbWrite 문지기: 받은 주(window._scope.periods)가 아닌 주의 제출 칸에는 **쓰지 않는다**.
+//   ⛔ 공책(users)은 본인 줄(+자녀 줄)뿐이다 ⇒ fbSetUsers 는 정본(_usersCanonical) 없이는 안 쓴다.
+window._scope = null;
+let _scopeGen = 0;
+
+// 서랍 보관 창(_recentPeriodKeySet)과 같은 주들 + 원장이 정한 이번 주(학부모 화면이 그것을 본다)
+function _scopeWindowPeriods(extra) {
+  const out = [], seen = new Set();
+  const add = q => { const c = _periodCanon(q); if (!seen.has(c)) { seen.add(c); out.push(q); } };
+  const p = getTodayPeriod();
+  add(p);
+  let f = p; for (let i = 0; i < _LOCAL_KEEP_FWD; i++) { f = nextPeriod(f); add(f); }
+  let b = p; for (let i = 0; i < _LOCAL_KEEP_BACK; i++) { b = prevPeriod(b); add(b); }
+  if (extra && extra.year && extra.month && extra.week) add(extra);
+  return out;
+}
+// 한 아이·한 주에 볼 수 있는 숙제 칸 — 반 칸(있으면)과 공통 칸 둘 다
+function _scopeHwKeys(row, p) {
+  const c = row.country || 'AU', g = row.group || '';
+  return g ? [hwKey(row.year, c, p, g), hwKey(row.year, c, p)] : [hwKey(row.year, c, p)];
+}
+function _scopeMonthKey(p) { return `${p.year}-${String(p.month).padStart(2, '0')}`; }
+async function _scopeGet(path) { return (await window.FB_REF.child(path).once('value')).val(); }
+// 제출 열쇠 앞머리 범위 읽기(`Amy05_` · `ts_Amy05_`) — 그 아이 제출 전부
+async function _scopeSubsOf(sid) {
+  const one = async (pre) => (await window.FB_REF.child('submissions').orderByKey()
+    .startAt(pre).endAt(pre + '').once('value')).val() || {};
+  const [a, b] = await Promise.all([one(sid + '_'), one('ts_' + sid + '_')]);
+  return Object.assign({}, a, b);
+}
+// 숙제 칸 하나를 듣는다 — 첫 값이 오면 약속을 풀고(처음 읽기), 그 뒤 바뀌면 서랍의 그 칸만 고친다.
+//   ⚠ once 뒤에 on 을 걸면 같은 칸을 두 번 받는다 ⇒ 처음부터 on 하나로 받는다.
+function _scopeWatchHw(sc, key, into) {
+  return new Promise((res, rej) => {
+    let first = true;
+    const ref = window.FB_REF.child('homeworkSets/' + key);
+    const cb = ref.on('value', snap => {
+      if (window._scope !== sc && !first) return;
+      const v = snap.val();
+      if (first) { first = false; if (v != null) into[key] = v; res(); return; }
+      _scopePatchHw(sc, key, v);
+    }, err => { if (first) { first = false; rej(err); } });
+    sc.listeners.push({ ref, cb });
+  });
+}
+function _scopePatchHw(sc, key, v) {
+  if (window._scope !== sc) return;
+  const raw = _rawLocalStore();
+  if (!raw) return;
+  const local = JSON.parse(raw);
+  local.homeworkSets = local.homeworkSets || {};
+  if (v == null) delete local.homeworkSets[key]; else local.homeworkSets[key] = v;
+  _persistLocalStore(local);
+  if (currentUser && currentUser.role === 'student' && typeof renderStudent === 'function' && document.getElementById('mainContent')) renderStudent();
+}
+function _scopeDetach() {
+  _scopeGen++;
+  const sc = window._scope;
+  window._scope = null;
+  if (sc) for (const l of sc.listeners) { try { l.ref.off('value', l.cb); } catch (_) {} }
+}
+
+/**
+ * 학생·학부모 로그인 — 본인 몫을 받아 서랍을 만든다.
+ * @param user    로그인한 사람(학생 줄 · 학부모 줄)
+ * @param profile loginCheck 가 준 프로필 — 학부모는 profile.children(자녀 줄)이 꼭 있어야 한다
+ * 못 받으면 던진다(로그인은 들여보내지 않는다). 'NO-CHILD-ROWS' 면 부르는 쪽이 옛 길(_loadFull)로 간다.
+ */
+async function _loadScope(user, profile) {
+  _scopeDetach();
+  const gen = _scopeGen;
+  window._loadMode = 'scope';
+  window.fbReady = false;
+  window._usersCanonical = false;
+  const rows = user.role === 'parent'
+    ? (profile && Array.isArray(profile.children) && profile.children.length ? profile.children : null)
+    : [user];
+  if (!rows) throw new Error('NO-CHILD-ROWS');
+  const sc = { gen, role: user.role, sids: rows.map(r => r.id), rows, periods: new Set(), listeners: [] };
+  window._scope = sc;
+
+  const 작은것 = ['currentPeriod', 'lastModified', 'migrationISO2026Done', 'submitLock', 'schools'];
+  const 작은값 = await Promise.all(작은것.map(_scopeGet));
+  if (gen !== _scopeGen) throw new Error('STALE');
+  const cp = 작은값[0];
+  const periods = _scopeWindowPeriods(cp);
+  const d = { users: [user].concat(user.role === 'parent' ? rows : []), homeworkSets: {}, submissions: {},
+              reports: {}, monthlyReports: {}, weakness: {} };
+  작은것.forEach((k, i) => { if (작은값[i] != null) d[k] = 작은값[i]; });
+
+  const 일 = [];
+  const 칸들 = new Set();
+  for (const r of rows) for (const p of periods) for (const k of _scopeHwKeys(r, p)) 칸들.add(k);
+  for (const k of 칸들) 일.push(_scopeWatchHw(sc, k, d.homeworkSets));
+  // currentPeriod 도 듣는다(원장이 주를 바꾸면 학생 화면이 따라간다 — 옛 뿌리 구독이 하던 일)
+  일.push(new Promise((res, rej) => {
+    let first = true;
+    const ref = window.FB_REF.child('currentPeriod');
+    const cb = ref.on('value', snap => {
+      if (first) { first = false; res(); return; }
+      if (window._scope !== sc) return;
+      const raw = _rawLocalStore(); if (!raw) return;
+      const local = JSON.parse(raw);
+      if (JSON.stringify(local.currentPeriod) === JSON.stringify(snap.val())) return;
+      local.currentPeriod = snap.val();
+      _persistLocalStore(local);
+      if (currentUser && currentUser.role === 'student' && typeof renderStudent === 'function' && document.getElementById('mainContent')) renderStudent();
+    }, err => { if (first) { first = false; rej(err); } });
+    sc.listeners.push({ ref, cb });
+  }));
+  const 월들 = [...new Set(periods.map(_scopeMonthKey))];
+  for (const sid of sc.sids) {
+    일.push(_scopeSubsOf(sid).then(v => Object.assign(d.submissions, v)));
+    일.push(_scopeGet('weakness/' + sid).then(v => { if (v != null) d.weakness[sid] = v; }));
+    for (const p of periods) {
+      const pk = reportPeriodKey(p);
+      일.push(_scopeGet(`reports/${pk}/${sid}`).then(v => { if (v != null) (d.reports[pk] = d.reports[pk] || {})[sid] = v; }));
+    }
+    for (const m of 월들) {
+      일.push(_scopeGet(`monthlyReports/${m}/${sid}`).then(v => { if (v != null) (d.monthlyReports[m] = d.monthlyReports[m] || {})[sid] = v; }));
+    }
+  }
+  await Promise.all(일);
+  if (gen !== _scopeGen || window._scope !== sc) throw new Error('STALE');
+
+  for (const p of periods) sc.periods.add(_periodCanon(p));
+  window._extraPeriodData = null;
+  _persistLocalStore(d);
+  window._storeLoadState = 'ok';
+  window.fbReady = true;
+  console.log('[묶음 3] 본인 몫 받음 — 숙제 칸', Object.keys(d.homeworkSets).length, '/', 칸들.size,
+              '· 제출', Object.keys(d.submissions).length, '· 주', sc.periods.size);
+}
+
+// 지난 주(창 밖) — 그 주의 자기 숙제 칸과 자기 제출만. 다 받아야 그 주에 쓸 수 있다(fbWrite 문지기).
+async function _scopeLoadPeriod(p) {
+  const sc = window._scope;
+  const canon = _periodCanon(p);
+  const re = new RegExp('_' + canon.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(_|$)');
+  try {
+    const hw = {}, sub = {};
+    const 칸들 = new Set();
+    for (const r of sc.rows) for (const k of _scopeHwKeys(r, p)) 칸들.add(k);
+    await Promise.all([
+      ...[...칸들].map(k => _scopeGet('homeworkSets/' + k).then(v => { if (v != null) hw[k] = v; })),
+      ...sc.sids.map(sid => _scopeSubsOf(sid).then(all => { for (const k of Object.keys(all)) if (re.test(k)) sub[k] = all[k]; }))
+    ]);
+    if (window._scope !== sc) return;
+    window._extraPeriodData = { homeworkSets: hw, submissions: sub };
+    sc.periods.add(canon);
+  } catch (e) {
+    console.warn('[묶음 3] 지난 주 받기 실패 — 그 주에는 쓰지 않습니다:', canon, e);
+    window._extraPeriodData = null;
+  }
+}
+
+// fbWrite 문지기 ③ — 학생·학부모가 **받지 못한 주**의 제출 칸에 쓰려 하면 그 열쇠들을 돌려준다.
+function _scopeUnreadWrites(updates) {
+  const sc = window._scope;
+  if (!sc || !currentUser || (currentUser.role !== 'student' && currentUser.role !== 'parent')) return [];
+  return Object.keys(updates || {}).filter(path => {
+    const m = /^submissions\/([^/]+)/.exec(path);
+    if (!m) return false;
+    const c = _periodOfKey(m[1]);
+    return c !== null && !sc.periods.has(c);
+  });
 }
 
 // 서랍을 읽는 **단 하나의 길목.** 쓰는 길이 하나(_persistLocalStore)이듯 읽는 길도 하나로 모은다.
@@ -3326,6 +3503,17 @@ function fbWrite(updates, onSuccess) {
   //     그 지름길들도 다 fbWrite 를 지난다. 한 곳만 막으면 나머지로 샌다.
   //   ⇒ 하나라도 못 되돌렸으면 **쓰지 않는다.** 저장을 미루는 것은 되돌릴 수 있다.
   if (!_figGuardOk(updates)) { if (onSuccess) onSuccess(false); return; }
+  // ⛔⛔ [RTDB 요금 묶음 3] 서버에서 **아직 읽지 못한 주**의 제출 칸에는 쓰지 않는다.
+  //   그 주 칸이 서랍에 없는 것은 「없음」이 아니라 「안 읽음」이다. 그대로 쓰면 빈 답안지로
+  //   서버의 진짜 답·제출을 덮는다(renderStudent·saveAnswer·doSubmit·TS 가 칸 통째로 쓴다).
+  //   ⇒ 쓰지 않고 다시 보내기 줄에도 넣지 않는다(빈 것일 수 있다). 새로고침하면 다시 읽는다.
+  const _안읽은칸 = _scopeUnreadWrites(updates);
+  if (_안읽은칸.length) {
+    console.error('[묶음 3] 안 읽은 주라 쓰지 않음:', _안읽은칸);
+    showBackupToast('⚠️ 이 주의 기록을 아직 서버에서 읽지 못해 저장하지 않았습니다. 새로고침한 뒤 다시 해 주세요.');
+    if (onSuccess) onSuccess(false);
+    return;
+  }
   // ★ [2-B] 세션 문지기 — 학생·학부모 화면에서만
   //   마스터(원장님이 아이 ID 로 들어오심) = 보기만 · 학생 세션이 끝났으면(12시간) 보내지 않고 줄에 넣는다.
   //   (보내면 새 규칙이 거절하고, 거절된 칸은 서버 값으로 되돌아가 **아이 답이 사라진다**.)
@@ -3601,6 +3789,13 @@ function fbSetUsers(users) {
   //   한 곳이라도 옛 비번을 들고 있는 채로 부르면 **지운 비번이 되살아난다.**
   //   ⇒ 막는 자리를 13군데가 아니라 **여기 하나**로 잡았다.
   //   (비번을 바꾸는 길은 오직 일꾼이다 — changeMyPassword · setPasswordByOperator)
+  // ⛔⛔ [RTDB 요금 묶음 3] **공책 정본을 받은 때만** 쓴다. 학생·학부모 서랍의 users 는 본인(+자녀) 줄뿐이라
+  //   번호(users/0, users/1 …)가 서버와 다르다 — 그대로 쓰면 남의 줄을 덮는다.
+  if (!window._usersCanonical) {
+    console.error('[묶음 3] 공책 정본 없이 users 쓰기를 막았다(부분 명단일 수 있다).');
+    if (currentUser && currentUser.role === 'teacher') alert('⚠️ 학생 명단을 아직 서버에서 다 받지 못해 저장하지 않았습니다.\n새로고침한 뒤 다시 해 주세요.');
+    return;
+  }
   const updates = {};
   users.forEach((u, i) => {
     const clean = Object.assign({}, u);
@@ -5224,9 +5419,10 @@ async function _doLoginInner() {
   const id = document.getElementById('loginId').value.trim();
   const pw = document.getElementById('loginPw').value;
   // ★ [묶음 2] 소개 화면은 DB 를 안 연다 ⇒ 로그인할 때 연다(이미 열렸으면 바로 지나간다).
-  //   처음 읽기가 끝날 때까지(또는 7초) 기다린 뒤에 서랍을 본다 — 전과 같은 서랍이다.
+  // ★ [묶음 3] _dbStart 는 익명 인증만 한다 — 자료는 누가 들어오는지 정해진 뒤 아래에서 받는다.
   if (typeof window._dbStart === 'function') await window._dbStart();
   const store = getStore();
+  let loginProfile = null;
 
   // ═══════════════════════════════════════════════════════
   //  [2026-09-11] 비번 대조를 **서버 일꾼(loginCheck)** 에게 넘겼다.
@@ -5247,21 +5443,16 @@ async function _doLoginInner() {
   try {
     const said = await callAuthWorker('loginCheck', { id, role: loginRole, pw }, 8000);
     if (said && said.ok) {
-      // ★ [묶음 2] 서버가 본인 프로필을 함께 준다(functions/auth.js profileFor).
-      //   이 묶음에서는 서랍의 줄이 있으면 **그 줄을 그대로** 쓴다(지금과 똑같이 돌게).
-      //   서랍에 없을 때만 서버 프로필로 들어온다 — 단 서버 자료를 다 받았을 때만
-      //   (못 받았으면 빈 화면으로 들어가지 않고 아래에서 「연결 못 함」으로 멈춘다).
+      // ★ [묶음 3] 서버가 준 본인 프로필(functions/auth.js profileFor)로 들어온다 — 공책 전체가 없어도 된다.
+      //   프로필을 못 받았을 때만(일꾼이 공책을 못 읽음) 이 기기 서랍의 줄을 본다(옛 길).
+      //   학부모 프로필의 children(자녀 줄)은 사람 줄에서 떼어 따로 쥔다 — 자녀 몫 받기에 쓴다.
       const p = said.profile;
-      const fromServer = (p && p.id === id && p.role === loginRole) ? p : null;
-      user = store.users.find(u => u.id === id && u.role === loginRole) || null;
-      if (!user && fromServer) {
-        if (window.fbReady) user = fromServer;
-        else {
-          document.getElementById('loginError').textContent =
-            '지금 서버에서 자료를 받지 못했습니다. 잠시 뒤 다시 시도해 주세요.';
-          document.getElementById('loginError').style.display = 'block';
-          return;
-        }
+      if (p && p.id === id && p.role === loginRole) {
+        loginProfile = p;
+        user = Object.assign({}, p);
+        delete user.children;
+      } else {
+        user = store.users.find(u => u.id === id && u.role === loginRole) || null;
       }
       isMasterLogin = !!said.isMaster;
     }
@@ -5325,6 +5516,30 @@ async function _doLoginInner() {
       window._legacyMaster = isMasterLogin;   // 옛 방식이어도 마스터는 보기 전용
       setTimeout(() => showBackupToast('⚠️ 세션 서버에 연결하지 못해 예전 방식으로 들어왔습니다. 숙제·저장은 그대로 됩니다.'), 500);
     }
+    // ★ [RTDB 요금 묶음 3] 학생·학부모 — **본인 몫만** 받는다(전에는 앱 뿌리 전체 15MB).
+    //   못 받으면 들여보내지 않는다 — 옛 서랍으로 들어가 「안 읽은 것」을 「없음」으로 그리면 안 된다.
+    //   자녀 줄을 못 받은 학부모만 옛 길(전체 읽기)로 간다.
+    try {
+      await Promise.race([
+        _loadScope(user, loginProfile),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('SCOPE-TIMEOUT')), 25000))
+      ]);
+    } catch (e) {
+      const m = String((e && e.message) || e);
+      if (m === 'NO-CHILD-ROWS') {
+        console.warn('[묶음 3] 자녀 줄이 없어 전체 읽기로 갑니다');
+        _scopeDetach();
+        await window._loadFull();
+      } else {
+        console.error('[묶음 3] 본인 몫을 못 받음:', m);
+        if (window._resetDataState) window._resetDataState();
+        prepEndSessionClient();
+        document.getElementById('loginError').textContent =
+          '지금 서버에서 자료를 받지 못했습니다. 잠시 뒤 다시 시도해 주세요.';
+        document.getElementById('loginError').style.display = 'block';
+        return;
+      }
+    }
   }
   currentUser = user;
 
@@ -5353,6 +5568,9 @@ async function _doLoginInner() {
       await elevateToOperatorAuth(user.id, pw);
       // ★ [묶음 2] 잠긴 칸 목록은 교사만 쓴다 ⇒ 교사 인증 뒤에 지켜본다(전에는 페이지 열 때).
       try { _잠긴칸지켜보기(); } catch (e) { console.warn('[lock] 시작 실패:', e); }
+      // ★ [묶음 3] 교사는 원장 인증 **뒤에** 앱 뿌리 전체를 받는다(지금까지와 같은 자료 · 7초면 서랍으로 연다).
+      _scopeDetach();
+      await window._loadFull();
       document.getElementById('btnBackupDownload').style.display = '';
       const todayPeriod = getTodayPeriod();
       const _s = getStore();
@@ -5402,6 +5620,8 @@ async function _doLoginInner() {
 
 function doLogout() {
   prepEndSessionClient();   // [2-B] 이 기기의 학생 묶음을 푼다(다음 사람을 위해)
+  // ★ [묶음 3] 구독을 떼고 받기 상태를 비운다 — 늦게 오는 응답이 다음 사람 서랍에 닿지 않게(원칙 7)
+  if (window._resetDataState) window._resetDataState();
   // [Auth 2026-05-16] 원장이었다면 익명 Auth로 복귀 (다음 사용자 위해, fire-and-forget)
   try {
     if (firebase.auth().currentUser?.uid === OPERATOR_UID) {
@@ -14803,29 +15023,82 @@ function _emuConnect(fb, doc) {
     //   ⛔ 잠긴 칸 목록(_잠긴칸지켜보기)은 여기서 빼고 교사 인증 뒤로 옮겼다(doLogin).
     const ov0 = document.getElementById('loadingOverlay');
     if (ov0) ov0.style.display = 'none';   // 받을 것이 없으니 기다릴 것도 없다
+    // ★ [RTDB 요금 묶음 3 · 2026-10-02] 자료는 **누가 들어오는지 정해진 뒤에** 받는다.
+    //   _dbStart()  = 익명 로그인 + 연결 감시만(로그인 일꾼을 부르려면 인증이 있어야 한다)
+    //   _loadFull() = 교사 — 원장 인증 뒤 앱 뿌리 전체(지금까지와 같은 길)
+    //   _loadScope()= 학생·학부모 — 본인 몫만(아래 _loadScope 정의 참조)
     let _dbStartPromise = null;
     window._dbStart = function () {
       if (_dbStartPromise) return _dbStartPromise;   // 연타·창 여닫기에도 한 번만
       window.FB_REF = firebase.database().ref('solomon_hw_v3');
-      _dbStartPromise = new Promise(resolveStart => {
-
-    // 중복 finishInit 방지 (timeout과 once 콜백 양쪽에서 호출될 수 있음)
-    let _initDone = false;
-    const finishInit = () => {
-      if (_initDone) return;
-      _initDone = true;
-      ensureStore().then(() => {
-        const ov = document.getElementById('loadingOverlay');
-        if (ov) ov.style.display = 'none';
-      }).catch(e => console.warn('[ensureStore] 실패:', e)).then(() => resolveStart());
+      _dbStartPromise = firebase.auth().signInAnonymously()
+        .then(cred => {
+          console.log('[Auth] anonymous user:', cred.user.uid);
+          // [Fix 2026-06-23] 연결 (재)수립 시 초기 로드 자동 재시도 — [묶음 3] 교사(전체 읽기) 때만.
+          //   학생·학부모 본인 몫 읽기는 로그인이 끝까지 기다리고, 못 받으면 들여보내지 않는다.
+          try {
+            firebase.database().ref('.info/connected').on('value', (snap) => {
+              if (snap.val() === true && !window.fbReady && window._loadMode === 'full') {
+                console.log('[Firebase] 연결 복구 감지 — 초기 로드 재시도');
+                loadInitialData(_fullGen, null);
+              }
+            });
+          } catch (e) { console.warn('[Firebase] .info/connected 리스너 등록 실패:', e?.message || e); }
+        })
+        .catch(e => {
+          console.warn('[Auth] anonymous sign-in failed:', e.message);
+          window._storeLoadState = _storeLoadStateOf({ ok: false, err: e });   // ★ [1단계]
+          window.fbReady = false;
+          _dbStartPromise = null;   // 다음 로그인 때 다시 해 본다
+        });
+      return _dbStartPromise;
     };
 
-    // 7초 안에 인증/Firebase 응답 없으면 강제로 로딩 해제 (localStorage만으로 fallback)
-    const loadingTimeout = setTimeout(finishInit, 7000);
+    // ── 교사: 앱 뿌리 전체(옛 길 그대로) ─────────────────────────────────────
+    let _fullGen = 0, _fullPromise = null, _rootHandler = null;
+    window._loadFull = function () {
+      window._loadMode = 'full';
+      if (window.fbReady && window._usersCanonical) return Promise.resolve();
+      if (_fullPromise) return _fullPromise;
+      const gen = _fullGen;
+      _fullPromise = new Promise(res => {
+        let done = false;
+        const finishInit = () => {
+          if (done) return;
+          done = true;
+          clearTimeout(loadingTimeout);
+          _fullPromise = null;
+          ensureStore().then(() => {
+            const ov = document.getElementById('loadingOverlay');
+            if (ov) ov.style.display = 'none';
+          }).catch(e => console.warn('[ensureStore] 실패:', e)).then(() => res());
+        };
+        // 7초 안에 응답 없으면 로컬 서랍으로 연다(옛 길과 같다)
+        const loadingTimeout = setTimeout(finishInit, 7000);
+        attachRealtimeListener();
+        loadInitialData(gen, finishInit);
+      });
+      return _fullPromise;
+    };
+
+    // 로그아웃·계정 바꾸기 — 구독을 떼고, 늦게 오는 응답이 다음 사람 화면에 닿지 않게 한다(원칙 7)
+    window._resetDataState = function () {
+      _fullGen++;
+      _fullPromise = null;
+      _loadInFlight = false;
+      if (_rootHandler && window.FB_REF) { try { window.FB_REF.off('value', _rootHandler); } catch (_) {} }
+      _rootHandler = null;
+      if (typeof _scopeDetach === 'function') _scopeDetach();
+      window.fbReady = false;
+      window._usersCanonical = false;
+      window._loadMode = null;
+      window._extraPeriodData = null;
+    };
 
     // 실시간 리스너 등록 헬퍼 — 인증 완료 후에만 호출
     const attachRealtimeListener = () => {
-      window.FB_REF.on('value', (snapshot) => {
+      if (_rootHandler) return;   // [묶음 3] 교사가 다시 불러도 겹치지 않게
+      _rootHandler = window.FB_REF.on('value', (snapshot) => {
         if (!window.fbReady) return;
         const data = snapshot.val();
         if (!data) return;
@@ -14879,12 +15152,13 @@ function _emuConnect(fb, doc) {
     // 시작 시 Firebase에서 데이터 불러오기 — 인증 완료 후에만 호출
     // [Fix 2026-06-23] 재진입 방지 가드 (.info/connected 재시도와 중복 호출 차단)
     let _loadInFlight = false;
-    const loadInitialData = () => {
+    const loadInitialData = (gen, finishInit) => {
+      finishInit = finishInit || (() => {});
       if (_loadInFlight || window.fbReady) return;
       _loadInFlight = true;
       window.FB_REF.once('value', (snapshot) => {
         _loadInFlight = false;
-        clearTimeout(loadingTimeout);
+        if (gen !== _fullGen) return;   // [묶음 3] 그사이 로그아웃했다 — 다음 사람 서랍에 쓰지 않는다
         const fbData = snapshot.val();
         const localRaw = _rawLocalStore();
         const localData = localRaw ? JSON.parse(localRaw) : null;
@@ -14911,6 +15185,7 @@ function _emuConnect(fb, doc) {
         // 둘 다 없으면 ensureStore()에서 initStore() 처리
 
         window.fbReady = true;
+        window._usersCanonical = !!fbData;   // [묶음 3] 공책(users) 정본을 받았다 — fbSetUsers 는 이때만 쓴다
         loadTaxonomy();
         // [Safety 2026-05-29] 이전 세션의 미저장 학생 답 자동 push (자기 submission 화이트리스트만)
         // ★ [1단계] 제출 재시도가 **끝난 뒤** 약점 줄을 비운다(서버에서 제출을 확인하고 반영).
@@ -14918,52 +15193,20 @@ function _emuConnect(fb, doc) {
         finishInit();
       }, (err) => {
         console.warn('[Firebase] initial read failed:', err?.message || err);
-        window._storeLoadState = _storeLoadStateOf({ ok: false, err });   // ★ [1단계] denied / network
         _loadInFlight = false;
-        clearTimeout(loadingTimeout);
+        if (gen !== _fullGen) return;
+        window._storeLoadState = _storeLoadStateOf({ ok: false, err });   // ★ [1단계] denied / network
         window.fbReady = false;
         finishInit();
         // [Fix 2026-06-23] 실패해도 fbReady가 false로 고착되지 않도록
-        // .info/connected 리스너가 재연결 시 자동 재시도함 (아래 참조)
+        // .info/connected 리스너가 재연결 시 자동 재시도함 (_dbStart 참조)
       });
-    };
-
-    // [2026-05-12] 익명 인증을 먼저 완료한 다음 DB 작업 시작
-    // (Rules가 "auth != null"이면 인증 전 호출은 모두 permission_denied)
-    firebase.auth().signInAnonymously()
-      .then(cred => {
-        console.log('[Auth] anonymous user:', cred.user.uid);
-        attachRealtimeListener();
-        loadInitialData();
-        // [Fix 2026-06-23] 연결 (재)수립 시 초기 로드 자동 재시도.
-        // 일시적 네트워크 끊김/대용량 트리 다운로드 실패로 fbReady가 false로
-        // 고착되면 이후 모든 저장이 실패(빨간 배너)하던 문제 해결.
-        // 다운로드 전용(_persistLocalStore) — 업로드/덮어쓰기 없음.
-        // 연결이 살아있는 한 .info/connected는 상태 변화 시에만 발화하므로 루프 없음.
-        try {
-          firebase.database().ref('.info/connected').on('value', (snap) => {
-            if (snap.val() === true && !window.fbReady) {
-              console.log('[Firebase] 연결 복구 감지 — 초기 로드 재시도');
-              loadInitialData();
-            }
-          });
-        } catch (e) { console.warn('[Firebase] .info/connected 리스너 등록 실패:', e?.message || e); }
-      })
-      .catch(e => {
-        console.warn('[Auth] anonymous sign-in failed:', e.message);
-        window._storeLoadState = _storeLoadStateOf({ ok: false, err: e });   // ★ [1단계]
-        // 인증 실패 → Firebase 사용 불가, localStorage만으로 동작
-        clearTimeout(loadingTimeout);
-        window.fbReady = false;
-        finishInit();
-      });
-
-      });   // ← new Promise
-      return _dbStartPromise;
     };
   } catch(e) {
     console.warn('[Firebase] init exception:', e?.message || e);
     window._dbStart = () => Promise.resolve();   // SDK 가 없으면 기다릴 것도 없다(옛 길과 같음)
+    window._loadFull = () => Promise.resolve();
+    window._resetDataState = () => {};
     ensureStore().then(() => {
       const ov = document.getElementById('loadingOverlay');
       if (ov) ov.style.display = 'none';

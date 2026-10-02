@@ -38,7 +38,7 @@ const 쉼 = () => new Promise(r => setImmediate(r));
   let 처음읽기 = null;
   const ref = (p) => ({
     path: p,
-    on: (ev) => 일.push('on ' + p),
+    on: (ev, cb) => { 일.push('on ' + p); return cb; },
     once: (ev, ok) => { 일.push('once ' + p); 처음읽기 = ok; },
     off: () => 일.push('off ' + p),
     child: () => ref(p + '/?'),
@@ -78,20 +78,38 @@ const 쉼 = () => new Promise(r => setImmediate(r));
   재기('세 번 불러도 같은 약속', a === b && b === c);
   재기('FB_REF 를 이때 만든다', window.FB_REF && window.FB_REF.path === 'solomon_hw_v3');
   재기('익명 로그인 1번', 일.filter(x => x === 'anon').length === 1, 일.join(' | '));
-  재기('뿌리 once 1번', 일.filter(x => x === 'once solomon_hw_v3').length === 1, 일.join(' | '));
-
-  console.log('\n── ③ 지금과 같은 일을 하고, 처음 읽기가 끝나야 끝난다');
-  재기('뿌리 구독', 일.includes('on solomon_hw_v3'));
   재기('연결 감시', 일.includes('on .info/connected'));
-  let 끝남 = false; a.then(() => { 끝남 = true; });
+  // [묶음 3] _dbStart 는 익명 인증만 — 누가 들어오는지 모르니 자료는 안 받는다
+  재기('⛔ 뿌리 구독·읽기 0번(묶음 3)', !일.includes('on solomon_hw_v3') && !일.includes('once solomon_hw_v3'), 일.join(' | '));
+
+  console.log('\n── ③ 교사 전체 읽기(_loadFull) — 지금과 같은 일을 하고, 처음 읽기가 끝나야 끝난다');
+  const f1 = window._loadFull(), f2 = window._loadFull();
+  재기('두 번 불러도 같은 약속', f1 === f2);
+  재기('뿌리 구독 1 · 읽기 1', 일.filter(x => x === 'on solomon_hw_v3').length === 1 && 일.filter(x => x === 'once solomon_hw_v3').length === 1, 일.join(' | '));
+  let 끝남 = false; f1.then(() => { 끝남 = true; });
   await 쉼();
   재기('처음 읽기 전에는 안 끝난다', 끝남 === false);
   처음읽기({ val: () => ({ users: [], homeworkSets: {} }) });
   await 쉼(); await 쉼(); await 쉼();
   재기('처음 읽기 뒤에 끝난다', 끝남 === true);
   재기('fbReady 가 참', window.fbReady === true);
+  재기('공책 정본 깃발(_usersCanonical)이 선다', window._usersCanonical === true);
   재기('서랍 확인(ensureStore) 1번', 서랍확인 === 1);
   재기('분류·재시도·약점 줄이 돈다', ['taxonomy', 'retry', 'weakness'].every(x => 일.includes(x)), 일.join(' | '));
+  const 앞 = 일.length;
+  await window._loadFull();
+  재기('이미 받았으면 다시 받지 않는다', 일.slice(앞).every(x => !/^(on|once) solomon_hw_v3$/.test(x)), 일.slice(앞).join(' | '));
+
+  console.log('\n── ③-2 로그아웃(_resetDataState) — 구독을 떼고, 늦은 응답은 버린다');
+  window._resetDataState();
+  재기('뿌리 구독을 뗀다', 일.includes('off solomon_hw_v3'));
+  재기('fbReady · 정본 깃발이 내려간다', window.fbReady === false && window._usersCanonical === false);
+  window._loadFull();
+  const 늦은 = 처음읽기;
+  window._resetDataState();   // 응답이 오기 전에 또 로그아웃
+  늦은({ val: () => ({ users: [{ id: 'x' }], homeworkSets: {} }) });
+  await 쉼();
+  재기('⛔ 로그아웃 뒤에 온 응답은 fbReady 를 세우지 않는다', window.fbReady === false && window._usersCanonical === false);
 
   console.log('\n── ④ 로그인');
   const 로그인 = 떼기('async function doLogin() {', '\n}\n');
@@ -100,8 +118,13 @@ const 쉼 = () => new Promise(r => setImmediate(r));
   재기('서랍을 보기 전에 _dbStart 를 기다린다', /await window\._dbStart\(\)/.test(안쪽));
   const 창 = 떼기('function openLoginModal() {', '\n  }\n');
   재기('로그인 창을 열면 미리 시작한다', /window\._dbStart\(\)/.test(창));
-  재기('서버 프로필은 서랍에 줄이 없을 때만, 서버 자료를 받았을 때만',
-       /if \(!user && fromServer\) \{\s*\n\s*if \(window\.fbReady\) user = fromServer;/.test(html));
+  // [묶음 3] 서버 프로필이 먼저 · 학생·학부모는 본인 몫(_loadScope) · 못 받으면 안 들여보낸다
+  재기('서버 프로필로 들어온다(자녀 줄은 떼어 쥔다)', /loginProfile = p;\s*\n\s*user = Object\.assign\(\{\}, p\);\s*\n\s*delete user\.children;/.test(html));
+  재기('학생·학부모는 _loadScope 를 기다린다(25초 끊기)', /_loadScope\(user, loginProfile\),\s*\n\s*new Promise\(\(_, rej\) => setTimeout\(\(\) => rej\(new Error\('SCOPE-TIMEOUT'\)\), 25000\)\)/.test(html));
+  재기('못 받으면 「자료를 받지 못했습니다」로 멈춘다', /'지금 서버에서 자료를 받지 못했습니다\. 잠시 뒤 다시 시도해 주세요\.';\s*\n\s*document\.getElementById\('loginError'\)\.style\.display = 'block';\s*\n\s*return;/.test(html));
+  const 교사길 = 떼기('await elevateToOperatorAuth(user.id, pw);', 'renderTeacher();');
+  재기('교사는 원장 인증 뒤에 _loadFull 을 기다린다', /await window\._loadFull\(\);/.test(교사길));
+  재기('로그아웃은 받기 상태를 비운다', /function doLogout\(\) \{[\s\S]{0,400}window\._resetDataState\(\)/.test(html));
 
   console.log('\n── ⑤ 잠긴 칸 구독');
   const 교사 = 떼기('await elevateToOperatorAuth(user.id, pw);', "btnBackupDownload').style.display = '';");

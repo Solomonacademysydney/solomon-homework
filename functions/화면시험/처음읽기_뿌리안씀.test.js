@@ -53,7 +53,8 @@ function 떼기(시작, 끝표) {
   재기('익명 로그인 실패 → network(인증 길)', 가르기({ ok: false, err: { code: 'auth/network-request-failed' } }) === 'network');
 
   console.log('\n── ③ 처음 읽기 뒤 — 제출 재시도 → 약점 줄');
-  const 읽기소스 = 떼기('const loadInitialData = () => {', '\n    // [2026-05-12] 익명 인증을 먼저 완료한 다음 DB 작업 시작');
+  // [RTDB 요금 묶음 3] 처음 읽기는 교사 전체 읽기(_loadFull)가 부른다 — 세대 번호를 받는다
+  const 읽기소스 = 떼기('const loadInitialData = (gen, finishInit) => {', "\n  } catch(e) {\n    console.warn('[Firebase] init exception");
   재기('_storeLoadStateOf 로 상태를 적는다', /window\._storeLoadState\s*=\s*_storeLoadStateOf\(/.test(읽기소스));
   재기('실패 쪽에서도 상태를 적는다', (읽기소스.match(/_storeLoadState\s*=/g) || []).length >= 2);
   재기('제출 재시도가 끝난 뒤 약점 줄을 비운다', /_flushRetryQueue\(\)\s*\.then\(\s*\(\)\s*=>\s*_weaknessFlush\(\)\s*\)/.test(읽기소스), '');
