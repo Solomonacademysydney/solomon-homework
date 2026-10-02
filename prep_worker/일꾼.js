@@ -499,7 +499,7 @@ const 프롬프트 = {
     'calculator true means the numbers may need a calculator; false means mental or written methods suffice.',
     'figure must be false. Do not write questions that need a picture.',
   ],
-  재풀이: 'Solve each question independently and carefully. For multiple choice give the exact text of the correct choice. Reply with only this JSON: {"answers":[{"slot":"<slot>","answer":"<your answer>"}]}',
+  재풀이: 'Solve each question independently and carefully. "answer" must be the final answer only (a number with its unit, or the exact text of the correct choice) — no working, no equations, no sentences. For multiple choice give the exact text of the correct choice. Reply with only this JSON: {"answers":[{"slot":"<slot>","answer":"<final answer only>"}]}',
   형식: 'You fix only the JSON shape of question items (missing fields, choice labels, field names). Never change numbers, wording meaning, or answers. Output only the JSON object.',
 };
 const 스키마 = {

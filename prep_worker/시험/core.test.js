@@ -113,5 +113,18 @@ console.log('\n── 학교 자료 새 파일 찾기(원장님이 휴대폰 드
   재기('같은 이름이라도 크기가 바뀌면(새로 찍어 덮음) 새 파일', C.schoolFileNews([Object.assign({}, 파일[0], { size: 101 })], 받은).length === 1);
 }
 
+console.log('\n── 재풀이가 풀이째 답을 보낼 때 (10-02 별이 교재 실측 — 맞는 10문항이 「불일치」로 잡혔다)');
+{
+  const t = (a, b, ty) => C.compareSolve([{ slot: 'x', answer: a, type: ty || 'sa' }], [{ slot: 'x', answer: b }]).x.status;
+  재기('「Volume = 6 × 4 × 5 = 120 cm³」 ↔ 정답 120 → 일치', t('120', 'Volume = 6 × 4 × 5 = 120 cm³') === 'verified-agree');
+  재기('「… = 30 000 cm³. 30 000 ÷ 1000 = 30 L」 ↔ 30 → 일치(마지막 = 뒤)', t('30', 'Volume = 50 × 20 × 30 = 30 000 cm³. 30 000 ÷ 1000 = 30 L') === 'verified-agree');
+  재기('서술형 「Box B has the greater volume, by 5 cm³.」 ↔ 「… 125 − 120 = 5 cm³」 → 일치', t('Box B has the greater volume, by 5 cm³.', 'Box A = 120 cm³. Box B = 125 cm³. by 125 − 120 = 5 cm³', 'written') === 'verified-agree');
+  재기('= 뒤에 덧말이 붙어도(「= 30 cubes. … divides by 2」) 30 을 본다', t('30 cubes can be packed into the box.', '5 × 3 × 2 = 30 cubes. Every edge divides exactly by 2, so there are no gaps.', 'written') === 'verified-agree');
+  재기('⛔ = 뒤의 답이 다르면 불일치(121 ≠ 120)', t('120', 'Volume = 6 × 4 × 5 = 121 cm³') === 'mismatch');
+  재기('⛔ 서술형도 = 뒤 답이 다르면 불일치', t('The water will last 40 days.', '2000 ÷ 50 = 41 days', 'written') === 'mismatch');
+  재기('⛔ 객관식은 수 하나 맞는다고 일치가 아니다(보기 글로만)', t('Blue', 'Red', 'mc') === 'mismatch');
+  재기('분수·소수 값이 같으면 일치(3/8 = 0.375)', t('3/8', '0.375') === 'verified-agree');
+}
+
 console.log('\n셈 — 통과 ' + 통과 + ' · 실패 ' + 실패);
 process.exit(실패 ? 1 : 0);

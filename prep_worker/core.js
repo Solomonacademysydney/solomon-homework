@@ -184,6 +184,27 @@ function checkMrItems(items, slots) {
   const extra = Object.keys(byId).filter(id => !slots.some(s => s.id === id));
   return { ok: Object.keys(bad).length === 0, bad, extra };
 }
+/**
+ * [10-02 실측] 재풀이가 「Volume = 6 × 4 × 5 = 120 cm³」처럼 풀이째 답을 보내 맞는 문항 10개가 「불일치」로 잡혔다.
+ *   ⇒ 글자로 안 맞으면 마지막 「=」 뒤의 첫 수(없으면 글 전체의 마지막 수)와 정답의 수를 값으로 맞댄다.
+ *   서술형 정답(「Box B has the greater volume, by 5 cm³」)은 정답 글의 마지막 수를 쓴다.
+ */
+const 수뽑기 = (s) => (String(s == null ? '' : s).replace(/(\d),(?=\d{3}\b)/g, '$1').replace(/(\d) (?=\d{3}\b)/g, '$1').match(/-?\d+(?:\.\d+)?(?:\s*\/\s*\d+)?/g) || []);
+function finalNumber(s) {
+  const t = String(s == null ? '' : s);
+  const i = t.lastIndexOf('=');
+  const 뒤 = i >= 0 ? 수뽑기(t.slice(i + 1)) : [];
+  if (뒤.length) return 뒤[0];
+  const 다 = 수뽑기(t); return 다.length ? 다[다.length - 1] : null;
+}
+function sameFinal(theirs, answer) {
+  if (sameAnswer(theirs, answer)) return true;
+  const a = valueOf(answer) ? String(answer) : (수뽑기(answer).slice(-1)[0] || null);
+  const b = finalNumber(theirs);
+  if (a == null || b == null) return false;
+  const va = valueOf(a), vb = valueOf(b);
+  return !!(va && vb && req(va, vb));
+}
 /** 재풀이 대조 — 같은 모델 두 번 일치는 「검증 일치」일 뿐 「정답 보장」이 아니다 */
 function compareSolve(items, solved) {
   const sv = {}; for (const x of (Array.isArray(solved) ? solved : [])) if (x && x.slot) sv[x.slot] = x;
@@ -192,7 +213,8 @@ function compareSolve(items, solved) {
     const s = sv[it.slot];
     const theirs = s ? resolveChoice(s.answer, it.choices) : null;
     const calcOk = it.check ? (() => { try { return req(evalExact(it.check), valueOf(it.answer)); } catch (e) { return false; } })() : null;
-    const agree = !!s && sameAnswer(theirs, it.answer);
+    // 객관식은 보기 글로만(수 하나 맞는다고 같은 보기가 아니다) · 단답·서술은 마지막 값까지 본다
+    const agree = !!s && (it.type === 'mc' ? sameAnswer(theirs, it.answer) : sameFinal(theirs, it.answer));
     out[it.slot] = { agree, theirs: theirs == null ? null : String(theirs), calc: calcOk === null ? 'none' : (calcOk ? 'ok' : 'bad'),
       status: agree && calcOk !== false ? 'verified-agree' : 'mismatch' };
   }
