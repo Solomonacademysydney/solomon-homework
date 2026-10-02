@@ -534,9 +534,42 @@ async function 학교자료찾기(cfg, fb) {
   return { 적음, 미연결 };
 }
 
+/**
+ * [10-02] 툴체인 챙기기 — 원장님이 프로젝트에서 교재를 만들고 드라이브 `_툴체인` 에 저장한 최신 툴체인이 바뀌었으면
+ *   풀어서 단원 목록(색인)을 만들고 홈페이지(sol_prep_v1/toolchainIndex)에 올린다 → 주간 설정에 「비슷한 단원」이 뜬다.
+ *   ⛔ 툴체인 정본(드라이브)은 읽기만 한다. 푼 사본은 C:/솔로몬제작/toolchain_latest.
+ */
+async function 툴체인챙기기(cfg, fb, force) {
+  const 바탕 = path.dirname(String((cfg.drive || {}).root || ''));
+  const t = Object.assign({ latest: path.join(바탕, '_툴체인', 'solomon_toolchain_latest.tar.xz'), dir: 'C:/솔로몬제작/toolchain_latest',
+    index: 'C:/솔로몬제작/툴체인_색인.json', state: 'C:/솔로몬제작/툴체인_상태.json' }, cfg.toolchain || {});
+  if (!fs.existsSync(t.latest)) return { skipped: '툴체인 파일 없음' };
+  const st = fs.statSync(t.latest), 표 = st.size + '|' + Math.round(st.mtimeMs);
+  const 옛 = fs.existsSync(t.state) ? JSON.parse(fs.readFileSync(t.state, 'utf8')) : {};
+  if (옛.표 === 표 && !force) return { same: 옛.rev };
+  const md5 = crypto.createHash('md5').update(fs.readFileSync(t.latest)).digest('hex');
+  const 무결성 = path.join(path.dirname(t.latest), '무결성.txt');
+  const revm = fs.existsSync(무결성) ? /rev\s*:\s*(rev\d+)/.exec(fs.readFileSync(무결성, 'utf8')) : null;
+  const rev = revm ? revm[1] : 'rev?';
+  const 임시 = t.dir + '_새로';
+  fs.rmSync(임시, { recursive: true, force: true }); fs.mkdirSync(임시, { recursive: true });
+  const x = spawnSync('tar', ['-xJf', t.latest, '-C', 임시], { encoding: 'utf8' });
+  if (x.status !== 0) throw new Error('툴체인 풀기 실패: ' + (x.stderr || '').slice(-300));
+  fs.rmSync(t.dir, { recursive: true, force: true }); fs.renameSync(임시, t.dir);
+  const r = spawnSync(cfg.python || 'python', [path.join(__dirname, '툴체인_색인.py'), t.dir, t.index], { encoding: 'utf8', env: Object.assign({}, process.env, { PYTHONUTF8: '1' }) });
+  if (r.status !== 0) throw new Error('툴체인 색인 실패: ' + (r.stderr || '').slice(-300));
+  const 색인 = JSON.parse(fs.readFileSync(t.index, 'utf8'));
+  const units = 색인.단원.map(u => ({ 트랙: u.트랙, 파일: u.파일, 제목: String(u.제목 || '').slice(0, 200), 처음: u.처음, 줄: u.줄, 함수수: u.함수수 }));
+  await fb.put(ROOT + '/toolchainIndex', { rev, md5, at: iso(), worker: cfg.workerId, units });
+  fs.writeFileSync(t.state, JSON.stringify({ 표, rev, md5, at: iso(), 단원수: units.length }));
+  기록(cfg, { msg: '툴체인 색인 올림', rev, md5, 단원수: units.length });
+  return { rev, 단원수: units.length };
+}
+
 /* ── 주문 훑기 ── */
 async function 한바퀴(cfg, fb, opts) {
   if (!opts.noScan) { try { const s = await 학교자료찾기(cfg, fb); if (s.적음 && (s.적음.length || s.미연결.length)) console.log('학교 자료: ' + JSON.stringify(s)); } catch (e) { 기록(cfg, { msg: '학교 자료 찾기 실패', error: e.message }); } }
+  if (!opts.noScan) { try { const k = await 툴체인챙기기(cfg, fb, false); if (k.rev) console.log('툴체인: ' + JSON.stringify(k)); } catch (e) { 기록(cfg, { msg: '툴체인 챙기기 실패', error: e.message }); } }
   const jobs = (await fb.get(ROOT + '/jobs')) || {};
   const 결과 = [];
   const ids = Object.keys(jobs).filter(id => !opts.job || id === opts.job)
@@ -624,5 +657,5 @@ async function main() {
   console.log(JSON.stringify(r, null, 1));
 }
 
-module.exports = { 학교자료찾기, 폴더이름, 답모으기, 처리, 한바퀴, 설정읽기, 보관, 자동켜짐, 프롬프트, 스키마, 정리 };
+module.exports = { 툴체인챙기기, 학교자료찾기, 폴더이름, 답모으기, 처리, 한바퀴, 설정읽기, 보관, 자동켜짐, 프롬프트, 스키마, 정리 };
 if (require.main === module) main().catch(e => { console.error('⛔ ' + (e && e.stack || e)); process.exit(1); });

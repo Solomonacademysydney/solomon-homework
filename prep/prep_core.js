@@ -549,7 +549,50 @@
     return { files: Array.from(files).sort(), contentKept, voids, notes };
   }
 
+  // ───────────────────────── 툴체인 단원 찾기 (10-02) ─────────────────────────
+  //   주간 설정의 MR 단원 이름 → 쌓인 단원 프로그램(툴체인 색인) 가운데 같은 기술을 다루는 것.
+  //   이름이 영어·한국어로 섞여 있어 낱말 대신 「기술 열쇠」로 맞댄다. 학년이 달라도 보여 주되 학년을 붙인다
+  //   (Y3 곱셈 ≠ Y9 문자식 곱셈 — 판정은 원장이 한다).
+  const 기술말 = [
+    ['vol', /volume|capacity|부피|들이/i], ['surf', /surface\s*area|겉넓이/i], ['area', /(?<!surface\s)\barea\b|(?<!겉)넓이/i],
+    ['perim', /perimeter|circumference|둘레|원주/i], ['frac', /fraction|분수|가분수|대분수/i], ['dec', /decimal|소수(?!인수)/i],
+    ['pct', /percent|백분율/i], ['ratio', /ratio|\brate\b|비율|비례/i], ['prob', /probabilit|chance|확률/i],
+    ['comb', /combination|경우의\s*수/i], ['angle', /angle|각도|\b각\b/i], ['tri', /triangle|삼각형/i],
+    ['quad', /quadrilateral|사각형/i], ['eqn', /equation|방정식/i], ['alg', /algebra|대수|문자식/i],
+    ['idx', /\bind(ex|ices)\b|지수/i], ['data', /\bdata\b|graph|자료|그래프|표와/i], ['stat', /statistic|mean|median|mode|평균|대푯값/i],
+    ['coord', /coordinate|number plane|좌표/i], ['sym', /symmetr|대칭/i], ['mass', /\bmass\b|weight|무게|질량/i],
+    ['len', /length|길이/i], ['mult', /multiplication|곱셈/i], ['div', /division|나눗셈/i], ['prism', /prism|cylinder|각기둥|원기둥/i],
+    ['cong', /congruen|합동/i], ['pyth', /pythag|피타고라스/i], ['trig', /trigonometr|삼각비/i],
+    ['factor', /factor|prime|약수|배수|소인수/i], ['pattern', /pattern|sequence|수열|규칙/i], ['solid', /\b3d\b|solid|\bnets?\b|입체|전개도/i],
+    ['time', /\btime\b|시각|시간/i], ['money', /money|\$|돈/i], ['estim', /estimat|round|어림|반올림/i], ['spatial', /spatial|공간/i],
+    ['logic', /logic|논리/i], ['analogy', /analog|유추/i], ['oddone', /odd one out|다른 하나/i], ['matrix', /matrix|행렬/i],
+  ];
+  function 기술열쇠(글) { const s = String(글 || ''); return 기술말.filter(([, r]) => r.test(s)).map(([k]) => k); }
+  const 트랙학년 = { y3yujun: 'Y3', y4hk: 'Y4', y4sean: 'Y4', y5kiara: 'Y5', y5sel: 'Y5', y7geo: 'Y7', y8irene: 'Y8', y9ncm: 'Y9' };
+  /**
+   * index = { rev, units:[{트랙, 파일, 제목, 처음, 줄}] } · title = MR 단원 이름
+   * → [{ 트랙, 학년, 파일, 제목, 겹침:[열쇠], 점수 }] (점수 높은 순 · 같은 트랙·파일은 마지막 판 하나)
+   */
+  function toolchainMatches(index, title, n) {
+    const 내 = 기술열쇠(title);
+    if (!내.length || !index || !Array.isArray(index.units)) return [];
+    const 하나 = {};
+    for (const u of index.units) {
+      const k = u.트랙 + '|' + String(u.파일).replace(/^banks\//, '');
+      if (!하나[k] || u.처음 === '지금' || String(u.처음) > String(하나[k].처음 === '지금' ? '~' : 하나[k].처음)) 하나[k] = u;
+    }
+    const 줄 = [];
+    for (const u of Object.values(하나)) {
+      const 그 = 기술열쇠(u.제목);
+      const 겹침 = 내.filter(k => 그.includes(k));
+      if (!겹침.length) continue;
+      줄.push({ 트랙: u.트랙, 학년: 트랙학년[u.트랙] || '', 파일: u.파일, 제목: u.제목, 겹침, 점수: 겹침.length / 내.length });
+    }
+    return 줄.sort((a, b) => b.점수 - a.점수 || String(a.학년).localeCompare(String(b.학년))).slice(0, n || 6);
+  }
+
   const PrepCore = {
+    toolchainMatches, 기술열쇠,
     affectedAreas,
     요일말, ymd, parseYmd, addDays, periodOfDate, periodKey, samePeriod,
     classDaysOf, nextClassDate, pastClassDates, analysisWindow, periodsInWindow, orderStudents,

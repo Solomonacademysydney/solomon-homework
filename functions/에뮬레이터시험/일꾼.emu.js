@@ -73,7 +73,7 @@ async function 주문(날, s) {
 
 (async () => {
   await db.ref().set(null);
-  const 규칙 = fs.readFileSync(path.join(__dirname, '..', '..', 'backup', process.env.RULES_FILE || 'database.rules.6단계.json'), 'utf8');
+  const 규칙 = fs.readFileSync(path.join(__dirname, '..', '..', 'backup', process.env.RULES_FILE || 'database.rules.6단계b.json'), 'utf8');
   const rr = await fetch(`http://${DB}/.settings/rules.json?ns=demo-solomon`, { method: 'PUT', headers: { Authorization: 'Bearer owner' }, body: 규칙 });
   if (!rr.ok) throw new Error('규칙 올리기 실패 ' + rr.status);
   await db.ref('sol_prep_v1/students/emu5').set({ profile: { currentCurriculum: 'r1', name: 'Emu Five', koName: '시험오', year: 'Year 5' },
@@ -258,6 +258,22 @@ async function 주문(날, s) {
     const 묶 = await 값('sol_prep_v1/releases/' + o4.planId + '_hw');
     재기('일꾼이 만든 초안 → 원장 공개 → 학생 묶음(세트 1 · 문항 2)', 공.ok && 묶 && 묶.published === true && Object.keys(묶.sets).length === 1 && 묶.sets.s1.questions.length === 2, JSON.stringify(공));
     재기('일꾼은 공개 묶음을 못 읽는다(정답 있음)', await 거절됨(() => fb.get('sol_prep_v1/releases/' + o4.planId + '_hw')));
+  }
+
+  console.log('\n── [10-02] 툴체인 챙기기 — 드라이브의 진짜 툴체인을 임시 폴더에 풀어 단원 목록을 올린다(드라이브는 읽기만)');
+  {
+    const 진짜 = 'G:/내 드라이브/Solomon_교재보관/_툴체인/solomon_toolchain_latest.tar.xz';
+    if (fs.existsSync(진짜)) {
+      const 툴 = path.join(바탕, '툴체인');
+      const cT = 설정('툴체인', { toolchain: { latest: 진짜, dir: path.join(툴, 'toolchain_latest'), index: path.join(툴, '색인.json'), state: path.join(툴, '상태.json') } });
+      const 전 = fs.statSync(진짜).mtimeMs;
+      const k1 = await W.툴체인챙기기(cT, fb, false);
+      const 올림 = await 값('sol_prep_v1/toolchainIndex');
+      재기('새 툴체인 → 풀고 색인 → 홈페이지에 단원 목록(판 번호 · 100개 넘게)', !!k1.rev && /^rev\d+$/.test(올림.rev) && Array.isArray(올림.units) && 올림.units.length > 100, JSON.stringify(k1));
+      재기('목록에 Y7 M2 넓이 · Y9 각기둥 부피가 있다', 올림.units.some(u => u.트랙 === 'y7geo' && /M2 Area/.test(u.제목)) && 올림.units.some(u => u.트랙 === 'y9ncm' && /각기둥/.test(u.제목)));
+      재기('같은 파일이면 다시 풀지 않는다', (await W.툴체인챙기기(cT, fb, false)).same === k1.rev);
+      재기('드라이브 정본은 그대로(읽기만)', fs.statSync(진짜).mtimeMs === 전);
+    } else 재기('(드라이브 툴체인 파일이 없어 건너뜀)', true);
   }
 
   console.log('\n── 드라이브 저장(임시 폴더로만) · 실행 방식 스위치');

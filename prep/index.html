@@ -159,6 +159,7 @@ async function 아이고르기(sid) {
   // [5단계] 이 학생 주문만(계획 id 가 「학생_」로 시작) · 완전 자동 스위치
   const [jobs, auto] = await Promise.all([읽기(새뿌리 + '/jobs', (r) => r.orderByChild('planId').startAt(sid + '_').endAt(sid + '_\uf8ff')), 읽기(새뿌리 + '/config/autoProduce')]);
   판.autoProduce = auto === true;
+  if (판.툴체인 === undefined) 판.툴체인 = await 읽기(새뿌리 + '/toolchainIndex');   // [10-02] 툴체인 단원 목록(한 번만 읽음)
   // [6단계] 기본값(수동 승인 때만 저장) · 자동 공개 스위치
   const [prefs, autoRel] = await Promise.all([읽기(새뿌리 + '/students/' + sid + '/preferences'), 읽기(새뿌리 + '/config/autoRelease')]);
   판.autoRelease = autoRel === true;
@@ -284,11 +285,22 @@ function 설정그리기(a) {
   return `<div class="섹"><h3>주간 설정 — 수업일 <input type="date" value="${글(e.lessonDate)}" onchange="설정시작(아이자료, this.value);카드그리기()">
       <span class="작게">${e.승인판 ? '지난 승인(판 ' + e.승인판 + ')에서' : '지난 승인 없음 — 기본값'} · 현재 커리에서 단원·목표</span></h3>
     <table><tr><th>칸</th><th>값</th><th>어디서</th><th></th></tr>${칸}</table><div style="margin:6px 0">${세트}</div></div>
+    ${툴체인찾기그리기(값얻기(s, 'mr.units.0.title'))}
     <div class="섹"><h3>자유 지시</h3><textarea id="자유지시" rows="2" style="width:100%" placeholder="예: 이번 주는 TS 빼줘. 세트 3개로, 25+5. 계산기 30%.">${글(e.free ? e.free.text : '')}</textarea>
       <button onclick="자유해석()">해석</button> ${자유}</div>
     <div class="섹"><h3>확인</h3>${검.problems.map(x => '<div class="빨강">' + 글(x) + '</div>').join('')}${검.conflicts.map(x => '<div class="경고">⚠️ 상충: ' + 글(x) + '</div>').join('')}
       ${명 ? `<div class="작게" id="명세미리">주문 명세: ${명.parts.map(p => p.kind + (p.total != null ? '(' + p.total + ')' : '')).join(' · ')} · ${글(명.calculator.note)}</div>` : ''}
       <button class="주" id="주문단추" ${검.ok && !(e.free && e.free.unresolved.length) ? '' : 'disabled'} onclick="주문확정()">제작 방향 확정(주문)</button></div>${결과}`;
+}
+/** [10-02] 툴체인에 비슷한 단원 — 원장님이 프로젝트에서 쌓은 단원 프로그램 가운데 같은 기술(학년 표시 · 판정은 원장) */
+function 툴체인찾기그리기(제목) {
+  const ix = 판.툴체인;
+  if (!ix) return '<div class="섹 작게">툴체인 단원 목록이 아직 없습니다(PC 일꾼이 드라이브 _툴체인 을 읽으면 생깁니다)</div>';
+  const 줄 = C.toolchainMatches(ix, 제목, 6);
+  return `<div class="섹"><h3>툴체인에 비슷한 단원 <span class="작게">${글(ix.rev)} · 단원 프로그램 ${ix.units ? ix.units.length : 0}개 · MR 단원 이름으로 찾음</span></h3>
+    ${!String(제목 || '').trim() ? '<div class="작게">MR 소단원 제목을 적으면 찾습니다</div>' : 줄.length
+      ? '<table><tr><th>학년</th><th>트랙 · 파일</th><th>내용</th></tr>' + 줄.map(m => `<tr><td>${글(m.학년)}</td><td class="작게">${글(m.트랙)} · ${글(m.파일)}</td><td>${글(m.제목.slice(0, 110))}</td></tr>`).join('') + '</table><div class="작게">학년이 같고 기술이 같으면 「그대로 씀」, 기술은 같고 학년만 다르면 「고쳐 씀」, 이름만 같고 기술이 다르면 「새로 지음」 — 판정은 원장님이 프로젝트에서</div>'
+      : '<div class="경고">비슷한 단원이 없습니다 — 처음 나오는 단원입니다(프로젝트에서 새로 지어야 합니다)</div>'}</div>`;
 }
 function 설정바꿈(p, v) {
   const s = 설정편집.settings; 값넣기(s, p, v);
