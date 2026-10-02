@@ -611,8 +611,12 @@ async function main() {
   }
   if (a.watch) {
     if (cfg.mode !== 'auto') { console.log('설정 mode 가 auto 가 아닙니다 — 완전 자동은 꺼져 있습니다(반자동은 --once).'); return; }
+    // [10-02 완전 자동] 한 바퀴가 터져도(네트워크·인증 끊김) 일꾼은 꺼지지 않고 다음 바퀴를 돈다 — 까닭은 작업 기록에
+    기록(cfg, { msg: '완전 자동 감시 시작', pollSec: cfg.pollSec || 60 });
     for (;;) {
-      if (await 자동켜짐(cfg, fb)) { const r = await 한바퀴(cfg, fb, a); if (r.length) console.log(JSON.stringify(r)); }
+      try {
+        if (await 자동켜짐(cfg, fb)) { const r = await 한바퀴(cfg, fb, a); if (r.length) { console.log(new Date().toISOString() + ' ' + JSON.stringify(r)); 기록(cfg, { msg: '한 바퀴', 결과: r }); } }
+      } catch (e) { console.error(new Date().toISOString() + ' 한 바퀴 실패: ' + (e && e.message)); try { 기록(cfg, { msg: '한 바퀴 실패', error: String(e && e.message || e) }); } catch (_) {} }
       await new Promise(r => setTimeout(r, (cfg.pollSec || 60) * 1000));
     }
   }
