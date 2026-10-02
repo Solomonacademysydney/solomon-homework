@@ -252,7 +252,7 @@ function 설정시작(a, 날) {
   설정편집 = { lessonDate: 날, settings: r.settings, base: JSON.parse(JSON.stringify(r.settings)), source: r.source, thisWeekOnly: new Set(), free: null, 결과: null, 승인판: 승인 ? 승인.rev : null };
 }
 const 칸목록 = [
-  ['mr.units.0.title', 'MR 소단원 제목', 'text'], ['mr.units.0.examples', 'MR 예제 수', 'int'], ['mr.units.0.practice', 'MR 연습 수', 'int'],
+  ['mr.units.0.title', 'MR 소단원 제목 (주제 A)', 'text'], ['mr.units.1.title', 'MR 주제 B — 다른 영역(없으면 비움)', 'text'], ['mr.units.2.title', 'MR 주제 C — 복습(없으면 비움)', 'text'], ['mr.units.0.examples', 'MR 예제 수', 'int'], ['mr.units.0.practice', 'MR 연습 수', 'int'],
   ['mr.units.0.difficulty', 'MR 난이도', ['basic', 'standard', 'challenge']], ['mr.review.sets', 'MR 종합문제 세트(0=생략)', 'int'], ['mr.review.questions', 'MR 종합문제 문항', 'int'],
   ['ts.include', 'TS 포함', 'bool'], ['ts.mode', 'TS 소단원별/합본', ['perUnit', 'combined']], ['ts.title', 'TS 제목', 'text'], ['ts.practice', 'TS 연습 수', 'int'],
   ['paperHw.sets', '종이 숙제 세트 수', 'int'], ['frontTest.mode', '앞장 테스트', ['normal', 'skip', 'diagnostic']], ['frontTest.questions', '앞장 문항 수', 'int'], ['frontTest.minutes', '앞장 시간(분)', 'int'],
@@ -286,7 +286,8 @@ function 설정그리기(a) {
   return `<div class="섹"><h3>주간 설정 — 수업일 <input type="date" value="${글(e.lessonDate)}" onchange="설정시작(아이자료, this.value);카드그리기()">
       <span class="작게">${e.승인판 ? '지난 승인(판 ' + e.승인판 + ')에서' : '지난 승인 없음 — 기본값'} · 현재 커리에서 단원·목표</span></h3>
     <table><tr><th>칸</th><th>값</th><th>어디서</th><th></th></tr>${칸}</table><div style="margin:6px 0">${세트}</div></div>
-    ${툴체인찾기그리기(값얻기(s, 'mr.units.0.title'))}
+    ${(s.mr.units || []).map((x, i) => x && String(x.title || '').trim() ? 툴체인찾기그리기(x.title, ['A', 'B', 'C'][i] || String(i + 1)) : '').join('') || 툴체인찾기그리기('', 'A')}
+    ${부탁글그리기(e)}
     <div class="섹"><h3>자유 지시</h3><textarea id="자유지시" rows="2" style="width:100%" placeholder="예: 이번 주는 TS 빼줘. 세트 3개로, 25+5. 계산기 30%.">${글(e.free ? e.free.text : '')}</textarea>
       <button onclick="자유해석()">해석</button> ${자유}</div>
     <div class="섹"><h3>확인</h3>${검.problems.map(x => '<div class="빨강">' + 글(x) + '</div>').join('')}${검.conflicts.map(x => '<div class="경고">⚠️ 상충: ' + 글(x) + '</div>').join('')}
@@ -294,17 +295,37 @@ function 설정그리기(a) {
       <button class="주" id="주문단추" ${검.ok && !(e.free && e.free.unresolved.length) ? '' : 'disabled'} onclick="주문확정()">제작 방향 확정(주문)</button></div>${결과}`;
 }
 /** [10-02] 툴체인에 비슷한 단원 — 원장님이 프로젝트에서 쌓은 단원 프로그램 가운데 같은 기술(학년 표시 · 판정은 원장) */
-function 툴체인찾기그리기(제목) {
+function 툴체인찾기그리기(제목, 칸) {
   const ix = 판.툴체인;
   if (!ix) return '<div class="섹 작게">툴체인 단원 목록이 아직 없습니다(PC 일꾼이 드라이브 _툴체인 을 읽으면 생깁니다)</div>';
   const 줄 = C.toolchainMatches(ix, 제목, 6);
-  return `<div class="섹"><h3>툴체인에 비슷한 단원 <span class="작게">${글(ix.rev)} · 단원 프로그램 ${ix.units ? ix.units.length : 0}개 · MR 단원 이름으로 찾음</span></h3>
+  return `<div class="섹"><h3>툴체인에 비슷한 단원${칸 ? ' — 주제 ' + 글(칸) + ' 「' + 글(String(제목 || '').slice(0, 50)) + '」' : ''} <span class="작게">${글(ix.rev)} · 단원 프로그램 ${ix.units ? ix.units.length : 0}개 · MR 단원 이름으로 찾음</span></h3>
     ${!String(제목 || '').trim() ? '<div class="작게">MR 소단원 제목을 적으면 찾습니다</div>' : 줄.length
       ? '<table><tr><th>학년</th><th>트랙 · 파일</th><th>내용</th></tr>' + 줄.map(m => `<tr><td>${글(m.학년)}</td><td class="작게">${글(m.트랙)} · ${글(m.파일)}</td><td>${글(m.제목.slice(0, 110))}</td></tr>`).join('') + '</table><div class="작게">학년이 같고 기술이 같으면 「그대로 씀」, 기술은 같고 학년만 다르면 「고쳐 씀」, 이름만 같고 기술이 다르면 「새로 지음」 — 판정은 원장님이 프로젝트에서</div>'
       : '<div class="경고">비슷한 단원이 없습니다 — 처음 나오는 단원입니다(프로젝트에서 새로 지어야 합니다)</div>'}</div>`;
 }
+/** [10-02] 프로젝트에 붙여 넣을 부탁 글 — 새 단원은 Claude 프로젝트에서(원장 결정) · 파일 이름에 영어 이름을 넣게 해 들어올 때 주인을 알아본다 */
+function 부탁글그리기(e) {
+  const a = 아이자료; if (!a) return '';
+  const 커리 = 현재커리(a), lesson = 커리 && Array.isArray(커리.lessons) ? (커리.lessons.find(l => l && l.date === e.lessonDate) || null) : null;
+  const 글본 = C.projectRequest({ student: a.u, lessonDate: e.lessonDate, settings: e.settings, lesson, index: 판.툴체인 });
+  return `<div class="섹"><h3>프로젝트에 붙여 넣을 부탁 글 <span class="작게">새 단원·이번 주 교재는 Claude 프로젝트에서 — 결과물을 드라이브에 저장하면 「검토·공개」에 들어옵니다</span></h3>
+    <textarea id="부탁글" rows="10" style="width:100%;font-size:12px" readonly>${글(글본)}</textarea>
+    <button class="주" onclick="부탁글복사()">복사</button> <span class="작게">「제작 방향 확정(주문)」은 PC 일꾼이 Claude 로 직접 만드는 예비 길입니다(누르지 않아도 됩니다)</span></div>`;
+}
+async function 부탁글복사() {
+  const t = document.getElementById('부탁글'); if (!t) return;
+  try { await navigator.clipboard.writeText(t.value); 알림('✅ 복사했습니다 — 프로젝트 대화창에 붙여 넣으세요'); }
+  catch (_) { t.select(); document.execCommand('copy'); 알림('✅ 복사했습니다'); }
+}
 function 설정바꿈(p, v) {
-  const s = 설정편집.settings; 값넣기(s, p, v);
+  const s = 설정편집.settings;
+  // [10-02] 주제 B·C — 없던 칸이면 주제 A 를 본떠 만들고, 비우면 뺀다
+  const 주 = /^mr\.units\.(\d)\.title$/.exec(p);
+  if (주 && +주[1] > 0) { const i = +주[1], t = String(v || '').trim();
+    if (!t) { if (s.mr.units[i]) s.mr.units.splice(i, 1); }
+    else { while (s.mr.units.length < i) s.mr.units.push(JSON.parse(JSON.stringify(s.mr.units[0]))); s.mr.units[i] = Object.assign(JSON.parse(JSON.stringify(s.mr.units[i] || s.mr.units[0])), { title: t }); }
+  } else 값넣기(s, p, v);
   if (p === 'paperHw.sets') { const n = Math.max(0, v | 0), last = s.paperHw.perSet[s.paperHw.perSet.length - 1] || { mr: 20, ts: 10 }; while (s.paperHw.perSet.length < n) s.paperHw.perSet.push(JSON.parse(JSON.stringify(last))); s.paperHw.perSet.length = n; }
   // [10-02] 글칸에 적고 바로 단추를 누르면 change 가 누르는 도중에 와서, 여기서 카드를 다시 그리면
   //   누르던 단추가 바뀌어 클릭이 사라졌다(운영 실측 — 확정이 함수까지 안 감). 누르는 중이면 뗀 뒤에 그린다.

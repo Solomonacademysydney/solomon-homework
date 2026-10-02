@@ -29,5 +29,21 @@ const 부피 = C.toolchainMatches(ix, 'Volume and Surface Area of Prisms (cm³, 
 재기('이름이 비었거나 목록이 없으면 빈 목록', C.toolchainMatches(ix, '').length === 0 && C.toolchainMatches(null, 'Volume').length === 0);
 재기('도우미 파일(조판 블록)은 안 걸린다', !C.toolchainMatches(ix, 'Area').some(m => m.파일 === 'layout.py'));
 
+console.log('\n── 프로젝트에 붙여 넣을 부탁 글');
+{
+  const O = require(path.join(__dirname, '..', '..', 'prep', 'order_core'));
+  const s = O.defaultSettings(); s.mr.units[0].title = 'Volume and Surface Area of Prisms'; s.ts.include = false; s.onlineHw.tsSets = 0;
+  s.mr.units[1] = Object.assign(JSON.parse(JSON.stringify(s.mr.units[0])), { title: 'Multiplication' });
+  const 글 = C.projectRequest({ student: { id: 'Stella07', name: '정별', year: 7 }, lessonDate: '2026-10-05', settings: s, lesson: { session: 6, hw: 'M3 유닛' }, index: ix });
+  재기('학생 · 영어 이름 · 트랙 · 수업일 · 회차', /정별 \(Stella · Stella07\) · Y7 · 툴체인 트랙 y7geo/.test(글) && /수업일: 2026-10-05 · 커리 6회차/.test(글));
+  재기('주제 A·B 마다 비슷한 단원과 판정 후보', /A 신개념: Volume/.test(글) && /mr_areavol_b\.py \(Y9\) — 학년 다름/.test(글) && /B 다른 영역: Multiplication/.test(글) && /mr_mult\.py \(Y4\)/.test(글), 글);
+  재기('TS 를 뺐으면 종이 숙제에 TS 를 적지 않는다', /TS: 없음/.test(글) && !/\+ TS 10/.test(글));
+  재기('파일 이름에 영어 이름을 넣으라는 말(들어올 때 주인 알아보기)', /「Stella」를 꼭 넣어/.test(글) && /Solomon_교재보관\/2026-10\//.test(글));
+  const 비슷없음 = C.projectRequest({ student: { id: 'Youjun03', name: '조유준', year: 3 }, lessonDate: '2026-10-14', settings: Object.assign(O.defaultSettings(), {}), index: ix });
+  재기('주제가 비면 「커리대로」 · 유준 = y3yujun · Yujun', /주제를 적지 않았습니다/.test(비슷없음) && /Yujun · Youjun03/.test(비슷없음) && /y3yujun/.test(비슷없음));
+  const p = O.prefill(null, { lessons: [{ date: '2026-10-14', mr: '소수 사칙연산', mrB: '복합도형 넓이', mrC: '분수 문장제 복습', ts: 'odd-one-out' }] }, '2026-10-14');
+  재기('커리에 B·C 주제가 있으면 주간 설정에 미리 채운다(유준 v3)', p.settings.mr.units.map(u => u.title).join('|') === '소수 사칙연산|복합도형 넓이|분수 문장제 복습' && p.source['mr.units.2.title'] === '커리');
+}
+
 console.log('\n셈 — 통과 ' + 통과 + ' · 실패 ' + 실패);
 process.exit(실패 ? 1 : 0);

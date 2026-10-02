@@ -93,6 +93,8 @@
     if (l) {
       if (!s.mr.units.length) s.mr.units.push(defaultSettings().mr.units[0]);
       s.mr.units[0].title = l.mr || ''; source['mr.units.0.title'] = '커리';
+      // [10-02] 한 수업에 주제가 여럿(유준 v3 = A 신개념 · B 다른 영역 · C 복습)이면 B·C 도 채운다
+      ['mrB', 'mrC'].forEach((k, i) => { if (l[k]) { s.mr.units[i + 1] = Object.assign(복(s.mr.units[0]), { title: String(l[k]) }); source['mr.units.' + (i + 1) + '.title'] = '커리'; } });
       s.ts.title = l.ts || ''; source['ts.title'] = '커리';
       if (Number.isInteger(l.targetLevel)) { s.difficulty.target = l.targetLevel; source['difficulty.target'] = '커리'; }
     }

@@ -591,7 +591,55 @@
     return 줄.sort((a, b) => b.점수 - a.점수 || String(a.학년).localeCompare(String(b.학년))).slice(0, n || 6);
   }
 
+  // ───────────────────────── 프로젝트에 붙여 넣을 부탁 글 (10-02) ─────────────────────────
+  //   새 단원은 Claude 프로젝트에서 짓는다(원장 결정). 여기서는 그 대화창에 붙여 넣을 글만 만든다.
+  //   ⛔ 파일 이름에 학생 영어 이름을 꼭 넣게 한다 — PC 일꾼이 그 이름으로 주인을 알아본다(prep_worker/core.guessStudents).
+  const 학생영문 = { Stella07: 'Stella', RYAN: 'Minjun', Yuel07: 'Yuel', Irene08: 'Irene', Sean05: 'Sean', Hayley04: 'Hakyung',
+    Youjun03: 'Yujun', Minah: 'Minah', Minsu09: 'Minsu', MinjaeAaron: 'Aaron' };
+  const 학생트랙 = { Stella07: 'y7geo', RYAN: 'y7geo', Yuel07: 'y7geo', Irene08: 'y8irene', Sean05: 'y4sean', Hayley04: 'y4hk',
+    Youjun03: 'y3yujun', Minah: 'y5sel', Minsu09: 'y9ncm', MinjaeAaron: 'y9ncm' };
+  const 판정말 = (m, 내트랙, 내학년) => m.트랙 === 내트랙 ? '같은 학생 트랙에 있음 → 「그대로 씀」 후보' : (m.학년 === 내학년 ? '같은 학년 다른 트랙 → 「고쳐 씀」 후보' : '학년 다름(' + m.학년 + ') → 같은 기술인지 먼저 판정');
+  /**
+   * o = { student:{id,name,year}, lessonDate, settings, lesson(커리의 그 수업 · 없으면 null), index(툴체인 색인) }
+   * → 대화창에 붙여 넣을 한국어 글
+   */
+  function projectRequest(o) {
+    const u = o.student || {}, s = o.settings || {}, 날 = o.lessonDate || '';
+    const 영문 = 학생영문[u.id] || u.id, 트랙 = 학생트랙[u.id] || '(트랙 모름)', 학년 = 'Y' + (u.year || '?');
+    const 이름 = ['A 신개념', 'B 다른 영역', 'C 복습'];
+    const 주제 = ((s.mr && s.mr.units) || []).map((x, i) => ({ 칸: 이름[i] || ('주제 ' + (i + 1)), title: String((x && x.title) || '').trim(), x })).filter(t => t.title);
+    const 줄 = [];
+    줄.push('교재를 만들어 주세요. 지침의 「교재 작업 시작 규칙」대로, 만들기 전에 쌓인 단원부터 찾아 표로 보고하고 제 확인을 받은 뒤 만들어 주세요.');
+    줄.push('');
+    줄.push('■ 학생: ' + (u.name || u.id) + ' (' + 영문 + ' · ' + u.id + ') · ' + 학년 + ' · 툴체인 트랙 ' + 트랙);
+    줄.push('■ 수업일: ' + 날 + (o.lesson && o.lesson.session ? ' · 커리 ' + o.lesson.session + '회차' : ''));
+    if (o.lesson && o.lesson.hw) 줄.push('■ 커리의 과제 메모: ' + o.lesson.hw);
+    줄.push('■ 주제');
+    if (!주제.length) 줄.push('  (주제를 적지 않았습니다 — 커리대로 정해 주세요)');
+    for (const t of 주제) {
+      const ms = toolchainMatches(o.index, t.title, 3);
+      줄.push('  - ' + t.칸 + ': ' + t.title + (t.x && t.x.difficulty ? ' · 난이도 ' + t.x.difficulty : '') + (t.x && t.x.examples != null ? ' · 예제 ' + t.x.examples + ' · 연습 ' + t.x.practice : ''));
+      if (ms.length) ms.forEach(m => 줄.push('      툴체인에 비슷한 것: ' + m.트랙 + '/' + m.파일 + ' (' + m.학년 + ') — ' + 판정말(m, 트랙, 학년)));
+      else 줄.push('      툴체인에 비슷한 것 없음 → 새로 지어야 할 가능성');
+    }
+    if (s.ts && s.ts.include) 줄.push('  - TS: ' + (String(s.ts.title || '').trim() || '(커리대로)') + ' · 연습 ' + s.ts.practice);
+    else 줄.push('  - TS: 없음(MR만)');
+    줄.push('■ 분량');
+    if (s.paperHw) 줄.push('  - 종이 숙제: ' + s.paperHw.sets + '세트 × ' + (s.paperHw.perSet || []).map(x => 'MR ' + x.mr + (x.ts && s.ts && s.ts.include ? ' + TS ' + x.ts : '')).join(' / '));
+    if (s.frontTest) 줄.push('  - 앞장(복습) 테스트: ' + (s.frontTest.mode === 'skip' ? '생략' : s.frontTest.questions + '문항 · ' + s.frontTest.minutes + '분'));
+    if (s.onlineHw) 줄.push('  - 홈페이지 숙제(플랫폼 JSON): MR ' + s.onlineHw.mrSets + '세트' + (s.onlineHw.tsSets ? ' + TS ' + s.onlineHw.tsSets + '세트' : '') + ' × ' + s.onlineHw.perSet + '문항');
+    if (s.difficulty) 줄.push('  - 목표 수준 ' + s.difficulty.target + ' · 기본/표준/도전 ' + s.difficulty.mix.basic + '/' + s.difficulty.mix.standard + '/' + s.difficulty.mix.challenge + '%');
+    if (s.composition) 줄.push('  - 계산기 ' + s.composition.calculatorPct + '% · 도형 ' + (s.composition.figures === 'exclude' ? '빼기' : '넣기'));
+    줄.push('');
+    줄.push('■ 저장 (꼭)');
+    줄.push('  - 결과물은 드라이브 Solomon_교재보관/' + 날.slice(0, 7) + '/<만든 날짜 YYYY-MM-DD>/ 에 넣어 주세요.');
+    줄.push('  - 파일 이름에 학생 영어 이름 「' + 영문 + '」를 꼭 넣어 주세요(예: …_' + 영문 + '_questions.json · …_' + 영문 + '_answers.json · …_' + 영문 + '_….pdf). 수업 준비 화면이 이 이름으로 주인을 알아봅니다.');
+    줄.push('  - 툴체인이 바뀌면 새 판을 드라이브 _툴체인 에 저장하고 무결성 표를 갱신해 주세요.');
+    return 줄.join('\n');
+  }
+
   const PrepCore = {
+    projectRequest, 학생영문, 학생트랙,
     toolchainMatches, 기술열쇠,
     affectedAreas,
     요일말, ymd, parseYmd, addDays, periodOfDate, periodKey, samePeriod,
