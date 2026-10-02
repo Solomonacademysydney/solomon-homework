@@ -616,6 +616,7 @@ async function 한바퀴(cfg, fb, opts) {
   if (!opts.noScan) { try { const s = await 학교자료찾기(cfg, fb); if (s.적음 && (s.적음.length || s.미연결.length)) console.log('학교 자료: ' + JSON.stringify(s)); } catch (e) { 기록(cfg, { msg: '학교 자료 찾기 실패', error: e.message }); } }
   if (!opts.noScan) { try { const g = await 결과물찾기(cfg, fb); if (g.올림 && (g.올림.length || g.실패.length)) console.log('결과물: ' + JSON.stringify(g)); } catch (e) { 기록(cfg, { msg: '결과물 찾기 실패', error: e.message }); } }
   if (!opts.noScan) { try { const k = await 툴체인챙기기(cfg, fb, false); if (k.rev) console.log('툴체인: ' + JSON.stringify(k)); } catch (e) { 기록(cfg, { msg: '툴체인 챙기기 실패', error: e.message }); } }
+  if (opts.noOrders) return [];   // [10-02] 완전 자동이 꺼져도 드라이브 훑기(결과물·툴체인·학교 사진)는 계속 — 주문만 멈춘다
   const jobs = (await fb.get(ROOT + '/jobs')) || {};
   const 결과 = [];
   const ids = Object.keys(jobs).filter(id => !opts.job || id === opts.job)
@@ -694,7 +695,7 @@ async function main() {
     기록(cfg, { msg: '완전 자동 감시 시작', pollSec: cfg.pollSec || 60 });
     for (;;) {
       try {
-        if (await 자동켜짐(cfg, fb)) { const r = await 한바퀴(cfg, fb, a); if (r.length) { console.log(new Date().toISOString() + ' ' + JSON.stringify(r)); 기록(cfg, { msg: '한 바퀴', 결과: r }); } }
+        { const 켜짐 = await 자동켜짐(cfg, fb); const r = await 한바퀴(cfg, fb, Object.assign({}, a, { noOrders: !켜짐 })); if (r.length) { console.log(new Date().toISOString() + ' ' + JSON.stringify(r)); 기록(cfg, { msg: '한 바퀴', 결과: r }); } }
       } catch (e) { console.error(new Date().toISOString() + ' 한 바퀴 실패: ' + (e && e.message)); try { 기록(cfg, { msg: '한 바퀴 실패', error: String(e && e.message || e) }); } catch (_) {} }
       await new Promise(r => setTimeout(r, (cfg.pollSec || 60) * 1000));
     }
