@@ -6,7 +6,7 @@ const path = require('path');
 const DB = process.env.FIREBASE_DATABASE_EMULATOR_HOST;
 const NS = 'demo-solomon';
 if (!DB || !/^(127\.0\.0\.1|localhost):\d+$/.test(DB)) { console.log('⛔ DB 에뮬레이터 변수가 없습니다'); console.log('\n셈 — 통과 0 · 실패 1'); process.exit(1); }
-const 규칙 = path.join(__dirname, '..', '..', 'backup', process.env.RULES_FILE || 'database.rules.6단계c.json');   // 6단계c = 6단계 + 툴체인 단원 목록 + 프로젝트 결과물(10-02)
+const 규칙 = path.join(__dirname, '..', '..', 'backup', process.env.RULES_FILE || 'database.rules.6단계d.json');   // 6단계d = 6단계 + 툴체인 단원 목록 + 프로젝트 결과물 + 드라이브 주소(10-02)
 if (!fs.existsSync(규칙)) { console.log('⛔ 규칙 파일 없음'); console.log('\n셈 — 통과 0 · 실패 1'); process.exit(1); }
 const OP = '62bxWubzDLMrhHjjv2oNfAQiyaD2';
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
@@ -70,6 +70,9 @@ const 학생 = (sid) => ({ prep: { sid, role: 'student', master: false, exp: Dat
     && 막힘(await 쓰기('sol_prep_v1/imports/i1/status', 'adopted', 'ts-worker')) && 막힘(await 쓰기('sol_prep_v1/importSets/i1', [{ title: 'X' }], 'ts-worker')));
   재기('⛔ 일꾼은 상태 new 가 아닌 결과물을 못 적는다', 막힘(await 쓰기('sol_prep_v1/imports/i2', { status: 'adopted', questions: 'a_questions.json' }, 'ts-worker')));
   재기('원장은 결과물을 읽는다 · ⛔ 화면에서 직접 등록 표시는 못 한다(서버 함수만)', 됨(await 읽기('sol_prep_v1/imports', OP)) && 막힘(await 쓰기('sol_prep_v1/imports/i1/status', 'adopted', OP)));
+  재기('일꾼은 드라이브 주소를 적는다 · 원장은 읽는다', 됨(await 쓰기('sol_prep_v1/driveIds/a_pdf', '1AbC', 'ts-worker')) && 됨(await 읽기('sol_prep_v1/driveIds', OP)));
+  재기('⛔ 주소는 글자만(짧게) · 원장 화면·학생은 못 쓴다', 막힘(await 쓰기('sol_prep_v1/driveIds/b_pdf', 5, 'ts-worker')) && 막힘(await 쓰기('sol_prep_v1/driveIds/a_pdf', 'x', OP))
+    && 막힘(await 쓰기('sol_prep_v1/driveIds/a_pdf', 'x', 'u-mina', 학생('Mina'))));
   재기('⛔ 학생은 결과물(정답 있음)을 못 읽는다', 막힘(await 읽기('sol_prep_v1/importSets/i1', 'u-mina', 학생('Mina'))) && 막힘(await 읽기('sol_prep_v1/imports', 'u-mina', 학생('Mina'))));
 
   await 요청('PUT', '', null, 'owner');

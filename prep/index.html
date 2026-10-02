@@ -160,6 +160,7 @@ async function 아이고르기(sid) {
   const [jobs, auto] = await Promise.all([읽기(새뿌리 + '/jobs', (r) => r.orderByChild('planId').startAt(sid + '_').endAt(sid + '_\uf8ff')), 읽기(새뿌리 + '/config/autoProduce')]);
   판.autoProduce = auto === true;
   if (판.툴체인 === undefined) 판.툴체인 = await 읽기(새뿌리 + '/toolchainIndex');
+  판.driveIds = (await 읽기(새뿌리 + '/driveIds')) || {};   // [10-02] 드라이브 파일 주소(PC 일꾼이 채움)
   판.imports = (await 읽기(새뿌리 + '/imports')) || {};   // [10-02] 프로젝트에서 들어온 교재(요약만 · 문항은 미리보기 때)   // [10-02] 툴체인 단원 목록(한 번만 읽음)
   // [6단계] 기본값(수동 승인 때만 저장) · 자동 공개 스위치
   const [prefs, autoRel] = await Promise.all([읽기(새뿌리 + '/students/' + sid + '/preferences'), 읽기(새뿌리 + '/config/autoRelease')]);
@@ -313,6 +314,12 @@ function 부탁글그리기(e) {
     <textarea id="부탁글" rows="10" style="width:100%;font-size:12px" readonly>${글(글본)}</textarea>
     <button class="주" onclick="부탁글복사()">복사</button> <span class="작게">「제작 방향 확정(주문)」은 PC 일꾼이 Claude 로 직접 만드는 예비 길입니다(누르지 않아도 됩니다)</span></div>`;
 }
+/** [10-02] 드라이브 링크 — 파일 주소(id)를 알면 파일로 바로, 모르면 검색(새 파일은 검색 색인이 늦다) */
+function 드라이브링크(이름) {
+  const k = String(이름 || '').replace(/[.#$\[\]\/]/g, '_');
+  const id = (판.driveIds || {})[k];
+  return id ? 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/view' : C.driveSearchUrl(이름);
+}
 async function 부탁글복사() {
   const t = document.getElementById('부탁글'); if (!t) return;
   try { await navigator.clipboard.writeText(t.value); 알림('✅ 복사했습니다 — 프로젝트 대화창에 붙여 넣으세요'); }
@@ -392,7 +399,7 @@ function 지난그리기(a) {
       ${d.sample ? '<span class="경고">표본</span>' : ''}${d.invalidatedByRev ? ' <span class="경고">무효(판 ' + 글(d.invalidatedByRev) + ')</span>' : ''}
       ${d.approval && d.approval.approved ? ' <span class="딱지 좋음">승인</span>' : ' <span class="작게">' + 글(d.status) + '</span>'}
       <div>${(d.files || []).filter(f => 파일말[f.kind] || f.where === 'drive').map(f => f.where === 'drive'
-        ? `<span style="display:inline-block;margin:2px 6px 2px 0"><a href="${C.driveSearchUrl(f.name)}" target="_blank" rel="noopener" title="드라이브 ${글('Solomon_교재보관/학생별 교재/' + f.rel + '/' + f.name)}">${글(파일말[f.kind] || ({ items: '원본 JSON', qa: '검수 기록' })[f.kind] || f.kind)}${f.pages ? '(' + f.pages + '쪽)' : ''} ↗</a></span>`
+        ? `<span style="display:inline-block;margin:2px 6px 2px 0"><a href="${드라이브링크(f.name)}" target="_blank" rel="noopener" title="드라이브 ${글('Solomon_교재보관/학생별 교재/' + f.rel + '/' + f.name)}">${글(파일말[f.kind] || ({ items: '원본 JSON', qa: '검수 기록' })[f.kind] || f.kind)}${f.pages ? '(' + f.pages + '쪽)' : ''} ↗</a></span>`
         : `<span style="display:inline-block;margin:2px 6px 2px 0">${파일말[f.kind]}${f.pages ? '(' + f.pages + '쪽)' : ''}
         <button onclick="파일받기('${글(f.path)}','${글(날 + '_' + (a.u.name || a.u.id) + '_' + 파일말[f.kind])}.pdf',true)">보기</button><button onclick="파일받기('${글(f.path)}','${글(날 + '_' + (a.u.name || a.u.id) + '_' + 파일말[f.kind])}.pdf',false)">내려받기</button></span>`).join('')}
       ${(d.files || []).some(f => f.where === 'drive') ? `<div class="작게">드라이브 폴더: Solomon_교재보관 › 학생별 교재 › ${글(((d.files || [])[0] || {}).rel || '')}</div>` : ''}
@@ -490,7 +497,7 @@ function 들인교재그리기(a) {
       <b>${글(m.folderDate)}</b> 저장 · <span class="작게">${글(m.folder)} · ${글(m.questions)}</span>
       ${(m.students || []).length ? '' : ' <span class="경고">주인을 몰라 모든 학생에게 보입니다 — 이 학생 것이 맞는지 보세요</span>'}
       <div>${m.ok ? '홈페이지 숙제 <b>' + (m.setSizes || []).length + '세트 · ' + 글(m.count) + '문항</b>' : '<span class="빨강">숙제 JSON 을 못 바꿈 — ' + 글((m.problems || []).slice(0, 3).join(' · ')) + '</span>'}</div>
-      <div class="작게">${내파일.map(f => `<a href="${C.driveSearchUrl(f.name)}" target="_blank" rel="noopener">${글(f.name)} ↗</a>`).join(' · ') || 'PDF 없음'}</div>
+      <div class="작게">${내파일.map(f => `<a href="${드라이브링크(f.name)}" target="_blank" rel="noopener">${글(f.name)} ↗</a>`).join(' · ') || 'PDF 없음'}</div>
       ${m.ok ? `<div style="margin-top:4px">수업일 <input type="date" value="${글(날)}" onchange="들임.날['${글(id)}']=this.value">
         <button class="주" onclick="들임등록('${글(id)}')">이 수업으로 등록</button>
         <button onclick="들임미리보기('${글(id)}')">${미 ? '미리보기 닫기' : '숙제 미리보기'}</button>
@@ -563,8 +570,8 @@ function 교재그리기(a, planId, rev, ap, 교재) {
   }
   const { id, d } = 교재;
   const 승인됨 = d.approval && d.approval.approved;
-  const 파일 = (d.files || []).map(f => f.where === 'drive' ? `<a href="${C.driveSearchUrl(f.name)}" target="_blank" rel="noopener">${글(파일이름말[f.kind] || f.kind)}${f.pages ? '(' + f.pages + '쪽)' : ''} ↗</a>`
-    : f.where === 'drive-project' ? `<a href="${C.driveSearchUrl(f.name)}" target="_blank" rel="noopener" title="${글(f.name)}">${글(({ teacher: '교사용 답지·채점', keyideas: '핵심 정리(영한)', book: '교재(워크북)', hw: '숙제', test: '테스트지', other: f.name })[f.kind] || f.name)} ↗</a>`
+  const 파일 = (d.files || []).map(f => f.where === 'drive' ? `<a href="${드라이브링크(f.name)}" target="_blank" rel="noopener">${글(파일이름말[f.kind] || f.kind)}${f.pages ? '(' + f.pages + '쪽)' : ''} ↗</a>`
+    : f.where === 'drive-project' ? `<a href="${드라이브링크(f.name)}" target="_blank" rel="noopener" title="${글(f.name)}">${글(({ teacher: '교사용 답지·채점', keyideas: '핵심 정리(영한)', book: '교재(워크북)', hw: '숙제', test: '테스트지', other: f.name })[f.kind] || f.name)} ↗</a>`
     : 글(파일이름말[f.kind] || f.kind)).join(' · ');
   const 수정주문 = Object.values(a.jobs || {}).filter(j => j.type === 'prep-revise' && j.sourceDraftId === id && ['queued', 'running', 'held', 'failed'].indexOf(j.status) >= 0);
   const 바뀐것 = (d.changes || []).length ? '<div class="작게">이번 수정: ' + d.changes.map(c => 글(c.slot) + ' ' + (c.action === 'edit' ? '고침' : '다시 만듦')).join(' · ') + (d.contentKept ? ' · 조판만' : '') + '</div>' : (d.contentKept ? '<div class="작게">이번 수정: 조판만(내용 그대로)</div>' : '');

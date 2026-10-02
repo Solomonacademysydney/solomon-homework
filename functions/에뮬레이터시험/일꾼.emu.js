@@ -73,7 +73,7 @@ async function 주문(날, s) {
 
 (async () => {
   await db.ref().set(null);
-  const 규칙 = fs.readFileSync(path.join(__dirname, '..', '..', 'backup', process.env.RULES_FILE || 'database.rules.6단계c.json'), 'utf8');
+  const 규칙 = fs.readFileSync(path.join(__dirname, '..', '..', 'backup', process.env.RULES_FILE || 'database.rules.6단계d.json'), 'utf8');
   const rr = await fetch(`http://${DB}/.settings/rules.json?ns=demo-solomon`, { method: 'PUT', headers: { Authorization: 'Bearer owner' }, body: 규칙 });
   if (!rr.ok) throw new Error('규칙 올리기 실패 ' + rr.status);
   await db.ref('sol_prep_v1/students/emu5').set({ profile: { currentCurriculum: 'r1', name: 'Emu Five', koName: '시험오', year: 'Year 5' },
@@ -284,6 +284,18 @@ async function 주문(날, s) {
       재기('30일보다 옛 폴더는 안 봄', !Object.values(목록).some(m => /old_questions/.test(m.questions)));
       재기('다시 돌려도 같은 결과물은 또 안 올림', (await W.결과물찾기(cI, fb)).올림.length === 0);
     } else 재기('(드라이브 원본이 없어 건너뜀)', true);
+  }
+
+  console.log('\n── [10-02] 드라이브 주소 채우기 — 진짜 드라이브 앱 목록에서(읽기만)');
+  {
+    const cA2 = 설정('주소', { idWaitFile: path.join(바탕, '주소대기.json') });
+    W.주소대기에(cA2, [{ name: 'Y7_T4_M3_Volume_Workbook_Stella_2026-10-W2.pdf', parent: '2026-10-02' }, { name: '세상에없는파일_시험.pdf', parent: 'x' }]);
+    const r = await W.주소채우기(cA2, fb);
+    const ids = (await 값('sol_prep_v1/driveIds')) || {};
+    if (r.찾음) {
+      재기('별이 워크북 → 파일 주소(id) 올림 · 열쇠는 점을 _ 로', ids[W.주소열쇠('Y7_T4_M3_Volume_Workbook_Stella_2026-10-W2.pdf')] === '1E-02Tc9IodwyPNelAt8paefdYw3bbqMK', JSON.stringify(ids));
+      재기('못 찾은 파일은 기다림에 남는다(다음 바퀴에 또 찾음)', JSON.parse(fs.readFileSync(path.join(바탕, '주소대기.json'), 'utf8'))['세상에없는파일_시험.pdf'] && r.남음 === 1);
+    } else 재기('(이 PC 드라이브 앱 목록에 시험 파일이 없어 건너뜀)', true);
   }
 
   console.log('\n── [10-02] 툴체인 챙기기 — 드라이브의 진짜 툴체인을 임시 폴더에 풀어 단원 목록을 올린다(드라이브는 읽기만)');

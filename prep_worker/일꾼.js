@@ -231,7 +231,7 @@ class 처리 {
       else fs.copyFileSync(f.local, to);
       if (C.sha256(fs.readFileSync(to)) !== h) throw new Error('복사 뒤 다시 읽은 해시가 다름: ' + to);
       return { kind: f.kind, name, rel: dest.rel, sha256: h, bytes: buf.length, pages: f.pages || null, where: 'drive' };
-    });
+    }).map((x, _i, 다) => { if (_i === 다.length - 1) 주소대기에(this.cfg, 다.map(y => ({ name: y.name, parent: path.basename(dest.dir) }))); return x; });
   }
 
   /* ── prep-paper: 교재·테스트지·종이 숙제 PDF ── */
@@ -603,6 +603,7 @@ async function 결과물찾기(cfg, fb) {
         try { if (변환.ok) await fb.put(ROOT + '/importSets/' + id, 변환.sets); await fb.put(ROOT + '/imports/' + id, 자료); }
         catch (e) { if (e.status === 401 || e.status === 403) { 본[id] = '이미 있음'; continue; } throw e; }
         본[id] = 날 + ' ' + 짝.questions; 올림.push(짝.questions);
+        주소대기에(cfg, pdf.map(n => ({ name: n, parent: 날 })));
       }
     }
   }
@@ -611,9 +612,45 @@ async function 결과물찾기(cfg, fb) {
   return { 올림, 실패 };
 }
 
+/**
+ * [10-02] 드라이브 파일 주소 채우기 — /prep/ 의 PDF 링크가 「검색」 대신 파일로 바로 가게 한다.
+ *   기다림 목록(C:/솔로몬제작/주소_대기.json · {파일 이름: 담긴 폴더}) 을 드라이브 앱 로컬 목록에서 찾아
+ *   sol_prep_v1/driveIds/<열쇠> = id 로 올린다. 못 찾은 것(아직 동기화 전)은 남겨 다음 바퀴에 또 찾는다(최대 3일).
+ */
+const 주소열쇠 = (n) => String(n).replace(/[.#$\[\]\/]/g, '_');
+function 주소대기에(cfg, 줄) {
+  const f = cfg.idWaitFile || 'C:/솔로몬제작/주소_대기.json';
+  const 대기 = fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : {};
+  for (const x of 줄) if (x && x.name && !대기[x.name]) 대기[x.name] = { parent: x.parent || null, since: iso() };
+  fs.writeFileSync(f, JSON.stringify(대기));
+}
+async function 주소채우기(cfg, fb) {
+  const f = cfg.idWaitFile || 'C:/솔로몬제작/주소_대기.json';
+  if (!fs.existsSync(f)) return { 찾음: 0 };
+  const 대기 = JSON.parse(fs.readFileSync(f, 'utf8'));
+  const 이름들 = Object.keys(대기);
+  if (!이름들.length) return { 찾음: 0 };
+  const inp = path.join(cfg.workRoot, '_주소_in.json'), outp = path.join(cfg.workRoot, '_주소_out.json');
+  fs.mkdirSync(cfg.workRoot, { recursive: true });
+  fs.writeFileSync(inp, JSON.stringify(이름들.map(n => ({ name: n, parent: 대기[n].parent }))));
+  const r = spawnSync(cfg.python || 'python', [path.join(__dirname, '드라이브_주소.py'), inp, outp], { encoding: 'utf8', env: Object.assign({}, process.env, { PYTHONUTF8: '1' }) });
+  if (r.status !== 0) throw new Error('드라이브 주소 찾기 실패: ' + (r.stderr || '').slice(-200));
+  const 답 = JSON.parse(fs.readFileSync(outp, 'utf8'));
+  const 고칠 = {}; let 찾음 = 0;
+  for (const n of 이름들) {
+    if (답[n]) { 고칠[주소열쇠(n)] = 답[n]; delete 대기[n]; 찾음++; }
+    else if (Date.now() - Date.parse(대기[n].since) > 3 * 86400000) delete 대기[n];   // 3일 지나도 없으면 검색 링크로 둔다
+  }
+  if (찾음) await fb.patch(ROOT + '/driveIds', 고칠);
+  fs.writeFileSync(f, JSON.stringify(대기));
+  if (찾음) 기록(cfg, { msg: '드라이브 주소 올림', 찾음 });
+  return { 찾음, 남음: Object.keys(대기).length };
+}
+
 /* ── 주문 훑기 ── */
 async function 한바퀴(cfg, fb, opts) {
   if (!opts.noScan) { try { const s = await 학교자료찾기(cfg, fb); if (s.적음 && (s.적음.length || s.미연결.length)) console.log('학교 자료: ' + JSON.stringify(s)); } catch (e) { 기록(cfg, { msg: '학교 자료 찾기 실패', error: e.message }); } }
+  if (!opts.noScan) { try { await 주소채우기(cfg, fb); } catch (e) { 기록(cfg, { msg: '드라이브 주소 채우기 실패', error: e.message }); } }
   if (!opts.noScan) { try { const g = await 결과물찾기(cfg, fb); if (g.올림 && (g.올림.length || g.실패.length)) console.log('결과물: ' + JSON.stringify(g)); } catch (e) { 기록(cfg, { msg: '결과물 찾기 실패', error: e.message }); } }
   if (!opts.noScan) { try { const k = await 툴체인챙기기(cfg, fb, false); if (k.rev) console.log('툴체인: ' + JSON.stringify(k)); } catch (e) { 기록(cfg, { msg: '툴체인 챙기기 실패', error: e.message }); } }
   if (opts.noOrders) return [];   // [10-02] 완전 자동이 꺼져도 드라이브 훑기(결과물·툴체인·학교 사진)는 계속 — 주문만 멈춘다
@@ -704,5 +741,5 @@ async function main() {
   console.log(JSON.stringify(r, null, 1));
 }
 
-module.exports = { 결과물찾기, 툴체인챙기기, 학교자료찾기, 폴더이름, 답모으기, 처리, 한바퀴, 설정읽기, 보관, 자동켜짐, 프롬프트, 스키마, 정리 };
+module.exports = { 주소채우기, 주소대기에, 주소열쇠, 결과물찾기, 툴체인챙기기, 학교자료찾기, 폴더이름, 답모으기, 처리, 한바퀴, 설정읽기, 보관, 자동켜짐, 프롬프트, 스키마, 정리 };
 if (require.main === module) main().catch(e => { console.error('⛔ ' + (e && e.stack || e)); process.exit(1); });
