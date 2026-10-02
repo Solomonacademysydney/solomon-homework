@@ -563,11 +563,15 @@ function 교재그리기(a, planId, rev, ap, 교재) {
   }
   const { id, d } = 교재;
   const 승인됨 = d.approval && d.approval.approved;
-  const 파일 = (d.files || []).map(f => f.where === 'drive' ? `<a href="${C.driveSearchUrl(f.name)}" target="_blank" rel="noopener">${글(파일이름말[f.kind] || f.kind)}${f.pages ? '(' + f.pages + '쪽)' : ''} ↗</a>` : 글(파일이름말[f.kind] || f.kind)).join(' · ');
+  const 파일 = (d.files || []).map(f => f.where === 'drive' ? `<a href="${C.driveSearchUrl(f.name)}" target="_blank" rel="noopener">${글(파일이름말[f.kind] || f.kind)}${f.pages ? '(' + f.pages + '쪽)' : ''} ↗</a>`
+    : f.where === 'drive-project' ? `<a href="${C.driveSearchUrl(f.name)}" target="_blank" rel="noopener" title="${글(f.name)}">${글(({ teacher: '교사용 답지·채점', keyideas: '핵심 정리(영한)', book: '교재(워크북)', hw: '숙제', test: '테스트지', other: f.name })[f.kind] || f.name)} ↗</a>`
+    : 글(파일이름말[f.kind] || f.kind)).join(' · ');
   const 수정주문 = Object.values(a.jobs || {}).filter(j => j.type === 'prep-revise' && j.sourceDraftId === id && ['queued', 'running', 'held', 'failed'].indexOf(j.status) >= 0);
   const 바뀐것 = (d.changes || []).length ? '<div class="작게">이번 수정: ' + d.changes.map(c => 글(c.slot) + ' ' + (c.action === 'edit' ? '고침' : '다시 만듦')).join(' · ') + (d.contentKept ? ' · 조판만' : '') + '</div>' : (d.contentKept ? '<div class="작게">이번 수정: 조판만(내용 그대로)</div>' : '');
   const 경고 = (d.warnings || []).length ? '<div class="경고">⚠ ' + d.warnings.map(글).join('<br>⚠ ') + '</div>' : '';
-  const 표 = d.items ? 문항표(id, d, 승인됨) : '<div class="작게">이 초안에는 문항 내용이 없습니다(6단계 전에 만든 초안) — PDF 로 보세요. 부분 수정은 새로 만든 초안부터 됩니다.</div>';
+  const 표 = d.items ? 문항표(id, d, 승인됨) : d.source === 'import'
+    ? '<div class="작게">프로젝트에서 만든 교재입니다 — 위 링크로 PDF 를 열어 보세요. 고칠 것이 있으면 프로젝트에 말씀하시고, 다시 저장하면 새로 들어옵니다.</div>'
+    : '<div class="작게">이 초안에는 문항 내용이 없습니다(6단계 전에 만든 초안) — PDF 로 보세요. 부분 수정은 새로 만든 초안부터 됩니다.</div>';
   const 승인단추 = 승인됨 ? `<span class="딱지 좋음">교재 승인 (${글(d.approval.scope === 'default' ? '기본값에도' : '이번 주만')})</span>`
     : `<button class="주" ${d.sample || !(d.qa && d.qa.ok) || 수정주문.length ? 'disabled' : ''} onclick="교재승인('${글(id)}','thisWeek')">교재 승인 — 이번 주만</button>
        <button class="주" ${d.sample || !(d.qa && d.qa.ok) || 수정주문.length ? 'disabled' : ''} onclick="교재승인('${글(id)}','default')">교재 승인 — 다음 주 기본값에도</button>
@@ -652,6 +656,7 @@ async function 교재승인(id, scope) {
 // ── 홈페이지 숙제 수량 ──
 function 수량그리기(a, planId, pl, rev, ap, 교재) {
   const 승인 = 교재 && 교재.d.approval && 교재.d.approval.approved;
+  if (교재 && 교재.d.source === 'import') return `<div class="섹"><b>홈페이지 숙제</b> — <span class="작게">프로젝트가 만든 숙제 ${ap.online && ap.online.config ? ap.online.config.mrSets + '세트' + (ap.online.config.perSet ? ' × ' + ap.online.config.perSet + '문항' : '') : ''} 그대로 씁니다(아래 미리보기). 다른 양이 필요하면 프로젝트에 말씀하세요.</span></div>`;
   if (!승인) return `<div class="섹"><b>홈페이지 숙제 수량</b> — <span class="작게">교재 승인 뒤에 정합니다</span></div>`;
   const 명세 = ((pl.revisions[rev].spec || {}).parts || []).find(p => p.kind === 'online-hw') || {};
   const 기본 = (a.prefs && a.prefs.online && a.prefs.online.config) || 명세;
