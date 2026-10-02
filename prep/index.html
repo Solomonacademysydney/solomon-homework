@@ -184,8 +184,79 @@ async function 아이고르기(sid) {
   카드그리기();
 }
 
+// ── [10-02] 간단 보기 — 매주 하실 일 세 가지만(원장님 「너무 복잡해 · 봐야 하는 것 중심으로」) ──
+//   ① 프로젝트에 부탁하기(주제 · 부탁 글 복사) ② 들어온 교재(등록) ③ 아이에게 내보내기(지금 공개)
+//   나머지(현황·분량 설정·종이 시험·커리·지난 교재·보류/휴강·공개 조건)는 「자세히 ▾」 안 — 예전 탭 그대로.
+let 자세히열림 = (() => { try { return localStorage.getItem('prep_자세히') === '1'; } catch (_) { return false; } })();
+function 자세히토글() { 자세히열림 = !자세히열림; try { localStorage.setItem('prep_자세히', 자세히열림 ? '1' : '0'); } catch (_) {} 카드그리기(); }
+const 간단 = { 글보기: false, 미리: null };
+/** 이번 주에 볼 계획 — 다음 수업일의 것, 없으면 지난 7일 안의 가장 늦은 것 */
+function 이번계획(a, 다음) {
+  const 줄 = Object.entries(a.plans || {}).filter(([, p]) => p && p.latest && p.revisions && p.revisions[p.latest])
+    .map(([id, p]) => ({ id, p, 날: (p.schedule && p.schedule.lessonDate) || p.revisions[p.latest].lessonDate }));
+  const 오늘글 = C.ymd(C.addDays(오늘(), -7));
+  return 줄.find(x => x.날 === 다음) || 줄.filter(x => x.날 >= 오늘글).sort((x, y) => String(y.날).localeCompare(String(x.날)))[0] || null;
+}
+function 간단그리기(a) {
+  const 차 = 판.차례.find(x => x.user.id === a.u.id) || {};
+  const 다음 = 차.nextClass || null;
+  if (!설정편집) 설정시작(a, 다음 || C.ymd(오늘()));
+  const s = 설정편집.settings, 주 = (s.mr && s.mr.units) || [];
+  // ① 부탁
+  const 주제칸 = ['A', 'B', 'C'].map((k, i) => `<div style="margin:3px 0"><span class="작게" style="display:inline-block;width:52px">주제 ${k}</span>
+    <input style="width:min(420px,70%)" value="${글((주[i] || {}).title || '')}" placeholder="${i ? '없으면 비움' : '이번 수업 단원'}" onchange="설정바꿈('mr.units.${i}.title', this.value)"></div>`).join('');
+  const 부탁 = C.projectRequest({ student: a.u, lessonDate: 설정편집.lessonDate, settings: s,
+    lesson: (() => { const c = 현재커리(a); return c && Array.isArray(c.lessons) ? (c.lessons.find(l => l && l.date === 설정편집.lessonDate) || null) : null; })(), index: 판.툴체인 });
+  const 일 = `<div class="판" style="margin-bottom:10px"><h3 style="margin:0 0 6px">① 프로젝트에 부탁하기</h3>${주제칸}
+    <button class="주" style="margin-top:6px" onclick="간단복사()">부탁 글 복사</button>
+    <a href="#" class="작게" onclick="간단.글보기=!간단.글보기;카드그리기();return false">${간단.글보기 ? '글 닫기' : '글 보기'}</a>
+    ${간단.글보기 ? `<textarea id="간단부탁" rows="9" style="width:100%;font-size:12px;margin-top:6px" readonly>${글(부탁)}</textarea>` : `<textarea id="간단부탁" style="display:none">${글(부탁)}</textarea>`}</div>`;
+  // ② 들어온 교재
+  const 들 = Object.entries(판.imports || {}).filter(([, m]) => m && m.status === 'new' && (!(m.students || []).length || (m.students || []).includes(a.u.id)))
+    .sort((x, y) => String(y[1].folderDate).localeCompare(String(x[1].folderDate)));
+  const 계 = 이번계획(a, 다음);
+  const 교 = 계 ? 지금교재(a, 계.id, Number(계.p.latest)) : null;
+  const 링크들 = (files) => (files || []).filter(f => /\.pdf$/i.test(f.name || '')).map(f => `<a href="${드라이브링크(f.name)}" target="_blank" rel="noopener" title="${글(f.name)}">${글(({ teacher: '답지·채점', keyideas: '핵심 정리', book: '워크북', hw: '숙제', test: '테스트', student: '학생용 전체', other: '파일' })[f.kind || 짐작종류(f.name)] || 짧은이름(f.name))} ↗</a>`).join(' · ');
+  const 이 = `<div class="판" style="margin-bottom:10px"><h3 style="margin:0 0 6px">② 들어온 교재</h3>
+    ${들.length ? 들.map(([id, m]) => { const 날 = 들임.날[id] || 들임수업일(a, m.folderDate);
+      return `<div style="margin:4px 0">${글(m.folderDate)} 저장 · ${링크들((m.files || []).filter(f => !(f.students || []).length || (f.students || []).includes(a.u.id)).map(f => ({ name: f.name, kind: 짐작종류(f.name) })))}
+        ${m.ok ? `<div style="margin-top:4px">수업일 <input type="date" value="${글(날)}" onchange="들임.날['${글(id)}']=this.value"> <button class="주" onclick="들임등록('${글(id)}')">이 수업으로 등록</button>
+        <a href="#" class="작게" onclick="들임숨기기('${글(id)}');return false">숨기기</a></div>` : '<div class="빨강 작게">숙제 파일을 못 읽었습니다 — 자세히에서 확인</div>'}</div>`; }).join('')
+      : 교 ? `<div>${교.d.source === 'import' ? '등록됨' : '만들어짐'} · ${링크들(교.d.files)}</div>`
+      : '<div class="작게">아직 없습니다 — 프로젝트 결과물을 드라이브에 저장하면 몇 분 안에 여기 나옵니다.</div>'}</div>`;
+  // ③ 내보내기
+  let 삼몸 = '<div class="작게">②에서 등록하면 여기서 내보냅니다.</div>';
+  if (계) {
+    const ap = (계.p.approvals || {})[계.p.latest] || {}, 온 = 지금온라인(a, ap.online && ap.online.jobId);
+    const st = 검토.상태[계.id];
+    if (!st && !검토.상태['_불러옴_' + 계.id] && !(계.p.released && 계.p.released.slot)) { 검토.상태['_불러옴_' + 계.id] = true; 부르기('prepReleaseStatus', { planId: 계.id }).then(r => { 검토.상태[계.id] = r; delete 검토.상태['_불러옴_' + 계.id]; 카드그리기(); }).catch(e => { 검토.상태[계.id] = { error: e.message }; delete 검토.상태['_불러옴_' + 계.id]; }); }
+    if (계.p.released && 계.p.released.slot) { const k = 계.p.released.slot;
+      삼몸 = `<div class="좋음"><b>✅ 나갔습니다</b> — 숙제 관리 ${글(k.key)} 칸 Set ${k.from + 1}${k.count > 1 ? '~' + (k.from + k.count) : ''} (TS 숙제와 함께 보입니다)</div>`; }
+    else if (온) {
+      const n = (온.d.sets || []).length, m = (온.d.sets || []).reduce((t, x) => t + ((x.questions || []).length), 0);
+      const 이유 = st && !st.error && !st.manual.ok ? (st.manual.reasons[0] || {}).msg : null;
+      삼몸 = `<div>${글(계.날)} 수업 숙제 <b>${n}세트 · ${m}문항</b> <a href="#" onclick="간단.미리=간단.미리?null:'${글(온.id)}';카드그리기();return false">${간단.미리 === 온.id ? '미리보기 닫기' : '미리보기'}</a></div>
+        <div style="margin-top:6px"><button class="주" ${st && !st.error && st.manual.ok ? '' : 'disabled'} onclick="지금공개('${글(계.id)}')">지금 공개</button>
+        <span class="작게">또는 수업날 20:00 자동(${판.autoRelease === true ? '켜짐' : '꺼짐 — 자세히에서 켬'})</span></div>
+        ${이유 ? '<div class="경고 작게">못 내보내는 까닭: ' + 글(이유) + ' <span class="흐림">(자세히 ▾ → 검토·공개 탭에서 처리)</span></div>' : (!st ? '<div class="작게">확인 중…</div>' : '')}
+        ${간단.미리 === 온.id ? 들임미리그리기(온.d.sets || []) : ''}`;
+    }
+  }
+  const 삼 = `<div class="판" style="margin-bottom:10px"><h3 style="margin:0 0 6px">③ 아이에게 내보내기</h3>${삼몸}</div>`;
+  return `<div style="margin-bottom:8px"><h2 style="margin:0">${글(a.u.name || a.u.id)} <span class="작게">Y${글(a.u.year)} · 다음 수업 ${글(다음 || '요일 없음')}</span></h2></div>${일}${이}${삼}`;
+}
+function 짐작종류(n) { return /MarkingGuide|Answer|교사|답지/i.test(n) ? 'teacher' : /KeyIdeas|EN-KO/i.test(n) ? 'keyideas' : /Workbook|교재/i.test(n) ? 'book' : /Homework|숙제/i.test(n) ? 'hw' : /Test|테스트/i.test(n) ? 'test' : /학생용/.test(n) ? 'student' : 'other'; }
+function 짧은이름(n) { return String(n || '').replace(/\.pdf$/i, '').slice(-24); }
+async function 간단복사() {
+  const t = document.getElementById('간단부탁'); if (!t) return;
+  try { await navigator.clipboard.writeText(t.value); 알림('✅ 복사했습니다 — 프로젝트 대화창에 붙여 넣으세요'); }
+  catch (_) { 간단.글보기 = true; 카드그리기(); 알림('글을 펼쳤습니다 — 직접 선택해 복사해 주세요'); }
+}
+
 function 카드그리기() {
   const a = 아이자료; if (!a) return;
+  // [10-02] 처음엔 「이번 주」 간단 보기만 — 예전 탭 여섯은 「자세히 ▾」 안
+  if (!자세히열림) { document.getElementById('카드').innerHTML = 간단그리기(a) + '<div style="margin-top:10px"><button onclick="자세히토글()">자세히 ▾</button> <span class="작게">현황 · 분량 설정 · 종이 시험 · 커리 · 지난 교재 · 보류/휴강 · 공개 조건</span></div>'; return; }
   const 탭 = ['현황', '주간 설정', '검토·공개', '종이 시험', '커리·학교 자료', '지난 교재'].map(t => `<button class="${t === 고른탭 ? '고름' : ''}" onclick="고른탭='${t}';카드그리기()">${t}</button>`).join('');
   const 검토 = C.needsCurriculumReview(a.sources);
   let 몸 = '';
@@ -198,7 +269,7 @@ function 카드그리기() {
   document.getElementById('카드').innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
       <h2 style="margin:0">${글(a.u.name || a.u.id)} <span class="작게">Y${글(a.u.year)} ${글(a.u.group || '')}</span></h2>
       ${검토 ? '<span class="경고" id="커리검토">⚠️ ' + (Object.values(a.sources || {}).some(s => s && s.via === 'drive' && (s.status || 'uploaded') === 'uploaded') ? '새 자료 → ' : '') + '커리 먼저 검토 — 관련 제작 보류</span>' : ''}</div>
-    <div class="탭">${탭}</div>${몸}`;
+    <div class="탭">${탭} <button onclick="자세히토글()" title="매주 하실 일 세 가지만">▴ 간단히 보기</button></div>${몸}`;
 }
 
 // ── 현황 ──

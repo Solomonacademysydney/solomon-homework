@@ -176,17 +176,23 @@ textarea{background:var(--바탕); color:var(--글); border:1px solid var(--선)
   </div>
 
   <div class="판" id="설정판" style="display:none">
-    <h2>이번 주 숙제 설정</h2>
-    <div id="설정근거"></div>
+    <h2>이번 주 숙제</h2>
+    <div id="설정요약" class="작게" style="margin-bottom:6px"></div>
+    <div class="줄">
+      <button id="부탁단추" class="주" onclick="초안부탁()">📝 이번 주 숙제 만들어 줘</button>
+      <span class="작게 흐림" id="설정알림"></span>
+    </div>
+    <details id="설정자세히" style="margin-top:8px"><summary class="작게">설정 바꾸기 (하루 문항 · 일수 · 레벨 · 주차 · 배분 표)</summary>
+    <div id="설정근거" style="margin-top:6px"></div>
     <div class="격자" style="margin:10px 0">
       <label class="쪽"><span class="이름">하루 문항</span>
-        <input id="설정_하루" type="number" min="1" max="20" class="값입력"></label>
+        <input id="설정_하루" oninput="설정요약()" type="number" min="1" max="20" class="값입력"></label>
       <label class="쪽"><span class="이름">일수</span>
-        <input id="설정_일수" type="number" min="1" max="7" class="값입력"></label>
+        <input id="설정_일수" oninput="설정요약()" type="number" min="1" max="7" class="값입력"></label>
       <label class="쪽"><span class="이름">중심 레벨</span>
-        <input id="설정_중심" type="number" min="1" max="5" class="값입력"></label>
+        <input id="설정_중심" oninput="설정요약()" type="number" min="1" max="5" class="값입력"></label>
       <label class="쪽"><span class="이름">배정 주차</span>
-        <input id="설정_주차" type="text" class="값입력"></label>
+        <input id="설정_주차" oninput="설정요약()" type="text" class="값입력"></label>
     </div>
     <details style="margin:8px 0">
       <summary>배분 표 — 어떤 꼴을 몇 개 (펼쳐 보기)</summary>
@@ -198,14 +204,13 @@ textarea{background:var(--바탕); color:var(--글); border:1px solid var(--선)
         style="width:100%;font-family:ui-monospace,Consolas,monospace;font-size:12px"></textarea>
     </details>
     <div class="줄">
-      <button id="부탁단추" class="주" onclick="초안부탁()">📝 이번 주 숙제 만들어 줘</button>
       <button onclick="설정되돌리기()">↺ 지난 초안 값으로</button>
-      <span class="작게 흐림" id="설정알림"></span>
     </div>
     <p class="작게 흐림" style="margin-top:8px">
       누르시면 PC 일꾼이 초안을 만들어 올립니다. <b>아이 숙제 칸에는 아무것도 안 씁니다.</b>
       실제로 나가는 것은 초안을 보시고 <b>승인</b>하실 때입니다.
     </p>
+    </details>
   </div>
 
   <div class="판" id="초안판" style="display:none">
@@ -219,9 +224,10 @@ textarea{background:var(--바탕); color:var(--글); border:1px solid var(--선)
       <span class="작게 흐림" id="승인말"></span>
     </div>
     <div id="초안알림"></div>
-    <div id="초안문항"></div>
+    <details><summary class="작게">문항 펼쳐 보기</summary><div id="초안문항"></div></details>
   </div>
 
+  <details id="더보기" style="margin-top:6px"><summary style="cursor:pointer;padding:6px 0">자세히 ▾ — 교사 리포트 · 출제 이력</summary>
   <div class="판" id="리포트판" style="display:none">
     <h2>교사 리포트</h2>
     <div class="줄" style="margin-bottom:8px">
@@ -238,6 +244,7 @@ textarea{background:var(--바탕); color:var(--글); border:1px solid var(--선)
     <h2>출제 이력</h2>
     <div id="이력"></div>
   </div>
+  </details>
 
   <div class="판">
     <h2>창고 · 벌 · PC</h2>
@@ -647,10 +654,14 @@ async function 학생읽기(){
     '<div class="알림">⚠️ <b>TS 를 받는 아이 명단을 아직 PC 가 안 올렸습니다.</b> '
     + '지금은 <b>학생 전체</b>를 보여 주고 있습니다(시험 계정·옛 계정이 섞여 있습니다).</div>';
 
-  목록.innerHTML = 안내 + '<table><thead><tr>'
+  // [10-02] 이름 단추 한 줄(원장님 「너무 복잡해」) — 큰 표는 접어 둔다
+  const 단추줄 = '<div id="이름줄" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">' + 학생들.map(s =>
+    '<button class="이름단추" data-id="' + 글(s.id) + '" onclick="아이고르기(\'' + 글(s.id) + '\')">' + (s._며칠 <= 1 ? '🔔 ' : '') + 글(s.name || s.id)
+    + ' <span class="작게 흐림">' + 며칠뒤말(s._며칠) + '</span></button>').join('') + '</div>';
+  목록.innerHTML = 안내 + 단추줄 + '<details><summary class="작게">학생 표 전체</summary><table><thead><tr>'
     + '<th>수업</th><th>아이</th><th>학년</th><th>반</th><th>시험</th>'
     + '<th>분석 주차</th><th>배정 주차</th><th>칸</th><th>지난주 TS</th><th>지난주 수학</th><th>상태</th>'
-    + '</tr></thead><tbody id="몸통"></tbody></table>';
+    + '</tr></thead><tbody id="몸통"></tbody></table></details>';
 
   const 몸통 = document.getElementById('몸통');
   for (const s of 학생들) {
@@ -679,6 +690,7 @@ async function 아이고르기(sid){
   고른아이 = s;
   document.querySelectorAll('#몸통 tr').forEach(tr =>
     tr.classList.toggle('골랐다', tr.dataset.id === sid));
+  document.querySelectorAll('#이름줄 .이름단추').forEach(b => { const 고름 = b.dataset.id === sid; b.style.outline = 고름 ? '2px solid #2b4c7e' : ''; b.style.fontWeight = 고름 ? '700' : ''; });
 
   const 판 = document.getElementById('자세히판');
   판.style.display = '';
@@ -717,8 +729,13 @@ async function 아이고르기(sid){
   const 수학 = await 수학세기(sid, 분석, 칸값 && 칸값.sets ? Object.keys(칸값.sets).length : 0);
   const t = TS세기(칸값 && 칸값.ts, ts제출);
 
+  const 요일글 = (d) => d ? (d.getMonth() + 1) + '/' + d.getDate() + '(' + ['일', '월', '화', '수', '목', '금', '토'][d.getDay()] + ')' : '—';
+  document.getElementById('자세히제목').textContent = (s.name || s.id) + ' · Y' + (s.year || '?') + ' · 다음 수업 ' + 요일글(주차.다음수업);
   통.innerHTML =
-    '<div class="격자">'
+    '<div style="margin-bottom:6px">지난주 TS: <b>' + (t.배정 ? (t.배정 + '문항 중 ' + t.시도 + ' 풀이 · 첫판 정답 ' + Math.round(t.첫판 / Math.max(1, t.배정) * 100) + '%') : '숙제 없음') + '</b>'
+    + (수학.배정세트 ? ' <span class="작게 흐림">· 수학 ' + 수학.낸세트 + '/' + 수학.배정세트 + '세트 냄</span>' : '') + '</div>'
+    + '<details><summary class="작게">자세히 (주차 · 지난주 표 · 수학 · 상태)</summary>'
+    + '<div class="격자">'
     + 쪽('분석 주차', 분석) + 쪽('배정 주차', 배정)
     + 쪽('칸', 칸 || '없음')
     + 쪽('커리', (s._설정 && s._설정['커리']) || '—')
@@ -728,7 +745,8 @@ async function 아이고르기(sid){
     + '<h3 style="font-size:14px;margin:14px 0 6px">지난주 수학 (읽기·계산만)</h3>'
     + 수학표(수학)
     + '<h3 style="font-size:14px;margin:14px 0 6px">상태</h3>'
-    + 상태표(칸값, ts제출);
+    + 상태표(칸값, ts제출)
+    + '</details>';
 
   // 행에도 채워 넣는다
   const tr = document.querySelector('#몸통 tr[data-id="' + CSS.escape(sid) + '"]');
@@ -891,6 +909,13 @@ function 설정채우기(sid, 배정주차, 커리설정, 지난초안){
     : '<p class="알림">커리 설정을 아직 PC 가 안 올렸습니다. 값을 직접 넣으십시오.</p>';
 }
 
+/** [10-02] 「이번 주 숙제」 위 한 줄 — 지금 값(바꾸려면 「설정 바꾸기」) */
+function 설정요약(){
+  const 값 = (id) => (document.getElementById(id) || {}).value || '?';
+  const 줄 = document.getElementById('설정요약');
+  if (줄) 줄.innerHTML = '하루 <b>' + 글(값('설정_하루')) + '</b>문항 · <b>' + 글(값('설정_일수')) + '</b>일 · 중심 <b>L' + 글(값('설정_중심')) + '</b> · 배정 ' + 글(값('설정_주차'))
+    + ' <span class="흐림">— ' + (설정바탕 && 설정바탕.배분 ? '지난 초안 값' : '기본 값') + '</span>';
+}
 function 설정되돌리기(){
   if (!설정바탕) return;
   document.getElementById('설정_하루').value = 설정바탕.하루;
@@ -900,6 +925,7 @@ function 설정되돌리기(){
   document.getElementById('설정_배분').value =
     설정바탕.배분 ? JSON.stringify(설정바탕.배분, null, 1) : '';
   document.getElementById('설정알림').textContent = '';
+  설정요약();
 }
 
 async function 초안부탁(){
