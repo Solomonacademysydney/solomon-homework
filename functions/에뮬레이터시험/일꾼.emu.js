@@ -52,7 +52,7 @@ function 설정(이름, 덧) {
   return Object.assign({ mode: 'semi', backend: 'fake', allowApi: false, models: { generate: 'opus', verify: 'opus', format: 'haiku' }, maxTokensPerJob: 100000,
     estimatePerCall: {}, batchSize: 12, maxRounds: 2, workRoot: path.join(바탕, 이름, '일감'), logFile: path.join(바탕, 이름, '기록.jsonl'),
     candidatesFile: path.join(바탕, 이름, '후보.jsonl'), coreDir: 'C:/솔로몬제작/toolchain_core', tsRoot: 'C:/TS작업', python: 'python', edge: EDGE,
-    heartbeatSec: 60, workerId: 'PC-A', output: 'drive', drive: { root: path.join(바탕, 이름, '학생별 교재'), curriculumRoot: path.join(바탕, '찾기없음') }, firebase: { emulator: true, dbUrl: 'http://' + DB, ns: 'demo-solomon', bucket: 'demo-solomon.appspot.com',
+    heartbeatSec: 60, workerId: 'PC-A', idWaitFile: path.join(바탕, 이름, '주소대기.json'), importState: path.join(바탕, 이름, '결과물상태.json'), output: 'drive', drive: { root: path.join(바탕, 이름, '학생별 교재'), curriculumRoot: path.join(바탕, '찾기없음') }, firebase: { emulator: true, dbUrl: 'http://' + DB, ns: 'demo-solomon', bucket: 'demo-solomon.appspot.com',
       storageBase: 'http://' + ST, authBase: 'http://' + AUTH, apiKey: 'demo-key', uid: 'ts-worker' } }, 덧 || {});
 }
 function 작은설정() {
