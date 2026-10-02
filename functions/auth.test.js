@@ -73,6 +73,32 @@ ok('낱말이 골고루 나온다(2000번에 절반 이상 등장)', new Set(sam
 //   시간당 10번 막이 있으니 찍어 맞히려면 평균 수백 년이 걸린다.
 ok('가짓수가 7만 이상이다', W.length * 900 >= 70000);
 
+console.log('\n⑧ 로그인 프로필 (RTDB 요금 묶음 2) — 본인 줄만, 비번 꼴 칸 빼고');
+const { profileFor } = _internals;
+const book = [
+  { id: 'T1', role: 'teacher', name: '원장' },
+  { id: 'Amy05', role: 'student', name: 'Amy', year: 5, country: 'AU', group: '', status: 'active', pw: 'x' },
+  { id: 'Ben03', role: 'student', name: 'Ben', year: 3, country: 'AU', group: 'A', status: 'active' },
+  { id: 'Cal07', role: 'student', name: 'Cal', year: 7, country: 'AU', status: 'active' },
+  null,
+  { id: 'Amy05', role: 'parent', name: 'Amy 부모', status: 'active', childIds: ['Amy05', 'Ben03', 'Ghost01'] },
+];
+const pS = profileFor(book, 'student', 'Amy05');
+ok('학생 — 본인 줄을 준다', pS && pS.id === 'Amy05' && pS.role === 'student' && pS.year === 5);
+ok('⛔ 학생 — pw 칸을 뺀다', pS && !('pw' in pS));
+ok('⛔ 학생 — 자녀 칸을 붙이지 않는다', pS && !('children' in pS));
+ok('⛔ 같은 아이디라도 역할이 다르면 다른 줄이다', profileFor(book, 'parent', 'Amy05').role === 'parent');
+const pP = profileFor(book, 'parent', 'Amy05');
+ok('학부모 — 연결된 자녀만 붙인다(둘)', pP.children.length === 2 && pP.children.map((c) => c.id).join() === 'Amy05,Ben03');
+ok('⛔ 학부모 — 연결 안 된 Cal07 은 안 준다', !pP.children.some((c) => c.id === 'Cal07'));
+ok('⛔ 학부모 — 자녀 줄에서도 pw 를 뺀다', pP.children.every((c) => !('pw' in c)));
+ok('⛔ 학부모 — 공책에 없는 자녀(Ghost01)는 조용히 빠진다', !pP.children.some((c) => c.id === 'Ghost01'));
+ok('학부모 — childIds 가 객체꼴이어도 된다', profileFor([{ id: 'P', role: 'parent', childIds: { 0: 'Ben03' } }, book[2]], 'parent', 'P').children.length === 1);
+ok('⛔ 없는 사람이면 null', profileFor(book, 'student', 'Nobody') === null);
+ok('공책이 객체꼴(0,1,2…)이어도 찾는다', profileFor({ 0: book[0], 1: book[2] }, 'student', 'Ben03').id === 'Ben03');
+ok('⛔ 공책이 비면 null(던지지 않는다)', profileFor(null, 'student', 'Amy05') === null);
+ok('⛔ 돌려준 것을 고쳐도 공책은 그대로다(사본)', (() => { const p = profileFor(book, 'student', 'Ben03'); p.name = 'X'; return book[2].name === 'Ben'; })());
+
 console.log('\n────────────────────────────');
 console.log(fail === 0 ? `전부 통과 — ${pass}개` : `⛔ ${fail}개 실패 / ${pass}개 통과`);
 process.exit(fail === 0 ? 0 : 1);

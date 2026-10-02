@@ -182,11 +182,14 @@ const 거절 = (r, 말) => !!(r && r.err && r.err.includes(말));
   재기('끝내면 클레임이 지워진다', !(((await admin.auth().getUser('u-mina')).customClaims || {}).prep));
   재기('끝낸 뒤 조회 → 거절', 거절(await 부름(P.prepListMyAssignments, 'u-mina', {}), 'NO-SESSION'));
 
-  console.log('\n── ⑤ 옛 loginCheck 는 그대로');
+  // [RTDB 요금 묶음 2 · 2026-10-02] loginCheck 는 옛 두 칸(ok·isMaster)에 **profile 하나만** 덧붙인다(호환 변경).
+  console.log('\n── ⑤ 옛 loginCheck 칸은 그대로 + 본인 프로필');
+  const 칸들 = (o) => Object.keys(o || {}).sort().join(',');
   const lc = await 부름(A.loginCheck, 'u-aron', { id: 'Aron', role: 'student', pw: 'aron1234' });
-  재기('loginCheck 는 예전처럼 { ok, isMaster } 만', lc && lc.ok === true && lc.isMaster === false && Object.keys(lc).length === 2, JSON.stringify(lc));
+  재기('loginCheck 는 예전 칸 { ok, isMaster } 그대로 + profile 만', lc && lc.ok === true && lc.isMaster === false && 칸들(lc) === 'isMaster,ok,profile', JSON.stringify(lc));
+  재기('profile 은 본인 줄이고 비번 칸이 없다', lc && lc.profile && lc.profile.id === 'Aron' && lc.profile.role === 'student' && !('pw' in lc.profile), JSON.stringify(lc && lc.profile));
   const lcm = await 부름(A.loginCheck, 'u-aron', { id: 'Mina', role: 'student', pw: 'MASTER99' });
-  재기('loginCheck 마스터도 예전처럼', lcm && lcm.ok === true && lcm.isMaster === true && Object.keys(lcm).length === 2, JSON.stringify(lcm));
+  재기('loginCheck 마스터도 예전 칸 그대로 + 들어가는 아이 프로필', lcm && lcm.ok === true && lcm.isMaster === true && 칸들(lcm) === 'isMaster,ok,profile' && lcm.profile && lcm.profile.id === 'Mina', JSON.stringify(lcm));
   재기('loginCheck 는 클레임을 건드리지 않는다', ((await admin.auth().getUser('u-aron')).customClaims || {}).prep.sid === 'Aron');
 
   await db.ref().set(null);

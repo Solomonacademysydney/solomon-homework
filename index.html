@@ -3207,6 +3207,8 @@ window._잠긴칸 = window._잠긴칸 || new Set();
 /** `sol_v4/ops/lock` 을 지켜본다. 승인 함수가 잠그면 곧바로 여기에 들어온다. */
 function _잠긴칸지켜보기() {
   try {
+    // [묶음 2] 교사가 다시 로그인하면 또 불린다 ⇒ 먼저 떼고 붙인다(구독이 겹치지 않게)
+    firebase.database().ref('sol_v4/ops/lock').off('value');
     firebase.database().ref('sol_v4/ops/lock').on('value', snap => {
       const v = snap.val() || {};
       window._잠긴칸 = new Set(Object.keys(v));
@@ -5209,9 +5211,21 @@ async function ensureVaultPassword(id, role, plainPw, opts) {
   }
 }
 
+// ★ [RTDB 요금 묶음 2 · 2026-10-02] 로그인 연타·느린 통신에서도 한 번만 돈다.
+let _loginBusy = false;
 async function doLogin() {
+  if (_loginBusy) return;
+  _loginBusy = true;
+  try { await _doLoginInner(); }
+  finally { _loginBusy = false; }
+}
+
+async function _doLoginInner() {
   const id = document.getElementById('loginId').value.trim();
   const pw = document.getElementById('loginPw').value;
+  // ★ [묶음 2] 소개 화면은 DB 를 안 연다 ⇒ 로그인할 때 연다(이미 열렸으면 바로 지나간다).
+  //   처음 읽기가 끝날 때까지(또는 7초) 기다린 뒤에 서랍을 본다 — 전과 같은 서랍이다.
+  if (typeof window._dbStart === 'function') await window._dbStart();
   const store = getStore();
 
   // ═══════════════════════════════════════════════════════
@@ -5233,7 +5247,22 @@ async function doLogin() {
   try {
     const said = await callAuthWorker('loginCheck', { id, role: loginRole, pw }, 8000);
     if (said && said.ok) {
-      user = store.users.find(u => u.id === id && u.role === loginRole);
+      // ★ [묶음 2] 서버가 본인 프로필을 함께 준다(functions/auth.js profileFor).
+      //   이 묶음에서는 서랍의 줄이 있으면 **그 줄을 그대로** 쓴다(지금과 똑같이 돌게).
+      //   서랍에 없을 때만 서버 프로필로 들어온다 — 단 서버 자료를 다 받았을 때만
+      //   (못 받았으면 빈 화면으로 들어가지 않고 아래에서 「연결 못 함」으로 멈춘다).
+      const p = said.profile;
+      const fromServer = (p && p.id === id && p.role === loginRole) ? p : null;
+      user = store.users.find(u => u.id === id && u.role === loginRole) || null;
+      if (!user && fromServer) {
+        if (window.fbReady) user = fromServer;
+        else {
+          document.getElementById('loginError').textContent =
+            '지금 서버에서 자료를 받지 못했습니다. 잠시 뒤 다시 시도해 주세요.';
+          document.getElementById('loginError').style.display = 'block';
+          return;
+        }
+      }
       isMasterLogin = !!said.isMaster;
     }
   } catch (e) {
@@ -5322,6 +5351,8 @@ async function doLogin() {
     if (user.role==='teacher') {
       // [Auth 2026-05-16] Firebase Auth를 원장 계정으로 전환 (Rules 권한 획득)
       await elevateToOperatorAuth(user.id, pw);
+      // ★ [묶음 2] 잠긴 칸 목록은 교사만 쓴다 ⇒ 교사 인증 뒤에 지켜본다(전에는 페이지 열 때).
+      try { _잠긴칸지켜보기(); } catch (e) { console.warn('[lock] 시작 실패:', e); }
       document.getElementById('btnBackupDownload').style.display = '';
       const todayPeriod = getTodayPeriod();
       const _s = getStore();
@@ -14761,11 +14792,22 @@ function _emuConnect(fb, doc) {
   try {
     firebase.initializeApp(_EMU ? _EMU_CONFIG : firebaseConfig);
     if (_EMU) _emuConnect(firebase, document);
-    window.FB_REF = firebase.database().ref('solomon_hw_v3');
+    // ★ [묶음 2] FB_REF 는 _dbStart() 에서 만든다 — ref() 를 부르는 것만으로 SDK 가 DB 연결을 연다
+    //   (에뮬레이터 실측: 구독 0개인데 연결 1개). FB_REF 를 쓰는 곳은 모두 「없으면 멈춤」 검사가 있다.
+    window.FB_REF = null;
     window.fbReady = false;
 
-    // [R-0 · 2026-09-19] 잠긴 칸 목록을 늘 들고 있는다. 규칙 배포 전에는 못 읽고 그냥 넘어간다.
-    try { _잠긴칸지켜보기(); } catch (e) { console.warn('[lock] 시작 실패:', e); }
+    // ★ [RTDB 요금 묶음 2 · 2026-10-02] 소개 화면에서는 **아무것도 받지 않는다.**
+    //   전에는 페이지를 열기만 해도 익명 로그인 → 앱 뿌리 전체(10-02 실측 15MB)를 받고 구독했다.
+    //   이제 아래 _dbStart() 가 **로그인 창을 열 때 / 로그인 단추를 누를 때** 한 번만 돈다.
+    //   ⛔ 잠긴 칸 목록(_잠긴칸지켜보기)은 여기서 빼고 교사 인증 뒤로 옮겼다(doLogin).
+    const ov0 = document.getElementById('loadingOverlay');
+    if (ov0) ov0.style.display = 'none';   // 받을 것이 없으니 기다릴 것도 없다
+    let _dbStartPromise = null;
+    window._dbStart = function () {
+      if (_dbStartPromise) return _dbStartPromise;   // 연타·창 여닫기에도 한 번만
+      window.FB_REF = firebase.database().ref('solomon_hw_v3');
+      _dbStartPromise = new Promise(resolveStart => {
 
     // 중복 finishInit 방지 (timeout과 once 콜백 양쪽에서 호출될 수 있음)
     let _initDone = false;
@@ -14775,7 +14817,7 @@ function _emuConnect(fb, doc) {
       ensureStore().then(() => {
         const ov = document.getElementById('loadingOverlay');
         if (ov) ov.style.display = 'none';
-      });
+      }).catch(e => console.warn('[ensureStore] 실패:', e)).then(() => resolveStart());
     };
 
     // 7초 안에 인증/Firebase 응답 없으면 강제로 로딩 해제 (localStorage만으로 fallback)
@@ -14915,8 +14957,13 @@ function _emuConnect(fb, doc) {
         window.fbReady = false;
         finishInit();
       });
+
+      });   // ← new Promise
+      return _dbStartPromise;
+    };
   } catch(e) {
     console.warn('[Firebase] init exception:', e?.message || e);
+    window._dbStart = () => Promise.resolve();   // SDK 가 없으면 기다릴 것도 없다(옛 길과 같음)
     ensureStore().then(() => {
       const ov = document.getElementById('loadingOverlay');
       if (ov) ov.style.display = 'none';
@@ -17566,6 +17613,10 @@ function renderTSViewer() {
     const modal = document.getElementById('login-modal');
     if (modal) modal.classList.add('active');
     document.body.style.overflow = 'hidden';
+
+    // ★ [RTDB 요금 묶음 2] 로그인하려는 사람만 DB 를 연다 — 아이디를 치는 동안 미리 받아 둔다.
+    //   소개 화면만 보고 가는 손님은 아무것도 받지 않는다.
+    if (typeof window._dbStart === 'function') window._dbStart();
 
     // 첫 빈 입력 필드에 포커스
     setTimeout(function() {

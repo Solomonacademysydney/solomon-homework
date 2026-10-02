@@ -176,14 +176,55 @@ async function readStoredPw(role, id) {
   return { pw: null, from: null };
 }
 
+// ─────────────────────────────────────────────
+// [RTDB 요금 묶음 2 · 2026-10-02] 로그인한 사람의 프로필
+//   홈페이지가 공책(users) 전체를 내려받지 않고도 「누가 들어왔는지」 알게 한다.
+//   본인 줄만 · 학부모면 연결된 자녀 줄까지. 비번 꼴 칸은 빼고 남의 줄은 안 준다.
+// ─────────────────────────────────────────────
+const PROFILE_DROP = ['pw', 'password', 'pwHash'];
+
+function cleanRow(u) {
+  const o = {};
+  for (const k of Object.keys(u || {})) if (PROFILE_DROP.indexOf(k) === -1) o[k] = u[k];
+  return o;
+}
+
+function profileFor(users, role, id) {
+  const list = (Array.isArray(users) ? users : Object.values(users || {})).filter(Boolean);
+  const me = list.find((x) => x.id === id && x.role === role);
+  if (!me) return null;
+  const p = cleanRow(me);
+  if (role === 'parent') {
+    const ids = Array.isArray(me.childIds) ? me.childIds : Object.values(me.childIds || {});
+    p.children = ids
+      .map((cid) => list.find((x) => x.role === 'student' && x.id === cid))
+      .filter(Boolean)
+      .map(cleanRow);
+  }
+  return p;
+}
+
+// 프로필을 못 읽어도 로그인은 막지 않는다 — null 이면 홈페이지가 예전처럼 공책에서 찾는다.
+async function readProfile(role, id) {
+  try {
+    const snap = await admin.database().ref(BOOK).once('value');
+    return profileFor(snap.val(), role, id);
+  } catch (e) {
+    console.warn('[auth] 프로필 읽기 실패(로그인은 통과):', e && e.message);
+    return null;
+  }
+}
+
+exports._internals.profileFor = profileFor;
+
 // [순서 4 · 2026-09-11] findBookSlot 은 지웠다 — 공책에 비번을 함께 쓰던 동안만 쓰던 것이고,
 //   이제 아무도 안 부른다. (부르는 곳 0 인 것을 확인하고 지웠다.)
 
 // ─────────────────────────────────────────────
 // ① 로그인 대조
-//    돌려주는 것은 **「맞다/아니다」뿐**이다. 사람 정보는 안 돌려준다 —
-//    홈페이지는 공책을 이미 갖고 있으므로 그쪽에서 찾으면 된다.
-//    (그래서 이 일꾼을 붙이는 데 홈페이지를 크게 안 고쳐도 된다.)
+//    「맞다/아니다」에 [2026-10-02] **본인 프로필(profile)** 을 덧붙여 돌려준다.
+//    홈페이지가 로그인 전에 공책 전체를 받지 않아도 되게 하려는 것이다.
+//    옛 칸(ok·isMaster)은 그대로라 옛 홈페이지도 그대로 돈다.
 // ─────────────────────────────────────────────
 exports.loginCheck = onCall({ region: REGION }, async (req) => {
   const uid = req.auth && req.auth.uid;
@@ -215,7 +256,7 @@ exports.loginCheck = onCall({ region: REGION }, async (req) => {
       } catch (e) {
         console.warn('[auth] 마스터 로그인 기록 실패:', e && e.message);
       }
-      return { ok: true, isMaster: true };
+      return { ok: true, isMaster: true, profile: await readProfile(role, id) };
     }
   }
 
@@ -248,7 +289,7 @@ exports.loginCheck = onCall({ region: REGION }, async (req) => {
     }
   }
 
-  return { ok: true, isMaster: false };
+  return { ok: true, isMaster: false, profile: await readProfile(role, id) };
 });
 
 // ─────────────────────────────────────────────
