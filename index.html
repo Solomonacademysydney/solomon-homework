@@ -3187,17 +3187,31 @@ function _isStudentOwnedSubmissionUpdate(updates) {
 //   예전: 배열 하나를 통째로 읽고 다시 써서 ㉠ 두 탭이 서로의 일을 지우고 ㉡ 비우는 사이 들어온 새 일이 지워지고
 //   ㉢ 20개가 넘으면 가장 오래된 답을 버렸다. 이제 더하기 = 새 열쇠 · 지우기 = 끝낸 그 열쇠만.
 const FB_RETRY_ITEM_PREFIX = 'solomon_fbq_';
+// 돌려주는 값: 적은 열쇠(보낸 뒤 성공하면 그 열쇠만 지운다) · 학생 제출 쓰기가 아니거나 못 적었으면 null
 function _addToRetryQueue(updates) {
-  if (!_isStudentOwnedSubmissionUpdate(updates)) return;
+  if (!_isStudentOwnedSubmissionUpdate(updates)) return null;
   const k = FB_RETRY_ITEM_PREFIX + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
   try {
     localStorage.setItem(k, JSON.stringify({ updates: updates, queuedAt: Date.now() }));
+    return k;
   } catch (e) {
     console.error('[fbRetry] 기기에 보관 실패:', e);
     // 보관도 못 했으면 「나중에 저장된다」고 하면 안 된다 — 그대로 알린다
     try { showBackupToast('⚠️ 이 기기 저장 공간이 부족해 답을 보관하지 못했습니다. 화면을 닫지 말고 선생님께 알려 주세요.'); } catch (_) {}
+    return null;
   }
 }
+// [정비 §5-④] 저장이 8초 넘게 끝나지 않으면(인터넷 기다리는 중) — 답은 기기에 보관돼 있다고 알린다
+function _notifySaveWaiting() {
+  if (!currentUser || (currentUser.role !== 'student' && currentUser.role !== 'parent')) return;
+  if (document.getElementById('fbSaveWaitingBanner')) return;
+  const b = document.createElement('div');
+  b.id = 'fbSaveWaitingBanner';
+  b.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#b45309;color:#fff;padding:12px 20px;text-align:center;font-weight:800;font-size:14px;z-index:99998;font-family:"Noto Sans KR",sans-serif;';
+  b.textContent = '⏳ 인터넷 연결을 기다리는 중 — 답은 이 기기에 보관되어 있고, 연결되면 자동으로 보냅니다.';
+  document.body.appendChild(b);
+}
+function _clearSaveWaiting() { document.getElementById('fbSaveWaitingBanner')?.remove(); }
 function _retryItemKeys() {
   const out = [];
   for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(FB_RETRY_ITEM_PREFIX)) out.push(k); }
@@ -3332,70 +3346,117 @@ function _retryDecision(fbVal, queueVal) {
   return { push: true, value, why: 'differs' };
 }
 
-// [정비 §5] 다시 보내려던 답이 서버의 다른 값과 부딪쳤다 — 덮지 않고 이 기기에 적어 둔다(「확인 필요」 · 원장님이 볼 수 있게).
+// [정비 §5] 다시 보내려던 답이 서버의 다른 값과 부딪쳤다 — 덮지 않고 남긴다(「확인 필요」).
+//   ① 이 기기(최근 200건) ② 그 아이 칸의 _conflicts(원장 현황표 ⚠). ⛔ ②가 **서버에 저장된 뒤에만** 원래 일을 지운다(예외를 던져 줄에 남긴다).
 const FB_RETRY_CONFLICT_KEY = 'solomon_fb_retry_conflicts';
-function _retryConflictNote(path, server, mine) {
+async function _retryConflictNote(path, server, mine) {
   try {
     const raw = localStorage.getItem(FB_RETRY_CONFLICT_KEY);
     const list = raw ? JSON.parse(raw) : [];
     if (!list.some(x => x.path === path && JSON.stringify(x.mine) === JSON.stringify(mine))) list.push({ path, server, mine, at: Date.now() });
-    localStorage.setItem(FB_RETRY_CONFLICT_KEY, JSON.stringify(list.slice(-50)));
-    console.warn('[fbRetry] 서버에 다른 값이 있어 덮지 않음(확인 필요):', path);
-    // 원장님도 볼 수 있게 그 아이 칸 안에 적는다(_conflicts · 답 칸은 건드리지 않는다). 못 적어도 이 기기에는 남는다.
-    const m = /^submissions\/([^/]+)\/(.+)$/.exec(path);
-    if (m && window.FB_REF) window.FB_REF.update({ ['submissions/' + m[1] + '/_conflicts/' + m[2].replace(/\//g, '|')]: { server: server, mine: mine, at: Date.now() } }).catch(() => {});
-  } catch (e) { console.warn('[fbRetry] 확인 필요 기록 실패:', e); }
+    localStorage.setItem(FB_RETRY_CONFLICT_KEY, JSON.stringify(list.slice(-200)));
+  } catch (e) { console.warn('[fbRetry] 확인 필요(기기) 기록 실패:', e); }
+  console.warn('[fbRetry] 서버에 다른 값이 있어 덮지 않음(확인 필요):', path);
+  const m = /^submissions\/([^/]+)\/(.+)$/.exec(path);
+  if (m && window.FB_REF) {
+    await window.FB_REF.update({ ['submissions/' + m[1] + '/_conflicts/' + m[2].replace(/\//g, '|') + '|' + Date.now()]: { server: server === undefined ? null : server, mine: mine === undefined ? null : mine, at: Date.now() } });
+  }
 }
 
-// 일 하나를 처리한다. 끝났으면(보냈거나 · 보낼 필요가 없거나 · 「확인 필요」로 적었으면) 정상 반환, 인터넷 문제면 예외.
-async function _retryOne(item) {
+// [정비 §5-③] 이 기기가 **마지막으로 서버에 보낸 답**(답 경로만 · 최근 500). 다시 보낼 때 서버 값이 이것과 같으면
+//   「내가 전에 보낸 것」이라 덮어도 된다 — 다르면 다른 창·기기가 쓴 것이라 덮지 않는다.
+const FB_SENT_KEY = 'solomon_fb_sent_answers';
+function _sentGet(path) { try { const m = JSON.parse(localStorage.getItem(FB_SENT_KEY) || '{}'); return Object.prototype.hasOwnProperty.call(m, path) ? m[path] : undefined; } catch (_) { return undefined; } }
+function _sentRemember(updates) {
+  try {
+    const m = JSON.parse(localStorage.getItem(FB_SENT_KEY) || '{}');
+    let 바뀜 = false;
+    for (const [p, v] of Object.entries(updates || {})) if (/^submissions\/[^/]+\/answers\/[^/]+$/.test(p) || /^submissions\/[^/]+\/day\d+\/answers\/[^/]+$/.test(p)) { delete m[p]; m[p] = v; 바뀜 = true; }
+    if (!바뀜) return;
+    const 열쇠 = Object.keys(m); if (열쇠.length > 500) 열쇠.slice(0, 열쇠.length - 500).forEach(k => delete m[k]);
+    localStorage.setItem(FB_SENT_KEY, JSON.stringify(m));
+  } catch (_) {}
+}
+const _같다 = (a, b) => JSON.stringify(a === undefined ? null : a) === JSON.stringify(b === undefined ? null : b);
+const _쓰기 = async (u) => { const ts = Date.now(); _lastFbWriteTs = ts; await window.FB_REF.update(Object.assign({}, u, { lastModified: ts })); _sentRemember(u); };
+
+// 일 하나를 처리한다. 끝났으면(보냈거나 · 보낼 필요가 없거나 · 「확인 필요」로 **서버에 남겼으면**) 정상 반환, 아니면 예외(줄에 남는다).
+//   낡음(path) = 줄에서 같은 경로를 더 나중에 쓴 일이 있다(같은 기기가 마음을 바꾼 것) → 이 일의 그 경로는 건너뛴다.
+async function _retryOne(item, 낡음) {
+  낡음 = 낡음 || (() => false);
   const updateKeys = Object.keys(item.updates).filter(k => k !== 'lastModified');
-  for (const path of updateKeys) {
-    const queueVal = item.updates[path];
-    if (queueVal === null) continue;
-    // [정비 §5 · 2026-10-03] 칸 안의 한 항목(예: answers/<q>)만 쓴 줄 — 예전 판단(_retryDecision)은
-    //   객체만 받아서 글자 답을 **버렸다**. 이제 그 항목만 견준다:
-    //   서버에 없음 → 보낸다 · 같음 → 끝 · 이미 제출된 칸의 답 → 안 바꾼다 · 서버에 다른 값 → 덮지 않고 「확인 필요」로 남긴다.
-    const 항목 = /^submissions\/([^/]+)\/(.+)$/.exec(path);
-    // 제출 묶음(doSubmit 이 한 번에 쓴 항목들 — `submitted:true` 가 들어 있다)은 **한 덩어리로** 판단한다:
-    //   서버가 이미 같은 판(rev) 이상으로 제출됐으면 통째 건너뛰고, 아니면 그 묶음을 그대로 보낸다.
-    if (항목) {
-      const 칸 = 항목[1];
-      const 묶음 = {};
-      for (const k of updateKeys) if (k.startsWith('submissions/' + 칸 + '/')) 묶음[k] = item.updates[k];
-      if (묶음['submissions/' + 칸 + '/submitted'] === true) {
-        const 서버칸 = (await window.FB_REF.child('submissions/' + 칸).once('value')).val();
-        const 내판 = Number(묶음['submissions/' + 칸 + '/rev']) || 0;
-        if (서버칸 && 서버칸.submitted && !서버칸.manuallyMarked && (Number(서버칸.rev) || 0) >= 내판) break;
-        const ts = Date.now();
-        _lastFbWriteTs = ts;
-        await window.FB_REF.update(Object.assign({}, 묶음, { lastModified: ts }));
-        break;
+  const 칸들 = [...new Set(updateKeys.map(p => (/^submissions\/([^/]+)\//.exec(p) || [])[1]).filter(Boolean))];
+  const 끝낸 = new Set();
+  for (const 칸 of 칸들) {
+    const P = 'submissions/' + 칸 + '/';
+    const 묶음 = {};
+    for (const k of updateKeys) if (k.startsWith(P)) 묶음[k] = item.updates[k];
+    // ── 제출 묶음(doSubmit · submitted:true) — 한 덩어리
+    if (묶음[P + 'submitted'] === true) {
+      Object.keys(묶음).forEach(k => 끝낸.add(k));
+      const 서버칸 = (await window.FB_REF.child('submissions/' + 칸).once('value')).val();
+      const 내판 = Number(묶음[P + 'rev']) || 0;
+      if (서버칸 && 서버칸.submitted && !서버칸.manuallyMarked && (Number(서버칸.rev) || 0) >= 내판) {
+        // 이미 같은 판 이상으로 제출됨 — 보내지 않되, 답이 다르면 버리지 않고 남긴다(R2)
+        for (const [k, v] of Object.entries(묶음)) {
+          const q = /answers\/([^/]+)$/.exec(k);
+          if (q && !_같다((서버칸.answers || {})[q[1]], v)) await _retryConflictNote(k, (서버칸.answers || {})[q[1]], v);
+        }
+        continue;
       }
-    }
-    if (항목) {
-      const 부모 = (await window.FB_REF.child('submissions/' + 항목[1]).once('value')).val();
-      const 지금 = 부모 == null ? null : 항목[2].split('/').reduce((o, k) => (o == null ? null : o[k]), 부모);
-      if (JSON.stringify(지금) === JSON.stringify(queueVal)) continue;
-      if (부모 && 부모.submitted && /^answers\//.test(항목[2])) continue;
-      // 답(answers/<q>)만 「다른 값이면 덮지 않는다」 — 보충학습 같은 이 아이 혼자 쓰는 가지는 마지막 것이 이긴다.
-      if (지금 != null && /^answers\//.test(항목[2])) { _retryConflictNote(path, 지금, queueVal); continue; }
-      // TS 문항 기록(dayN/answers/qK): 서버 쪽이 이미 같거나 더 많이 시도했으면 그쪽이 더 새것 — 안 덮는다.
-      if (지금 && typeof 지금 === 'object' && /^day\d+\/answers\/[^/]+$/.test(항목[2])
-          && (Number(지금.attempts) || 0) >= (Number(queueVal && queueVal.attempts) || 0)) continue;
-      const ts = Date.now();
-      _lastFbWriteTs = ts;
-      await window.FB_REF.update({ [path]: queueVal, lastModified: ts });
+      await _쓰기(묶음);
       continue;
     }
+    // ── 새로 풀기 묶음(submitted:false + _prev) — 이미 반영됐으면(서버 보관함이 같거나 더 길면) 건너뛴다(R3)
+    if (묶음[P + 'submitted'] === false && (P + '_prev') in 묶음) {
+      Object.keys(묶음).forEach(k => 끝낸.add(k));
+      const 서버칸 = (await window.FB_REF.child('submissions/' + 칸).once('value')).val();
+      const 서버길이 = 서버칸 && 서버칸._prev ? Object.keys(서버칸._prev).length : 0;
+      const 내길이 = 묶음[P + '_prev'] ? Object.keys(묶음[P + '_prev']).length : 0;
+      if (서버길이 >= 내길이) continue;
+      await _쓰기(묶음);
+      continue;
+    }
+  }
+  for (const path of updateKeys) {
+    if (끝낸.has(path)) continue;
+    if (낡음(path)) continue;
+    const queueVal = item.updates[path];
+    const 항목 = /^submissions\/([^/]+)\/(.+)$/.exec(path);
+    if (항목) {
+      const 답 = /^answers\/[^/]+$/.test(항목[2]);
+      const TS답 = /^day\d+\/answers\/[^/]+$/.test(항목[2]);
+      if (답) {
+        // R1·R4 — 그 한 칸을 트랜잭션으로: 비었거나 · 같거나 · 이 기기가 전에 보낸 값이면 쓴다. 아니면 「확인 필요」.
+        const 부모제출 = (await window.FB_REF.child('submissions/' + 항목[1] + '/submitted').once('value')).val() === true;
+        let 부딪친값;
+        const 결과 = await window.FB_REF.child(path).transaction(cur => {
+          부딪친값 = undefined;
+          if (_같다(cur, queueVal)) return undefined;                 // 이미 같다 — 끝
+          if (부모제출) { 부딪친값 = cur; return undefined; }         // 제출된 칸의 답은 안 바꾼다(규칙도 막는다)
+          if (cur == null || _같다(cur, _sentGet(path))) return queueVal;
+          부딪친값 = cur; return undefined;
+        }, undefined, false);
+        if (결과.committed) { _sentRemember({ [path]: queueVal }); continue; }
+        if (부딪친값 !== undefined) await _retryConflictNote(path, 부딪친값, queueVal);
+        continue;
+      }
+      const 부모 = (await window.FB_REF.child('submissions/' + 항목[1]).once('value')).val();
+      const 지금 = 부모 == null ? null : 항목[2].split('/').reduce((o, k) => (o == null ? null : o[k]), 부모);
+      if (_같다(지금, queueVal)) continue;
+      // TS 문항 기록: 서버 쪽이 같거나 더 많이 시도했으면 그쪽이 더 새것 — 안 덮는다(다르면 남긴다)
+      if (TS답 && 지금 && typeof 지금 === 'object' && (Number(지금.attempts) || 0) >= (Number(queueVal && queueVal.attempts) || 0)) {
+        if (!_같다(지금, queueVal)) await _retryConflictNote(path, 지금, queueVal);
+        continue;
+      }
+      await _쓰기({ [path]: queueVal });    // 보충학습·깃발·_conflicts·null(지우기) 등 — 이 아이 혼자 쓰는 가지
+      continue;
+    }
+    if (queueVal === null) continue;
     const snap = await window.FB_REF.child(path).once('value');
-    const fbVal = snap.val();
-    // ★ [2-B 추가 · 2026-10-01] 개수가 아니라 **내용**을 견준다(_retryDecision 위 설명).
-    const 판단 = _retryDecision(fbVal, queueVal);
+    const 판단 = _retryDecision(snap.val(), queueVal);
     if (!판단.push) continue;
-    const ts = Date.now();
-    _lastFbWriteTs = ts;
-    await window.FB_REF.update({ [path]: 판단.value, lastModified: ts });
+    await _쓰기({ [path]: 판단.value });
   }
 }
 
@@ -3420,23 +3481,29 @@ async function _flushRetryQueue() {
         }
       }
       let 남음 = 0;
-      for (const k of _retryItemKeys()) {
-        let item = null;
-        try { item = JSON.parse(localStorage.getItem(k)); } catch (_) { item = null; }
+      const 열쇠들 = _retryItemKeys();
+      // 같은 경로를 **더 나중에** 쓴 일(같은 기기가 마음을 바꾼 것)이 줄에 있으면 앞 일의 그 경로는 낡았다 — 건너뛴다.
+      const 마지막 = {};
+      const 읽은 = 열쇠들.map(k => { try { return JSON.parse(localStorage.getItem(k)); } catch (_) { return null; } });
+      읽은.forEach((it, i) => { if (it && it.updates) Object.keys(it.updates).forEach(p => { 마지막[p] = i; }); });
+      for (let i = 0; i < 열쇠들.length; i++) {
+        const k = 열쇠들[i], item = 읽은[i];
         if (!item || !item.updates) { 남음++; continue; }            // 못 읽은 것도 지우지 않는다
         // 다른 아이(같은 기기에 먼저 로그인했던 형제) 것은 건드리지 않고 남긴다 — 그 아이가 로그인하면 보낸다.
         if (!_isStudentOwnedSubmissionUpdate(item.updates)) { 남음++; continue; }
-        try { await _retryOne(item); localStorage.removeItem(k); }
+        try { await _retryOne(item, (p) => 마지막[p] > i); localStorage.removeItem(k); }
         catch (e) {
           // 거부(PERMISSION_DENIED)는 다시 보내도 영영 안 된다(예: 옛 판의 칸 통째 줄 · 제출 뒤 답 바꾸기).
-          //   지우되 버리지는 않는다 — 「확인 필요」에 그대로 적어 둔다.
+          //   지우되 버리지는 않는다 — 「확인 필요」를 **서버에 남긴 뒤에만** 지운다(못 남기면 줄에 둔다).
           if (/PERMISSION_DENIED|permission_denied/i.test(String((e && (e.code || e.message)) || ''))) {
-            Object.keys(item.updates).filter(p => p !== 'lastModified').forEach(p => _retryConflictNote(p, '(거부됨)', item.updates[p]));
-            localStorage.removeItem(k);
+            try {
+              for (const p of Object.keys(item.updates).filter(p => p !== 'lastModified')) await _retryConflictNote(p, '(거부됨)', item.updates[p]);
+              localStorage.removeItem(k);
+            } catch (_) { 남음++; }
           } else 남음++;
         }
       }
-      if (!남음) _clearStudentSaveFailure();
+      if (!남음) { _clearStudentSaveFailure(); _clearSaveWaiting(); }
     } catch (e) { console.warn('[fbRetry] flush failed:', e); }
   })().finally(() => { _retryFlushing = null; });
   return _retryFlushing;
@@ -3623,11 +3690,26 @@ function fbWrite(updates, onSuccess) {
   const ts = Date.now();
   _lastFbWriteTs = ts;
   updates.lastModified = ts;
+  // ★ [정비 §5-④ · 2026-10-03] **먼저 기기에 적고 → 보내고 → 서버가 받았다고 할 때만 지운다.**
+  //   예전: 실패 응답을 받은 뒤에야 줄에 넣었다. 인터넷이 끊기면 파이어베이스는 실패라고 하지 않고
+  //   그냥 기다리기 때문에 줄이 안 생기고, 그 상태로 창을 닫으면 답이 다시 보내지지 않았다
+  //   (웹의 미완료 쓰기는 창을 닫으면 사라진다 — 파이어베이스 문서).
+  //   학생 자기 제출 쓰기만 해당(_isStudentOwnedSubmissionUpdate). 교사 쓰기는 지금처럼 배너 + 단추.
+  const _줄열쇠 = _addToRetryQueue(updates);
+  let _끝남 = false;
+  const _기다림 = _줄열쇠 ? setTimeout(() => { if (!_끝남) _notifySaveWaiting(); }, 8000) : null;
+  const _줄지우기 = () => { if (_줄열쇠) { try { localStorage.removeItem(_줄열쇠); } catch (_) {} } };
   window.FB_REF.update(updates).then(() => {
+    _끝남 = true; if (_기다림) clearTimeout(_기다림);
+    _줄지우기();
+    if (_줄열쇠) _sentRemember(updates);   // 이 기기가 보낸 답 — 다시 보내기의 「내가 전에 보낸 값」 판단에 쓴다
+    _clearSaveWaiting();
     _clearStudentSaveFailure();
     _clearTeacherWriteFail();
     if (onSuccess) onSuccess(true);
   }).catch(err => {
+    _끝남 = true; if (_기다림) clearTimeout(_기다림);
+    _clearSaveWaiting();
     console.error('[Firebase] 업데이트 실패:', err);
     // ⛔ [R-0 · 2026-09-19] **거부와 인터넷 끊김은 다른 일이다.**
     //   거부(PERMISSION_DENIED)는 다시 보내도 영영 안 된다. 다시 보내기 줄에 넣으면
@@ -3636,14 +3718,20 @@ function fbWrite(updates, onSuccess) {
     const 코드 = String((err && (err.code || err.message)) || '');
     if (/PERMISSION_DENIED|permission_denied/i.test(코드)) {
       const 되돌릴것 = Object.keys(updates).filter(k => k !== 'lastModified');
+      // [정비 §5-④] 먼저 적어 둔 줄은 지우되 버리지 않는다 — 「확인 필요」에 그대로 남긴다(원장 현황표 ⚠).
+      if (_줄열쇠) {
+        Promise.all(되돌릴것.map(p => _retryConflictNote(p, '(거부됨)', updates[p])))
+          .then(() => _줄지우기())                                   // 서버에 「확인 필요」를 남긴 뒤에만 지운다
+          .catch(e => console.warn('[fbRetry] 확인 필요를 서버에 못 남겨 줄에 둡니다:', e));
+      }
       _잠김알리기(되돌릴것, 코드);
       _서버값으로되돌리기(되돌릴것, '쓰기 거부');
       if (onSuccess) onSuccess(false);
       return;
     }
     showBackupToast('⚠️ Firebase 저장 실패 — 로컬에만 저장됨');
-    // [Safety 2026-05-29] queue + 학생 알림
-    _addToRetryQueue(updates);
+    // [Safety 2026-05-29] queue + 학생 알림 — [정비 §5-④] 이미 먼저 적어 두었으면 또 넣지 않는다
+    if (!_줄열쇠) _addToRetryQueue(updates);
     _notifyStudentSaveFailure();
     _notifyTeacherWriteFail();
     if (onSuccess) onSuccess(false);
@@ -6754,7 +6842,7 @@ function _conflictBadge(sub, html) {
   const c = sub && sub._conflicts;
   if (!c || typeof c !== 'object' || !Object.keys(c).length) return html;
   const 줄 = Object.entries(c).map(([k, v]) => {
-    const 어디 = String(k).replace(/\|/g, '/').replace(/^answers\//, '');
+    const 어디 = String(k).replace(/\|\d{10,}$/, '').replace(/\|/g, '/').replace(/^answers\//, '');
     const 글 = (x) => (x == null ? '-' : (typeof x === 'object' ? JSON.stringify(x) : String(x)));
     return 어디 + ': 서버 ' + 글(v && v.server) + ' / 기기 ' + 글(v && v.mine);
   }).join('\n');
@@ -15226,6 +15314,10 @@ function _emuConnect(fb, doc) {
               if (snap.val() === true && !window.fbReady && window._loadMode === 'full') {
                 console.log('[Firebase] 연결 복구 감지 — 초기 로드 재시도');
                 loadInitialData(_fullGen, null);
+              }
+              // [정비 §5-④ · 2026-10-03] 다시 연결되면 기기에 보관된 답을 보낸다(로그인 때만 비우던 것을 넓힘)
+              if (snap.val() === true && window.fbReady && currentUser) {
+                _flushRetryQueue().catch(e => console.warn('[fbRetry] 재연결 비우기 실패:', e));
               }
             });
           } catch (e) { console.warn('[Firebase] .info/connected 리스너 등록 실패:', e?.message || e); }
