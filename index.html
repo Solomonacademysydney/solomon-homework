@@ -2620,7 +2620,7 @@ setTimeout(function(){var o=document.getElementById('loadingOverlay');if(o)o.rem
     </div>
     <div class="topbar-right">
       <div class="topbar-user" id="topbarUser"></div>
-      <button id="btnBackupDownload" class="btn-logout" style="display:none;background:rgba(212,175,55,.25);" onclick="manualBackupDownload()">📦 백업 다운로드</button>
+      <button id="btnBackupDownload" class="btn-logout" style="display:none;background:rgba(212,175,55,.25);" onclick="manualBackupDownload()" title="숙제·제출·새 저장 길만 받습니다. 수업 준비 자료·로그인 정보는 빠집니다 — DB 전체 백업은 Firebase 콘솔의 매일 백업을 쓰세요.">📦 백업 다운로드</button>
       <button class="btn-logout" onclick="doLogout()">Log Out</button>
     </div>
   </div>
@@ -5583,7 +5583,10 @@ async function _doLoginInner() {
       // [Security 2026-05] 옛 키 정리 (1회만, 플래그로 보장)
       await cleanupLegacyApiKey();
       await cleanupLegacyBackupKeys();
-      autoBackupToFirebase();
+      // ⛔ [정비 §4 · 2026-10-03] 로그인 자동 백업을 끈다. 서버 일일 백업(Firebase RTDB 자동 백업 · 매일 시드니 11:42 ·
+      //   30일 보관)이 DB 전체를 따로 찍고 있음을 두 벌 열어 확인했다(docs/rtdb-backup-server.md).
+      //   이 호출은 로그인마다 뿌리 전체 + 최근 백업 10벌 + 묶음 전체(~400MB)를 받는 길이었다. 함수는 되돌리기 쉽게 남겨 둔다.
+      // autoBackupToFirebase();
     }
     else if (user.role==='parent') {
       // [2-B] 자녀마다 배정 목록을 먼저 받아 둔다(공통 조회 장치가 쓴다)
@@ -15344,6 +15347,52 @@ function getBackupRef() {
   return firebase.database().ref(BACKUP_REF_PATH);
 }
 
+// ── [정비 §4 · 2026-10-03] 옛 백업 묶음은 **이름만** 받는다 ─────────────────
+//   묶음 하나에 학원 자료 전체가 30벌(10-01 약 400MB) — 목록·정리에 본문을 받을 까닭이 없다.
+//   본보기: submission_recovery.html(REST `shallow=true` · 원장 토큰). shallow 는 필터와 섞지 않는다 — 이름은 여기서 정렬한다.
+//   돌려주는 값: 이름 배열(정상 · 빈 묶음이면 []) | null(못 받음 — 「없음」과 다르다)
+//   로그아웃·계정 바꾸기 뒤에 늦게 온 답은 버린다(null).
+async function _backupKeysShallow() {
+  const 누구 = currentUser && currentUser.id;
+  try {
+    const u = firebase.auth().currentUser;
+    if (!u) return null;
+    const token = await u.getIdToken();
+    const 뿌리 = _EMU ? 'http://127.0.0.1:9000/' : firebaseConfig.databaseURL.replace(/\/+$/, '') + '/';
+    const url = 뿌리 + BACKUP_REF_PATH + '.json?' + (_EMU ? 'ns=demo-solomon&' : '') + 'shallow=true&auth=' + encodeURIComponent(token);
+    const 멈춤 = new AbortController();
+    const 시계 = setTimeout(() => 멈춤.abort(), 10000);
+    let r;
+    try { r = await fetch(url, { signal: 멈춤.signal }); } finally { clearTimeout(시계); }
+    if (!currentUser || currentUser.id !== 누구) return null;
+    if (!r.ok) { console.warn('[backup] 이름 목록 실패:', r.status); return null; }
+    const v = await r.json();
+    if (v === null) return [];
+    if (typeof v !== 'object' || Array.isArray(v)) { console.warn('[backup] 이름 목록 꼴 이상'); return null; }
+    return Object.keys(v).sort();
+  } catch (e) {
+    console.warn('[backup] 이름 목록 실패:', e && (e.name || e.message));
+    return null;
+  }
+}
+
+// 칸 하나의 작은 값 하나. 돌려주는 값: { ok:true, v } (v 가 undefined 면 그 칸에 값 없음) | { ok:false }
+async function _backupField(key, field) {
+  try {
+    const sn = await getBackupRef().child(key).child(field).once('value');
+    return { ok: true, v: sn.exists() ? sn.val() : undefined };
+  } catch (e) { return { ok: false }; }
+}
+
+// 여러 일을 한 번에 n 개까지만 돌린다(작은 요청을 한꺼번에 몰아 보내지 않는다).
+async function _한번에(일들, n) {
+  const 결과 = new Array(일들.length);
+  let 다음 = 0;
+  const 일꾼 = async () => { while (다음 < 일들.length) { const i = 다음++; 결과[i] = await 일들[i](); } };
+  await Promise.all(Array.from({ length: Math.min(n, 일들.length) }, 일꾼));
+  return 결과;
+}
+
 // ── 옛 평문 API 키 1회 정리 (2026-05) ──────────────────────
 // store.claudeApiKey와 Firebase의 solomon_hw_v3/claudeApiKey를 영구 삭제.
 // localStorage 마이그레이션 플래그로 1회만 실행.
@@ -15373,29 +15422,25 @@ async function cleanupLegacyApiKey() {
 async function cleanupLegacyBackupKeys() {
   if (currentUser?.role !== 'teacher') return;
   if (localStorage.getItem('backupKeyCleanup_v1_done')) return;
+  // [정비 §4 · 2026-10-03] 예전엔 묶음 전체(~400MB)를 받아 찾았다 → 이름만 받고 칸마다 그 값 하나만 본다.
+  //   ⛔ 값은 로그에 남기지 않는다 · 하나라도 못 보거나 못 지우면 깃발을 쓰지 않는다(다음 로그인에 다시).
   try {
-    const snap = await getBackupRef().once('value');
-    const backups = snap.val();
-    if (!backups) {
-      localStorage.setItem('backupKeyCleanup_v1_done', '1');
-      console.log('[Cleanup] 백업 없음 — 정리 완료');
-      return;
-    }
-    let cleanedCount = 0;
+    const 누구 = currentUser && currentUser.id;
+    const keys = await _backupKeysShallow();
+    if (keys === null) { console.warn('[Cleanup] 백업 이름을 못 받아 다음에 다시 합니다'); return; }
+    const 본것 = await _한번에(keys.map(k => () => _backupField(k, 'data/claudeApiKey')), 5);
+    if (!currentUser || currentUser.id !== 누구) return;
+    if (본것.some(x => !x.ok)) { console.warn('[Cleanup] 일부 백업을 확인하지 못해 다음에 다시 합니다'); return; }
     const updates = {};
-    Object.keys(backups).forEach(backupKey => {
-      const backup = backups[backupKey];
-      if (backup?.data?.claudeApiKey) {
-        updates[`${backupKey}/data/claudeApiKey`] = null;
-        cleanedCount++;
-      }
-    });
+    keys.forEach((k, i) => { if (본것[i].v !== undefined) updates[`${k}/data/claudeApiKey`] = null; });
+    const cleanedCount = Object.keys(updates).length;
     if (cleanedCount > 0) {
       await getBackupRef().update(updates);
       console.log(`[Cleanup] 과거 백업 ${cleanedCount}개에서 API 키 제거 완료`);
     } else {
       console.log('[Cleanup] 과거 백업에 API 키 없음');
     }
+    if (!currentUser || currentUser.id !== 누구) return;
     localStorage.setItem('backupKeyCleanup_v1_done', '1');
   } catch (e) {
     console.error('[Cleanup] 백업 정리 실패:', e);
@@ -15741,17 +15786,27 @@ async function loadBackupList() {
   }
   container.innerHTML = '<div style="color:var(--muted);font-size:13px;">⏳ 백업 목록 로딩 중...</div>';
   try {
-    const snapshot = await getBackupRef().orderByKey().once('value');
-    const backups = [];
-    snapshot.forEach(child => {
-      backups.push({ key: child.key, ...child.val() });
-    });
-    backups.reverse(); // 최신순
+    // [정비 §4 · 2026-10-03] 예전엔 묶음 전체(~400MB)를 받아 표를 그렸다 → 이름만 받고 칸마다 숫자 둘만.
+    //   못 받은 것은 0 이 아니라 「확인 실패」로 · 이름을 못 받은 것은 「없음」이 아니라 「불러오지 못함」으로.
+    const keys = await _backupKeysShallow();
+    if (keys === null) {
+      container.innerHTML = '<div style="color:var(--red);font-size:13px;">백업 목록을 불러오지 못했습니다. 잠시 뒤 다시 열어 주세요.</div>';
+      return;
+    }
+    const 칸 = (r) => r.ok ? r.v : '확인 실패';
+    const 숫자들 = await _한번에(keys.map(k => async () => {
+      const [s, h] = await Promise.all([_backupField(k, 'studentCount'), _backupField(k, 'hwSetCount')]);
+      return { key: k, studentCount: 칸(s), hwSetCount: 칸(h) };
+    }), 5);
+    if (document.getElementById('backupListContainer') !== container) return;   // 그 사이 화면이 바뀌었다
+    const backups = 숫자들.reverse(); // 최신순
     if (backups.length === 0) {
       container.innerHTML = '<div style="color:var(--muted);font-size:13px;">저장된 백업이 없습니다.</div>';
       return;
     }
-    let html = '<table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:6px;">';
+    const 숫자칸 = (v, 단위) => v === undefined ? '-' + 단위 : (v === '확인 실패' ? '확인 실패' : v + 단위);
+    let html = '<div style="color:var(--muted);font-size:12px;margin-top:4px;">매일 자동 백업은 이제 서버(Firebase)가 합니다(2026-10-03부터). 아래는 예전 로그인 백업 목록입니다.</div>';
+    html += '<table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:6px;">';
     html += '<thead><tr style="border-bottom:2px solid var(--border);text-align:left;">'
           + '<th style="padding:6px 8px;">날짜/시간</th>'
           + '<th style="padding:6px 8px;">학생 수</th>'
@@ -15764,8 +15819,8 @@ async function loadBackupList() {
       const label = b.key.replace(/_/g, ' ');
       html += `<tr style="border-bottom:1px solid var(--border);">
         <td style="padding:6px 8px;font-weight:600;">${label}</td>
-        <td style="padding:6px 8px;">${b.studentCount ?? '-'}명</td>
-        <td style="padding:6px 8px;">${b.hwSetCount ?? '-'}개</td>
+        <td style="padding:6px 8px;">${숫자칸(b.studentCount, '명')}</td>
+        <td style="padding:6px 8px;">${숫자칸(b.hwSetCount, '개')}</td>
         <td style="padding:6px 8px;">
           <button class="btn-sm btn-gold" style="padding:3px 10px;font-size:12px;" onclick="restoreBackup('${b.key}')">이걸로 복구</button>
         </td>
