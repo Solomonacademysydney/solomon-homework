@@ -48,5 +48,8 @@
 | `db/rate_limits.json` | 4,217 | F0F41E8444F04E2E |
 | `db/master_login_logs.json` | 7,291 | 36A260BD5CA818D4 |
 
-일곱 다 JSON 으로 열림을 확인함. `solomon_backups`(옛 백업 묶음, 10-01 에 416MB)는 이번에 다시 받지 않았다 — 어제 받은 `backup/firebase_backup_2026-10-01/solomon_backups.json` 이 있다.
+| `db/sol_prep_v1_20261003.json` | 2,348,246 | 9C5E3DE1BA608263 |
+
+일곱 다 JSON 으로 열림을 확인함.
+⚠ `sol_prep_v1`(수업 준비 · 가지 11)은 위 일곱에 **없었다** — 로그인 자동 백업에도 안 들어간다. 2026-10-03 14:26(시드니) `firebase database:get /sol_prep_v1` 로 따로 받아 보존(JSON 열림 확인 · 「홈페이지정비 최종작업지시서 1003」 §1). `solomon_backups`(옛 백업 묶음, 10-01 에 416MB)는 이번에 다시 받지 않았다 — 어제 받은 `backup/firebase_backup_2026-10-01/solomon_backups.json` 이 있다.
 코드 쪽 되돌릴 자리 = 커밋 `6ebd75a` (운영과 같음).
