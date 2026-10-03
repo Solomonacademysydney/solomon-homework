@@ -24,8 +24,10 @@ function 떼기(시작, 끝표) {
 
 const 소스 = 떼기('// ═══ [2-B] 제출 처리 — 시작', '// ═══ [2-B] 제출 처리 — 끝');
 
-function 세상(처음제출) {
+function 세상(처음제출, 서버제출) {
   const 상태 = { 쓴것: [], 줄: [], 알림: [], 경고: [], 다시그림: 0 };
+  // [정비 §5] 원장 처리는 서버 칸을 보고 한 동작(트랜잭션)으로 쓴다 — 서버 값은 따로 줄 수 있다(사본과 다를 때)
+  상태.서버 = 서버제출 === undefined ? (처음제출 ? JSON.parse(JSON.stringify(처음제출)) : null) : 서버제출;
   const p = { year: 2026, month: 10, week: 1 };
   const store = {
     currentPeriod: p,
@@ -37,7 +39,13 @@ function 세상(처음제출) {
     getStore: () => store, saveStore: () => true,
     subKey: (sid, pp, i) => `${sid}_${pp.year}_m${String(pp.month).padStart(2, '0')}_w${pp.week}_s${i}`,
     hwLookup: (s) => s.homeworkSets.AU_y5_2026_m10_w1,
-    fbSetSubmission: (k, d, cb) => { 상태.쓴것.push([k, JSON.parse(JSON.stringify(d))]); cb && cb(true); },
+    fbSetSubmission: (k, d, cb) => { 상태.통째 = true; cb && cb(true); },
+    fbTxSubmission: (k, fn, cb) => {
+      const 새 = fn(상태.서버 == null ? null : JSON.parse(JSON.stringify(상태.서버)));
+      if (새 === undefined) { cb({ ok: true, committed: false, value: 상태.서버 }); return; }
+      상태.서버 = 새; 상태.쓴것.push([k, JSON.parse(JSON.stringify(새))]);
+      cb({ ok: true, committed: true, value: 새 });
+    },
     _weaknessEnqueue: (j) => 상태.줄.push(j),
     showBackupToast: (m) => 상태.알림.push(m),
     alert: (m) => 상태.경고.push(m),
@@ -94,6 +102,24 @@ console.log('\n── 처리하면 남는 것');
   const s = 세상();
   const r = s.F.markSubmissionByTeacher('Mina', 0, 'nope', '');
   재기('목록에 없는 이유 부호 → 거절', r.ok === false);
+}
+console.log('\n── [정비 §5] 서버 칸을 보고 한 동작으로(T03)');
+{
+  // 원장 화면 사본은 미제출인데, 그 사이 아이가 서버에 제출했다
+  const 서버 = { answers: { q0: '1', q1: '2' }, submitted: true, submitTime: '2026-10-03T09:00:00Z', rev: 1, reportData: { score: 100, kakaoMsg: 'k' } };
+  const s = 세상({ answers: { q0: '1' }, submitted: false }, 서버);
+  s.F.markSubmissionByTeacher('Mina', 0, 'site-error', '');
+  재기('서버에 정상 제출이 있으면 아무것도 안 쓴다', s.쓴것.length === 0 && s.서버.submitted === true && !s.서버.manuallyMarked && s.서버.reportData.score === 100, JSON.stringify(s.서버));
+  재기('까닭을 알린다', s.알림.some(m => /그 사이/.test(m)), s.알림.join(' | '));
+  재기('이 브라우저 사본도 서버 값으로 맞춘다', s.store.submissions.Mina_2026_m10_w1_s0.submitted === true);
+}
+{
+  // 서버 칸에 보충학습·판 번호 등 다른 칸이 있으면 남긴다
+  const s = 세상({ answers: { q0: '1' }, submitted: false }, { answers: { q0: '1', q1: '9' }, submitted: false, remediation: { currentRound: 1 }, _prev: [{ x: 1 }] });
+  s.F.markSubmissionByTeacher('Mina', 0, 'site-error', '');
+  const d = s.쓴것[0] && s.쓴것[0][1];
+  재기('서버의 답(사본에 없던 q1 포함)·보충·보관함을 지우지 않는다', d && d.answers.q1 === '9' && d.remediation && d.remediation.currentRound === 1 && d._prev.length === 1, JSON.stringify(d));
+  재기('칸 통째 쓰기(fbSetSubmission)를 안 쓴다', !s.통째);
 }
 
 console.log('\n── 보이는 말');

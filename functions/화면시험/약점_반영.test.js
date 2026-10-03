@@ -181,6 +181,7 @@ function 약점세상(서버) {
   {
     const doSubmit소스 = 떼기('function doSubmit() {', '\n// ═══ [1단계] 약점 반영 — 시작');
     const 기록 = [];
+    const 쓴경로 = [];
     let 저장콜백 = null;
     const 서랍값 = { currentPeriod: { year: 2026, month: 10, week: 1 }, submissions: {},
       homeworkSets: { AU_y5_2026_m10_w1: { sets: [{ title: 'S1', questions: [
@@ -201,7 +202,9 @@ function 약점세상(서버) {
       _weaknessEnqueue: (job) => 기록.push('줄:' + job.rev + ':' + job.items.length),
       _weaknessFlush: () => { 기록.push('비우기'); return Promise.resolve(); },
       showSubmitConfirmModal: (s) => 기록.push('창:' + s),
-      fbSetSubmission: (key, data, cb) => { 기록.push('저장:' + data.rev); 저장콜백 = cb; },
+      fbSetSubmission: (key, data, cb) => { 기록.push('통째저장'); 저장콜백 = cb; },
+      // [정비 §5] 제출은 맡은 항목만 쓴다 — 판 번호는 .../rev 경로로 간다
+      fbWrite: (u, cb) => { const r = Object.keys(u).find(k => /\/rev$/.test(k)); 기록.push('저장:' + (r ? u[r] : '?')); 쓴경로.push(...Object.keys(u)); 저장콜백 = cb; },
       setTimeout: () => 0, clearTimeout: () => {},
       renderStudent: () => {}, qIdx: 0,
       // [2-B] doSubmit 이 세션 상태를 본다(마스터 = 보기만)
@@ -224,6 +227,10 @@ function 약점세상(서버) {
     재기('제출 기록의 기존 열쇠는 그대로(answers·submitted·reportData)',
          ['answers', 'submitted', 'submitTime', 'reportData'].every(k => k in 서랍값.submissions.Mina_2026_m10_w1_s0),
          Object.keys(서랍값.submissions.Mina_2026_m10_w1_s0).join(','));
+    // [정비 §5] 제출이 맡은 항목만 — 보충학습·보관함·카톡은 안 건드린다 · 원장 처리 표시는 지운다 · 칸 통째 쓰기 없음
+    재기('[정비 §5] 제출은 칸 통째가 아니라 항목만 쓴다', !기록.includes('통째저장')
+         && 쓴경로.every(k => /^submissions\/Mina_2026_m10_w1_s0\/(answers\/|submitted$|submitTime$|rev$|hwKey$|reportData$|manuallyMarked$|markedBy$|markedAt$|markedReason$|markedReasonCode$)/.test(k))
+         && 쓴경로.includes('submissions/Mina_2026_m10_w1_s0/submitted'), 쓴경로.join(' '));
     // [2-B] 마스터 세션이면 제출·줄 넣기 둘 다 안 한다
     const 전 = 기록.length;
     세션상태 = 'master';

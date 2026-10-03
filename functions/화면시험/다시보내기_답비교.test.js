@@ -51,8 +51,9 @@ d = 판단({ day1: { completed: true } }, { day1: { completed: true }, day2: { c
 재기('TS 칸에 줄 쪽 진도가 더 있으면 보낸다', d.push === true && d.value.day2 && d.value.day1, JSON.stringify(d));
 
 console.log('\n── 쓰는 곳');
-const 줄 = html.slice(html.indexOf('async function _flushRetryQueue() {'), html.indexOf('\n// ── Firebase Granular Write Helpers'));
-재기('_flushRetryQueue 가 _retryDecision 을 쓴다', /_retryDecision\(fbVal, queueVal\)/.test(줄));
+// [정비 §5] 일 하나 처리는 _retryOne 으로 떼어 냈다 — _flushRetryQueue 가 그것을 부른다
+const 줄 = html.slice(html.indexOf('async function _retryOne(item) {'), html.indexOf('\n// ── Firebase Granular Write Helpers'));
+재기('_flushRetryQueue(→_retryOne) 가 칸 통째 줄에 _retryDecision 을 쓴다', /_retryDecision\(fbVal, queueVal\)/.test(줄) && /await _retryOne\(item\)/.test(줄));
 재기('옛 「개수만」 판단이 남아 있지 않다', !/queueAnsCount > fbAnsCount/.test(줄));
 
 console.log('\n셈 — 통과 ' + 통과 + ' · 실패 ' + 실패);
