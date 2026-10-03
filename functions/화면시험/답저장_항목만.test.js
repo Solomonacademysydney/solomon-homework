@@ -208,6 +208,16 @@ const 조용 = { log() {}, warn() {}, info() {}, error() {} };
     재기('remediation · reportData/remediation 두 경로만', JSON.stringify(Object.keys(쓴것[0])) === JSON.stringify(['submissions/K/remediation', 'submissions/K/reportData/remediation']), JSON.stringify(쓴것));
   }
 
+  console.log('\n── ⑦ 원장 현황표 「확인 필요」 표시');
+  {
+    const 소스 = 떼기('function _conflictBadge(sub, html) {', '\n}\n') + '\n}';
+    const f = new Function('escHtml', 소스 + '\n; return _conflictBadge;')((x) => String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'));
+    재기('충돌 없으면 그대로', f({ submitted: true }, 'X') === 'X' && f(null, 'X') === 'X');
+    const h = f({ _conflicts: { 'answers|q2': { server: 'B', mine: '<C>' } } }, 'X');
+    재기('충돌 있으면 ⚠ 확인 · 문항·서버·기기 답(글은 escape)', /⚠ 확인/.test(h) && /q2: 서버 B \/ 기기 &lt;C>/.test(h), h);
+    재기('현황표가 _conflictBadge 로 감싼다', /sets\.map\(\(set, idx\) => _conflictBadge\(/.test(html));
+  }
+
   console.log('\n── ⑤ 새로 풀기 — 서버 칸을 보고 한 동작으로');
   {
     const 소스 = 떼기('function startFreshSet(idx) {', '\nfunction startSet(');
