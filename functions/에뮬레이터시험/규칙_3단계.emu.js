@@ -60,7 +60,11 @@ const 학생 = (sid) => ({ prep: { sid, role: 'student', master: false, exp: Dat
 
   console.log('\n── 스위치 판 그대로(3단계 판이 2-B 를 바꾸지 않는다)');
   재기('⛔ 학생은 막기 칸을 못 바꾼다', 막힘(await 쓰기('solomon_hw_v3/submitLock', false, 'u-mina', 학생('Mina'))));
-  재기('막기 칸이 꺼져 있으면 세션 없는 로그인도 제출 칸에 쓴다', 됨(await 쓰기('solomon_hw_v3/submissions/Aron_2026_m10_w1_s0/x', 1, 'u-anon')));
+  // [권한1003] 원장 결정(10-03)으로 막기 칸에 기대는 비상 길을 없앴다 — 그 판부터는 거꾸로 「막힘」이 맞다.
+  if (fs.readFileSync(규칙, 'utf8').includes("submitLock').val() !== true"))
+    재기('막기 칸이 꺼져 있으면 세션 없는 로그인도 제출 칸에 쓴다', 됨(await 쓰기('solomon_hw_v3/submissions/Aron_2026_m10_w1_s0/x', 1, 'u-anon')));
+  else
+    재기('⛔ 막기 칸이 꺼져 있어도 세션 없는 로그인은 제출 칸에 못 쓴다(권한1003 판)', 막힘(await 쓰기('solomon_hw_v3/submissions/Aron_2026_m10_w1_s0/x', 1, 'u-anon')));
 
   console.log('\n── 저장소(학교 자료 사진·PDF) — 원장만');
   // ⚠ 실측(10-01): 파일 종류(contentType)는 **multipart** 로 올려야 규칙에 실린다(브라우저 SDK 가 이렇게 올린다).
