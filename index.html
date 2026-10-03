@@ -3178,19 +3178,30 @@ function _isStudentOwnedSubmissionUpdate(updates) {
   return keys.every(k => {
     if (!k.startsWith('submissions/')) return false;
     const subKey = k.substring('submissions/'.length);
-    return allowedStudentIds.some(sid => subKey.startsWith(sid + '_'));
+    // [정비 §5 · 2026-10-03] TS 칸(ts_<sid>_…)도 받는다 — 예전엔 TS 저장이 실패하면 줄에 안 들어가 사라졌다.
+    return allowedStudentIds.some(sid => subKey.startsWith(sid + '_') || subKey.startsWith('ts_' + sid + '_'));
   });
 }
 
+// [정비 §5 · 2026-10-03] 다시 보내기 줄 — **일 하나에 열쇠 하나**(solomon_fbq_<시각>_<임의>).
+//   예전: 배열 하나를 통째로 읽고 다시 써서 ㉠ 두 탭이 서로의 일을 지우고 ㉡ 비우는 사이 들어온 새 일이 지워지고
+//   ㉢ 20개가 넘으면 가장 오래된 답을 버렸다. 이제 더하기 = 새 열쇠 · 지우기 = 끝낸 그 열쇠만.
+const FB_RETRY_ITEM_PREFIX = 'solomon_fbq_';
 function _addToRetryQueue(updates) {
+  if (!_isStudentOwnedSubmissionUpdate(updates)) return;
+  const k = FB_RETRY_ITEM_PREFIX + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
   try {
-    if (!_isStudentOwnedSubmissionUpdate(updates)) return;
-    const raw = localStorage.getItem(FB_RETRY_QUEUE_KEY);
-    const queue = raw ? JSON.parse(raw) : [];
-    queue.push({ updates: updates, queuedAt: Date.now() });
-    while (queue.length > FB_RETRY_CAP) queue.shift();
-    localStorage.setItem(FB_RETRY_QUEUE_KEY, JSON.stringify(queue));
-  } catch (e) { console.warn('[fbRetry] queue save failed:', e); }
+    localStorage.setItem(k, JSON.stringify({ updates: updates, queuedAt: Date.now() }));
+  } catch (e) {
+    console.error('[fbRetry] 기기에 보관 실패:', e);
+    // 보관도 못 했으면 「나중에 저장된다」고 하면 안 된다 — 그대로 알린다
+    try { showBackupToast('⚠️ 이 기기 저장 공간이 부족해 답을 보관하지 못했습니다. 화면을 닫지 말고 선생님께 알려 주세요.'); } catch (_) {}
+  }
+}
+function _retryItemKeys() {
+  const out = [];
+  for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(FB_RETRY_ITEM_PREFIX)) out.push(k); }
+  return out.sort();
 }
 
 function _notifyStudentSaveFailure() {
@@ -3321,53 +3332,114 @@ function _retryDecision(fbVal, queueVal) {
   return { push: true, value, why: 'differs' };
 }
 
-async function _flushRetryQueue() {
-  if (!window.fbReady || !window.FB_REF) return;
-  // ⛔ [2-B] 로그인 전에는 손대지 않는다 — 예전에는 여기서 「누구 것인지 모른다」로 **줄을 버렸다**
-  //   (페이지를 열 때마다 currentUser 가 없어서). 로그인한 뒤(doLogin) 다시 부른다.
-  if (!currentUser) return;
+// [정비 §5] 다시 보내려던 답이 서버의 다른 값과 부딪쳤다 — 덮지 않고 이 기기에 적어 둔다(「확인 필요」 · 원장님이 볼 수 있게).
+const FB_RETRY_CONFLICT_KEY = 'solomon_fb_retry_conflicts';
+function _retryConflictNote(path, server, mine) {
   try {
-    const raw = localStorage.getItem(FB_RETRY_QUEUE_KEY);
-    if (!raw) return;
-    let queue;
-    try { queue = JSON.parse(raw); } catch (_) {
-      localStorage.removeItem(FB_RETRY_QUEUE_KEY);
-      return;
-    }
-    if (!Array.isArray(queue) || queue.length === 0) {
-      localStorage.removeItem(FB_RETRY_QUEUE_KEY);
-      return;
-    }
-    const now = Date.now();
-    const remaining = [];
-    for (const item of queue) {
-      if (now - (item.queuedAt || 0) > FB_RETRY_MAX_AGE_MS) continue;
-      if (!_isStudentOwnedSubmissionUpdate(item.updates)) continue;
-      try {
-        const updateKeys = Object.keys(item.updates).filter(k => k !== 'lastModified');
-        for (const path of updateKeys) {
-          const queueVal = item.updates[path];
-          if (queueVal === null) continue;
-          const snap = await window.FB_REF.child(path).once('value');
-          const fbVal = snap.val();
-          // ★ [2-B 추가 · 2026-10-01] 개수가 아니라 **내용**을 견준다(_retryDecision 위 설명).
-          const 판단 = _retryDecision(fbVal, queueVal);
-          if (!판단.push) continue;
-          const ts = Date.now();
-          _lastFbWriteTs = ts;
-          await window.FB_REF.update({ [path]: 판단.value, lastModified: ts });
-        }
-      } catch (e) {
-        remaining.push(item);
+    const raw = localStorage.getItem(FB_RETRY_CONFLICT_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    if (!list.some(x => x.path === path && JSON.stringify(x.mine) === JSON.stringify(mine))) list.push({ path, server, mine, at: Date.now() });
+    localStorage.setItem(FB_RETRY_CONFLICT_KEY, JSON.stringify(list.slice(-50)));
+    console.warn('[fbRetry] 서버에 다른 값이 있어 덮지 않음(확인 필요):', path);
+    // 원장님도 볼 수 있게 그 아이 칸 안에 적는다(_conflicts · 답 칸은 건드리지 않는다). 못 적어도 이 기기에는 남는다.
+    const m = /^submissions\/([^/]+)\/(.+)$/.exec(path);
+    if (m && window.FB_REF) window.FB_REF.update({ ['submissions/' + m[1] + '/_conflicts/' + m[2].replace(/\//g, '|')]: { server: server, mine: mine, at: Date.now() } }).catch(() => {});
+  } catch (e) { console.warn('[fbRetry] 확인 필요 기록 실패:', e); }
+}
+
+// 일 하나를 처리한다. 끝났으면(보냈거나 · 보낼 필요가 없거나 · 「확인 필요」로 적었으면) 정상 반환, 인터넷 문제면 예외.
+async function _retryOne(item) {
+  const updateKeys = Object.keys(item.updates).filter(k => k !== 'lastModified');
+  for (const path of updateKeys) {
+    const queueVal = item.updates[path];
+    if (queueVal === null) continue;
+    // [정비 §5 · 2026-10-03] 칸 안의 한 항목(예: answers/<q>)만 쓴 줄 — 예전 판단(_retryDecision)은
+    //   객체만 받아서 글자 답을 **버렸다**. 이제 그 항목만 견준다:
+    //   서버에 없음 → 보낸다 · 같음 → 끝 · 이미 제출된 칸의 답 → 안 바꾼다 · 서버에 다른 값 → 덮지 않고 「확인 필요」로 남긴다.
+    const 항목 = /^submissions\/([^/]+)\/(.+)$/.exec(path);
+    // 제출 묶음(doSubmit 이 한 번에 쓴 항목들 — `submitted:true` 가 들어 있다)은 **한 덩어리로** 판단한다:
+    //   서버가 이미 같은 판(rev) 이상으로 제출됐으면 통째 건너뛰고, 아니면 그 묶음을 그대로 보낸다.
+    if (항목) {
+      const 칸 = 항목[1];
+      const 묶음 = {};
+      for (const k of updateKeys) if (k.startsWith('submissions/' + 칸 + '/')) 묶음[k] = item.updates[k];
+      if (묶음['submissions/' + 칸 + '/submitted'] === true) {
+        const 서버칸 = (await window.FB_REF.child('submissions/' + 칸).once('value')).val();
+        const 내판 = Number(묶음['submissions/' + 칸 + '/rev']) || 0;
+        if (서버칸 && 서버칸.submitted && !서버칸.manuallyMarked && (Number(서버칸.rev) || 0) >= 내판) break;
+        const ts = Date.now();
+        _lastFbWriteTs = ts;
+        await window.FB_REF.update(Object.assign({}, 묶음, { lastModified: ts }));
+        break;
       }
     }
-    if (remaining.length > 0) {
-      localStorage.setItem(FB_RETRY_QUEUE_KEY, JSON.stringify(remaining));
-    } else {
-      localStorage.removeItem(FB_RETRY_QUEUE_KEY);
-      _clearStudentSaveFailure();
+    if (항목) {
+      const 부모 = (await window.FB_REF.child('submissions/' + 항목[1]).once('value')).val();
+      const 지금 = 부모 == null ? null : 항목[2].split('/').reduce((o, k) => (o == null ? null : o[k]), 부모);
+      if (JSON.stringify(지금) === JSON.stringify(queueVal)) continue;
+      if (부모 && 부모.submitted && /^answers\//.test(항목[2])) continue;
+      // 답(answers/<q>)만 「다른 값이면 덮지 않는다」 — 보충학습 같은 이 아이 혼자 쓰는 가지는 마지막 것이 이긴다.
+      if (지금 != null && /^answers\//.test(항목[2])) { _retryConflictNote(path, 지금, queueVal); continue; }
+      // TS 문항 기록(dayN/answers/qK): 서버 쪽이 이미 같거나 더 많이 시도했으면 그쪽이 더 새것 — 안 덮는다.
+      if (지금 && typeof 지금 === 'object' && /^day\d+\/answers\/[^/]+$/.test(항목[2])
+          && (Number(지금.attempts) || 0) >= (Number(queueVal && queueVal.attempts) || 0)) continue;
+      const ts = Date.now();
+      _lastFbWriteTs = ts;
+      await window.FB_REF.update({ [path]: queueVal, lastModified: ts });
+      continue;
     }
-  } catch (e) { console.warn('[fbRetry] flush failed:', e); }
+    const snap = await window.FB_REF.child(path).once('value');
+    const fbVal = snap.val();
+    // ★ [2-B 추가 · 2026-10-01] 개수가 아니라 **내용**을 견준다(_retryDecision 위 설명).
+    const 판단 = _retryDecision(fbVal, queueVal);
+    if (!판단.push) continue;
+    const ts = Date.now();
+    _lastFbWriteTs = ts;
+    await window.FB_REF.update({ [path]: 판단.value, lastModified: ts });
+  }
+}
+
+let _retryFlushing = null;
+async function _flushRetryQueue() {
+  if (!window.fbReady || !window.FB_REF) return;
+  // ⛔ [2-B] 로그인 전에는 손대지 않는다 — 누구 것인지 모른다. 로그인한 뒤(doLogin) 다시 부른다.
+  if (!currentUser) return;
+  if (_retryFlushing) return _retryFlushing;     // 한 탭 안에서 두 번 겹쳐 돌지 않는다
+  _retryFlushing = (async () => {
+    try {
+      // 옛 판(배열 하나)의 줄 → 일마다 열쇠로 옮긴다. 다 옮긴 뒤에만 옛 줄을 지운다(내용 보존).
+      const raw = localStorage.getItem(FB_RETRY_QUEUE_KEY);
+      if (raw) {
+        let 옛 = null;
+        try { 옛 = JSON.parse(raw); } catch (_) { 옛 = null; }
+        if (Array.isArray(옛)) {
+          옛.forEach((it, i) => { if (it && it.updates) localStorage.setItem(FB_RETRY_ITEM_PREFIX + (it.queuedAt || 0) + '_old' + i, JSON.stringify(it)); });
+          localStorage.removeItem(FB_RETRY_QUEUE_KEY);
+        } else {
+          console.warn('[fbRetry] 옛 줄을 읽지 못해 그대로 둡니다(지우지 않음)');
+        }
+      }
+      let 남음 = 0;
+      for (const k of _retryItemKeys()) {
+        let item = null;
+        try { item = JSON.parse(localStorage.getItem(k)); } catch (_) { item = null; }
+        if (!item || !item.updates) { 남음++; continue; }            // 못 읽은 것도 지우지 않는다
+        // 다른 아이(같은 기기에 먼저 로그인했던 형제) 것은 건드리지 않고 남긴다 — 그 아이가 로그인하면 보낸다.
+        if (!_isStudentOwnedSubmissionUpdate(item.updates)) { 남음++; continue; }
+        try { await _retryOne(item); localStorage.removeItem(k); }
+        catch (e) {
+          // 거부(PERMISSION_DENIED)는 다시 보내도 영영 안 된다(예: 옛 판의 칸 통째 줄 · 제출 뒤 답 바꾸기).
+          //   지우되 버리지는 않는다 — 「확인 필요」에 그대로 적어 둔다.
+          if (/PERMISSION_DENIED|permission_denied/i.test(String((e && (e.code || e.message)) || ''))) {
+            Object.keys(item.updates).filter(p => p !== 'lastModified').forEach(p => _retryConflictNote(p, '(거부됨)', item.updates[p]));
+            localStorage.removeItem(k);
+          } else 남음++;
+        }
+      }
+      if (!남음) _clearStudentSaveFailure();
+    } catch (e) { console.warn('[fbRetry] flush failed:', e); }
+  })().finally(() => { _retryFlushing = null; });
+  return _retryFlushing;
 }
 
 // ── Firebase Granular Write Helpers ──
@@ -3773,6 +3845,34 @@ async function _칸비었으면지우기(key) {
 
 function fbSetSubmission(key, data, onSuccess) {
   fbWrite({ ['submissions/' + key]: data }, onSuccess);
+}
+
+// [정비 §5 · 2026-10-03] 「서버 값을 보고 → 그 값에 맞춰 쓴다」를 **한 동작**으로(트랜잭션).
+//   읽고 따로 쓰면 그 사이에 학생 제출·교사 처리가 끼어들어 서로를 지운다.
+//   fn(서버값) 이 undefined 를 돌려주면 아무것도 안 쓰고 끝(abort). 결과: onDone({ ok, committed, value, why })
+//   ⛔ 오프라인에선 트랜잭션이 끝나지 않는다 — 이 길은 「온라인일 때만 하는 일」(교사 처리·새로 풀기)에만 쓴다.
+function fbTxSubmission(key, fn, onDone) {
+  const 끝 = (r) => { try { onDone && onDone(r); } catch (e) { console.error(e); } };
+  if (window.isPreviewMode) { 끝({ ok: false, why: 'preview' }); return; }
+  if (currentUser && (currentUser.role === 'student' || currentUser.role === 'parent')) {
+    const _st = prepSessionState();
+    if (_st === 'master') { showBackupToast('👀 마스터로 보는 중 — 보기 전용이라 저장하지 않습니다.'); 끝({ ok: false, why: 'master' }); return; }
+    if (_st === 'expired') { _notifySessionExpired(); 끝({ ok: false, why: 'expired' }); return; }
+  }
+  if (_scopeUnreadWrites({ ['submissions/' + key]: 1 }).length) {
+    showBackupToast('⚠️ 이 주의 기록을 아직 서버에서 읽지 못해 저장하지 않았습니다. 새로고침한 뒤 다시 해 주세요.');
+    끝({ ok: false, why: 'unread' }); return;
+  }
+  if (!window.fbReady || !window.FB_REF) { 끝({ ok: false, why: 'offline' }); return; }
+  window.FB_REF.child('submissions/' + key).transaction(cur => fn(cur), (err, committed, snap) => {
+    if (err) { console.error('[tx] 실패:', key, err); 끝({ ok: false, why: String(err.code || err.message || err) }); return; }
+    const value = snap ? snap.val() : null;
+    if (committed) {
+      const ts = Date.now(); _lastFbWriteTs = ts;
+      window.FB_REF.update({ lastModified: ts }).catch(() => {});
+    }
+    끝({ ok: true, committed, value });
+  }, false);
 }
 
 function fbDeleteSubmission(key) {
@@ -6670,8 +6770,7 @@ function markSubmissionByTeacher(sid, setIdx, reasonCode, otherText) {
   const hw = hwLookup(store, student.year, student.country || 'AU', p, student.group);
   const set = hw && hw.sets ? hw.sets[setIdx] : null;
   const now = new Date().toISOString();
-  store.submissions[sk] = {
-    answers: (existing && existing.answers) || {},
+  const 처리칸 = {
     submitted: true,
     submitTime: now,
     manuallyMarked: true,
@@ -6691,11 +6790,23 @@ function markSubmissionByTeacher(sid, setIdx, reasonCode, otherText) {
       totalQuestions: (set && set.questions ? set.questions.length : 0)
     }
   };
-  saveStore(store);
-  fbSetSubmission(sk, store.submissions[sk], (success) => {
-    showBackupToast(success
-      ? '✅ ' + (student.name || sid) + ' Set ' + (setIdx + 1) + ' — 원장 처리로 완료'
-      : '⚠️ 서버 저장 실패 — 이 브라우저에만 남았습니다. 인터넷 확인 후 다시 해 주세요.');
+  // [정비 §5 · 2026-10-03] 이 브라우저 사본이 아니라 **서버 칸을 보고** 한 동작으로 처리한다(트랜잭션).
+  //   서버에 정상 제출이 있으면(그 사이 아이가 냈으면) 아무것도 쓰지 않는다. 답·보충·rev 등 다른 칸은 그대로 둔다.
+  let 막힘 = false;
+  fbTxSubmission(sk, (cur) => {
+    if (cur && cur.submitted && !cur.manuallyMarked) { 막힘 = true; return undefined; }
+    막힘 = false;
+    return Object.assign({}, cur || {}, 처리칸, { answers: (cur && cur.answers) || {} });
+  }, (res) => {
+    if (res.ok && res.committed) {
+      const s = getStore(); s.submissions[sk] = res.value; saveStore(s);
+      showBackupToast('✅ ' + (student.name || sid) + ' Set ' + (setIdx + 1) + ' — 원장 처리로 완료');
+    } else if (res.ok && 막힘) {
+      const s = getStore(); if (res.value) { s.submissions[sk] = res.value; saveStore(s); }
+      showBackupToast('ℹ️ ' + (student.name || sid) + ' 학생이 그 사이 Set ' + (setIdx + 1) + ' 을(를) 제출해서 원장 처리를 하지 않았습니다.');
+    } else {
+      showBackupToast('⚠️ 서버 저장 실패 — 처리되지 않았습니다. 인터넷 확인 후 다시 해 주세요.');
+    }
     renderTeacher();
   });
   return { ok: true };
@@ -7907,10 +8018,16 @@ function renderStudent() {
   if (!store.submissions[key]) {
     store.submissions[key] = { answers:{}, submitted:false, submitTime:null };
     saveStore(store);
-    fbSetSubmission(key, store.submissions[key]);
+    // [정비 §5 · 2026-10-03] 빈 답안지로 서버를 덮지 않는다 — **서버에 칸이 없을 때만** 만든다(트랜잭션).
+    //   이 기기 사본에 없다고 서버에도 없는 것은 아니다(다른 기기에서 풀던 것).
+    fbTxSubmission(key, (cur) => (cur ? undefined : { answers:{}, submitted:false, submitTime:null }), (res) => {
+      if (res.ok && !res.committed && res.value) {
+        const s = getStore(); if (s.submissions[key] && !Object.keys(s.submissions[key].answers || {}).length && !s.submissions[key].submitted) { s.submissions[key] = res.value; saveStore(s); }
+      }
+    });
   }
   const sub = store.submissions[key];
-  if (!sub.answers) { sub.answers = {}; saveStore(store); fbSetSubmission(key, store.submissions[key]); }
+  if (!sub.answers) { sub.answers = {}; saveStore(store); }   // [정비 §5] 빈 answers 는 서버에 쓸 까닭이 없다(답을 쓰면 생긴다)
   if (qIdx >= qs.length) qIdx = Math.max(0, qs.length-1);
 
   const answered = Object.keys(sub.answers).length;
@@ -8449,25 +8566,43 @@ function startFreshSet(idx) {
   if (!sub) { startSet(idx, {withCountdown:true}); return; }
   if (!confirm('새 숙제를 시작합니다.\n예전 기록은 지워지지 않고 보관됩니다.\n계속할까요?')) return;
 
-  const stash = {
-    answers: sub.answers || {}, reportData: sub.reportData || null,
-    submitTime: sub.submitTime || null, hwKey: sub.hwKey || null,
-    remediation: sub.remediation || null, movedAt: new Date().toISOString()
-  };
-  sub._prev = (sub._prev || []).concat([stash]);
-  sub.answers = {};
-  sub.submitted = false;
-  sub.submitTime = null;
-  delete sub.reportData;
-  delete sub.remediation;
-  delete sub.celebrationShown;
   const hk = hwLookupKey(store, currentUser.year, currentUser.country||'AU', p, currentUser.group);
-  if (hk) sub.hwKey = hk; else delete sub.hwKey;
-
-  saveStore(store);
-  fbSetSubmission(key, sub);
-  qIdx = 0;
-  startSet(idx, {withCountdown:true});
+  // [정비 §5 · 2026-10-03] 옛 기록을 보관함(_prev)에 넣고 비우는 일을 **서버 칸을 보고 한 동작으로**(트랜잭션).
+  //   이 기기 사본으로 덮으면 다른 기기에서 그 사이 쌓인 기록이 보관 없이 사라진다.
+  const 새로 = (cur) => {
+    const c = cur || {};
+    const stash = {
+      answers: c.answers || {}, reportData: c.reportData || null,
+      submitTime: c.submitTime || null, hwKey: c.hwKey || null,
+      remediation: c.remediation || null, movedAt: new Date().toISOString()
+    };
+    const n = Object.assign({}, c);
+    n._prev = (Array.isArray(c._prev) ? c._prev : Object.values(c._prev || {})).concat([stash]);
+    n.answers = {};
+    n.submitted = false;
+    n.submitTime = null;
+    delete n.reportData; delete n.remediation; delete n.celebrationShown;
+    if (hk) n.hwKey = hk; else delete n.hwKey;
+    return n;
+  };
+  // ⛔ 칸 통째 쓰기(트랜잭션 포함)는 규칙이 학생에게 막는다(옛 탭의 통째 덮기를 막으려고 · 정비 §5 규칙).
+  //   그래서 **서버 칸을 먼저 읽고**, 그 값으로 보관함을 만들어 **항목들만** 한 번에 쓴다.
+  if (!window.fbReady || !window.FB_REF) { showBackupToast('⚠️ 서버에 연결되지 않아 새로 시작하지 못했습니다. 인터넷 확인 후 다시 해 주세요.'); return; }
+  window.FB_REF.child('submissions/' + key).once('value').then(sn => {
+    const cur = sn.val();
+    const n = cur ? 새로(cur) : { answers: {}, submitted: false, submitTime: null };
+    const P = 'submissions/' + key + '/';
+    const u = {
+      [P + '_prev']: n._prev || null, [P + 'answers']: null, [P + 'submitted']: false, [P + 'submitTime']: null,
+      [P + 'reportData']: null, [P + 'remediation']: null, [P + 'celebrationShown']: null, [P + 'hwKey']: n.hwKey || null,
+    };
+    fbWrite(u, (ok) => {
+      if (!ok) { showBackupToast('⚠️ 새로 시작하지 못했습니다. 인터넷 확인 후 다시 해 주세요.'); return; }
+      const s = getStore(); s.submissions[key] = n; saveStore(s);
+      qIdx = 0;
+      startSet(idx, {withCountdown:true});
+    });
+  }).catch(() => showBackupToast('⚠️ 서버에 연결되지 않아 새로 시작하지 못했습니다. 인터넷 확인 후 다시 해 주세요.'));
 }
 
 function startSet(idx, opts) {
@@ -8563,7 +8698,8 @@ function saveAnswer(qid, val) {
   if(store.submissions[key].submitted) return;
   store.submissions[key].answers[qid]=val;
   saveStore(store);
-  fbSetSubmission(key, store.submissions[key]);
+  // [정비 §5 · 2026-10-03] 칸 통째가 아니라 **이 문항 답 하나만** 쓴다 — 다른 탭·기기의 답과 제출을 덮지 않는다.
+  fbWrite({ ['submissions/' + key + '/answers/' + qid]: val });
 }
 
 function answerMC(qid, letter, btnEl) {
@@ -8638,10 +8774,16 @@ function answerSA(qid, val) {
   if(store.submissions[key].submitted) return;
   store.submissions[key].answers[qid]=val.trim();
   saveStore(store);
-  clearTimeout(_saFbWriteTimer);
-  _saFbWriteTimer = setTimeout(() => {
+  // [정비 §5] 이 문항 답 하나만(saveAnswer 와 같은 방식). 늦춤은 **문항마다 따로** —
+  //   예전엔 칸 통째를 써서 타이머 하나로 됐지만, 이제 400ms 안에 다른 문항으로 넘어가면 앞 문항 쓰기가 지워진다.
+  window._saTimers = window._saTimers || {};
+  const _tk = key + '|' + qid;
+  clearTimeout(window._saTimers[_tk]);
+  window._saTimers[_tk] = setTimeout(() => {
+    delete window._saTimers[_tk];
     const s=getStore();
-    if (s.submissions[key]) fbSetSubmission(key, s.submissions[key]);
+    const v = s.submissions[key]?.answers?.[qid];
+    if (v !== undefined && !s.submissions[key].submitted) fbWrite({ ['submissions/' + key + '/answers/' + qid]: v });
   }, 400);
   // [SA 입력 즉시 반영] 재렌더 없이 제출 버튼·카운터·진행바만 갱신
   // (renderStudent() 재호출은 타이핑 중 입력 포커스를 파괴하므로 금지 — DOM 직접 갱신)
@@ -8750,7 +8892,8 @@ function doSubmit() {
         // 1회만 트리거 — Firebase 저장 필수 (v4.1)
         sub.celebrationShown = true;
         saveStore(store);
-        fbSetSubmission(key, store.submissions[key]);
+        // [정비 §5] 깃발 하나만 — 5초 사이 교사가 쓴 카톡·처리 기록을 덮지 않는다.
+        fbWrite({ ['submissions/' + key + '/celebrationShown']: true });
       }, 5100);
     }
     sub.reportData = {
@@ -8794,7 +8937,20 @@ function doSubmit() {
     }
   }, 10000);
 
-  fbSetSubmission(key, store.submissions[key], (success) => {
+  // [정비 §5 · 2026-10-03] 제출이 맡은 항목만 쓴다 — 답(문항마다) · 제출 표시 · 판 번호 · 숙제 열쇠 · 리포트.
+  //   보충학습(remediation)·보관함(_prev)·교사가 쓴 다른 칸은 건드리지 않는다.
+  //   정상 제출이 원장 처리보다 앞선다 — 원장 처리 표시는 지운다(원장 처리는 서버에서 정상 제출을 보면 멈춘다).
+  const 제출쓰기 = {};
+  const _p = 'submissions/' + key + '/';
+  for (const [q, v] of Object.entries(sub.answers || {})) 제출쓰기[_p + 'answers/' + q] = v;
+  제출쓰기[_p + 'submitted'] = true;
+  제출쓰기[_p + 'submitTime'] = sub.submitTime;
+  제출쓰기[_p + 'rev'] = sub.rev;
+  if (sub.hwKey) 제출쓰기[_p + 'hwKey'] = sub.hwKey;
+  if (sub.reportData) 제출쓰기[_p + 'reportData'] = sub.reportData;
+  for (const k of ['manuallyMarked', 'markedBy', 'markedAt', 'markedReason', 'markedReasonCode']) { 제출쓰기[_p + k] = null; delete sub[k]; }
+  saveStore(store);
+  fbWrite(제출쓰기, (success) => {
     // ★ [1단계] 저장이 확인된 뒤에만 약점을 반영한다(서버에서 이 판을 다시 읽어 본 뒤).
     //   10초 안내가 먼저 떴어도(늦은 성공) 반영은 한다 — 그래서 아래 되돌아가기보다 앞에 둔다.
     if (success) _weaknessFlush().catch(e => console.warn('[Weakness] 반영 실패 — 다음 접속 때 다시:', e));
@@ -12700,7 +12856,11 @@ async function generateAndShowKakao(studentId, resultIdx, setIdx) {
       store.submissions[key].reportData.kakaoMsg = msg;
       store.submissions[key].reportData.kakaoGeneratedAt = new Date().toISOString();
       saveStore(store);
-      fbSetSubmission(key, store.submissions[key]);
+      // [정비 §5 · 2026-10-03] 교사 사본으로 학생 칸 통째를 덮지 않는다 — 카톡 두 칸만(generateT6Kakao 12223 과 같은 방식).
+      fbWrite({
+        ['submissions/' + key + '/reportData/kakaoMsg']: msg,
+        ['submissions/' + key + '/reportData/kakaoGeneratedAt']: store.submissions[key].reportData.kakaoGeneratedAt,
+      });
     }
 
     area.innerHTML = `
@@ -13932,6 +14092,16 @@ function hideAutoProgressBadge() {
 }
 
 // ── REMEDIATION STATE MANAGEMENT ────────
+// [정비 §5 · 2026-10-03] 보충학습은 **remediation 가지만** 쓴다 — 칸 통째로 쓰면 답·제출·교사 카톡을 이 기기 사본으로 덮는다.
+//   보충 제출 때는 리포트의 보충 결과(reportData/remediation)도 함께.
+function fbSetRemediation(key, store, withReport) {
+  const sub = store.submissions[key];
+  if (!sub) return;
+  const u = { ['submissions/' + key + '/remediation']: sub.remediation || null };
+  if (withReport) u['submissions/' + key + '/reportData/remediation'] = (sub.reportData && sub.reportData.remediation) || null;
+  fbWrite(u);
+}
+
 function getRemediation(sub) {
   if (!sub.remediation) {
     sub.remediation = { currentRound: -1, rounds: [], finalDone: false };
@@ -14008,7 +14178,7 @@ async function startRemediation(setIdx) {
       practiceSubmitted: false
     };
     saveStore(store);
-    fbSetSubmission(key, store.submissions[key]);
+    fbSetRemediation(key, store);
     renderRemediationExplanation(setIdx, roundIdx);
   } catch(e) {
     const code = _extractSysCode(e);
@@ -14128,7 +14298,7 @@ function renderRemediationExplanation(setIdx, roundIdx) {
   if (!round?.greetingShown && hintQIdx === 0 && typeof gm_showSolomon === 'function' && (typeof gm_kidMode !== 'function' || gm_kidMode())) {
     round.greetingShown = true;
     saveStore(store);
-    fbSetSubmission(key, store.submissions[key]);
+    fbSetRemediation(key, store);
     gm_showSolomon({
       expression: 'cheering',
       message: "Let's review what you missed!",
@@ -14301,7 +14471,7 @@ function showHintStage(setIdx, roundIdx, qId, stage) {
   if (!round.hintAttempts) round.hintAttempts = {};
   round.hintAttempts[qId] = stage;
   saveStore(store);
-  fbSetSubmission(key, store.submissions[key]);
+  fbSetRemediation(key, store);
   renderRemediationExplanation(setIdx, roundIdx);
 }
 
@@ -14326,7 +14496,7 @@ function answerHintRetry(setIdx, roundIdx, qId, selectedAnswer) {
     // gamify-lab Tier 8 (2026-05-23): Phase 2 재시도 정답 → 마시멜로 celebrating + 랜덤 칭찬
     round.hintAttempts[qId] = 99;
     saveStore(store);
-    fbSetSubmission(key, store.submissions[key]);
+    fbSetRemediation(key, store);
     if (typeof gm_showSolomon === 'function' && typeof gm_pickPhrase === 'function' && (typeof gm_kidMode !== 'function' || gm_kidMode())) {
       gm_showSolomon({
         expression: 'celebrating',
@@ -14341,7 +14511,7 @@ function answerHintRetry(setIdx, roundIdx, qId, selectedAnswer) {
     // gamify-lab Tier 8 (2026-05-23): Phase 2 재시도 오답 → 마시멜로 thinking + 랜덤 격려
     round.hintAttempts[qId] = 2;
     saveStore(store);
-    fbSetSubmission(key, store.submissions[key]);
+    fbSetRemediation(key, store);
     if (typeof gm_showSolomon === 'function' && typeof gm_pickPhrase === 'function' && (typeof gm_kidMode !== 'function' || gm_kidMode())) {
       gm_showSolomon({
         expression: 'thinking',
@@ -14370,14 +14540,14 @@ async function onExplanationRead(setIdx, roundIdx) {
   });
 
   saveStore(store);
-  fbSetSubmission(key, store.submissions[key]);
+  fbSetRemediation(key, store);
 
   if (roundIdx >= 1 || stillWrong.length === 0) {
     rem.finalDone = true;
     rem.finalWrongQuestions = stillWrong;
     rem.finalExplanations = round.explanations;
     saveStore(store);
-    fbSetSubmission(key, store.submissions[key]);
+    fbSetRemediation(key, store);
     renderFinalReport(setIdx);
     return;
   }
@@ -14397,7 +14567,7 @@ async function onExplanationRead(setIdx, roundIdx) {
     const practiceQs = await generatePracticeQuestions(stillWrong, currentUser.year, roundIdx, ctx);
     round.practiceQuestions = practiceQs;
     saveStore(store);
-    fbSetSubmission(key, store.submissions[key]);
+    fbSetRemediation(key, store);
     renderPracticeSet(setIdx, roundIdx);
   } catch (e) {
     const code = _extractSysCode(e);
@@ -14654,7 +14824,7 @@ function savePracticeAnswer(setIdx, roundIdx, qid, val) {
   if (!round.practiceAnswers) round.practiceAnswers = {};
   round.practiceAnswers[qid] = val;
   saveStore(store);
-  fbSetSubmission(key, store.submissions[key]);
+  fbSetRemediation(key, store);
   setTimeout(() => { practiceQIdx++; renderPracticeSet(setIdx, roundIdx); }, 300);
 }
 
@@ -14682,7 +14852,7 @@ async function practiceAnswerWithHint(qId, selectedAnswer, setIdx, roundIdx) {
   if (ans === correct) {
     round.practiceHintAttempts[qId] = 99;
     saveStore(store);
-    fbSetSubmission(key, store.submissions[key]);
+    fbSetRemediation(key, store);
     renderPracticeSet(setIdx, roundIdx);
     return;
   }
@@ -14692,7 +14862,7 @@ async function practiceAnswerWithHint(qId, selectedAnswer, setIdx, roundIdx) {
     // 1번 틀림 → 힌트 생성
     round.practiceHintAttempts[qId] = 1;
     saveStore(store);
-    fbSetSubmission(key, store.submissions[key]);
+    fbSetRemediation(key, store);
     renderPracticeSet(setIdx, roundIdx); // await 전에 즉시 렌더링 — 버튼 이중클릭 방지
     if (!round.practiceHintData[qId]) {
       // AI로 힌트 생성
@@ -14701,24 +14871,24 @@ async function practiceAnswerWithHint(qId, selectedAnswer, setIdx, roundIdx) {
         round.practiceHintData[qId] = hintResult.hint;
         round.practiceHintData[qId + '_expl'] = hintResult.explanation;
         saveStore(store);
-        fbSetSubmission(key, store.submissions[key]);
+        fbSetRemediation(key, store);
       } catch(e) {
         round.practiceHintData[qId] = 'Think carefully about the method needed for this type of problem.';
         round.practiceHintData[qId + '_expl'] = `The correct answer is ${q.answer}.`;
         saveStore(store);
-        fbSetSubmission(key, store.submissions[key]);
+        fbSetRemediation(key, store);
       }
     }
   } else if (curAttempt === 1) {
     // 2번 틀림 → 정답 공개
     round.practiceHintAttempts[qId] = 2;
     saveStore(store);
-    fbSetSubmission(key, store.submissions[key]);
+    fbSetRemediation(key, store);
   } else {
     // 3번 이상 → 그냥 다음으로
     round.practiceHintAttempts[qId] = 2;
     saveStore(store);
-    fbSetSubmission(key, store.submissions[key]);
+    fbSetRemediation(key, store);
   }
   renderPracticeSet(setIdx, roundIdx);
 }
@@ -14751,7 +14921,7 @@ function savePracticeAnswerSA(setIdx, roundIdx, qid, val) {
   if (!round.practiceAnswers) round.practiceAnswers = {};
   round.practiceAnswers[qid] = val.trim().toUpperCase();
   saveStore(store);
-  fbSetSubmission(key, store.submissions[key]);
+  fbSetRemediation(key, store);
 }
 
 function submitPracticeSet(setIdx, roundIdx) {
@@ -14784,7 +14954,7 @@ function submitPracticeSet(setIdx, roundIdx) {
   });
 
   saveStore(store);
-  fbSetSubmission(key, store.submissions[key]);
+  fbSetRemediation(key, store, true);
   practiceQIdx = 0;
   renderPracticeResults(setIdx, roundIdx);
 }
@@ -14906,7 +15076,7 @@ function renderFinalReport(setIdx) {
     if (rem && !rem.finalGreetingShown && typeof gm_showSolomon === 'function' && (typeof gm_kidMode !== 'function' || gm_kidMode())) {
       rem.finalGreetingShown = true;
       saveStore(store);
-      fbSetSubmission(key, store.submissions[key]);
+      fbSetRemediation(key, store);
       gm_showSolomon({
         expression: 'celebrating',
         message: "Well done! You've mastered them!",
@@ -17256,6 +17426,7 @@ function _migrateTSAnswers(store, p) {
     const tsProgress = store.submissions[tsKey];
     if (!tsProgress) return;
     let changed = false;
+    const 고친칸 = {};   // [정비 §5] 바뀐 correct 들만 쓴다
     for (const dayKey of Object.keys(tsProgress)) {
       const dayData = tsProgress[dayKey];
       if (!dayData?.answers) continue;
@@ -17271,12 +17442,13 @@ function _migrateTSAnswers(store, p) {
         if (wrongList.includes(correctLetter)) {
           ansData.correct = true;
           changed = true;
+          고친칸['submissions/' + tsKey + '/' + dayKey + '/answers/' + qKey + '/correct'] = true;
         }
       }
     }
     if (changed) {
       saveStore(store);
-      fbSetTSProgress(tsKey, store.submissions[tsKey]);
+      fbWrite(고친칸);
     }
   } catch (e) {
     console.warn('[TS migrate] failed:', e);
@@ -17491,7 +17663,8 @@ function submitTSAnswer(qKey) {
   }
 
   saveStore(store);
-  fbSetTSProgress(tsKey, store.submissions[tsKey]);
+  // [정비 §5 · 2026-10-03] TS 칸 통째가 아니라 **이 문항 기록 하나만** — 다른 날·다른 기기 기록을 덮지 않는다.
+  fbWrite({ ['submissions/' + tsKey + '/' + dayKey + '/answers/' + qKey]: JSON.parse(JSON.stringify(ansData)) });
   renderTSDay();
   if (ansData.correct === true) {
     const { questions_per_day: qPerDay } = ts.day_config;
@@ -17537,7 +17710,11 @@ function completeTSDay() {
   store.submissions[tsKey][dayKey].completed = true;
   store.submissions[tsKey][dayKey].completed_at = new Date().toISOString();
   saveStore(store);
-  fbSetTSProgress(tsKey, store.submissions[tsKey]);
+  // [정비 §5] 그날의 끝 표시 둘만
+  fbWrite({
+    ['submissions/' + tsKey + '/' + dayKey + '/completed']: true,
+    ['submissions/' + tsKey + '/' + dayKey + '/completed_at']: store.submissions[tsKey][dayKey].completed_at,
+  });
   currentTSDay = null;
   currentSetIdx = null;
   renderStudent();
