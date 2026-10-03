@@ -177,15 +177,15 @@ function 약점세상(서버) {
     재기('서버에 안 붙었으면 아무것도 안 한다', 서버.값('weakness') === undefined && F._weaknessQueueRead().length === 1);
   }
 
-  console.log('\n── ④ doSubmit — 줄 먼저 · 저장 성공 뒤에만 반영');
+  console.log('\n── ④ doSubmit — [정비 §5] 서버(hwSubmit)가 확정·채점·약점까지 · 먼저 줄에 적고 부른다');
   {
     const doSubmit소스 = 떼기('function doSubmit() {', '\n// ═══ [1단계] 약점 반영 — 시작');
     const 기록 = [];
-    const 쓴경로 = [];
-    let 저장콜백 = null;
+    let 풀기 = null, 거절 = null, 보낸것 = null;
     const 서랍값 = { currentPeriod: { year: 2026, month: 10, week: 1 }, submissions: {},
       homeworkSets: { AU_y5_2026_m10_w1: { sets: [{ title: 'S1', questions: [
         { id: 'q0', text: 'a', answer: '2', taxonomy_id: 'MR.Y5.A' }, { id: 'q1', text: 'b', answer: '3' }] }] } } };
+    서랍값.submissions.Mina_2026_m10_w1_s0 = { answers: { q0: '2', q1: '9' }, submitted: false };
     const 값 = {
       getStore: () => 서랍값, saveStore: () => true,
       studentPeriod: null, currentSetIdx: 0,
@@ -198,16 +198,21 @@ function 약점세상(서버) {
       gm_showSolomon: undefined, gm_kidMode: undefined,
       window: { TAXONOMY_MR: {}, isPreviewMode: false },
       applyWeaknessUpdates: () => { 기록.push('바로반영'); return Promise.resolve(); },
-      _weaknessJobOf: (qs, ans, sid, key, rev) => ({ sid, subKey: key, rev, items: qs.filter(q => q.taxonomy_id).map(q => ({ t: q.taxonomy_id })) }),
-      _weaknessEnqueue: (job) => 기록.push('줄:' + job.rev + ':' + job.items.length),
+      _weaknessJobOf: () => { 기록.push('약점일'); return { items: [1] }; },
+      _weaknessEnqueue: () => 기록.push('약점줄'),
       _weaknessFlush: () => { 기록.push('비우기'); return Promise.resolve(); },
       showSubmitConfirmModal: (s) => 기록.push('창:' + s),
-      fbSetSubmission: (key, data, cb) => { 기록.push('통째저장'); 저장콜백 = cb; },
-      // [정비 §5] 제출은 맡은 항목만 쓴다 — 판 번호는 .../rev 경로로 간다
-      fbWrite: (u, cb) => { const r = Object.keys(u).find(k => /\/rev$/.test(k)); 기록.push('저장:' + (r ? u[r] : '?')); 쓴경로.push(...Object.keys(u)); 저장콜백 = cb; },
+      fbSetSubmission: () => 기록.push('통째저장'),
+      fbWrite: () => 기록.push('항목쓰기'),
+      _opIdNew: () => 'op_test01',
+      _sentGet: (p) => (p.endsWith('/q1') ? '7' : undefined),
+      _addOpToRetryQueue: (op, d) => { 기록.push('줄:' + op); return 'k1'; },
+      _hwSubmitCall: (d) => { 보낸것 = d; 기록.push('서버'); return new Promise((a, b) => { 풀기 = a; 거절 = b; }); },
+      _hwSubmitApply: (k, r) => 기록.push('맞춤:' + r.sub.rev),
+      _hwSubmitFailed: (k, e) => { 기록.push('실패'); return 'kept'; },
+      localStorage: { removeItem: (k) => 기록.push('줄지움:' + k) },
       setTimeout: () => 0, clearTimeout: () => {},
       renderStudent: () => {}, qIdx: 0,
-      // [2-B] doSubmit 이 세션 상태를 본다(마스터 = 보기만)
       prepSessionState: () => 세션상태, showBackupToast: (m) => 기록.push('알림'),
       console,
     };
@@ -215,27 +220,22 @@ function 약점세상(서버) {
     const 이름 = Object.keys(값);
     const doSubmit = new Function(...이름, doSubmit소스 + '\n; return doSubmit;')(...이름.map(k => 값[k]));
     doSubmit();
-    재기('바로 반영(applyWeaknessUpdates 직접 부름)을 안 한다', !기록.includes('바로반영'), 기록.join(' → '));
-    재기('줄에 먼저 넣고 그다음 저장', 기록.indexOf('줄:1:1') >= 0 && 기록.indexOf('줄:1:1') < 기록.indexOf('저장:1'), 기록.join(' → '));
-    재기('저장 응답 전에는 비우지 않는다', !기록.includes('비우기'), 기록.join(' → '));
-    저장콜백(false);
-    재기('저장 실패면 비우지 않는다(줄은 남아 다음에)', !기록.includes('비우기'), 기록.join(' → '));
-    doSubmit();
-    재기('다시 내면 판(rev)이 올라간다', 기록.includes('저장:2') && 기록.includes('줄:2:1'), 기록.join(' → '));
-    저장콜백(true);
-    재기('저장 성공이면 줄을 비운다(반영)', 기록.includes('비우기'), 기록.join(' → '));
-    재기('제출 기록의 기존 열쇠는 그대로(answers·submitted·reportData)',
-         ['answers', 'submitted', 'submitTime', 'reportData'].every(k => k in 서랍값.submissions.Mina_2026_m10_w1_s0),
-         Object.keys(서랍값.submissions.Mina_2026_m10_w1_s0).join(','));
-    // [정비 §5] 제출이 맡은 항목만 — 보충학습·보관함·카톡은 안 건드린다 · 원장 처리 표시는 지운다 · 칸 통째 쓰기 없음
-    재기('[정비 §5] 제출은 칸 통째가 아니라 항목만 쓴다', !기록.includes('통째저장')
-         && 쓴경로.every(k => /^submissions\/Mina_2026_m10_w1_s0\/(answers\/|submitted$|submitTime$|rev$|hwKey$|reportData$|manuallyMarked$|markedBy$|markedAt$|markedReason$|markedReasonCode$)/.test(k))
-         && 쓴경로.includes('submissions/Mina_2026_m10_w1_s0/submitted'), 쓴경로.join(' '));
-    // [2-B] 마스터 세션이면 제출·줄 넣기 둘 다 안 한다
+    재기('먼저 줄에 「제출 일」을 적고 그다음 서버를 부른다', 기록.indexOf('줄:hwSubmit') >= 0 && 기록.indexOf('줄:hwSubmit') < 기록.indexOf('서버'), 기록.join(' → '));
+    재기('칸 통째·항목 직접 쓰기 없음(제출 표시·점수는 서버가)', !기록.includes('통째저장') && !기록.includes('항목쓰기'), 기록.join(' → '));
+    재기('약점을 이 창에서 줄에 넣지 않는다(서버가 서버 판으로)', !기록.includes('약점줄') && !기록.includes('바로반영'), 기록.join(' → '));
+    재기('보내는 것: 열쇠·숙제 열쇠·세트·이 창의 답·이 기기가 전에 보낸 값·opId', 보낸것 && 보낸것.key === 'Mina_2026_m10_w1_s0' && 보낸것.hwKey === 'AU_y5_2026_m10_w1' && 보낸것.answers.q1 === '9' && 보낸것.sent.q1 === '7' && 보낸것.opId === 'op_test01', JSON.stringify(보낸것));
+    재기('서버 응답 전에는 줄을 안 지운다', !기록.some(x => x.startsWith('줄지움')));
+    풀기({ ok: true, kind: 'new', sub: { rev: 1, submitted: true }, conflicts: [] });
+    await new Promise(r => setTimeout(r, 5));
+    재기('서버가 받으면 그 줄만 지우고 · 서버 칸으로 사본을 맞추고 · 남은 약점 줄을 비운다', 기록.includes('줄지움:k1') && 기록.includes('맞춤:1') && 기록.includes('비우기'), 기록.join(' → '));
+    const 전1 = 기록.length;
+    doSubmit(); 거절(Object.assign(new Error('x'), { code: 'functions/unavailable' }));
+    await new Promise(r => setTimeout(r, 5));
+    재기('인터넷 실패면 줄을 지우지 않는다(실패 처리에 넘김)', 기록.slice(전1).includes('실패') && !기록.slice(전1).some(x => x.startsWith('줄지움')), 기록.slice(전1).join(' → '));
     const 전 = 기록.length;
     세션상태 = 'master';
     doSubmit();
-    재기('[2-B] 마스터는 제출 못 한다(저장·줄 0 · 알림만)', 기록.slice(전).join() === '알림', 기록.slice(전).join(' → '));
+    재기('[2-B] 마스터는 제출 못 한다(줄·서버 0 · 알림만)', 기록.slice(전).join() === '알림', 기록.slice(전).join(' → '));
   }
 
   console.log('\n── ⑤ 읽는 쪽 — 원문으로 나누고 옛 자료도 읽는다');

@@ -361,6 +361,10 @@ exports.prepListMyAssignments = _prep.prepListMyAssignments;
 exports.prepGetAssignment = _prep.prepGetAssignment;
 exports.prepSubmit = _prep.prepSubmit;
 exports.prepConfirmOrder = _prep.prepConfirmOrder;   // [4단계] 제작 주문 확정(원장만)
+// [정비 §5 · 2026-10-03] 그룹 숙제 제출·새로 풀기 — 서버가 한 동작으로(functions/hw_submit.js 맨 위)
+const _hw = require('./hw_submit');
+exports.hwSubmit = _hw.hwSubmit;
+exports.hwStartFresh = _hw.hwStartFresh;
 
 // ============================================================
 // [6단계 · 2026-10-02] 승인 · 조정 · 20:00 공개 — functions/prep_release.js 맨 위에 적어 뒀다.

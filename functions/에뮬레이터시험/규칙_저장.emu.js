@@ -12,7 +12,7 @@ const path = require('path');
 const DB = process.env.FIREBASE_DATABASE_EMULATOR_HOST;
 const NS = 'demo-solomon';
 if (!DB || !/^(127\.0\.0\.1|localhost):\d+$/.test(DB)) { console.log('⛔ DB 에뮬레이터 변수가 없습니다'); console.log('\n셈 — 통과 0 · 실패 1'); process.exit(1); }
-const 규칙 = path.join(__dirname, '..', '..', 'backup', process.env.RULES_FILE || 'database.rules.정비5.json');
+const 규칙 = path.join(__dirname, '..', '..', 'backup', process.env.RULES_FILE || 'database.rules.정비6.json');
 if (!fs.existsSync(규칙)) { console.log('⛔ 규칙 파일 없음 ' + 규칙); console.log('\n셈 — 통과 0 · 실패 1'); process.exit(1); }
 const OP = '62bxWubzDLMrhHjjv2oNfAQiyaD2';
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
@@ -63,23 +63,23 @@ const 씨앗 = () => ({ solomon_hw_v3: { submitLock: true, submissions: {
   재기('답 하나(saveAnswer)', 됨(await 여럿({ ['submissions/' + K + '/answers/q2']: 'C', lastModified: 1 }, A, 아미)));
   재기('TS 문항 하나 · 하루 끝', 됨(await 여럿({ ['submissions/' + TS + '/day2/answers/q3']: { attempts: 1, correct: true }, ['submissions/' + TS + '/day2/completed']: true, lastModified: 2 }, A, 아미)));
   재기('보충학습 가지 · 확인 필요 칸', 됨(await 여럿({ ['submissions/' + K + '/remediation']: { currentRound: 0 }, ['submissions/' + K + '/_conflicts/answers|q0']: { mine: 'X' } }, A, 아미)));
-  재기('제출 묶음(답들 + 제출 + 판 + 리포트 + 원장 처리 지우기)', 됨(await 여럿({
+  console.log('\n── [정비6] 제출 확정·새로 풀기·점수는 학생이 못 쓴다(서버 함수가 쓴다)');
+  재기('⛔ 학생의 제출 묶음(제출 표시·판·리포트)', 막힘(await 여럿({
     ['submissions/' + K + '/answers/q0']: 'A', ['submissions/' + K + '/submitted']: true, ['submissions/' + K + '/submitTime']: 't',
-    ['submissions/' + K + '/rev']: 2, ['submissions/' + K + '/reportData']: { score: 80 }, ['submissions/' + K + '/manuallyMarked']: null, lastModified: 3 }, A, 아미)));
-  const 낸것 = await 읽기(S + K);
-  재기('제출 뒤 다른 답(q1·q2)도 남아 있다', 낸것.submitted === true && 낸것.answers.q1 === 'B' && 낸것.answers.q2 === 'C', JSON.stringify(낸것.answers));
+    ['submissions/' + K + '/rev']: 2, ['submissions/' + K + '/reportData']: { score: 80 } }, A, 아미)));
+  재기('⛔ 학생이 점수만 바꾸기 · 제출 표시만 바꾸기 · 판만 올리기', 막힘(await 여럿({ ['submissions/' + K + '/reportData/score']: 100 }, A, 아미))
+    && 막힘(await 여럿({ ['submissions/' + K + '/submitted']: true }, A, 아미)) && 막힘(await 여럿({ ['submissions/' + K + '/rev']: 9 }, A, 아미)));
+  재기('⛔ 학생이 새 칸을 만들면서 제출 표시·점수 넣기', 막힘(await 쓰기(S + 'Amy05_2026_m10_w1_s7', { answers: { q0: 'A' }, submitted: true, reportData: { score: 100 } }, A, 아미)));
+  재기('학생은 보충 결과(reportData/remediation)는 쓴다', 됨(await 여럿({ ['submissions/' + K + '/reportData/remediation']: [{ round: 1 }] }, A, 아미)));
+  재기('서버(관리자)는 제출을 확정한다', 됨(await 쓰기(S + K, { answers: { q0: 'A', q1: 'B', q2: 'C' }, submitted: true, submitTime: 't', rev: 2, reportData: { score: 80 } }, 'owner')));
 
   console.log('\n── T05 제출된 칸의 답');
   재기('⛔ 제출된 칸의 답 하나를 바꾸지 못한다(늦은 임시 저장)', 막힘(await 여럿({ ['submissions/' + K + '/answers/q0']: 'Z' }, A, 아미)));
   재기('⛔ 제출된 칸의 답 통째도 못 바꾼다', 막힘(await 여럿({ ['submissions/' + K + '/answers']: { q0: 'Z' } }, A, 아미)));
-  재기('새로 풀기(보관함 + 비우기 + 제출 false)는 된다', 됨(await 여럿({
-    ['submissions/' + K + '/_prev']: [{ answers: { q0: 'A' } }], ['submissions/' + K + '/answers']: null, ['submissions/' + K + '/submitted']: false,
-    ['submissions/' + K + '/submitTime']: null, ['submissions/' + K + '/reportData']: null, ['submissions/' + K + '/remediation']: null }, A, 아미)));
-  재기('새로 푼 뒤엔 다시 답을 쓴다', 됨(await 여럿({ ['submissions/' + K + '/answers/q0']: 'D' }, A, 아미)));
-
-  console.log('\n── 판 번호');
-  재기('⛔ rev 를 낮추지 못한다(2 → 1)', 막힘(await 여럿({ ['submissions/' + K + '/rev']: 1 }, A, 아미)));
-  재기('rev 를 올린다(2 → 3)', 됨(await 여럿({ ['submissions/' + K + '/rev']: 3 }, A, 아미)));
+  재기('⛔ 학생의 새로 풀기 묶음(보관함 + 비우기 + 제출 false)', 막힘(await 여럿({
+    ['submissions/' + K + '/_prev']: [{ answers: { q0: 'A' } }], ['submissions/' + K + '/answers']: null, ['submissions/' + K + '/submitted']: false }, A, 아미)));
+  재기('서버(관리자)가 새로 풀기를 하면 다시 답을 쓴다', 됨(await 쓰기(S + K, { answers: {}, submitted: false, _prev: [{ answers: { q0: 'A' } }] }, 'owner'))
+    && 됨(await 여럿({ ['submissions/' + K + '/answers/q0']: 'D' }, A, 아미)));
 
   console.log('\n── 남의 칸 · 마스터 · 원장');
   재기('⛔ 남의 칸 답 하나', 막힘(await 여럿({ ['submissions/Ben03_2026_m10_w1_s0/answers/q0']: 'X' }, A, 아미)));

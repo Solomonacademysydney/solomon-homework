@@ -313,21 +313,27 @@ const 조용 = { log() {}, warn() {}, info() {}, error() {} };
     재기('현황표가 _conflictBadge 로 감싼다', /sets\.map\(\(set, idx\) => _conflictBadge\(/.test(html));
   }
 
-  console.log('\n── ⑤ 새로 풀기 — 서버 칸을 보고 한 동작으로');
+  console.log('\n── ⑤ 새로 풀기 — [정비 §5-②] 서버(hwStartFresh)가 한 동작으로');
   {
     const 소스 = 떼기('function startFreshSet(idx) {', '\nfunction startSet(');
-    const 서버 = { answers: { q1: 'A', q9: 'Z' }, submitted: true, submitTime: 't', rev: 2, reportData: { s: 1 }, remediation: { r: 1 }, _prev: [{ old: 1 }] };
-    let 쓴값 = null, 시작 = 0, 서랍 = { currentPeriod: { y: 1 }, submissions: { K: { answers: { q1: 'A' }, submitted: true } } };
-    const 창 = { fbReady: true, FB_REF: { child: () => ({ once: async () => ({ val: () => JSON.parse(JSON.stringify(서버)) }) }) } };
-    const f = new Function('window', 'getStore', 'saveStore', 'subKey', 'currentUser', 'studentPeriod', 'startSet', 'confirm', 'hwLookupKey', 'fbTxSubmission', 'fbSetSubmission', 'fbWrite', 'showBackupToast', 'qIdx',
-      소스 + '\n; return startFreshSet;')(창, () => 서랍, (s) => { 서랍 = s; }, () => 'K', { id: 'Amy05', year: 5 }, null, () => { 시작++; }, () => true, () => 'HK',
-      () => { 쓴값 = '트랜잭션'; }, () => { 쓴값 = '통째'; }, (u, cb) => { 쓴값 = u; cb(true); }, () => {}, 0);
-    f(0);
+    let 부름 = null, 시작 = 0, 쓴것 = [], 서랍 = { currentPeriod: { y: 1 }, submissions: { K: { answers: { q1: 'A' }, submitted: true } } };
+    const 서버칸 = { answers: {}, submitted: false, _prev: [{ a: 1 }, { b: 2 }], hwKey: 'HK' };
+    const 짓기 = (연결, 응답) => new Function('window', 'getStore', 'saveStore', 'subKey', 'currentUser', 'studentPeriod', 'startSet', 'confirm', 'hwLookupKey', 'fbTxSubmission', 'fbSetSubmission', 'fbWrite', 'showBackupToast', 'qIdx', 'callAuthWorker', '_opIdNew', 'console',
+      소스 + '\n; return startFreshSet;')({ fbReady: 연결, FB_REF: 연결 ? {} : null }, () => 서랍, (s) => { 서랍 = s; }, () => 'K', { id: 'Amy05', year: 5 }, null, () => { 시작++; }, () => true, () => 'HK',
+      () => 쓴것.push('트랜잭션'), () => 쓴것.push('통째'), () => 쓴것.push('항목'), () => {}, 0,
+      (n, d) => { 부름 = { n, d }; return 응답; }, () => 'op_fresh', { warn() {} });
+    짓기(true, Promise.resolve({ ok: true, kind: 'new', sub: 서버칸 }))(0);
     await new Promise(r => setTimeout(r, 10));
-    const P = 'submissions/K/';
-    재기('서버 칸의 기록(사본에 없던 q9 포함)을 보관함에 넣는다', 쓴값 && 쓴값[P + '_prev'] && 쓴값[P + '_prev'].length === 2 && 쓴값[P + '_prev'][1].answers.q9 === 'Z', JSON.stringify(쓴값));
-    재기('칸 통째가 아니라 항목만 — 답·제출·리포트·보충 비우고 숙제 열쇠', 쓴값 && Object.keys(쓴값).every(k => k.startsWith(P)) && 쓴값[P + 'answers'] === null && 쓴값[P + 'submitted'] === false && 쓴값[P + 'reportData'] === null && 쓴값[P + 'remediation'] === null && 쓴값[P + 'hwKey'] === 'HK', JSON.stringify(쓴값 && Object.keys(쓴값)));
-    재기('저장된 뒤에 세트를 연다', 시작 === 1);
+    재기('서버 명령 hwStartFresh 를 부른다(열쇠·숙제 열쇠·opId)', 부름 && 부름.n === 'hwStartFresh' && 부름.d.key === 'K' && 부름.d.hwKey === 'HK' && 부름.d.opId === 'op_fresh', JSON.stringify(부름));
+    재기('이 화면이 직접 쓰지 않는다(트랜잭션·통째·항목 0)', 쓴것.length === 0, 쓴것.join());
+    재기('서버가 돌려준 칸으로 사본을 맞추고 세트를 연다', 서랍.submissions.K === 서버칸 && 시작 === 1);
+    부름 = null; 시작 = 0;
+    짓기(false, Promise.resolve({}))(0);
+    await new Promise(r => setTimeout(r, 10));
+    재기('연결이 없으면 시작하지 않는다(줄에 미루지 않음)', 부름 === null && 시작 === 0);
+    짓기(true, Promise.reject(new Error('functions/unavailable')))(0);
+    await new Promise(r => setTimeout(r, 10));
+    재기('서버가 실패하면 세트를 열지 않는다', 시작 === 0);
   }
 
   console.log('\n셈 — 통과 ' + 통과 + ' · 실패 ' + 실패);
