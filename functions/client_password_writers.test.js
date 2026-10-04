@@ -97,7 +97,8 @@ for (const name of Object.keys(EXEMPT)) {
 console.log('\n④ 순서 (4) 가 실제로 끝났나 — 되살아나는 길이 막혔나');
 ok('doLogin 의 「옛 길로 물러섬」이 사라졌다', !/옛 길로 물러섰다/.test(HTML));
 ok('⛔ fbSetUsers 가 pw 를 떼고 쓴다 (13군데를 한 곳에서 막는다)',
-  /function fbSetUsers[\s\S]{0,600}delete clean\.pw/.test(HTML));
+  // [10-05] 앞 600자만 보던 것 → 함수 몸 전체(주석·정본 확인이 늘어 거짓 실패가 났다)
+  /delete clean\.pw/.test((/function fbSetUsers\([^)]*\)\s*\{[\s\S]*?\n\}\n/.exec(HTML) || [''])[0]));
 ok('⛔ fbSetUsers 가 줄을 통째로 되쓰지 않는다', !/updates\[`users\/\$\{i\}`\] = u;/.test(HTML));
 
 console.log('\n────────────────────────────');

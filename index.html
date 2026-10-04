@@ -3232,6 +3232,9 @@ function _hwSubmitCall(payload) { return callAuthWorker('hwSubmit', payload, 200
 /** 서버가 확정한 칸으로 이 기기 사본을 맞춘다. */
 function _hwSubmitApply(key, res) {
   if (!res || !res.sub) return;
+  // [점검 10-05 F3] 지금 로그인한 아이의 칸만 — 늦게 온 형제 응답이 다음 아이 사본에 들어가지 않게
+  //   (서버에는 이미 저장됐다 · 그 아이가 다시 로그인하면 서버에서 받는다)
+  if (!currentUser || currentUser.role !== 'student' || !String(key).startsWith(currentUser.id + '_')) return;
   try {
     const s = getStore();
     s.submissions[key] = res.sub;
@@ -3541,7 +3544,13 @@ async function _flushRetryQueue() {
         // [정비 §5-①] 서버 명령 일(제출) — 서버가 판단한다(같은 opId 는 하나로 · 다른 답은 서버 답을 지킴)
         if (item && item.op === 'hwSubmit') {
           if (!_opOwned(item)) { 남음++; continue; }                 // 형제 것은 그 아이가 로그인할 때
-          try { const res = await _hwSubmitCall(item.data); localStorage.removeItem(k); _hwSubmitApply(item.data.key, res); }
+          // [점검 10-05 F7] 약점 반영이 아직이면(weakPending) 일을 남긴다 — 다음 비우기 때 같은 opId 로 다시(일주일까지)
+          try {
+            const res = await _hwSubmitCall(item.data);
+            const 약점남음 = res && res.weakPending && (Date.now() - (Number(item.queuedAt) || 0)) < 7 * 24 * 3600e3;
+            if (!약점남음) localStorage.removeItem(k);
+            _hwSubmitApply(item.data.key, res);
+          }
           catch (e) { if (_hwSubmitFailed(k, e) === 'kept') 남음++; }
           continue;
         }
@@ -8728,7 +8737,9 @@ function startFreshSet(idx) {
   //   (예전: 읽고 → 따로 비우기 · 그 사이 다른 창에서 들어온 답이 보관함에도 안 들어가고 사라질 수 있었다 — 점검 R5)
   //   인터넷이 있어야 한다 — 없으면 시작하지 않고 알린다(줄에 미루지 않는다: 늦게 비우면 그 사이 푼 답이 지워진다).
   if (!window.fbReady || !window.FB_REF) { showBackupToast('⚠️ 서버에 연결되지 않아 새로 시작하지 못했습니다. 인터넷 확인 후 다시 해 주세요.'); return; }
+  const _uid = currentUser.id;
   callAuthWorker('hwStartFresh', { key, hwKey: hk || sub.hwKey || '', opId: _opIdNew() }, 20000).then(res => {
+    if (!currentUser || currentUser.id !== _uid) return;   // [점검 10-05 F3] 그 사이 다른 아이로 바뀌었으면 손대지 않는다
     const s = getStore();
     s.submissions[key] = (res && res.sub) || { answers: {}, submitted: false, submitTime: null };
     saveStore(s);
@@ -9001,36 +9012,9 @@ function doSubmit() {
     const score = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
     const wrongQs = autoQs.filter(q=>normAns(sub.answers?.[q.id])!==normAns(q.answer));
     const weakAreas = detectWeakAreas(wrongQs);
-    // gamify-lab Tier 5 + Tier 7 (2026-05-23): 5.1초 후 (제출 모달 닫힌 직후) 마시멜로 등장.
-    // 80%+ → celebrating + onClose에 별 50개 묶음 (시각 충돌 차단). 80% 미만 → cheering 마시멜로만.
-    // 기존 setTimeout 안의 별 50개 직접 호출 → 마시멜로 onClose로 이동 (이중 발동 차단).
-    if (typeof gm_showSolomon === 'function' && !sub.celebrationShown && (typeof gm_kidMode !== 'function' || gm_kidMode())) {
-      setTimeout(function(){
-        const _m = document.getElementById('submitConfirmModal');
-        if (_m) return;   // 제출 모달 아직 있으면 안전망 — 다음 visit엔 celebrationShown 없으니 재시도 불가, OK
-        if (score >= 80) {
-          gm_showSolomon({
-            expression: 'celebrating',
-            message: 'Excellent! ' + correct + '/' + autoQs.length + ' correct!',
-            footer: 'Tap to continue',
-            onClose: function() {
-              if (typeof gm_showCompleteCelebration === 'function') gm_showCompleteCelebration();
-            }
-          });
-        } else {
-          gm_showSolomon({
-            expression: 'cheering',
-            message: 'Good effort! ' + correct + '/' + autoQs.length + ' correct. Let\'s review the missed ones!',
-            footer: 'Tap to see results'
-          });
-        }
-        // 1회만 트리거 — Firebase 저장 필수 (v4.1)
-        sub.celebrationShown = true;
-        saveStore(store);
-        // [정비 §5] 깃발 하나만 — 5초 사이 교사가 쓴 카톡·처리 기록을 덮지 않는다.
-        fbWrite({ ['submissions/' + key + '/celebrationShown']: true });
-      }, 5100);
-    }
+    // [점검 10-05 F2] 축하(마시멜로)는 여기서 걸지 않는다 — **서버가 받은 뒤에** _hwCelebrate 가 서버 점수로 띄운다.
+    //   (예전: 제출 전 사본 store 를 5.1초 들고 있다가 통째로 saveStore 해서, 서버가 다른 창의 답을 지켜
+    //    고친 결과(C·0점)를 이 창의 옛 값(B·100점)으로 되돌렸다. 제출이 실패해도 축하가 떴다.)
     sub.reportData = {
       studentId: currentUser.id,
       studentName: currentUser.name,
@@ -9076,13 +9060,18 @@ function doSubmit() {
   const _payload = { key, hwKey: _hkNow || sub.hwKey || '', setIdx: currentSetIdx ?? 0, answers: Object.assign({}, sub.answers || {}), sent: {}, opId: _opIdNew() };
   for (const q of Object.keys(_payload.answers)) { const v = _sentGet('submissions/' + key + '/answers/' + q); if (v !== undefined) _payload.sent[q] = v; }
   const _줄 = _addOpToRetryQueue('hwSubmit', _payload);
+  const _uid = currentUser.id;   // [점검 10-05 F3] 응답이 늦게 와 그 사이 다른 아이로 바뀌었으면 화면·사본에 넣지 않는다
   _hwSubmitCall(_payload).then((res) => {
-    if (_줄) { try { localStorage.removeItem(_줄); } catch (_) {} }
+    // [F7] 서버가 약점 반영을 못 했으면(weakPending) 줄의 일을 남겨 두었다가 같은 opId 로 다시 보낸다(제출은 그대로)
+    if (_줄 && !(res && res.weakPending)) { try { localStorage.removeItem(_줄); } catch (_) {} }
+    if (!currentUser || currentUser.id !== _uid) return;
     _hwSubmitApply(key, res);
     _weaknessFlush().catch(() => {});
     if (_submitResolved) return;
     _submitResolved = true; clearTimeout(_submitTimeoutId);
     showSubmitConfirmModal('success');
+    // [F2] 성공 창이 5초 뒤 닫힌 다음 — 서버가 확정한 점수로
+    if (typeof _hwCelebrate === 'function') setTimeout(() => _hwCelebrate(key, _uid), 5100);
   }).catch((e) => {
     const 끝 = _hwSubmitFailed(_줄, e);      // 'kept'(인터넷 · 줄에 남음) | 'dropped'(거절 · 확인 필요에 남김)
     if (_submitResolved) return;
@@ -9092,6 +9081,41 @@ function doSubmit() {
 
   qIdx=0;
   renderStudent();
+}
+
+// [점검 10-05 F2] 제출 축하 — 서버가 확정한 칸(사본에 이미 맞춰 둔 것)의 점수로 띄운다.
+//   gamify-lab Tier 5 + Tier 7 (2026-05-23): 80%+ → celebrating + onClose 에 별 50개 · 80% 미만 → cheering.
+//   ⛔ 사본 전체를 들고 있다가 되쓰지 않는다 — 부를 때 **지금 사본**을 읽고 celebrationShown 한 칸만 고친다.
+function _hwCelebrate(key, uid) {
+  if (!currentUser || currentUser.id !== uid) return;                // 그 사이 로그아웃·다른 아이
+  if (typeof gm_showSolomon !== 'function') return;
+  if (typeof gm_kidMode === 'function' && !gm_kidMode()) return;
+  if (document.getElementById('submitConfirmModal')) return;         // 제출 창이 아직 떠 있으면 겹치지 않게
+  const s = getStore();
+  const sub = s.submissions && s.submissions[key];
+  const rd = sub && sub.submitted && sub.reportData;
+  if (!rd || sub.celebrationShown) return;
+  const correct = Number(rd.correctCount) || 0, total = Number(rd.totalQuestions) || 0, score = Number(rd.score) || 0;
+  if (score >= 80) {
+    gm_showSolomon({
+      expression: 'celebrating',
+      message: 'Excellent! ' + correct + '/' + total + ' correct!',
+      footer: 'Tap to continue',
+      onClose: function() {
+        if (typeof gm_showCompleteCelebration === 'function') gm_showCompleteCelebration();
+      }
+    });
+  } else {
+    gm_showSolomon({
+      expression: 'cheering',
+      message: 'Good effort! ' + correct + '/' + total + ' correct. Let\'s review the missed ones!',
+      footer: 'Tap to see results'
+    });
+  }
+  // 1회만 — 사본은 이 칸의 깃발 하나만, 서버도 깃발 하나만(5초 사이 교사가 쓴 기록을 덮지 않는다)
+  sub.celebrationShown = true;
+  saveStore(s);
+  fbWrite({ ['submissions/' + key + '/celebrationShown']: true });
 }
 
 // ═══ [1단계] 약점 반영 — 시작 ═══════════════════════════════════════════════

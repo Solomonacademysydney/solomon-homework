@@ -124,11 +124,26 @@ function buildReport(set, answers, who, period, now) {
   };
 }
 
+// [점검 10-05 F1] 이 칸이 이미 처리한 작업 번호(opId) — 마지막 하나만 보면
+//   「제출 X → 새로 풀기 → 늦게 온 X」 에서 X 가 새 칸에 다시 들어가고,
+//   「새로 풀기 A → 새로 풀기 B → 새 답 → 늦게 온 A」 에서 진행 중인 풀이가 비워졌다.
+//   ⇒ 제출·새로 풀기 둘 다 최근 OPS_KEEP 개를 칸 안 _ops 에 적고, 어느 것이든 본 번호면 손대지 않는다.
+const OPS_KEEP = 30;
+function 본작업(c, opId) {
+  return !!c && (c.lastSubmitOp === opId || c.lastFreshOp === opId || !!(c._ops && c._ops[opId]));
+}
+function 작업적기(n, opId, at) {
+  const o = Object.assign({}, n._ops || {});
+  o[opId] = Number(at) || Date.now();
+  n._ops = {};
+  Object.keys(o).sort((a, b) => o[b] - o[a]).slice(0, OPS_KEEP).forEach(k => { n._ops[k] = o[k]; });
+}
+
 /** 트랜잭션 몸 — 서버 값 cur 로 다음 값을 낸다(순수 · 시험이 그대로 부른다). 결과는 out 에 적는다. */
 function submitStep(cur, inp, out) {
   out.kind = null; out.충돌 = {};
   const c = cur || {};
-  if (c.lastSubmitOp === inp.opId && c.submitted) { out.kind = 'dup'; return undefined; }
+  if (본작업(c, inp.opId)) { out.kind = 'dup'; return undefined; }
   if (c.submitted && !c.manuallyMarked) {
     for (const [q, v] of Object.entries(inp.answers)) if (!같다((c.answers || {})[q], v)) out.충돌[q] = { server: (c.answers || {})[q] == null ? null : c.answers[q], mine: v };
     out.kind = 'already';
@@ -136,6 +151,7 @@ function submitStep(cur, inp, out) {
     // 제출은 그대로 두고 _conflicts 만 더한다 — **같은 트랜잭션 안에서**(따로 쓰면 다른 트랜잭션을 깨뜨린다)
     const n = Object.assign({}, c, { _conflicts: Object.assign({}, c._conflicts || {}) });
     for (const [q, x] of Object.entries(out.충돌)) n._conflicts['answers|' + q + '|' + inp.at] = { server: x.server, mine: x.mine, at: inp.at };
+    작업적기(n, inp.opId, inp.at);   // 같은 일이 다시 와도 충돌을 두 번 적지 않게
     return n;
   }
   const { 최종, 충돌 } = mergeAnswers(c.answers, inp.answers, inp.sent);
@@ -151,6 +167,7 @@ function submitStep(cur, inp, out) {
     n._conflicts = Object.assign({}, c._conflicts || {});
     for (const [q, x] of Object.entries(충돌)) n._conflicts['answers|' + q + '|' + inp.at] = { server: x.server, mine: x.mine, at: inp.at };
   }
+  작업적기(n, inp.opId, inp.at);
   out.kind = 'new'; out.rev = n.rev;
   return n;
 }
@@ -158,7 +175,7 @@ function submitStep(cur, inp, out) {
 function freshStep(cur, inp, out) {
   out.kind = null;
   if (!cur) { out.kind = 'empty'; return null; }
-  if (cur.lastFreshOp === inp.opId) { out.kind = 'dup'; return undefined; }
+  if (본작업(cur, inp.opId)) { out.kind = 'dup'; return undefined; }
   const stash = {
     answers: cur.answers || {}, reportData: cur.reportData || null,
     submitTime: cur.submitTime || null, hwKey: cur.hwKey || null,
@@ -169,6 +186,7 @@ function freshStep(cur, inp, out) {
   n.answers = {}; n.submitted = false; n.submitTime = null;
   delete n.reportData; delete n.remediation; delete n.celebrationShown;
   n.hwKey = inp.hwKey; n.lastFreshOp = inp.opId;
+  작업적기(n, inp.opId, inp.at);
   out.kind = 'new';
   return n;
 }
@@ -199,12 +217,21 @@ exports.hwSubmit = onCall({ region: S.REGION }, async (req) => {
   // applyLocally=false — 끝나지 않은 값을 같은 서버의 다른 요청이 보지 않게(진짜 저장된 값만 본다)
   const res = await ref.transaction(cur => submitStep(cur, inp, out), undefined, false);
   const v = res.snapshot.val() || {};
+  // [점검 10-05 F7] 약점 반영이 실패하면 weakPending 으로 알린다 — 화면은 줄의 일을 지우지 않고 두었다가
+  //   같은 opId 로 다시 보낸다 ⇒ 아래 「dup·already」 길에서 **지금 서버 칸** 그대로 다시 반영한다.
+  //   applyWeaknessJob 은 판(rev)으로 한 번만 세므로 몇 번 불러도 두 번 더해지지 않는다. 제출은 건드리지 않는다.
+  let weakPending = false;
+  const 약점 = async (rev, items) => {
+    try { await applyWeaknessJob(admin.database().ref(), { sid, subKey: String(d.key), rev, items: items || [] }); }
+    catch (e) { weakPending = true; console.warn('[hwSubmit] 약점 반영 실패(제출은 저장됨):', d.key, e && e.message); }
+  };
   if (res.committed && out.kind === 'new') {
     await admin.database().ref(ROOT + '/lastModified').set(Date.now()).catch(() => {});
-    try { await applyWeaknessJob(admin.database().ref(), { sid, subKey: String(d.key), rev: out.rev, items: out.items || [] }); }
-    catch (e) { console.warn('[hwSubmit] 약점 반영 실패(제출은 저장됨):', d.key, e && e.message); }
+    await 약점(out.rev, out.items);
+  } else if ((out.kind === 'dup' || out.kind === 'already') && v.submitted && !v.manuallyMarked && Number(v.rev) > 0 && v.hwKey === inp.hwKey) {
+    await 약점(Number(v.rev), buildReport(set, v.answers || {}, who, period, now).items);
   }
-  return { ok: true, kind: out.kind || (res.committed ? 'new' : 'dup'), sub: v, conflicts: Object.keys(out.충돌 || {}) };
+  return { ok: true, kind: out.kind || (res.committed ? 'new' : 'dup'), sub: v, conflicts: Object.keys(out.충돌 || {}), weakPending };
 });
 
 exports.hwStartFresh = onCall({ region: S.REGION }, async (req) => {
@@ -212,7 +239,7 @@ exports.hwStartFresh = onCall({ region: S.REGION }, async (req) => {
   if (!OP_RE.test(String(d.opId || ''))) throw new HttpsError('invalid-argument', 'BAD-INPUT:opId');
   const { sid, who } = await 학생과줄(req);
   checkKeys(sid, d.key, d.hwKey, who.year);
-  const inp = { opId: String(d.opId), now: new Date().toISOString(), hwKey: String(d.hwKey) };
+  const inp = { opId: String(d.opId), now: new Date().toISOString(), at: Date.now(), hwKey: String(d.hwKey) };
   const out = {};
   const ref = admin.database().ref(ROOT + '/submissions/' + d.key);
   const res = await ref.transaction(cur => freshStep(cur, inp, out), undefined, false);
@@ -220,4 +247,4 @@ exports.hwStartFresh = onCall({ region: S.REGION }, async (req) => {
   return { ok: true, kind: out.kind || 'dup', sub: res.snapshot.val() || { answers: {}, submitted: false, submitTime: null } };
 });
 
-exports._internals = { detectWeakAreas, mergeAnswers, buildReport, submitStep, freshStep, checkKeys, checkAnswers };
+exports._internals = { detectWeakAreas, mergeAnswers, buildReport, submitStep, freshStep, checkKeys, checkAnswers, 본작업, OPS_KEEP };
