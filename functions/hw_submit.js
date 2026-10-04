@@ -93,6 +93,54 @@ function checkKeys(sid, key, hwKey, year) {
   return { period: { year: Number(m[1]), month: Number(m[2]), week: Number(m[3]) }, setIdx: Number(m[4]) };
 }
 
+// ── [점검 10-05 F6] 이 아이에게 **걸린** 숙제인가 — 화면 hwLookupKey + visibleHw 와 **같은 규칙**으로 고른다
+//   (functions/화면시험/배정고르기_같은가.test.js 가 화면과 같은지 지킨다 · 설계 docs/설계_F6_배정확인_1005.md)
+//   ① 반이 있고 반 칸이 DB 에 있으면(반 칸막이 _placeholder 포함) → 반 열쇠만
+//   ② 아니면 공통 열쇠만 · ③ 고른 칸이 published === false 면 비공개
+//   개인 배정이 있는 주의 그룹 제출은 막지 않는다(원장 결정 10-05 ㉢ — 화면이 이미 안 보여 준다).
+//   반을 옮긴 뒤의 옛 반 제출 · 비공개 숙제 제출은 거절(㉠㉡) — 화면이 답을 교사 「⚠ 확인」에 남긴다.
+// ⛔ ASSIGN_ENFORCE=false 동안은 **기록만**(sol_v4/ops/assignWarn) — 3일 지켜보고 0건이면 true 로(㉣).
+const ASSIGN_ENFORCE = false;
+const 막기켜짐 = () => ASSIGN_ENFORCE || process.env.HW_ASSIGN_ENFORCE === '1';   // 환경 변수는 시험용
+function 배정후보(who, period) {
+  const c = who.country || 'AU', g = who.group || '';
+  const 꼬리 = '_' + period.year + '_m' + String(period.month).padStart(2, '0') + '_w' + period.week;
+  return { 반: g ? c + '_y' + who.year + '-' + g + 꼬리 : null, 공통: c + '_y' + who.year + 꼬리 };
+}
+/** 순수 — 칸(k) = { exists, published } 를 주면 { key, why } · why: null | 'NOT-PUBLISHED' | 'NO-HW' */
+function 배정고르기(who, period, 칸) {
+  const { 반, 공통 } = 배정후보(who, period);
+  const key = (반 && 칸(반).exists) ? 반 : (칸(공통).exists ? 공통 : null);
+  if (!key) return { key: null, why: 'NO-HW' };
+  if (칸(key).published === false) return { key, why: 'NOT-PUBLISHED' };
+  return { key, why: null };
+}
+/** 보낸 hwKey 를 판정 — null(통과) | 'NOT-ASSIGNED' | 'NOT-PUBLISHED' */
+function 배정판정(고름, hwKey) {
+  if (!고름.key || 고름.key !== hwKey) return 'NOT-ASSIGNED';
+  return 고름.why === 'NOT-PUBLISHED' ? 'NOT-PUBLISHED' : null;
+}
+/** DB 에서 칸 둘(반·공통)을 작게 읽어(통째로 안 읽는다 — 그림 때문에 수백 KB) 판정하고, 막기/기록한다. */
+async function 배정확인(fn, sid, who, period, key, hwKey) {
+  const db = admin.database();
+  const 후보 = 배정후보(who, period);
+  const 정보 = {};
+  await Promise.all([후보.반, 후보.공통].filter(Boolean).map(async (k) => {
+    const [있음, 공개] = await Promise.all([
+      db.ref(ROOT + '/homeworkSets/' + k).orderByKey().limitToFirst(1).once('value').then(s => s.exists()),
+      db.ref(ROOT + '/homeworkSets/' + k + '/published').once('value').then(s => s.val()),
+    ]);
+    정보[k] = { exists: 있음, published: 공개 };
+  }));
+  const 고름 = 배정고르기(who, period, (k) => 정보[k] || { exists: false, published: null });
+  const 판정 = 배정판정(고름, hwKey);
+  if (!판정) return;
+  const 막음 = 막기켜짐();
+  console.warn('[' + fn + '] 배정 아님(' + 판정 + (막음 ? ' · 거절' : ' · 기록만') + '):', sid, key, hwKey, '→', 고름.key);
+  await db.ref('sol_v4/ops/assignWarn').push({ fn, sid, key, hwKey, expect: 고름.key || null, why: 판정, enforced: 막음, at: Date.now() }).catch(() => {});
+  if (막음) throw new HttpsError('permission-denied', 판정);
+}
+
 /** 서버 답 + 기기 답 → 최종 답 · 남길 충돌. sent = 이 기기가 전에 서버에 보낸 값. */
 function mergeAnswers(server, device, sent) {
   const 최종 = Object.assign({}, server || {});
@@ -208,7 +256,8 @@ exports.hwSubmit = onCall({ region: S.REGION }, async (req) => {
   const { sid, who } = await 학생과줄(req);
   const { period, setIdx } = checkKeys(sid, d.key, d.hwKey, who.year);
   const answers = checkAnswers(d.answers), sent = checkAnswers(d.sent);
-  const set = (await admin.database().ref(ROOT + '/homeworkSets/' + d.hwKey + '/sets/' + setIdx).once('value')).val();
+  await 배정확인('hwSubmit', sid, who, period, String(d.key), String(d.hwKey));
+  const set =(await admin.database().ref(ROOT + '/homeworkSets/' + d.hwKey + '/sets/' + setIdx).once('value')).val();
   if (!set) throw new HttpsError('not-found', 'NO-SET');
   const now = new Date().toISOString();
   const inp = { opId: String(d.opId), answers, sent, set, who, period, now, at: Date.now(), hwKey: String(d.hwKey) };
@@ -238,8 +287,9 @@ exports.hwStartFresh = onCall({ region: S.REGION }, async (req) => {
   const d = req.data || {};
   if (!OP_RE.test(String(d.opId || ''))) throw new HttpsError('invalid-argument', 'BAD-INPUT:opId');
   const { sid, who } = await 학생과줄(req);
-  checkKeys(sid, d.key, d.hwKey, who.year);
-  const inp = { opId: String(d.opId), now: new Date().toISOString(), at: Date.now(), hwKey: String(d.hwKey) };
+  const { period } = checkKeys(sid, d.key, d.hwKey, who.year);
+  await 배정확인('hwStartFresh', sid, who, period, String(d.key), String(d.hwKey));
+  const inp = { opId: String(d.opId), now:new Date().toISOString(), at: Date.now(), hwKey: String(d.hwKey) };
   const out = {};
   const ref = admin.database().ref(ROOT + '/submissions/' + d.key);
   const res = await ref.transaction(cur => freshStep(cur, inp, out), undefined, false);
@@ -247,4 +297,4 @@ exports.hwStartFresh = onCall({ region: S.REGION }, async (req) => {
   return { ok: true, kind: out.kind || 'dup', sub: res.snapshot.val() || { answers: {}, submitted: false, submitTime: null } };
 });
 
-exports._internals = { detectWeakAreas, mergeAnswers, buildReport, submitStep, freshStep, checkKeys, checkAnswers, 본작업, OPS_KEEP };
+exports._internals = { detectWeakAreas, mergeAnswers, buildReport, submitStep, freshStep, checkKeys, checkAnswers, 본작업, OPS_KEEP, 배정후보, 배정고르기, 배정판정 };

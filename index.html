@@ -3249,11 +3249,16 @@ function _hwSubmitApply(key, res) {
 }
 /** 서버 명령 실패 — 인터넷·세션 문제면 줄에 남기고('kept'), 거절이면 「확인 필요」에 남긴 뒤 지운다('dropped'). */
 function _hwSubmitFailed(줄열쇠, e) {
-  const 코드 = String((e && (e.code || e.message)) || '');
+  let 코드 = String((e && (e.code || e.message)) || '');
   const 남김 = /unavailable|deadline|timeout|TIMEOUT|internal|unauthenticated|network|NO-FIREBASE|offline|Failed to fetch/i.test(코드);
   if (남김) { _notifySaveWaiting(); return 'kept'; }
-  console.error('[hwSubmit] 서버가 거절:', 코드);
-  showBackupToast('⚠️ 제출을 서버가 받지 않았습니다(' + 코드 + ') — 선생님께 알려 주세요.');
+  console.error('[hwSubmit] 서버가 거절:', 코드, e && e.message);
+  // [점검 10-05 F6] 이 아이에게 걸린 숙제가 아니거나(반 이동 등) 비공개로 바뀐 숙제 — 답은 아래에서 교사 「⚠ 확인」에 남긴다
+  const 배정 = /NOT-ASSIGNED|NOT-PUBLISHED/.exec(String((e && e.message) || ''));
+  if (배정) 코드 = 배정[0];
+  showBackupToast(배정
+    ? '⚠️ 이 숙제는 지금 제출할 수 없어요(숙제가 바뀌었거나 닫혔어요). 답은 선생님께 전달됩니다 — 선생님께 알려 주세요.'
+    : '⚠️ 제출을 서버가 받지 않았습니다(' + 코드 + ') — 선생님께 알려 주세요.');
   if (줄열쇠) {
     let 일 = null; try { 일 = JSON.parse(localStorage.getItem(줄열쇠)); } catch (_) {}
     const d = 일 && 일.data;
@@ -8746,8 +8751,11 @@ function startFreshSet(idx) {
     qIdx = 0;
     startSet(idx, {withCountdown:true});
   }).catch(e => {
-    console.warn('[hwStartFresh] 실패:', e && (e.code || e.message));
-    showBackupToast('⚠️ 새로 시작하지 못했습니다. 인터넷 확인 후 다시 해 주세요.');
+    console.warn('[hwStartFresh] 실패:', e && (e.code || e.message), e && e.message);
+    // [점검 10-05 F6] 이 아이에게 걸린 숙제가 아니거나 닫힌 숙제 — 인터넷 탓이 아니다
+    showBackupToast(/NOT-ASSIGNED|NOT-PUBLISHED/.test(String((e && e.message) || ''))
+      ? '⚠️ 이 숙제는 지금 시작할 수 없어요(숙제가 바뀌었거나 닫혔어요). 새로고침해 보고, 그래도 안 되면 선생님께 알려 주세요.'
+      : '⚠️ 새로 시작하지 못했습니다. 인터넷 확인 후 다시 해 주세요.');
   });
 }
 
