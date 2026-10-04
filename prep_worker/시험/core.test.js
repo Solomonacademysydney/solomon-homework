@@ -85,14 +85,19 @@ const 쪽 = [{ text: 'Part A 1. What [m001] 2. Work [m002]', ink: 0.05 }, { text
 재기('학생용에 해설 글이 있으면 정답 노출로 잡는다', !C.checkPdfText([{ text: 'x [m001] because six eighths plus one eighth', ink: .1 }], ['m001'], ['because six eighths plus one eighth']).ok);
 
 console.log('\n── 드라이브 보관 자리');
+console.log('── 드라이브 폴더 = 월/W주차/날짜(요일)/학생 (10-04 원장)');
+재기('주차 = 홈페이지 숙제 칸과 같은 셈(목요일이 든 달) — 10/5 = 10월 W2 · 9/28 = 10월 W1 · 10/9 금요일도 W2', JSON.stringify(C.periodOfYmd('2026-10-05')) === '{"year":2026,"month":10,"week":2}' && C.periodOfYmd('2026-09-28').week === 1 && C.periodOfYmd('2026-09-28').month === 10 && C.periodOfYmd('2026-10-09').week === 2);
+재기('날짜 폴더에 요일', C.dateFolder('2026-10-05') === '2026-10-05(월)' && C.dateFolder('2026-10-09') === '2026-10-09(금)');
+재기('수업 폴더 = 2026-10/W2/2026-10-05(월)/별이', C.lessonDir('2026-10-05', '별이') === '2026-10/W2/2026-10-05(월)/별이', C.lessonDir('2026-10-05', '별이'));
+재기('폴더 이름 → 날짜 (요일 있어도·없어도)', C.ymdOfFolder('2026-10-05(월)') === '2026-10-05' && C.ymdOfFolder('2026-10-05') === '2026-10-05' && C.ymdOfFolder('W2') === null);
 const ap = C.archivePlan('C:/tmp/보관/', '유준', '2026-10-06', [{ kind: 'test', local: 'a.pdf', sha256: 'x' }, { kind: 'teacher', local: 'b.pdf' }]);
-재기('학생/수업일/날짜_종류.pdf', ap[0].to === 'C:/tmp/보관/유준/2026-10-06/2026-10-06_테스트지.pdf' && ap[1].to.endsWith('교사용_답지.pdf'));
+재기('학생/수업일/날짜_종류.pdf', ap[0].to === 'C:/tmp/보관/2026-10/W2/2026-10-06(화)/유준/2026-10-06_테스트지.pdf' && ap[1].to.endsWith('교사용_답지.pdf'));
 재기('이름의 금지 글자는 바꾼다', C.safeName('a/b:c') === 'a_b_c');
 
 console.log('\n── 드라이브 저장(10-01 방향 바꿈: 저장소 대신 드라이브)');
 {
   const d = C.driveDest('C:/tmp/교재/', '민아', { lessonDate: '2026-10-06', rev: 2 }, false);
-  재기('학생/수업일/판 폴더', d.dir === 'C:/tmp/교재/민아/2026-10-06/판2' && d.rel === '민아/2026-10-06/판2', JSON.stringify(d));
+  재기('월/W주차/날짜(요일)/학생/판 폴더', d.dir === 'C:/tmp/교재/2026-10/W2/2026-10-06(화)/민아/판2' && d.rel === '2026-10/W2/2026-10-06(화)/민아/판2', JSON.stringify(d));
   재기('표본은 폴더에 「표본」 표시', C.driveDest('C:/r', '민아', { lessonDate: '2026-10-06', rev: 1 }, true).dir.endsWith('/판1_표본'));
   const n = C.driveFileName('민아', { lessonDate: '2026-10-06', rev: 2 }, 'teacher', 'pdf');
   재기('파일 이름 = 날짜_학생_판_종류(드라이브 검색으로 하나만 찾히게)', n === '2026-10-06_민아_판2_교사용답지.pdf', n);

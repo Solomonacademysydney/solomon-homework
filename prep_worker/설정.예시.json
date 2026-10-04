@@ -43,7 +43,10 @@
   },
   "output": "drive",
   "drive": {
+    "base": "G:/내 드라이브/Solomon_교재보관",
+    "_base": "교재 자리(10-04 원장): <base>/<YYYY-MM>/W<주차>/<수업일(요일)>/<학생>/판N · 프로젝트 결과물도 같은 폴더",
     "root": "G:/내 드라이브/Solomon_교재보관/학생별 교재",
+    "_root": "옛 자리(10-04 전) — 이제 안 씀, base 가 없을 때만 그 위 폴더를 base 로 삼는다",
     "curriculumRoot": "G:/내 드라이브/Solomon_교재보관/학생별 커리"
   }
 }

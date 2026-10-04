@@ -603,6 +603,14 @@
    * o = { student:{id,name,year}, lessonDate, settings, lesson(커리의 그 수업 · 없으면 null), index(툴체인 색인) }
    * → 대화창에 붙여 넣을 한국어 글
    */
+  /** [10-04 원장] 드라이브 수업 폴더 = <YYYY-MM>/W<주차>/<수업일(요일)>/<학생> — 주차는 숙제 칸과 같은 셈(periodOfDate) · prep_worker/core.lessonDir 와 같은 모양 */
+  function 수업폴더(ymd, 학생) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(ymd || ''));
+    const 이름 = String(학생 || '').replace(/[\/:*?"<>|]/g, '_').trim() || '이름없음';
+    if (!m) return String(ymd || '').slice(0, 7) + '/W?/' + ymd + '/' + 이름;
+    const day = new Date(+m[1], +m[2] - 1, +m[3], 12), p = periodOfDate(day);
+    return p.year + '-' + String(p.month).padStart(2, '0') + '/W' + p.week + '/' + ymd + '(' + '일월화수목금토'[day.getDay()] + ')/' + 이름;
+  }
   function projectRequest(o) {
     const u = o.student || {}, s = o.settings || {}, 날 = o.lessonDate || '';
     const 영문 = 학생영문[u.id] || u.id, 트랙 = 학생트랙[u.id] || '(트랙 모름)', 학년 = 'Y' + (u.year || '?');
@@ -632,14 +640,14 @@
     if (s.composition) 줄.push('  - 계산기 ' + s.composition.calculatorPct + '% · 도형 ' + (s.composition.figures === 'exclude' ? '빼기' : '넣기'));
     줄.push('');
     줄.push('■ 저장 (꼭)');
-    줄.push('  - 결과물은 드라이브 Solomon_교재보관/' + 날.slice(0, 7) + '/<만든 날짜 YYYY-MM-DD>/ 에 넣어 주세요.');
+    줄.push('  - 결과물은 드라이브 Solomon_교재보관/' + 수업폴더(날, u.driveFolder || u.koName || u.name || 영문) + '/ 에 넣어 주세요 (월 › W주차 › 수업일(요일) › 학생 폴더 · 그 수업의 다른 교재와 한곳에).');
     줄.push('  - 파일 이름에 학생 영어 이름 「' + 영문 + '」를 꼭 넣어 주세요(예: …_' + 영문 + '_questions.json · …_' + 영문 + '_answers.json · …_' + 영문 + '_….pdf). 수업 준비 화면이 이 이름으로 주인을 알아봅니다.');
     줄.push('  - 툴체인이 바뀌면 새 판을 드라이브 _툴체인 에 저장하고 무결성 표를 갱신해 주세요.');
     return 줄.join('\n');
   }
 
   const PrepCore = {
-    projectRequest, 학생영문, 학생트랙,
+    projectRequest, 학생영문, 학생트랙, 수업폴더,
     toolchainMatches, 기술열쇠,
     affectedAreas,
     요일말, ymd, parseYmd, addDays, periodOfDate, periodKey, samePeriod,

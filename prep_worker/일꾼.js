@@ -220,9 +220,10 @@ class 처리 {
   /** 드라이브(G: 동기화 폴더)에 복사 — 덮어쓰지 않고, 복사 뒤 다시 읽어 해시 확인. 같은 파일이 이미 있으면 그대로 */
   드라이브저장(profile, list) {
     const d = (this.cfg.drive || {});
-    if (!d.root) throw new Error('설정 drive.root 가 없습니다');
+    const base = 교재보관(d);
+    if (!base) throw new Error('설정 drive.base(Solomon_교재보관) 가 없습니다');
     const folder = 폴더이름(profile, this.job.studentId);
-    const dest = C.driveDest(d.root, folder, this.job, !!this.opts.sample);
+    const dest = C.driveDest(base, folder, this.job, !!this.opts.sample);
     fs.mkdirSync(dest.dir, { recursive: true });
     return list.map(f => {
       const buf = fs.readFileSync(f.local), h = C.sha256(buf), name = C.driveFileName(folder, this.job, f.kind, f.ext, !!this.opts.sample);
@@ -335,8 +336,13 @@ class 처리 {
     // 원본 JSON 은 드라이브에 있다 — 해시로 같은 파일인지 확인
     const f = (src.files || []).find(x => x.kind === 'items');
     if (!f) throw new 멈춤('bad-plan', '원래 초안에 원본 JSON 이 없음');
-    const 원본길 = path.join((this.cfg.drive || {}).root || '', f.rel || '', f.name || '');
-    if (!fs.existsSync(원본길)) throw new 멈춤('bad-plan', '원본 JSON 을 못 찾음: ' + 원본길);
+    // [10-04] 새 자리(base/월/W주차/날짜(요일)/학생/판N) 먼저 · 옛 초안(rel = 학생/수업일/판N)은 옮긴 자리 → 옛 자리 순으로 찾는다
+    const d = this.cfg.drive || {}, base = 교재보관(d), 판폴더 = path.basename(String(f.rel || ''));
+    const 후보 = [path.join(base, f.rel || '', f.name || ''),
+      path.join(base, C.lessonDir(j.lessonDate, 폴더이름(profile, j.studentId)), 판폴더, f.name || ''),
+      d.root ? path.join(d.root, f.rel || '', f.name || '') : null].filter(Boolean);
+    const 원본길 = 후보.find(q => fs.existsSync(q));
+    if (!원본길) throw new 멈춤('bad-plan', '원본 JSON 을 못 찾음: ' + 후보[0]);
     const buf = fs.readFileSync(원본길);
     if (C.sha256(buf) !== f.sha256) throw new 멈춤('bad-plan', '원본 JSON 해시가 초안 기록과 다름');
     const 옛 = JSON.parse(buf.toString('utf8'));
@@ -540,7 +546,7 @@ async function 학교자료찾기(cfg, fb) {
  *   ⛔ 툴체인 정본(드라이브)은 읽기만 한다. 푼 사본은 C:/솔로몬제작/toolchain_latest.
  */
 async function 툴체인챙기기(cfg, fb, force) {
-  const 바탕 = path.dirname(String((cfg.drive || {}).root || ''));
+  const 바탕 = 교재보관(cfg.drive);
   const t = Object.assign({ latest: path.join(바탕, '_툴체인', 'solomon_toolchain_latest.tar.xz'), dir: 'C:/솔로몬제작/toolchain_latest',
     index: 'C:/솔로몬제작/툴체인_색인.json', state: 'C:/솔로몬제작/툴체인_상태.json' }, cfg.toolchain || {});
   if (!fs.existsSync(t.latest)) return { skipped: '툴체인 파일 없음' };
@@ -566,44 +572,69 @@ async function 툴체인챙기기(cfg, fb, force) {
   return { rev, 단원수: units.length };
 }
 
+/** 설정 drive.base(Solomon_교재보관). 옛 설정(root = …/학생별 교재)만 있으면 그 위 폴더 */
+function 교재보관(d) { d = d || {}; if (d.base) return String(d.base).replace(/[\\/]+$/, ''); return d.root ? path.dirname(String(d.root).replace(/[\\/]+$/, '')) : ''; }
+
 /**
- * [10-02] 프로젝트 결과물 찾기 — 원장님이 프로젝트에서 만든 교재를 드라이브 `Solomon_교재보관/<YYYY-MM>/<YYYY-MM-DD>/` 에
- *   저장하면, 그 폴더의 플랫폼 숙제 JSON(…_questions.json + …_answers.json)을 홈페이지 꼴로 바꿔(mr_변환 = 홈페이지와 같은 규칙)
- *   sol_prep_v1/imports/<id> 에 올린다. 같은 폴더의 PDF 이름도 함께 — 「검토·공개」에서 원장이 「이 수업으로 등록」한다.
+ * [10-02] 프로젝트 결과물 찾기 — 원장님이 프로젝트에서 만든 교재를 드라이브에 저장하면, 그 폴더의 플랫폼 숙제 JSON(…_questions.json
+ *   + …_answers.json)을 홈페이지 꼴로 바꿔(mr_변환 = 홈페이지와 같은 규칙) sol_prep_v1/imports/<id> 에 올린다.
+ *   같은 폴더의 PDF 이름도 함께 — 「검토·공개」에서 원장이 「이 수업으로 등록」한다.
+ *   [10-04 원장] 새 자리 = `Solomon_교재보관/<YYYY-MM>/W<n>/<수업일 YYYY-MM-DD(요일)>/<학생 폴더>/` — 학생 폴더가 주인을 말해 준다(driveFolders).
+ *   옛 자리 `<YYYY-MM>/<만든 날 YYYY-MM-DD>/` 도 당분간 같이 본다(id 셈은 옛 그대로라 두 번 올리지 않는다).
  *   ⛔ 드라이브는 읽기만 · 일꾼은 imports 에 새로 적기만(규칙) · 등록·공개는 원장(서버 함수)
  */
 async function 결과물찾기(cfg, fb) {
-  const 바탕 = path.dirname(String((cfg.drive || {}).root || ''));
+  const 바탕 = 교재보관(cfg.drive);
   if (!바탕 || !fs.existsSync(바탕)) return { skipped: '교재보관 폴더 없음' };
   const 며칠 = (cfg.importDays || 30), 끝 = new Date(Date.now() - 며칠 * 86400000).toISOString().slice(0, 10);
   const 상태파일 = cfg.importState || 'C:/솔로몬제작/결과물_상태.json';
   const 본 = fs.existsSync(상태파일) ? JSON.parse(fs.readFileSync(상태파일, 'utf8')) : {};
   const 올림 = [], 실패 = [];
+  let 연결 = null;   // driveFolders(폴더 이름 → 학생 id) — 새 자리에서만 쓴다(한 번만 읽음)
+  const 자리들 = [];   // { 폴더, rel, 날, 학생폴더, 새것 }
+  const 디렉 = (p) => { try { return fs.statSync(p).isDirectory(); } catch (e) { return false; } };
   for (const 달 of fs.readdirSync(바탕).filter(x => /^\d{4}-\d{2}$/.test(x)).sort()) {
-    for (const 날 of fs.readdirSync(path.join(바탕, 달)).filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x) && x >= 끝).sort()) {
-      const 폴더 = path.join(바탕, 달, 날);
-      if (!fs.statSync(폴더).isDirectory()) continue;
+    for (const x of fs.readdirSync(path.join(바탕, 달)).sort()) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(x) && x >= 끝 && 디렉(path.join(바탕, 달, x))) 자리들.push({ 폴더: path.join(바탕, 달, x), rel: 달 + '/' + x, 날: x, 학생폴더: null, 새것: false });
+      else if (/^W\d{1,2}$/.test(x) && 디렉(path.join(바탕, 달, x))) {
+        for (const 날폴더 of fs.readdirSync(path.join(바탕, 달, x)).sort()) {
+          const 날 = C.ymdOfFolder(날폴더);
+          if (!날 || 날 < 끝 || !디렉(path.join(바탕, 달, x, 날폴더))) continue;
+          for (const 학생 of fs.readdirSync(path.join(바탕, 달, x, 날폴더)).sort()) {
+            const p = path.join(바탕, 달, x, 날폴더, 학생);
+            if (디렉(p)) 자리들.push({ 폴더: p, rel: 달 + '/' + x + '/' + 날폴더 + '/' + 학생, 날, 학생폴더: 학생, 새것: true });
+          }
+        }
+      }
+    }
+  }
+  for (const 자리 of 자리들) {
+    const { 폴더, rel, 날 } = 자리;
+    {
       const 이름들 = fs.readdirSync(폴더);
       const pdf = 이름들.filter(n => /\.pdf$/i.test(n));
       for (const 짝 of C.pairJson(이름들)) {
         const qp = path.join(폴더, 짝.questions), 크기 = fs.statSync(qp).size;
-        const id = C.sha256(달 + '/' + 날 + '/' + 짝.questions + '|' + 크기).slice(0, 16);
+        // 옛 자리 id = 달/날/이름|크기(그대로) · 새 자리 id = 이름|크기(폴더를 옮겨도 같은 id → 다시 안 올린다)
+        const id = C.sha256((자리.새것 ? 'v2|' : rel + '/') + 짝.questions + '|' + 크기).slice(0, 16);
         if (본[id]) continue;
+        if (자리.새것 && 연결 === null) { try { 연결 = (await fb.get(ROOT + '/driveFolders')) || {}; } catch (e) { 연결 = {}; } }
         const outp = path.join(cfg.workRoot, '_결과물', id + '.json');
         fs.mkdirSync(path.dirname(outp), { recursive: true });
         const r = spawnSync(cfg.python || 'python', [path.join(__dirname, '결과물_변환.py'), cfg.tsRoot || 'C:/TS작업', qp, 짝.answers ? path.join(폴더, 짝.answers) : '', outp],
           { encoding: 'utf8', env: Object.assign({}, process.env, { PYTHONUTF8: '1' }) });
         if (r.status !== 0 || !fs.existsSync(outp)) { 실패.push(짝.questions + ': ' + (r.stderr || '').slice(-200)); continue; }
         const 변환 = JSON.parse(fs.readFileSync(outp, 'utf8'));
-        const 주인 = C.guessStudents(짝.questions, cfg.importNames);
-        const 자료 = { folder: 달 + '/' + 날, folderDate: 날, questions: 짝.questions, answers: 짝.answers, size: 크기,
-          students: 주인, files: pdf.map(n => ({ name: n, students: C.guessStudents(n, cfg.importNames) })),
+        const 폴더주인 = 자리.새것 && 연결 && 연결[자리.학생폴더] ? [String(연결[자리.학생폴더])] : null;
+        const 주인 = 폴더주인 || C.guessStudents(짝.questions, cfg.importNames);
+        const 자료 = { folder: rel, folderDate: 날, lessonDate: 자리.새것 ? 날 : null, studentFolder: 자리.학생폴더, questions: 짝.questions, answers: 짝.answers, size: 크기,
+          students: 주인, files: pdf.map(n => ({ name: n, students: 폴더주인 || C.guessStudents(n, cfg.importNames) })),
           ok: 변환.ok === true, problems: 변환.ok ? null : (변환.problems || []).slice(0, 30), setSizes: 변환.ok ? 변환.sets.map(x => x.questions.length) : null,
           count: 변환.count || 0, status: 'new', foundAt: iso(), worker: cfg.workerId };
         try { if (변환.ok) await fb.put(ROOT + '/importSets/' + id, 변환.sets); await fb.put(ROOT + '/imports/' + id, 자료); }
         catch (e) { if (e.status === 401 || e.status === 403) { 본[id] = '이미 있음'; continue; } throw e; }
-        본[id] = 날 + ' ' + 짝.questions; 올림.push(짝.questions);
-        주소대기에(cfg, pdf.map(n => ({ name: n, parent: 날 })));
+        본[id] = rel + ' ' + 짝.questions; 올림.push(짝.questions);
+        주소대기에(cfg, pdf.map(n => ({ name: n, parent: path.basename(폴더) })));
       }
     }
   }

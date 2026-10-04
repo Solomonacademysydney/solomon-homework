@@ -52,7 +52,7 @@ function 설정(이름, 덧) {
   return Object.assign({ mode: 'semi', backend: 'fake', allowApi: false, models: { generate: 'opus', verify: 'opus', format: 'haiku' }, maxTokensPerJob: 100000,
     estimatePerCall: {}, batchSize: 12, maxRounds: 2, workRoot: path.join(바탕, 이름, '일감'), logFile: path.join(바탕, 이름, '기록.jsonl'),
     candidatesFile: path.join(바탕, 이름, '후보.jsonl'), coreDir: 'C:/솔로몬제작/toolchain_core', tsRoot: 'C:/TS작업', python: 'python', edge: EDGE,
-    heartbeatSec: 60, workerId: 'PC-A', idWaitFile: path.join(바탕, 이름, '주소대기.json'), importState: path.join(바탕, 이름, '결과물상태.json'), output: 'drive', drive: { root: path.join(바탕, 이름, '학생별 교재'), curriculumRoot: path.join(바탕, '찾기없음') }, firebase: { emulator: true, dbUrl: 'http://' + DB, ns: 'demo-solomon', bucket: 'demo-solomon.appspot.com',
+    heartbeatSec: 60, workerId: 'PC-A', idWaitFile: path.join(바탕, 이름, '주소대기.json'), importState: path.join(바탕, 이름, '결과물상태.json'), output: 'drive', drive: { base: path.join(바탕, 이름, '교재보관'), curriculumRoot: path.join(바탕, '찾기없음') }, firebase: { emulator: true, dbUrl: 'http://' + DB, ns: 'demo-solomon', bucket: 'demo-solomon.appspot.com',
       storageBase: 'http://' + ST, authBase: 'http://' + AUTH, apiKey: 'demo-key', uid: 'ts-worker' } }, 덧 || {});
 }
 function 작은설정() {
@@ -122,9 +122,9 @@ async function 주문(날, s) {
   재기('초안: 공개 아님 · 교재 검토 상태 · 판·학생 맞음', d1.published === false && d1.status === 'paperReview' && d1.planRev === 1 && d1.studentId === 'emu5');
   const 파일 = Object.fromEntries((d1.files || []).map(f => [f.kind, f]));
   재기('PDF 5종(테스트지·교재·숙제·학생용 전체·교사용 답지) + 원본 JSON·검수 기록', ['test', 'book', 'hw', 'student', 'teacher', 'items', 'qa'].every(k => 파일[k]), Object.keys(파일).join(','));
-  재기('드라이브 학생/수업일/판 폴더 · 날짜_학생_판_종류 이름', d1.files.every(f => f.where === 'drive' && f.rel === '시험오/2026-10-06/판1' && f.name.startsWith('2026-10-06_시험오_판1_'))
+  재기('드라이브 학생/수업일/판 폴더 · 날짜_학생_판_종류 이름', d1.files.every(f => f.where === 'drive' && f.rel === '2026-10/W2/2026-10-06(화)/시험오/판1' && f.name.startsWith('2026-10-06_시험오_판1_'))
     && 파일.teacher.name.endsWith('_교사용답지.pdf') && 파일.student.name.endsWith('_학생용전체.pdf') && 파일.items.name.endsWith('_원본.json'), JSON.stringify(d1.files.map(f => f.rel + '/' + f.name)));
-  재기('드라이브(임시 폴더)에 실제로 있고 다시 읽은 해시 = 기록한 해시', d1.files.every(f => { const q = path.join(cA.drive.root, f.rel, f.name); return fs.existsSync(q) && C.sha256(fs.readFileSync(q)) === f.sha256; }));
+  재기('드라이브(임시 폴더)에 실제로 있고 다시 읽은 해시 = 기록한 해시', d1.files.every(f => { const q = path.join(cA.drive.base, f.rel, f.name); return fs.existsSync(q) && C.sha256(fs.readFileSync(q)) === f.sha256; }));
   재기('저장소(Storage) 자리는 안 씀 — 파일 기록에 저장소 경로가 없다', d1.files.every(f => !f.path && !f.downloadToken));
   재기('검사: 학생용 전체에 칸 수만큼 문항 · 쪽 있음', d1.qa.ok && d1.qa.files.student.count === 칸.length && d1.qa.files.student.pages >= 3, JSON.stringify(d1.qa));
   재기('작업 기록: 토큰·실제 모델(생성·검증 opus · 설정대로)', 끝.w.usage.tokens > 0 && JSON.stringify(끝.w.models.generate) === '["claude-opus-fake"]' && JSON.stringify(끝.w.models.verify) === '["claude-opus-fake"]', JSON.stringify(끝.w.models));
@@ -166,7 +166,7 @@ async function 주문(날, s) {
   const o4 = await 주문('2026-10-20');
   const g4 = 가짜();
   const 막힌자리 = path.join(바탕, '파일이라폴더못만듦'); fs.writeFileSync(막힌자리, 'x');
-  const cD = 설정('이어', { fake: g4.fake }); cD.drive = { root: path.join(막힌자리, '학생별 교재'), curriculumRoot: path.join(바탕, '찾기없음') };
+  const cD = 설정('이어', { fake: g4.fake }); cD.drive = { base: path.join(막힌자리, '교재보관'), curriculumRoot: path.join(바탕, '찾기없음') };
   const r4 = await W.한바퀴(cD, fb, { job: o4.jobId });   // 드라이브에 못 씀(동기화 폴더가 없거나 막힘)
   const j4 = await 값('sol_prep_v1/jobs/' + o4.jobId);
   재기('드라이브 저장 실패 → 다시 대기(queued) · 까닭 기록 · 재시도 1', j4.status === 'queued' && /ENOTDIR|EEXIST|ENOENT/.test(j4.w.lastError) && j4.w.attempts === 1, JSON.stringify(r4) + JSON.stringify(j4.w));
@@ -181,7 +181,7 @@ async function 주문(날, s) {
 
   console.log('\n── 재시도 다 씀 · 재풀이 불일치 · TS 창고 부족');
   const o5 = await 주문('2026-10-27');
-  const cE = 설정('실패', { fake: 가짜().fake }); cE.drive = { root: path.join(막힌자리, '교재'), curriculumRoot: path.join(바탕, '찾기없음') };
+  const cE = 설정('실패', { fake: 가짜().fake }); cE.drive = { base: path.join(막힌자리, '교재'), curriculumRoot: path.join(바탕, '찾기없음') };
   for (let i = 0; i < 3; i++) await W.한바퀴(cE, fb, { job: o5.jobId });
   재기('세 번 실패하면 failed', (await 값('sol_prep_v1/jobs/' + o5.jobId + '/status')) === 'failed');
   const o6 = await 주문('2026-11-03');
@@ -234,7 +234,7 @@ async function 주문(날, s) {
     await W.한바퀴(cR, fb, { job: 요청.jobId, noScan: true });
     const jR = await 값('sol_prep_v1/jobs/' + 요청.jobId);
     const v1 = jR.w && jR.w.resultRef ? await 값('sol_prep_v1/drafts/' + jR.w.resultRef) : null;
-    재기('새 초안(판1_수정1) · 원래 초안을 가리킴 · 원래 초안은 그대로', jR.status === 'done' && v1 && v1.parentDraftId === 종이4 && v1.revision === 1 && v1.files.every(f => f.rel === '시험오/2026-10-20/판1_수정1')
+    재기('새 초안(판1_수정1) · 원래 초안을 가리킴 · 원래 초안은 그대로', jR.status === 'done' && v1 && v1.parentDraftId === 종이4 && v1.revision === 1 && v1.files.every(f => f.rel === '2026-10/W4/2026-10-20(화)/시험오/판1_수정1')
       && (await 값('sol_prep_v1/drafts/' + 종이4 + '/items/' + mr칸.slot + '/answer')) === d4.items[mr칸.slot].answer, JSON.stringify(jR.w) + JSON.stringify(v1 && v1.files && v1.files[0]));
     재기('고친 MR: 답 99 · 원장 고침 표시 · 재풀이와 다르면 「경고」(막지 않음)', v1 && v1.items[mr칸.slot].answer === '99' && v1.manifest.find(m => m.slot === mr칸.slot).verify === 'teacher-edited' && v1.warnings.length === 1, JSON.stringify(v1 && v1.warnings));
     재기('다시 고른 TS 는 다른 문항 · 다른 칸은 문항 id 그대로', v1 && v1.items[ts칸.slot].id !== d4.items[ts칸.slot].id
@@ -273,7 +273,7 @@ async function 주문(날, s) {
       fs.writeFileSync(path.join(폴더, 'Y7_T4_M2_Area_KeyIdeas_EN-KO_2026-09-W4.pdf'), '%PDF');
       fs.writeFileSync(path.join(폴더, 'Y5_W39_questions.json'), JSON.stringify({ questions: [{ set: 'A', number: 1, type: 'SA', question_text: 'x' }] }));   // 주인 모름 · 정답 파일 없음
       const 옛달 = path.join(보관, '2020-01', '2020-01-05'); fs.mkdirSync(옛달, { recursive: true }); fs.copyFileSync(원본 + '/Y7_M2_Area_2026-09-W4_Stella_questions.json', path.join(옛달, 'old_questions.json'));
-      const cI = 설정('결과물', { drive: { root: path.join(보관, '학생별 교재'), curriculumRoot: path.join(바탕, '찾기없음') }, importState: path.join(바탕, '결과물상태.json') });
+      const cI = 설정('결과물', { drive: { base: 보관, curriculumRoot: path.join(바탕, '찾기없음') }, importState: path.join(바탕, '결과물상태.json') });
       const g1 = await W.결과물찾기(cI, fb);
       const 목록 = (await 값('sol_prep_v1/imports')) || {};
       const 별 = Object.values(목록).find(m => /Stella_questions/.test(m.questions));

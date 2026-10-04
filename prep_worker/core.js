@@ -272,17 +272,53 @@ function checkPdfText(pages, expectTags, forbid, opt) {
 
 /* ── 구글 드라이브 보관 자리 ── */
 const safeName = (s) => String(s || '').replace(/[\\/:*?"<>|]/g, '_').trim() || '이름없음';
+/* [10-04 원장] 드라이브는 「월 / W주차 / 날짜(요일) / 학생」 순 — 프로젝트 결과물과 일꾼 판N 이 한 폴더에 모이게.
+   주차 = 홈페이지 숙제 칸과 같은 규칙(functions/release_core.js periodOfYmd 글자째) — 목요일이 든 달로 센다. */
+const 요일글 = ['일', '월', '화', '수', '목', '금', '토'];
+function periodOfYmd(s) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || ''));
+  if (!m) return null;
+  const day = new Date(+m[1], +m[2] - 1, +m[3], 12);
+  const dow = day.getDay();
+  const monday = new Date(day.getFullYear(), day.getMonth(), day.getDate() + (dow === 0 ? -6 : 1 - dow));
+  const thursday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 3);
+  const year = thursday.getFullYear(), month = thursday.getMonth() + 1;
+  let week = 0;
+  for (let d = 1 - 7; d <= 31; d++) {
+    const dt = new Date(year, month - 1, d);
+    if (dt.getDay() !== 1) continue;
+    const thu = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() + 3);
+    if (thu.getFullYear() !== year || thu.getMonth() + 1 !== month) continue;
+    week++;
+    if (dt.getFullYear() === monday.getFullYear() && dt.getMonth() === monday.getMonth() && dt.getDate() === monday.getDate()) return { year, month, week };
+  }
+  return { year, month, week: 1 };
+}
+/** 2026-10-05 → 「2026-10-05(월)」 */
+function dateFolder(ymd) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(ymd || ''));
+  if (!m) return String(ymd || '');
+  return ymd + '(' + 요일글[new Date(+m[1], +m[2] - 1, +m[3], 12).getDay()] + ')';
+}
+/** 「2026-10/W2/2026-10-05(월)/별이」 — Solomon_교재보관 밑 상대 경로 */
+function lessonDir(ymd, studentName) {
+  const p = periodOfYmd(ymd);
+  const 달 = p ? p.year + '-' + String(p.month).padStart(2, '0') : String(ymd || '').slice(0, 7);
+  return 달 + '/W' + (p ? p.week : 1) + '/' + dateFolder(ymd) + '/' + safeName(studentName);
+}
+/** 날짜 폴더 이름(요일이 붙어 있어도) → YYYY-MM-DD, 아니면 null */
+function ymdOfFolder(name) { const m = /^(\d{4}-\d{2}-\d{2})(\([일월화수목금토]\))?$/.exec(String(name || '')); return m ? m[1] : null; }
 function archivePlan(root, studentName, lessonDate, files) {
-  const dir = root.replace(/[\\/]+$/, '') + '/' + safeName(studentName) + '/' + lessonDate;
+  const dir = root.replace(/[\\/]+$/, '') + '/' + lessonDir(lessonDate, studentName);
   const 이름 = { test: '테스트지', book: '교재', hw: '숙제', student: '학생용_전체', teacher: '교사용_답지' };
   return files.map(f => ({ from: f.local, to: dir + '/' + lessonDate + '_' + (이름[f.kind] || f.kind) + '.pdf', sha256: f.sha256 }));
 }
 
 /* ── 구글 드라이브 저장(10-01 원장 결정: 저장소(Storage) 안 씀 · PDF 는 원장만 보고 인쇄) ── */
-/** 학생/수업일/판N(표본이면 판N_표본) */
+/** 월/W주차/날짜(요일)/학생/판N(표본이면 판N_표본) — root = Solomon_교재보관 (10-04 전엔 학생별 교재/학생/수업일/판N) */
 const 판이름 = (job) => '판' + job.rev + (job.revision ? '_수정' + job.revision : '');   // [6단계] 부분 수정은 판N_수정K
 function driveDest(root, folder, job, sample) {
-  const rel = safeName(folder) + '/' + job.lessonDate + '/' + 판이름(job) + (sample ? '_표본' : '');
+  const rel = lessonDir(job.lessonDate, folder) + '/' + 판이름(job) + (sample ? '_표본' : '');
   return { dir: String(root).replace(/[\\/]+$/, '') + '/' + rel, rel };
 }
 const 종류이름 = { test: '테스트지', book: '교재', hw: '숙제', student: '학생용전체', teacher: '교사용답지', items: '원본', qa: '검수기록' };
@@ -341,5 +377,5 @@ function applyMrEdit(it, e) {
   return n;
 }
 
-module.exports = { guessStudents, pairJson, itemsForDraft, applyMrEdit, driveDest, driveFileName, schoolFileNews, KNOWN_TYPES, LEASE_MS, canon, sha256, specHash, draftIdFor, apportion, slotsFromSpec, sampleSlots, valueOf, evalExact, sameAnswer,
+module.exports = { guessStudents, pairJson, itemsForDraft, applyMrEdit, driveDest, driveFileName, schoolFileNews, periodOfYmd, dateFolder, lessonDir, ymdOfFolder, KNOWN_TYPES, LEASE_MS, canon, sha256, specHash, draftIdFor, apportion, slotsFromSpec, sampleSlots, valueOf, evalExact, sameAnswer,
   resolveChoice, checkMrItems, compareSolve, leaseDecision, usageTokens, overCap, itemIdFor, buildManifest, checkPdfText, archivePlan, safeName };
