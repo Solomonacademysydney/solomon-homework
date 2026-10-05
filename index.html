@@ -15601,15 +15601,41 @@ function _emuConnect(fb, doc) {
       _lean = null;
       window._teacherLean = null;
     };
-    const _leanChanged = () => {
+    // ⛔ [10-05 점검] 처음엔 옛 뿌리 구독처럼 _teacherApply(lastModified 비교)로 넘겼다. 그런데 가지별로 받으면
+    //   lastModified 가 **먼저** 도착해 서랍 시각을 올리고, 뒤에 온 숙제 내용(2분 뒤 찾은 새 칸 · 300ms 넘게 늦은 칸)은
+    //   「시각이 같다」며 버려졌다 — 새로고침 전까지 화면에 안 나온다(점검 재현 · 내 에뮬레이터 시험은 끝에
+    //   lastModified 를 한 번 더 올려서 이것을 가렸다).
+    //   ⇒ 시각으로 가리지 않고 **바뀐 가지만** 서랍에 꽂는다(학생 쪽 _scopePatchHw 와 같은 방식).
+    //   내 쓰기는 SDK 가 바로 같은 값을 돌려주므로(낙관적 반영) 꽂아도 서랍과 같다 — 메아리 거르기가 필요 없다.
+    const _leanChanged = (path) => {
       const L = _lean;
       if (!L || !window.fbReady) return;
+      L.dirty.add(path);
       clearTimeout(L.tick);                               // 한꺼번에 여러 가지가 바뀌면 한 번만
       L.tick = setTimeout(() => {
         if (_lean !== L) return;
+        const 바뀐것 = [...L.dirty];
+        L.dirty.clear();
         _noteAllHomeworkKeys(L.data);
-        _teacherApply(L.data);
+        _leanPatch(L, 바뀐것);
       }, 300);
+    };
+    const _leanPatch = (L, paths) => {
+      const raw = _rawLocalStore();
+      if (!raw) { _persistLocalStore(L.data); return; }
+      const local = JSON.parse(raw);
+      for (const p of paths) {
+        if (p.startsWith('homeworkSets/')) {
+          const k = p.slice('homeworkSets/'.length);
+          const v = L.data.homeworkSets[k];
+          local.homeworkSets = local.homeworkSets || {};
+          if (v == null) delete local.homeworkSets[k]; else local.homeworkSets[k] = v;
+        } else {
+          const v = L.data[p];
+          if (v == null) delete local[p]; else local[p] = v;
+        }
+      }
+      _persistLocalStore(local);
     };
     const _leanListen = (L, path, put) => new Promise((res, rej) => {
       let first = true;
@@ -15618,7 +15644,7 @@ function _emuConnect(fb, doc) {
         if (_lean !== L) { if (first) { first = false; res(); } return; }
         put(snap.val());
         if (first) { first = false; res(); return; }
-        _leanChanged();
+        _leanChanged(path);
       }, err => { if (first) { first = false; rej(err); } });
       L.listeners.push({ ref, cb });
     });
@@ -15643,10 +15669,13 @@ function _emuConnect(fb, doc) {
     const _leanPoll = async (L) => {
       const [top, hw] = await Promise.all([_dbShallowKeys(''), _dbShallowKeys('homeworkSets')]);
       if (_lean !== L) return;
-      const jobs = [];
-      if (top) for (const k of top) if (k !== 'homeworkSets' && k !== 'claudeApiKey' && !L.topOn.has(k)) jobs.push(_leanTop(L, k));
-      if (hw) for (const k of _leanWanted(hw)) if (!L.hwOn.has(k)) jobs.push(_leanHw(L, k));
-      if (jobs.length) { await Promise.all(jobs); _leanChanged(); }
+      const jobs = [], 새것 = [];
+      if (top) for (const k of top) if (k !== 'homeworkSets' && k !== 'claudeApiKey' && !L.topOn.has(k)) { 새것.push(k); jobs.push(_leanTop(L, k)); }
+      if (hw) for (const k of _leanWanted(hw)) if (!L.hwOn.has(k)) { 새것.push('homeworkSets/' + k); jobs.push(_leanHw(L, k)); }
+      if (!jobs.length) return;
+      await Promise.all(jobs);
+      if (_lean !== L) return;
+      for (const p of 새것) _leanChanged(p);               // 새로 들은 칸의 **첫 값**도 서랍에 꽂는다
     };
     // 돌려주는 값: 모은 자료 | null(이름 목록을 못 받음 → 옛 길) | 'stale'(그사이 로그아웃)
     const _loadTeacherLean = async (gen) => {
@@ -15654,7 +15683,7 @@ function _emuConnect(fb, doc) {
       if (gen !== _fullGen) return 'stale';
       if (!top || !hw) return null;
       _leanDetach();
-      const L = { gen, data: { homeworkSets: {} }, listeners: [], topOn: new Set(), hwOn: new Set(), poll: null, tick: null };
+      const L = { gen, data: { homeworkSets: {} }, listeners: [], topOn: new Set(), hwOn: new Set(), dirty: new Set(), poll: null, tick: null };
       _lean = L;
       window._teacherLean = L;
       if (!top.length) return { empty: true };            // 서버에 아무것도 없다(옛 길의 null 과 같게 다룬다)
