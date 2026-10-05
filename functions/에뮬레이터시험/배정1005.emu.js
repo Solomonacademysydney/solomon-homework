@@ -43,8 +43,10 @@ const 거절됨 = (r, 코드) => !!(r && r.err && r.err.includes('permission-den
       { id: 'Amy', role: 'student', year: 5, country: 'AU', group: '' },       // 반 없음
       { id: 'Kei', role: 'student', year: 5, country: 'AU', group: '키이라' }, // 반 있음 · 반 칸 없음 → 공통
       { id: 'Jun', role: 'student', year: 5, country: 'AU', group: '민준' },   // 반 칸막이만 있음
+      { id: 'Min', role: 'student', year: 5, country: 'AU', group: '민 준' },  // [F5] 띄어쓰기 든 반
     ],
     homeworkSets: {
+      ['AU_y5-민 준' + W]: 세트,
       ['AU_y5' + W]: 세트,
       ['AU_y5-션' + W]: 세트,
       ['AU_y5-민준' + W]: { published: true, sets: [], _placeholder: true },
@@ -61,6 +63,13 @@ const 거절됨 = (r, 코드) => !!(r && r.err && r.err.includes('permission-den
   재기('③ 반 칸 있는 아이가 공통 → NOT-ASSIGNED', 거절됨(await 제출('Sean', 'AU_y5' + W, 1), 'NOT-ASSIGNED'));
   재기('③ 반 없는 아이가 다른 반 → NOT-ASSIGNED', 거절됨(await 제출('Amy', 'AU_y5-션' + W, 1), 'NOT-ASSIGNED'));
   재기('④ 다른 나라 → NOT-ASSIGNED', 거절됨(await 제출('Amy', 'NZ_y5' + W, 1), 'NOT-ASSIGNED'));
+  // [F5] 띄어쓰기 든 반 — 답 저장(아이가 직접 쓰는 칸) → 제출 → 새로 풀기 → 다시 제출
+  await db.ref('solomon_hw_v3/submissions/Min' + W + '_s0/answers/q0').set('B');
+  const m1 = await 제출('Min', 'AU_y5-민 준' + W);
+  const m2 = await 새로('Min', 'AU_y5-민 준' + W);
+  const m3 = await 제출('Min', 'AU_y5-민 준' + W);
+  재기('[F5] 「민 준」 반 · 제출 → 새로 풀기 → 다시 제출 모두 성공', m1.kind === 'new' && m2.kind === 'new' && m3.kind === 'new', JSON.stringify([m1.err || m1.kind, m2.err || m2.kind, m3.err || m3.kind]));
+  재기('[F5] 「민 준」 반 아이가 공통 숙제 → NOT-ASSIGNED', 거절됨(await 제출('Min', 'AU_y5' + W, 1), 'NOT-ASSIGNED'));
   const r5 = await 제출('Jun', 'AU_y5' + W);
   재기('⑤ 반 칸막이가 있는데 공통 → NOT-ASSIGNED', 거절됨(r5, 'NOT-ASSIGNED'), JSON.stringify(r5));
   재기('거절된 칸은 안 생긴다', !(await db.ref('solomon_hw_v3/submissions/Jun' + W + '_s0').once('value')).val());

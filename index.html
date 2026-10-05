@@ -5958,6 +5958,7 @@ function _noteAllHomeworkKeys(data) {
 function sanitizeGroup(v) {
   return String(v == null ? '' : v)
     .replace(/[_\r\n\t]/g, ' ')     // 키 구분자와 제어문자 제거
+    .replace(/[.#$\[\]\/]/g, '')     // [점검 10-05 F5 예방] 파이어베이스 열쇠에 못 쓰는 글자
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 20);
@@ -7519,7 +7520,9 @@ function renderStudentManagementSection(store) {
     const daysVal = Array.isArray(s.days) ? s.days.join('/') : (s.days || '');
     const isTest = !!s.isTest;
     const yearRange = isTest ? Array.from({length:11},(_,i)=>i+2) : [3,4,5,6,7,8,9];
-    const testBadge = isTest ? ' <span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;">TEST</span>' : '';
+    const testBadge = (isTest ? ' <span style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;">TEST</span>' : '')
+      // [점검 10-05 F4 예방] 지금 규칙에 안 맞는 옛 아이디 — 학부모 화면·제출이 막힐 수 있다
+      + (studentIdProblem(s.id) ? ' <span title="' + escHtml(studentIdProblem(s.id)) + ' — 학부모 화면이 이 아이 기록을 못 읽을 수 있습니다. 아이디를 바꿔 주세요." style="background:#fee2e2;color:#b91c1c;font-size:10px;font-weight:800;padding:1px 6px;border-radius:99px;">⚠ 아이디</span>' : '');
     if (inactive) {
       return `<tr style="opacity:.5;background:#f5f5f5;">
         <td>${s.id}${testBadge}</td><td>${escHtml(s.name)}</td><td>Y${s.year}</td><td>${(s.country||'AU')==='AU'?'🇦🇺':'🇰🇷'}</td>
@@ -7670,6 +7673,9 @@ function studentIdProblem(id) {
   if (!s) return '아이디를 입력해 주세요.';
   if (s.includes('_')) return '학생 아이디에는 밑줄(_)을 쓸 수 없습니다. (예: Kim_A → KimA 또는 Kim-A)';
   if (/[.#$\[\]\/]/.test(s)) return '학생 아이디에는 . # $ [ ] / 를 쓸 수 없습니다.';
+  // [점검 10-05 F4 예방] 서버가 학부모의 자녀 목록에 넣는 아이디 꼴(prep_session KEY_RE)과 같게 —
+  //   그 밖의 글자(띄어쓰기 등)가 든 아이디는 학부모 화면이 자녀 기록을 못 읽는다.
+  if (!/^[A-Za-z0-9\-가-힣]{1,80}$/.test(s)) return '학생 아이디에는 영문·숫자·하이픈(-)·한글만 쓸 수 있습니다. (띄어쓰기 안 됨)';
   return null;
 }
 

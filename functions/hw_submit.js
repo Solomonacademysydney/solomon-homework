@@ -87,7 +87,8 @@ function checkKeys(sid, key, hwKey, year) {
   const m = /^(\d{4})_m(\d{2})_w(\d)_s(\d{1,2})$/.exec(key.slice(sid.length + 1));
   if (!m) throw new HttpsError('invalid-argument', 'BAD-INPUT:key');
   const 꼬리 = '_' + m[1] + '_m' + m[2] + '_w' + m[3];
-  const h = /^([A-Z]{2})_y(\d{1,2})(-[A-Za-z0-9_\-가-힣]{1,30})?(_\d{4}_m\d{2}_w\d)$/.exec(hwKey);
+  // [점검 10-05 F5] 반 이름 = 화면 sanitizeGroup 이 만드는 꼴(띄어쓰기·기호 가능 · 밑줄·제어문자·. # $ [ ] / 없음)
+  const h = /^([A-Z]{2})_y(\d{1,2})(-[^_.#$\[\]\/\r\n\t]{1,30})?(_\d{4}_m\d{2}_w\d)$/.exec(hwKey);
   if (!h || h[4] !== 꼬리) throw new HttpsError('invalid-argument', 'BAD-INPUT:hwKey');
   if (year != null && String(h[2]) !== String(year)) throw new HttpsError('permission-denied', 'NOT-YOUR-YEAR');
   return { period: { year: Number(m[1]), month: Number(m[2]), week: Number(m[3]) }, setIdx: Number(m[4]) };
