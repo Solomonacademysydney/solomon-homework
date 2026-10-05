@@ -2877,6 +2877,52 @@ function _captureOldPeriodOverlay(d) {
   } catch (e) {}
 }
 
+// ═══ [교사 몫 · 2026-10-05] 교사 화면도 **필요한 몫만** 받는다 ═══════════════════════════
+//   전에는 교사 로그인마다 앱 뿌리 전체(10-05 실측 16.0MB · 숙제 칸 13.1MB · 그중 9월 전 6.5MB)를 받았다.
+//   그런데 교사 서랍(_localMirror)은 **원래 최근 4주 창만** 남긴다 — 화면이 보는 것은 그대로다.
+//   ⇒ 맨 위 가지는 다 듣되(제출 2.5MB·명단·리포트…), 숙제 칸은 창에 드는 칸만 듣는다.
+//   (돌리는 곳: initFirebase 안 _loadTeacherLean · 지난 주는 _ensurePeriodLoaded)
+//   ⛔ 되돌리기: 이 기기에서 localStorage 'sol_teacher_lean_off' = '1' 이면 옛 길(뿌리 전체).
+
+// 경로 아래 열쇠 이름만(REST shallow · 원장 토큰). 돌려주는 값: 이름 배열 | null(못 받음 — 「없음」과 다르다)
+async function _dbShallowKeys(path) {
+  const 누구 = currentUser && currentUser.id;
+  try {
+    const u = firebase.auth().currentUser;
+    if (!u) return null;
+    const token = await u.getIdToken();
+    const 뿌리 = _EMU ? 'http://127.0.0.1:9000/' : firebaseConfig.databaseURL.replace(/\/+$/, '') + '/';
+    const url = 뿌리 + 'solomon_hw_v3' + (path ? '/' + path : '') + '.json?'
+      + (_EMU ? 'ns=demo-solomon&' : '') + 'shallow=true&auth=' + encodeURIComponent(token);
+    const 멈춤 = new AbortController();
+    const 시계 = setTimeout(() => 멈춤.abort(), 10000);
+    let r;
+    try { r = await fetch(url, { signal: 멈춤.signal }); } finally { clearTimeout(시계); }
+    if (!currentUser || currentUser.id !== 누구) return null;
+    if (!r.ok) { console.warn('[교사 몫] 이름 목록 실패:', path, r.status); return null; }
+    const v = await r.json();
+    if (v === null) return [];
+    if (typeof v !== 'object' || Array.isArray(v)) return null;
+    return Object.keys(v);
+  } catch (e) {
+    console.warn('[교사 몫] 이름 목록 실패:', path, e && (e.name || e.message));
+    return null;
+  }
+}
+
+// 교사가 처음부터 들을 숙제 칸인가 — 서랍 창(최근 1주 + 이번 주 + 앞 2주) · 원장이 정한 주 ·
+//   오늘 이후 칸 전부(미리 만든 숙제) · 주차가 깨진 칸(findUnseenHomework 가 경고해야 한다) · 주차 없는 칸
+function _teacherHwWanted(k, keep, today, cp) {
+  const c = _periodOfKey(k);
+  if (c === null) return true;
+  if (keep.has(c) || (cp && c === cp)) return true;
+  const m = parseHwKey(k);
+  if (!m || !m.period) return true;                    // 못 읽는 열쇠는 들어 둔다(덜 받다 놓치는 것보다 낫다)
+  const per = m.period;
+  if (per.week > weeksInMonth(per.year, per.month)) return true;
+  return periodGte(per, today);
+}
+
 // 과거 주차를 Firebase에서 on-demand 로드해 메모리 오버레이에 적재 (로컬 저장 안 함). 최근 주차면 오버레이 해제.
 async function _ensurePeriodLoaded(p) {
   try {
@@ -2886,6 +2932,23 @@ async function _ensurePeriodLoaded(p) {
     if (window._scope) { await _scopeLoadPeriod(p); return; }
     const canon = _periodCanon(p);
     const re = new RegExp('_' + canon.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(_|$)');
+    // ★ [교사 몫 · 2026-10-05] 교사도 그 주 숙제 칸만 받는다(전에는 숙제 전체 13MB를 다시 받았다).
+    //   제출은 교사가 전부 듣고 있으므로(_teacherLean.data.submissions) 메모리에서 거른다.
+    const L = window._teacherLean;
+    if (L) {
+      const keys = await _dbShallowKeys('homeworkSets');
+      if (keys) {
+        const want = keys.filter(k => re.test(k));
+        const vals = await Promise.all(want.map(k => window.FB_REF.child('homeworkSets/' + k).once('value').then(s => s.val())));
+        if (window._teacherLean !== L) return;
+        const hw = {}, sub = {};
+        want.forEach((k, i) => { if (vals[i] != null) hw[k] = vals[i]; });
+        for (const k of Object.keys(L.data.submissions || {})) if (re.test(k)) sub[k] = L.data.submissions[k];
+        window._extraPeriodData = { homeworkSets: hw, submissions: sub };
+        return;
+      }
+      console.warn('[교사 몫] 지난 주 칸 목록을 못 받아 옛 길(전체 읽기)로 갑니다');
+    }
     const [hwSnap, subSnap] = await Promise.all([
       window.FB_REF.child('homeworkSets').once('value'),
       window.FB_REF.child('submissions').once('value')
@@ -15441,7 +15504,7 @@ function _emuConnect(fb, doc) {
         };
         // 7초 안에 응답 없으면 로컬 서랍으로 연다(옛 길과 같다)
         const loadingTimeout = setTimeout(finishInit, 7000);
-        attachRealtimeListener();
+        if (!_leanOk()) attachRealtimeListener();   // [교사 몫] 교사는 뿌리 구독 대신 가지별로 듣는다
         loadInitialData(gen, finishInit);
       });
       return _fullPromise;
@@ -15454,6 +15517,7 @@ function _emuConnect(fb, doc) {
       _loadInFlight = false;
       if (_rootHandler && window.FB_REF) { try { window.FB_REF.off('value', _rootHandler); } catch (_) {} }
       _rootHandler = null;
+      _leanDetach();
       if (typeof _scopeDetach === 'function') _scopeDetach();
       window.fbReady = false;
       window._usersCanonical = false;
@@ -15503,16 +15567,103 @@ function _emuConnect(fb, doc) {
           return;
         }
 
-        // 선생님: 내가 직접 쓴 데이터의 echo는 무시 (타임스탬프 일치 시)
-        if (data.lastModified && data.lastModified === _lastFbWriteTs) return;
-        const localRaw = _rawLocalStore();
-        const localData = localRaw ? JSON.parse(localRaw) : null;
-        const fbTs = data.lastModified || 0;
-        const localTs = localData?.lastModified || 0;
-        if (fbTs > localTs) {
-          _persistLocalStore(data);
-        }
+        _teacherApply(data);
       });
+    };
+
+    // 선생님: 서버 자료가 바뀌었을 때 서랍에 반영 — 뿌리 구독(옛 길)과 가지별 구독(교사 몫)이 같이 쓴다
+    const _teacherApply = (data) => {
+      // 선생님: 내가 직접 쓴 데이터의 echo는 무시 (타임스탬프 일치 시)
+      if (data.lastModified && data.lastModified === _lastFbWriteTs) return;
+      const localRaw = _rawLocalStore();
+      const localData = localRaw ? JSON.parse(localRaw) : null;
+      const fbTs = data.lastModified || 0;
+      const localTs = localData?.lastModified || 0;
+      if (fbTs > localTs) {
+        _persistLocalStore(data);
+      }
+    };
+
+    // ── [교사 몫 · 2026-10-05] 맨 위 가지는 다 듣고 숙제 칸은 창에 드는 것만 듣는다 ──────
+    //   (설명은 _dbShallowKeys 위 큰 주석). 각 가지의 첫 값이 다 오면 「처음 읽기」가 끝난 것이다.
+    //   그 뒤 어느 가지가 바뀌면 모은 자료(L.data)를 옛 뿌리 구독과 같은 꼴로 _teacherApply 에 넘긴다.
+    let _lean = null;
+    const _leanOk = () => {
+      try { if (localStorage.getItem('sol_teacher_lean_off') === '1') return false; } catch (_) {}
+      const u = firebase.auth().currentUser;
+      return !!(currentUser && currentUser.role === 'teacher' && u && u.uid === OPERATOR_UID);
+    };
+    const _leanDetach = () => {
+      if (!_lean) return;
+      for (const l of _lean.listeners) { try { l.ref.off('value', l.cb); } catch (_) {} }
+      clearInterval(_lean.poll);
+      clearTimeout(_lean.tick);
+      _lean = null;
+      window._teacherLean = null;
+    };
+    const _leanChanged = () => {
+      const L = _lean;
+      if (!L || !window.fbReady) return;
+      clearTimeout(L.tick);                               // 한꺼번에 여러 가지가 바뀌면 한 번만
+      L.tick = setTimeout(() => {
+        if (_lean !== L) return;
+        _noteAllHomeworkKeys(L.data);
+        _teacherApply(L.data);
+      }, 300);
+    };
+    const _leanListen = (L, path, put) => new Promise((res, rej) => {
+      let first = true;
+      const ref = window.FB_REF.child(path);
+      const cb = ref.on('value', snap => {
+        if (_lean !== L) { if (first) { first = false; res(); } return; }
+        put(snap.val());
+        if (first) { first = false; res(); return; }
+        _leanChanged();
+      }, err => { if (first) { first = false; rej(err); } });
+      L.listeners.push({ ref, cb });
+    });
+    const _leanTop = (L, k) => {
+      if (L.topOn.has(k)) return Promise.resolve();
+      L.topOn.add(k);
+      return _leanListen(L, k, v => { if (v == null) delete L.data[k]; else L.data[k] = v; });
+    };
+    const _leanHw = (L, k) => {
+      if (L.hwOn.has(k)) return Promise.resolve();
+      L.hwOn.add(k);
+      return _leanListen(L, 'homeworkSets/' + k, v => { if (v == null) delete L.data.homeworkSets[k]; else L.data.homeworkSets[k] = v; });
+    };
+    const _leanWanted = (keys) => {
+      const keep = _recentPeriodKeySet();
+      const today = getTodayPeriod();
+      const cp = L_cp();
+      return keys.filter(k => _teacherHwWanted(k, keep, today, cp));
+    };
+    const L_cp = () => { const c = _lean && _lean.data.currentPeriod; return c && c.year ? _periodCanon(c) : null; };
+    // 다른 이(일꾼·서버 함수·다른 기기)가 새 칸·새 가지를 만들었을 수 있다 — 이름만 가끔 다시 본다(수 KB)
+    const _leanPoll = async (L) => {
+      const [top, hw] = await Promise.all([_dbShallowKeys(''), _dbShallowKeys('homeworkSets')]);
+      if (_lean !== L) return;
+      const jobs = [];
+      if (top) for (const k of top) if (k !== 'homeworkSets' && k !== 'claudeApiKey' && !L.topOn.has(k)) jobs.push(_leanTop(L, k));
+      if (hw) for (const k of _leanWanted(hw)) if (!L.hwOn.has(k)) jobs.push(_leanHw(L, k));
+      if (jobs.length) { await Promise.all(jobs); _leanChanged(); }
+    };
+    // 돌려주는 값: 모은 자료 | null(이름 목록을 못 받음 → 옛 길) | 'stale'(그사이 로그아웃)
+    const _loadTeacherLean = async (gen) => {
+      const [top, hw] = await Promise.all([_dbShallowKeys(''), _dbShallowKeys('homeworkSets')]);
+      if (gen !== _fullGen) return 'stale';
+      if (!top || !hw) return null;
+      _leanDetach();
+      const L = { gen, data: { homeworkSets: {} }, listeners: [], topOn: new Set(), hwOn: new Set(), poll: null, tick: null };
+      _lean = L;
+      window._teacherLean = L;
+      if (!top.length) return { empty: true };            // 서버에 아무것도 없다(옛 길의 null 과 같게 다룬다)
+      await Promise.all(top.filter(k => k !== 'homeworkSets' && k !== 'claudeApiKey').map(k => _leanTop(L, k)));
+      await Promise.all(_leanWanted(hw).map(k => _leanHw(L, k)));   // currentPeriod 를 먼저 받아 그 주도 넣는다
+      if (gen !== _fullGen || _lean !== L) return 'stale';
+      L.poll = setInterval(() => { _leanPoll(L).catch(e => console.warn('[교사 몫] 이름 다시 보기 실패:', e)); }, 120000);
+      console.log('[교사 몫] 받음 — 맨 위 가지', L.topOn.size, '· 숙제 칸', L.hwOn.size, '/', hw.length);
+      return L.data;
     };
 
     // 시작 시 Firebase에서 데이터 불러오기 — 인증 완료 후에만 호출
@@ -15522,10 +15673,26 @@ function _emuConnect(fb, doc) {
       finishInit = finishInit || (() => {});
       if (_loadInFlight || window.fbReady) return;
       _loadInFlight = true;
-      window.FB_REF.once('value', (snapshot) => {
+      // ★ [교사 몫 · 2026-10-05] 교사는 필요한 몫만 — 이름 목록을 못 받으면 옛 길(뿌리 전체)로 간다.
+      if (_leanOk()) {
+        _loadTeacherLean(gen).then(r => {
+          if (r === 'stale') { _loadInFlight = false; return; }
+          if (r === null) {
+            console.warn('[교사 몫] 이름 목록을 못 받아 옛 길(뿌리 전체)로 갑니다');
+            _leanDetach();
+            attachRealtimeListener();
+            window.FB_REF.once('value', snap => _firstData(gen, snap.val(), finishInit), err => _firstFail(gen, err, finishInit));
+            return;
+          }
+          _firstData(gen, r.empty ? null : r, finishInit);
+        }).catch(err => { _leanDetach(); _firstFail(gen, err, finishInit); });
+        return;
+      }
+      window.FB_REF.once('value', snap => _firstData(gen, snap.val(), finishInit), err => _firstFail(gen, err, finishInit));
+    };
+    const _firstData = (gen, fbData, finishInit) => {
         _loadInFlight = false;
         if (gen !== _fullGen) return;   // [묶음 3] 그사이 로그아웃했다 — 다음 사람 서랍에 쓰지 않는다
-        const fbData = snapshot.val();
         const localRaw = _rawLocalStore();
         const localData = localRaw ? JSON.parse(localRaw) : null;
 
@@ -15557,7 +15724,8 @@ function _emuConnect(fb, doc) {
         // ★ [1단계] 제출 재시도가 **끝난 뒤** 약점 줄을 비운다(서버에서 제출을 확인하고 반영).
         _flushRetryQueue().then(() => _weaknessFlush()).catch(e => console.warn('[Weakness] 줄 비우기 실패:', e));
         finishInit();
-      }, (err) => {
+    };
+    const _firstFail = (gen, err, finishInit) => {
         console.warn('[Firebase] initial read failed:', err?.message || err);
         _loadInFlight = false;
         if (gen !== _fullGen) return;
@@ -15566,7 +15734,6 @@ function _emuConnect(fb, doc) {
         finishInit();
         // [Fix 2026-06-23] 실패해도 fbReady가 false로 고착되지 않도록
         // .info/connected 리스너가 재연결 시 자동 재시도함 (_dbStart 참조)
-      });
     };
   } catch(e) {
     console.warn('[Firebase] init exception:', e?.message || e);
