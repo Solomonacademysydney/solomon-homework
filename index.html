@@ -3241,8 +3241,9 @@ function _hwSubmitApply(key, res) {
     saveStore(s);
     if (res.conflicts && res.conflicts.length) {
       showBackupToast('ℹ️ 다른 창(기기)에서 먼저 넣은 답이 있어 그 답을 지켰습니다(' + res.conflicts.length + '문항) — 선생님이 확인합니다.');
-    } else if (res.kind === 'already') {
-      showBackupToast('ℹ️ 이 세트는 이미 제출되어 있습니다.');
+    } else if (res.kind === 'stale') {
+      // [재검토 10-05 ①] 이 칸이 그 사이 새 숙제로 바뀌어 옛 제출을 서버가 받지 않았다(답은 서버에 따로 남김)
+      showBackupToast('ℹ️ 이 칸은 이미 새 숙제로 바뀌어서, 예전 숙제 제출은 넣지 않았어요(답은 보관됨 · 선생님이 확인합니다).');
     }
     if (currentUser && currentUser.role === 'student' && typeof renderStudent === 'function') renderStudent();
   } catch (e) { console.warn('[hwSubmit] 사본 맞추기 실패:', e); }
@@ -9083,6 +9084,7 @@ function doSubmit() {
     _weaknessFlush().catch(() => {});
     if (_submitResolved) return;
     _submitResolved = true; clearTimeout(_submitTimeoutId);
+    if (res && res.kind === 'stale') { showSubmitConfirmModal('warning'); return; }   // [재검토 10-05 ①] 받지 않은 제출 — 성공·축하 아님
     showSubmitConfirmModal('success');
     // [F2] 성공 창이 5초 뒤 닫힌 다음 — 서버가 확정한 점수로
     if (typeof _hwCelebrate === 'function') setTimeout(() => _hwCelebrate(key, _uid), 5100);

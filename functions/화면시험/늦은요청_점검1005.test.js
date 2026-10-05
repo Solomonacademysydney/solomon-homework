@@ -127,5 +127,50 @@ console.log('\n── F3 · 늦게 온 응답은 지금 아이의 칸에만');
     /currentUser\.id !== _uid\) return;/.test(떼기('function startFreshSet(idx) {', '\n}\n')));
 }
 
+console.log('\n── 재검토 ① · 숙제가 바뀌어 새로 푼 뒤 늦게 온 옛 제출 — 칸을 바꾸지 않는다');
+{
+  const 옛제출 = (opId, answers, at) => Object.assign(제출입력(opId, answers, at), { hwKey: 'HK_OLD' });
+  // 옛 숙제 칸(제출됨) → 숙제가 HK 로 바뀌어 새로 풀기 → 새 답 C 푸는 중
+  const 옛칸 = { answers: { q0: 'B' }, submitted: true, rev: 1, hwKey: 'HK_OLD', lastSubmitOp: 'op_seen_0001' };
+  let 새칸 = 돌림(H.freshStep, 옛칸, 새로입력('op_F_00002', 2)).칸;
+  새칸 = Object.assign({}, 새칸, { answers: { q0: 'C' } });
+
+  let r = 돌림(H.submitStep, 새칸, 옛제출('op_not_yet_seen', { q0: 'B' }, 3));
+  재기('처음 보는 옛 요청 → stale · 답 C · 제출 아님 · 판 그대로',
+    r.out.kind === 'stale' && r.칸.answers.q0 === 'C' && r.칸.submitted === false && r.칸.hwKey === 'HK' && r.칸.rev === 새칸.rev, JSON.stringify(r.out));
+  재기('보낸 옛 답은 _staleSubmits 에 남는다', r.칸._staleSubmits && r.칸._staleSubmits.op_not_yet_seen.answers.q0 === 'B');
+  재기('stale 에는 채점 결과(items)가 없다 — 약점에 안 들어간다', r.out.items === undefined);
+  const r2 = 돌림(H.submitStep, r.칸, 옛제출('op_not_yet_seen', { q0: 'B' }, 4));
+  재기('같은 옛 요청 또 → dup · 아무것도 안 씀', r2.out.kind === 'dup' && r2.칸 === r.칸);
+
+  // 옛 칸에서 「같은 답 already」(작업 번호를 안 적던 길) → 새로 풀기 → 그 요청 다시
+  const a1 = 돌림(H.submitStep, 옛칸, 옛제출('op_same_ans1', { q0: 'B' }, 5));
+  재기('(전제) 옛 칸에 같은 답 → already', a1.out.kind === 'already');
+  const a2 = 돌림(H.submitStep, 새칸, 옛제출('op_same_ans1', { q0: 'B' }, 6));
+  재기('그 요청을 새로 풀기 뒤 다시 → stale · 새 풀이 그대로', a2.out.kind === 'stale' && a2.칸.submitted === false && a2.칸.answers.q0 === 'C');
+
+  // 처리 이력 30개를 넘긴 옛 요청 재전송
+  let 긴칸 = 새칸;
+  for (let i = 0; i < H.OPS_KEEP + 5; i++) 긴칸 = Object.assign({}, 긴칸, { _ops: Object.assign({}, 긴칸._ops, { ['op_fill_' + i]: 1000 + i }) });
+  const big = 돌림(H.submitStep, 긴칸, 옛제출('op_seen_0001x', { q0: 'B' }, 7));
+  재기('이력이 넘친 뒤 옛 요청 → stale', big.out.kind === 'stale' && big.칸.submitted === false);
+
+  // 옛 기록(hwKey 없음)은 예전처럼 받는다 — 막지 않는다
+  const 무 = 돌림(H.submitStep, { answers: { q0: 'B' } }, 제출입력('op_nokey_001', { q0: 'B' }, 8));
+  재기('hwKey 없는 칸 → 예전처럼 새 제출', 무.out.kind === 'new' && 무.칸.submitted === true && 무.칸.hwKey === 'HK');
+  // 지금 숙제 그대로 낸 정상 제출
+  const 정 = 돌림(H.submitStep, 새칸, 제출입력('op_normal_01', { q0: 'C' }, 9));
+  재기('지금 숙제로 낸 정상 제출 → new', 정.out.kind === 'new' && 정.칸.submitted === true && 정.칸.answers.q0 === 'C');
+
+  // _staleSubmits 는 10개까지만
+  let 칸10 = 새칸;
+  for (let i = 0; i < 15; i++) 칸10 = 돌림(H.submitStep, 칸10, 옛제출('op_st_' + String(i).padStart(5, '0'), { q0: 'B' }, 100 + i)).칸;
+  재기('_staleSubmits 최근 10개', Object.keys(칸10._staleSubmits).length === 10 && !!칸10._staleSubmits.op_st_00014 && !칸10._staleSubmits.op_st_00000);
+
+  const ds = 떼기('function doSubmit() {', '\n// [점검 10-05 F2]');
+  재기('doSubmit — stale 이면 성공 창·축하를 안 띄운다', /res\.kind === 'stale'\) \{ showSubmitConfirmModal\('warning'\); return; \}/.test(ds));
+  재기('사본 맞추기 — stale 안내 문구', /res\.kind === 'stale'/.test(떼기('function _hwSubmitApply(key, res) {', '\n/** 서버 명령 실패')));
+}
+
 console.log('\n셈 — 통과 ' + 통과 + ' · 실패 ' + 실패);
 process.exit(실패 ? 1 : 0);

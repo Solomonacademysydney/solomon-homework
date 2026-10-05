@@ -193,6 +193,20 @@ function submitStep(cur, inp, out) {
   out.kind = null; out.충돌 = {};
   const c = cur || {};
   if (본작업(c, inp.opId)) { out.kind = 'dup'; return undefined; }
+  // [재검토 10-05 ①] 칸이 **다른 숙제**로 넘어간 뒤(새로 풀기) 늦게 온 옛 제출 — 받지 않는다.
+  //   새로 풀기는 숙제가 바뀌었을 때만 열리므로(subIsStale) 칸의 hwKey 가 곧 「지금 풀이」 표시다.
+  //   (처리 이력에 없는 첫 도착 옛 요청이 새 풀이를 옛 숙제로 채점·제출해 0점·약점까지 남기던 것)
+  //   보낸 답은 버리지 않고 칸 안 _staleSubmits 에 남긴다(선생님 확인용 · 최근 10개).
+  if (c.hwKey && inp.hwKey && c.hwKey !== inp.hwKey) {
+    out.kind = 'stale';
+    const n = Object.assign({}, c);
+    const o = Object.assign({}, c._staleSubmits || {});
+    o[inp.opId] = { hwKey: inp.hwKey, answers: inp.answers, at: Number(inp.at) || Date.now() };
+    n._staleSubmits = {};
+    Object.keys(o).sort((a, b) => o[b].at - o[a].at).slice(0, 10).forEach(k => { n._staleSubmits[k] = o[k]; });
+    작업적기(n, inp.opId, inp.at);   // 같은 옛 요청이 또 와도 dup
+    return n;
+  }
   if (c.submitted && !c.manuallyMarked) {
     for (const [q, v] of Object.entries(inp.answers)) if (!같다((c.answers || {})[q], v)) out.충돌[q] = { server: (c.answers || {})[q] == null ? null : c.answers[q], mine: v };
     out.kind = 'already';
