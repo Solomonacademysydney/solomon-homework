@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>무료 진단평가 | Solomon Math Academy</title>
+<meta name="description" content="점수가 오르지 않는다면, 이해 못 한 개념 위에 새 단원을 쌓고 있기 때문입니다. West Ryde역 도보 5분 솔로몬 수학학원 무료 진단평가.">
+<meta property="og:title" content="무료 진단평가 | Solomon Math Academy">
+<meta property="og:description" content="약점이 어디인지 정확히 짚어 드립니다 · West Ryde역 도보 5분 · Year 3–9">
+<meta property="og:image" content="https://solomonacademy.com.au/og-image.png">
+<meta property="og:url" content="https://solomonacademy.com.au/free-test/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#14213D;--y:#FFC93C;--co:#FF5A3C;--iv:#FAF7F0;--line:#E9E2D3;--gray:#6B7280;--b1:#2F5D9E;--b2:#4F86C6;--b3:#8DB4E2}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Noto Sans KR',system-ui,sans-serif;background:var(--iv);color:var(--navy);line-height:1.6;word-break:keep-all;overflow-wrap:break-word;-webkit-font-smoothing:antialiased;padding-bottom:76px}
+a{color:inherit}
+.wrap{max-width:720px;margin:0 auto;padding:0 20px}
+html[lang=ko] .en,html[lang=en] .ko{display:none!important}
+
+/* 머리줄 */
+.top{display:flex;justify-content:space-between;align-items:center;padding:18px 20px;max-width:720px;margin:0 auto}
+.brand{font-size:12px;font-weight:700;letter-spacing:4px;opacity:.85;text-decoration:none}
+.lang{border:2px solid var(--navy);background:none;color:var(--navy);font:700 13px 'Noto Sans KR',sans-serif;padding:5px 12px;border-radius:99px;cursor:pointer}
+
+/* 첫 화면 */
+.hero{background:var(--navy);color:#fff}
+.hero .wrap{padding-top:36px;padding-bottom:40px}
+.hero h1{font-size:clamp(20px,6vw,36px);font-weight:900;line-height:1.35;letter-spacing:-.5px;border-left:6px solid var(--y);padding-left:16px}
+.hero h1 em{font-style:normal;color:var(--y)}
+.hero p.sub{margin-top:18px;font-size:17px;opacity:.9}
+.btns{display:flex;flex-direction:column;gap:10px;margin-top:26px}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;min-height:54px;border-radius:99px;font-weight:900;font-size:17px;text-decoration:none;border:0;cursor:pointer;font-family:inherit;padding:0 22px}
+.btn-y{background:var(--y);color:var(--navy)}
+.btn-o{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.6)}
+.btn-n{background:var(--navy);color:#fff}
+.where{margin-top:20px;font-size:14px;opacity:.8}
+
+/* 구역 공통 */
+section{padding:44px 0}
+h2{font-size:23px;font-weight:900;line-height:1.35;letter-spacing:-.3px;margin-bottom:20px}
+h2 .mk{background:var(--y);padding:0 6px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+
+/* 고민 */
+.worry li{list-style:none;background:#fff;border:2px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:10px;font-weight:700;display:flex;gap:10px}
+.worry li:before{content:'?';flex:none;width:24px;height:24px;border-radius:50%;background:var(--co);color:#fff;font-size:14px;display:grid;place-items:center;margin-top:1px}
+
+/* 블록 그림 */
+.stack{position:relative;height:200px;margin:8px auto 12px;max-width:340px}
+.blk{position:absolute;height:40px;border-radius:9px;display:grid;place-items:center;color:#fff;font-weight:900;font-size:14px;border:3px solid var(--iv);box-shadow:0 4px 8px rgba(20,33,61,.15)}
+.cap{text-align:center;font-weight:900;font-size:16px}
+.cap b{color:var(--co)}
+
+/* 방식 카드 */
+.cards{display:grid;gap:12px}
+.card{background:#fff;border:2px solid var(--line);border-radius:18px;padding:18px}
+.card .n{font-size:13px;font-weight:900;color:var(--b1);letter-spacing:1px}
+.card h3{font-size:18px;font-weight:900;margin:4px 0 4px;line-height:1.4}
+.card p{font-size:15px;color:var(--gray)}
+
+/* 순서 */
+.steps{display:grid;gap:10px;counter-reset:s}
+.step{display:flex;gap:14px;align-items:flex-start;background:var(--navy);color:#fff;border-radius:18px;padding:16px 18px}
+.step:before{counter-increment:s;content:counter(s);flex:none;width:32px;height:32px;border-radius:50%;background:var(--y);color:var(--navy);font-weight:900;display:grid;place-items:center}
+.step b{display:block;font-size:17px}
+.step span{font-size:14px;opacity:.85}
+
+/* 신청 */
+.apply{background:var(--y)}
+.apply .tag{font-weight:900;font-size:15px}
+.apply h2{font-size:34px;margin:4px 0 8px}
+form{background:#fff;border-radius:20px;padding:20px;margin-top:18px;display:grid;gap:14px}
+label{font-weight:700;font-size:14px;display:grid;gap:6px}
+input,select{font:400 16px 'Noto Sans KR',sans-serif;padding:12px;border:2px solid var(--line);border-radius:12px;background:#fff;color:var(--navy);width:100%}
+input:focus,select:focus{outline:none;border-color:var(--navy)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips label{display:block}
+.chips input{position:absolute;opacity:0;width:0}
+.chips label>span{display:inline-block;border:2px solid var(--line);border-radius:99px;padding:7px 14px;font-size:14px;cursor:pointer}
+.chips input:checked+span{background:var(--navy);border-color:var(--navy);color:#fff}
+.chips input:focus-visible+span{outline:2px solid var(--co)}
+.priv{font-size:13px;color:var(--gray)}
+.err{color:var(--co);font-size:14px;font-weight:700;display:none}
+.done{display:none;background:var(--navy);color:#fff;border-radius:16px;padding:16px;font-size:15px}
+.paths{display:grid;gap:10px;margin-top:16px}
+.path{display:grid;grid-template-columns:1fr auto;gap:2px 10px;background:var(--navy);color:#fff;border-radius:18px;padding:16px 18px;text-decoration:none}
+.path b{font-size:17px;grid-column:1}
+.path>span{grid-column:1;font-size:14px;opacity:.85}
+.path i{grid-row:1/3;grid-column:2;align-self:center;font-style:normal;font-size:22px;color:var(--y);font-weight:900}
+.ftitle{font-weight:900;font-size:17px}
+.who{padding:8px 0 36px}
+.who-card{display:flex;flex-direction:row-reverse;gap:18px;align-items:center;background:#000;color:#fff;border-radius:20px;overflow:hidden;padding-left:20px}
+.who-card img{width:42%;max-width:200px;height:auto;display:block;flex:none}
+.who-lead{font-size:18px;font-weight:900;line-height:1.45}
+.who-lead em{font-style:normal;color:var(--y)}
+.who-name{margin-top:12px;font-size:17px;font-weight:900}
+.who-sub{margin-top:2px;font-size:13px;opacity:.75}
+.path.main{background:#fff;color:var(--navy);border:3px solid var(--navy);position:relative;padding-top:20px}
+.path.main>span{opacity:1;color:var(--gray)}
+.path.main i{color:var(--co)}
+.badge{position:absolute;top:-11px;left:16px;background:var(--co);color:#fff;font-style:normal;font-weight:900;font-size:12px;padding:2px 10px;border-radius:99px}
+.online{margin-top:14px;text-align:center;font-size:14px}
+.online a{font-weight:700}
+.online p{margin-top:4px;color:var(--navy);opacity:.75;font-size:13px}
+.or{text-align:center;margin-top:16px;font-weight:700}
+.or a{font-weight:900}
+
+/* 오시는 길 */
+.map{background:#fff;border:2px solid var(--line);border-radius:18px;padding:18px}
+.map .addr{font-size:18px;font-weight:900}
+.map .hint{color:var(--co);font-weight:700;margin-top:2px}
+.map dl{margin-top:12px;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:15px}
+.map dt{font-weight:700;color:var(--gray)}
+.map .btn{margin-top:16px}
+
+footer{text-align:center;font-size:12px;color:var(--gray);padding:10px 20px 24px}
+
+/* 하단 고정 */
+.bar{position:fixed;left:0;right:0;bottom:0;display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:rgba(250,247,240,.96);border-top:1px solid var(--line);z-index:9}
+.bar .btn{flex:1;min-height:50px;font-size:16px}
+
+@media (min-width:720px){
+  h2{font-size:28px}
+  .btns{flex-direction:row}
+  .btns .btn{flex:1}
+  .cards{grid-template-columns:1fr 1fr}
+  .who-lead{font-size:28px}
+  .who-name{font-size:21px}
+  .who-sub{font-size:15px}
+  .who-card{gap:36px}
+  .bar{display:none}
+  body{padding-bottom:0}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="/">SOLOMON MATH ACADEMY</a>
+  <button class="lang" id="btn-lang" type="button" aria-label="Switch language"><span class="ko">English</span><span class="en">한국어</span></button>
+</header>
+
+<div class="hero">
+  <div class="wrap">
+    <h1>
+      <span class="ko">점수가 오르지 않는다면,<br><em>이해 못 한 개념 위에</em><br>새 단원을 쌓고 있기 때문입니다</span>
+      <span class="en">If scores aren't improving,<br>your child may be <em>building new topics on concepts they never understood.</em></span>
+    </h1>
+    <p class="sub">
+      <span class="ko">무료 진단평가로 약점이 어디인지 정확히 짚어 드립니다.</span>
+      <span class="en">A free diagnostic test pinpoints exactly where the weak spots are.</span>
+    </p>
+    <div class="btns">
+      <a class="btn btn-y" id="cta-apply-hero" href="#apply"><span class="ko">무료 진단평가 신청</span><span class="en">Book a free test</span> →</a>
+      <a class="btn btn-o" id="cta-call-hero" href="tel:+61424743564"><span class="ko">전화 문의</span><span class="en">Call</span> 0424 743 564</a>
+    </div>
+    <p class="where">
+      <span class="ko">West Ryde역 도보 5분 · 월–금 오후 4–6시</span>
+      <span class="en">5-minute walk from West Ryde Station · Mon–Fri 4–6 pm</span>
+    </p>
+  </div>
+</div>
+
+<main>
+<section>
+  <div class="wrap">
+    <h2><span class="ko">이런 고민이 있다면</span><span class="en">Does this sound familiar?</span></h2>
+    <ul class="worry">
+      <li><span class="ko">집에서 가르쳐 보면 학교 방식과 달라 아이가 헷갈려 한다</span><span class="en">When I teach at home, my method differs from school and my child gets confused</span></li>
+      <li><span class="ko">문제집은 많이 풀었는데 시험 점수는 그대로다</span><span class="en">They've done plenty of workbooks, but test scores stay the same</span></li>
+      <li><span class="ko">OC·Selective를 준비해야 할지, 어디부터 할지 모르겠다</span><span class="en">I'm not sure whether to prepare for OC or Selective — or where to start</span></li>
+    </ul>
+
+    <div class="stack" aria-hidden="true">
+      <div class="blk" style="left:16%;right:0;top:150px;background:var(--navy)"><span class="ko">배운 단원</span><span class="en">Learned unit</span></div>
+      <div class="blk" style="left:58%;right:0;top:104px;background:var(--b1)"><span class="ko">이해한 개념</span><span class="en">Understood</span></div>
+      <div class="blk" style="left:16%;right:43%;top:104px;background:#FFF1EC;border:3px dashed var(--co);box-shadow:none"></div>
+      <div class="blk" style="left:16%;right:0;top:58px;background:var(--b2);transform:rotate(-5deg);transform-origin:right bottom"><span class="ko">다음 단원</span><span class="en">Next unit</span></div>
+      <div class="blk" style="left:18%;right:0;top:12px;background:var(--b3);color:var(--navy);transform:rotate(-10deg);transform-origin:right bottom"><span class="ko">새 단원</span><span class="en">New unit</span></div>
+      <div style="position:absolute;left:0;top:112px;font-size:12px;font-weight:900;color:var(--co);line-height:1.2"><span class="ko">이해<br>못 한<br>개념 →</span><span class="en">Gap →</span></div>
+    </div>
+    <p class="cap"><span class="ko">기초에 빈틈이 있으면, 실력이 <b>쌓이지 않습니다</b></span><span class="en">With gaps in the basics, skills <b>don't build up</b></span></p>
+  </div>
+</section>
+
+<section style="padding-top:8px">
+  <div class="wrap">
+    <h2><span class="ko"><span class="mk">솔로몬은 이렇게</span> 가르칩니다</span><span class="en">How Solomon <span class="mk">teaches</span></span></h2>
+    <div class="cards">
+      <div class="card"><div class="n">01</div>
+        <h3><span class="ko">같은 반이어도 학생마다 교재와 진도가 다릅니다</span><span class="en">Each student has their own materials and pace</span></h3>
+        <p><span class="ko">빈 곳은 채우고, 잘하는 곳은 앞으로 나아갑니다.</span><span class="en">Gaps get filled; strengths keep moving ahead.</span></p></div>
+      <div class="card"><div class="n">02</div>
+        <h3><span class="ko">매일 숙제가 아이 수준에 맞춰 나갑니다</span><span class="en">Daily homework matched to your child's level</span></h3>
+        <p><span class="ko">너무 쉽거나 너무 어렵지 않게 맞춥니다.</span><span class="en">Not too easy, not too hard.</span></p></div>
+      <div class="card"><div class="n">03</div>
+        <h3><span class="ko">수업마다 한 주 공부 결과를 학부모 리포트로 보내드립니다</span><span class="en">Regular parent reports on the week's learning</span></h3>
+        <p><span class="ko">상담과 리포트는 한국어로 드립니다.</span><span class="en">Consultations and reports are also available in Korean.</span></p></div>
+      <div class="card"><div class="n">04</div>
+        <h3><span class="ko">한 반 2–5명, 원장이 직접 가르칩니다</span><span class="en">2–5 students per class, taught by the principal</span></h3>
+        <p><span class="ko">Year 3–9 · OC · Selective · NAPLAN 대비 (Math, Thinking Skills)</span><span class="en">Year 3–9 · OC · Selective · NAPLAN (Math, Thinking Skills)</span></p></div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:8px">
+  <div class="wrap">
+    <h2><span class="ko">무료 진단평가 진행 순서</span><span class="en">How the free test works</span></h2>
+    <div class="steps">
+      <div class="step"><div><b><span class="ko">신청</span><span class="en">Book</span></b><span><span class="ko">아래 신청서나 전화로 신청해 주시면 날짜를 잡아 연락드립니다.</span><span class="en">Use the form below or call us, and we'll arrange a time.</span></span></div></div>
+      <div class="step"><div><b><span class="ko">학원에서 진단평가</span><span class="en">Test at the academy</span></b><span><span class="ko">West Ryde역에서 걸어서 5분 거리의 학원에서 시험을 봅니다.</span><span class="en">Your child sits the test at our academy, a 5-minute walk from West Ryde Station.</span></span></div></div>
+      <div class="step"><div><b><span class="ko">그 자리에서 결과 상담</span><span class="en">Results on the spot</span></b><span><span class="ko">원장이 막힌 단원과 앞으로의 학습 방향을 바로 설명해 드립니다. 시험과 상담을 합쳐 약 30분.</span><span class="en">The principal explains which topics are blocking progress and what to do next. About 30 minutes in total.</span></span></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="who">
+  <div class="wrap">
+    <div class="who-card">
+      <img src="principal.jpg" alt="최정호 원장" width="284" height="443" loading="lazy">
+      <div>
+        <p class="who-lead"><span class="ko">진단평가 결과는<br><em>원장이 직접</em> 설명해 드립니다</span><span class="en">The <em>principal personally</em> explains every test result</span></p>
+        <p class="who-name">최정호 <span class="ko">원장</span><span class="en">· Principal</span></p>
+        <p class="who-sub"><span class="ko">한 반 2–5명 · 원장 직강</span><span class="en">2–5 students per class · taught by the principal</span></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="apply" id="apply">
+  <div class="wrap">
+    <div class="tag"><span class="ko">진단만 받으셔도 됩니다 · 한국어 상담</span><span class="en">Just the test is fine · Korean-speaking consultation</span></div>
+    <h2><span class="ko">편한 방법으로 시작하세요</span><span class="en">Choose how to start</span></h2>
+    <div class="paths">
+      <a class="path main" id="cta-visit" href="#lead-form" data-kind="진단평가">
+        <em class="badge"><span class="ko">추천</span><span class="en">Recommended</span></em>
+        <b><span class="ko">무료 진단평가</span><span class="en">Free diagnostic test</span></b>
+        <span><span class="ko">약 30분 · 시험 후 원장이 결과를 바로 설명해 드립니다 · West&nbsp;Ryde역 도보&nbsp;5분&nbsp;학원</span><span class="en">About 30 min · the principal explains the results straight after · 5 min walk from West Ryde Station</span></span>
+        <i>↓</i>
+      </a>
+      <a class="path" id="cta-consult" href="#lead-form" data-kind="학원 상담">
+        <b><span class="ko">개별 상담</span><span class="en">Personal consultation</span></b>
+        <span><span class="ko">우리 아이 공부 고민을 원장과 먼저 나눠 보세요 · 학원 또는 전화</span><span class="en">Share your concerns with the principal first · at the academy or by phone</span></span>
+        <i>↓</i>
+      </a>
+    </div>
+    <div class="online">
+      <a id="cta-online" href="https://solomonacademy.com.au/lt/level-test.html" target="_blank" rel="noopener"><span class="ko">먼저 집에서 가볍게 온라인 테스트 해 보기 (약&nbsp;20분)&nbsp;→</span><span class="en">Or try a quick online test at home first (~20 min)&nbsp;→</span></a>
+      <p><span class="ko">결과가 나오면 아래에서 상담을 신청해 주세요. 결과를 함께 보며 설명해 드립니다.</span><span class="en">Once you have the result, request a consultation below and we'll go through it with you.</span></p>
+    </div>
+    <form id="lead-form" novalidate>
+      <div class="ftitle"><span class="ko">신청서</span><span class="en">Request form</span></div>
+      <div>
+        <div style="font-weight:700;font-size:14px;margin-bottom:6px"><span class="ko">원하시는 것</span><span class="en">What would you like?</span></div>
+        <div class="chips">
+          <label><input type="radio" name="kind" value="진단평가" checked><span><span class="ko">진단평가</span><span class="en">Diagnostic test</span></span></label>
+          <label><input type="radio" name="kind" value="학원 상담"><span><span class="ko">학원 상담</span><span class="en">At the academy</span></span></label>
+          <label><input type="radio" name="kind" value="전화 상담"><span><span class="ko">전화 상담</span><span class="en">By phone</span></span></label>
+        </div>
+      </div>
+      <label><span class="ko">학부모 성함</span><span class="en">Parent name</span>
+        <input name="name" autocomplete="name" required></label>
+      <label><span class="ko">연락처</span><span class="en">Phone</span>
+        <input name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="04xx xxx xxx" required></label>
+      <label><span class="ko">자녀 학년</span><span class="en">Child's year</span>
+        <select name="year" required>
+          <option value="">—</option>
+          <option>Year 2</option><option>Year 3</option><option>Year 4</option><option>Year 5</option>
+          <option>Year 6</option><option>Year 7</option><option>Year 8</option><option>Year 9</option>
+        </select></label>
+      <div>
+        <div style="font-weight:700;font-size:14px;margin-bottom:6px"><span class="ko">관심 시험 (여러 개 선택 가능)</span><span class="en">Interested in (choose any)</span></div>
+        <div class="chips">
+          <label><input type="checkbox" name="exam" value="OC"><span>OC</span></label>
+          <label><input type="checkbox" name="exam" value="Selective"><span>Selective</span></label>
+          <label><input type="checkbox" name="exam" value="NAPLAN"><span>NAPLAN</span></label>
+          <label><input type="checkbox" name="exam" value="기타/Other"><span><span class="ko">기타</span><span class="en">Other</span></span></label>
+        </div>
+      </div>
+      <label><span class="ko">희망 연락 시간</span><span class="en">Best time to contact</span>
+        <select name="when">
+          <option value="언제든/Any time">언제든 / Any time</option>
+          <option value="평일 오전/Weekday morning">평일 오전 / Weekday morning</option>
+          <option value="평일 오후/Weekday afternoon">평일 오후 / Weekday afternoon</option>
+          <option value="평일 저녁/Weekday evening">평일 저녁 / Weekday evening</option>
+          <option value="주말/Weekend">주말 / Weekend</option>
+        </select></label>
+      <p class="err" id="form-err"><span class="ko">성함, 연락처, 학년을 입력해 주세요.</span><span class="en">Please fill in name, phone and year.</span></p>
+      <button class="btn btn-n" id="cta-submit" type="submit"><span class="ko">신청하기</span><span class="en">Send request</span> →</button>
+      <p class="priv"><span class="ko">입력 정보는 상담 연락에만 사용합니다.</span><span class="en">Your details are used only to contact you about the test.</span></p>
+      <div class="done" id="form-done"><span class="ko">신청되었습니다. 확인 후 연락드리겠습니다. 급하시면 0424 743 564로 전화 주세요.</span><span class="en">Thank you — we've received your request and will be in touch. For anything urgent, call 0424 743 564.</span></div>
+    </form>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2><span class="ko">오시는 길</span><span class="en">Location</span></h2>
+    <div class="map">
+      <div class="addr">2 Station St, West Ryde NSW 2114</div>
+      <div class="hint"><span class="ko">West Ryde역 도보 5분, 도미노피자 건물</span><span class="en">5-minute walk from West Ryde Station, the Domino's Pizza building</span></div>
+      <dl>
+        <dt><span class="ko">수업</span><span class="en">Classes</span></dt><dd><span class="ko">월–금 오후 4–6시</span><span class="en">Mon–Fri 4–6 pm</span></dd>
+        <dt><span class="ko">대상</span><span class="en">Students</span></dt><dd>Year 3–9</dd>
+        <dt><span class="ko">전화</span><span class="en">Phone</span></dt><dd><a id="cta-call-map" href="tel:+61424743564">0424 743 564</a></dd>
+      </dl>
+      <a class="btn btn-n" id="cta-map" href="https://www.google.com/maps/search/?api=1&amp;query=2+Station+St,+West+Ryde+NSW+2114" target="_blank" rel="noopener"><span class="ko">Google 지도로 보기</span><span class="en">Open in Google Maps</span></a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>© Solomon Math Academy · <a href="/">solomonacademy.com.au</a></footer>
+
+<nav class="bar">
+  <a class="btn btn-n" id="cta-call-bar" href="tel:+61424743564"><span class="ko">전화하기</span><span class="en">Call</span></a>
+  <a class="btn btn-y" id="cta-apply-bar" href="#apply"><span class="ko">진단평가 신청</span><span class="en">Book a test</span></a>
+</nav>
+
+<script>
+(function(){
+  var html=document.documentElement;
+  // 언어: ?lang=en 또는 이전 선택
+  var saved=null;
+  try{saved=localStorage.getItem('ft_lang')}catch(e){}
+  var q=new URLSearchParams(location.search).get('lang');
+  setLang(q==='en'||q==='ko'?q:(saved||'ko'));
+  function setLang(l){html.lang=l;document.title=l==='en'?'Free Diagnostic Test | Solomon Math Academy':'무료 진단평가 | Solomon Math Academy';try{localStorage.setItem('ft_lang',l)}catch(e){}}
+  document.getElementById('btn-lang').onclick=function(){setLang(html.lang==='ko'?'en':'ko')};
+
+  // 측정: Meta 픽셀이 깔리면 그대로 씀. 지금은 없으면 조용히 넘어감
+  var utm=new URLSearchParams(location.search);
+  function track(ev,id){
+    try{if(window.fbq){fbq('track',ev,{button:id,utm_content:utm.get('utm_content')||''})}}catch(e){}
+  }
+  document.querySelectorAll('a[href^="tel:"]').forEach(function(a){a.addEventListener('click',function(){track('Contact',a.id)})});
+  document.querySelectorAll('a[href="#apply"]').forEach(function(a){a.addEventListener('click',function(){track('ViewContent',a.id)})});
+
+  // 신청: 내용을 담은 문자를 연다 (서버 없음)
+  document.querySelectorAll('.path[data-kind]').forEach(function(c){c.addEventListener('click',function(){
+    var r=document.querySelector('input[name=kind][value="'+c.dataset.kind+'"]');if(r)r.checked=true;
+  })});
+  var GFORM='https://docs.google.com/forms/d/e/1FAIpQLSehrrw_CNbWLDNqFLrxXyKhSgkS7I0KkP9KEERIWMbqder4rg/formResponse';
+  var f=document.getElementById('lead-form');
+  f.addEventListener('submit',function(e){
+    e.preventDefault();
+    var el=f.elements,name=el['name'].value.trim(),phone=el['phone'].value.trim(),year=el['year'].value;
+    var err=document.getElementById('form-err');
+    if(!name||!phone||!year){err.style.display='block';return}
+    err.style.display='none';
+    var exams=[].slice.call(f.querySelectorAll('input[name=exam]:checked')).map(function(x){return x.value}).join(', ')||'-';
+    var body=new URLSearchParams();
+    body.append('entry.916225490',name);
+    body.append('entry.611143310',phone);
+    body.append('entry.406030867',year);
+    body.append('entry.738209785',exams);
+    body.append('entry.644003410',el['when'].value);
+    body.append('entry.1929076467','['+(f.querySelector('input[name=kind]:checked')||{}).value+'] '+(utm.get('utm_source')||'direct')+'/'+(utm.get('utm_campaign')||'-')+'/'+(utm.get('utm_content')||'-')+' · '+html.lang);
+    var btn=document.getElementById('cta-submit');btn.disabled=true;btn.style.opacity=.6;
+    // 구글 폼은 답을 돌려주지 않는다(no-cors) — 보낸 것까지만 안다
+    fetch(GFORM,{method:'POST',mode:'no-cors',body:body}).catch(function(){}).then(function(){
+      track('Lead','cta-submit');
+      [].forEach.call(f.children,function(x){if(x.id!=='form-done')x.style.display='none'});
+      document.getElementById('form-done').style.display='block';
+    });
+  });
+})();
+</script>
+</body>
+</html>
