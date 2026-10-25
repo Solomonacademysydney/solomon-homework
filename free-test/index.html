@@ -135,6 +135,20 @@ footer{text-align:center;font-size:12px;color:var(--gray);padding:10px 20px 24px
   body{padding-bottom:0}
 }
 </style>
+<!-- Meta 픽셀 — 이 페이지에만 둔다(대문 index.html 은 아이들 로그인 화면이라 넣지 않음) -->
+<script>
+(function(){
+  var PIXEL_ID='1167780489104687';   // 이벤트 관리자에서 받은 번호. 비어 있으면 아무것도 안 함
+  if(!PIXEL_ID)return;
+  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+  n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+  document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init',PIXEL_ID);
+  fbq('track','PageView');
+})();
+</script>
 </head>
 <body>
 
@@ -313,7 +327,7 @@ footer{text-align:center;font-size:12px;color:var(--gray);padding:10px 20px 24px
 </section>
 </main>
 
-<footer>© Solomon Math Academy · <a href="/">solomonacademy.com.au</a></footer>
+<footer>© Solomon Math Academy · <a href="/">solomonacademy.com.au</a><br><span class="ko">이 페이지는 광고 효과를 재기 위해 Meta 픽셀(쿠키)을 사용합니다. 신청서의 이름·연락처는 Meta로 보내지 않습니다.</span><span class="en">This page uses the Meta Pixel (cookies) to measure ad performance. Names and phone numbers from the form are never sent to Meta.</span></footer>
 
 <nav class="bar">
   <a class="btn btn-n" id="cta-call-bar" href="tel:+61424743564"><span class="ko">전화하기</span><span class="en">Call</span></a>
