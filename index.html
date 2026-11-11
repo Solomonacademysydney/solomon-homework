@@ -4742,7 +4742,36 @@ function periodGte(a, b) { // a >= b?
   if (a.month !== b.month) return a.month > b.month;
   return a.week >= b.week;
 }
+// ═══ [게스트 한 주 고정 · 2026-11-11 원장 지시] ═══════════════════════════════
+//   guest5(5학년)·guest7(7학년)은 들어오면 **지난주 한 주**에 고정한다 — 주를 옮기는 단추를 감추고 못 옮긴다.
+//   지난주에 숙제가 없을 때만 그 앞주로 거슬러 올라가 **숙제가 있는 가장 최근 주**를 찾는다(8주까지).
+//   그래도 없으면 지난주(빈 화면)로 둔다. 게임 카드는 그대로 보인다.
+const _FIXED_WEEK_GUESTS = new Set(['guest5', 'guest7']);
+const _FIXED_WEEK_LOOKBACK = 8;
+function _isFixedWeekGuest(u) {
+  return !!(u && u.role === 'student' && _FIXED_WEEK_GUESTS.has(u.id));
+}
+function _viewHasHomework(v) {
+  if (!v) return false;
+  if (v.kind === 'personal') return true;
+  if (v.kind !== 'group' || !v.hw) return false;
+  const hw = v.hw;
+  return !!((hw.sets && hw.sets.length > 0) || (hw.ts && hw.ts.enabled && hw.ts.questions && hw.ts.questions.length > 0));
+}
+async function _pickFixedGuestPeriod(user) {
+  const 지난주 = prevPeriod(getTodayPeriod());
+  let p = 지난주;
+  for (let i = 0; i < _FIXED_WEEK_LOOKBACK; i++) {
+    await _ensurePeriodLoaded(p);
+    if (_viewHasHomework(hwViewFor(getStore(), user, p))) return p;
+    p = prevPeriod(p);
+  }
+  await _ensurePeriodLoaded(지난주);   // 못 찾으면 지난주로(그 주 몫을 다시 받아 둔다)
+  return 지난주;
+}
+
 function navigateStudentPeriod(dir) {
+  if (_isFixedWeekGuest(currentUser)) return;   // [게스트 한 주 고정] 주 옮기기 막음
   const store = getStore();
   const cur = studentPeriod || store.currentPeriod;
   if (dir === -1) {
@@ -5949,6 +5978,11 @@ async function _doLoginInner() {
       // [2-B] 내 배정 목록 — 그다음에 그린다. 옛 방식(세션 없음)이면 묻지 않고 「개인 배정 없음」(그룹 숙제가 보이게)
       if (window._prepSession) await prepLoadAssignments(user.id);
       else _setPrepCache(user.id, { status: 'none', list: [], hidden: [], legacy: true });
+      // [게스트 한 주 고정] guest5·guest7 — 지난주(없으면 숙제 있는 가장 최근 주)
+      if (_isFixedWeekGuest(user)) {
+        try { studentPeriod = await _pickFixedGuestPeriod(user); }
+        catch (e) { console.warn('[게스트 고정] 주 찾기 실패 — 지난주로:', e); studentPeriod = prevPeriod(getTodayPeriod()); }
+      }
       renderStudent();
       // [2-B] 세션을 받은 뒤 — 못 보낸 답 → 약점 순으로 다시 보낸다(로그인 전에는 줄을 지킨다)
       _flushRetryQueue().then(() => _weaknessFlush()).catch(e => console.warn('[2-B] 줄 다시 보내기 실패:', e));
@@ -8624,6 +8658,12 @@ function getCalcAllowed(ranges, qNum) {
 }
 
 function renderPeriodNav(p, currentP) {
+  if (_isFixedWeekGuest(currentUser)) {   // [게스트 한 주 고정] 단추 없이 주 이름만
+    return `
+    <div style="display:flex;align-items:center;justify-content:center;background:#fff;border-radius:12px;padding:12px 16px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.05);">
+      <span style="font-weight:800;font-size:14px;color:var(--navy);">${periodLabel(p)}</span>
+    </div>`;
+  }
   const today = getTodayPeriod();
   const isLatest = periodGte(p, today) && periodGte(today, p);
   return `
