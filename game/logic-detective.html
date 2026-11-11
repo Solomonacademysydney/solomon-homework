@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>논리 탐정 · Logic Detective</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: #FEFAE0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 16px 30px;
+      background-image:
+        radial-gradient(circle at 15% 15%, rgba(201,79,140,0.10) 0%, transparent 45%),
+        radial-gradient(circle at 85% 85%, rgba(201,79,140,0.10) 0%, transparent 45%);
+    }
+
+    .header { text-align: center; margin-bottom: 14px; }
+    .title {
+      font-size: clamp(1.6rem, 5vw, 2.2rem);
+      font-weight: 900;
+      color: #8C2A5E;
+      letter-spacing: -0.5px;
+    }
+    .title-en { font-size: 0.95rem; color: #BC6E96; margin-top: 2px; font-weight: 700; letter-spacing: 1px; }
+
+    .stats-bar {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      background: white;
+      border-radius: 20px;
+      padding: 9px 22px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 16px rgba(201,79,140,0.18);
+      border: 2px solid #F8DCEA;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .stat { display: flex; align-items: center; gap: 6px; font-size: 1.05rem; font-weight: 800; color: #8C2A5E; }
+    .stat-icon { font-size: 1.15rem; }
+
+    .stage-wrap { position: relative; }
+    .stage {
+      position: relative;
+      width: min(92vw, 720px);
+      min-height: 520px;
+      background: linear-gradient(180deg, #FBE4F0 0%, #FEF7FB 100%);
+      border: 3px solid #E094BC;
+      border-radius: 22px;
+      box-shadow: 0 8px 28px rgba(201,79,140,0.25);
+      padding: 18px 16px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .scenario {
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: #8C2A5E;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .clue-box {
+      background: white;
+      border: 2.5px solid #F0BCD6;
+      border-radius: 18px;
+      padding: 12px 22px;
+      margin-bottom: 14px;
+      box-shadow: 0 3px 10px rgba(140,42,94,0.10);
+      max-width: 520px;
+    }
+    .clue {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #8C2A5E;
+      padding: 5px 0;
+      line-height: 1.4;
+    }
+    .clue .en { display: block; font-size: 0.85rem; font-weight: 700; color: #BC6E96; }
+
+    .question {
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: #8C2A5E;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+    .question .en { font-size: 0.88rem; font-weight: 700; color: #BC6E96; }
+
+    .opt-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 8px; }
+    .animal-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 12px 18px;
+      background: white;
+      border: 2.5px solid #E094BC;
+      border-radius: 18px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 900;
+      color: #8C2A5E;
+      cursor: pointer;
+      transition: all 0.12s;
+      touch-action: manipulation;
+    }
+    .animal-btn .emoji { font-size: 2.2rem; }
+    .animal-btn:hover { background: #FDF0F7; transform: translateY(-2px); }
+    .animal-btn:disabled { cursor: default; }
+    .animal-btn.right { background: #7EC850; border-color: #4F9030; color: white; }
+    .animal-btn.wrong { background: #F08080; border-color: #C0392B; color: white; animation: shake 0.3s; }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
+    .reveal {
+      min-height: 40px;
+      text-align: center;
+      font-weight: 900;
+      font-size: 1.05rem;
+      color: #8C2A5E;
+    }
+    .reveal .order { font-size: 1.3rem; margin-top: 4px; }
+
+    /* ── Overlay ── */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(254, 245, 250, 0.96);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      border-radius: 19px;
+      padding: 20px;
+      text-align: center;
+    }
+    .overlay.hidden { display: none; }
+    .ov-emoji { font-size: 3.2rem; margin-bottom: 8px; }
+    .ov-title { font-size: 1.9rem; font-weight: 900; color: #8C2A5E; margin-bottom: 2px; }
+    .ov-title-en { font-size: 1.05rem; font-weight: 800; color: #BC6E96; margin-bottom: 8px; letter-spacing: 0.5px; }
+    .ov-desc  { font-size: 1rem; font-weight: 700; color: #BC6E96; margin-bottom: 16px; line-height: 1.55; }
+    .ov-label { font-size: 0.82rem; font-weight: 800; color: #BC6E96; letter-spacing: 1px; margin-bottom: 8px; }
+
+    .pick-grid { display: flex; gap: 8px; justify-content: center; margin-bottom: 18px; flex-wrap: wrap; }
+    .pick-btn {
+      padding: 9px 18px;
+      border: 2.5px solid #E094BC;
+      background: white;
+      color: #8C2A5E;
+      border-radius: 14px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1rem;
+      font-weight: 900;
+      cursor: pointer;
+      transition: all 0.13s;
+    }
+    .pick-btn:hover  { background: #FDF0F7; }
+    .pick-btn.active { background: #C94F8C; color: white; border-color: #C94F8C; }
+
+    .big-btn {
+      padding: 13px 42px;
+      background: #7EC850;
+      color: white;
+      border: none;
+      border-radius: 18px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #4F9030;
+      transition: all 0.12s;
+    }
+    .big-btn:hover  { background: #6DB840; transform: translateY(-1px); }
+    .big-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #4F9030; }
+
+    .record-badge {
+      display: none;
+      background: #FFF4D6;
+      color: #E8850C;
+      border: 2px solid #F5C36A;
+      border-radius: 20px;
+      padding: 5px 18px;
+      font-size: 1rem;
+      font-weight: 900;
+      margin-bottom: 12px;
+    }
+    .record-badge.show { display: inline-block; animation: badgePop 0.5s cubic-bezier(.34,1.56,.64,1); }
+    @keyframes badgePop {
+      0%   { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1);   opacity: 1; }
+    }
+
+    .result-box {
+      background: white;
+      border: 2.5px solid #F8DCEA;
+      border-radius: 18px;
+      padding: 14px 30px;
+      margin-bottom: 18px;
+      box-shadow: 0 4px 14px rgba(201,79,140,0.15);
+    }
+    .result-row { display: flex; justify-content: space-between; gap: 30px; font-size: 1.1rem; font-weight: 800; color: #8C2A5E; padding: 3px 0; }
+    .result-row span:last-child { color: #E8850C; }
+
+    /* ══ 셀렉 단계 [2026-11-11] — 밤 탐정 분위기(남색 + 금색) ══ */
+    .pick-btn.sel-pick { background: #1b2a44; color: #f5d77a; border-color: #d4af37; }
+    .pick-btn.sel-pick:hover { background: #22365a; }
+    .pick-btn.sel-pick.active { background: #d4af37; color: #0d1626; border-color: #d4af37; }
+    .sel-badge { display: none; margin-top: 6px; font-size: .78rem; font-weight: 900; letter-spacing: 2px; color: #0d1626; background: #d4af37; border-radius: 999px; padding: 3px 12px; }
+    body.sel-mode {
+      background: #0d1626;
+      background-image:
+        radial-gradient(circle at 15% 15%, rgba(212,175,55,0.16) 0%, transparent 45%),
+        radial-gradient(circle at 85% 85%, rgba(90,140,255,0.14) 0%, transparent 45%);
+    }
+    body.sel-mode .sel-badge { display: inline-block; }
+    body.sel-mode .title { color: #f5d77a; }
+    body.sel-mode .title-en { color: #c9b06b; }
+    body.sel-mode .stats-bar { background: #16233b; border-color: #d4af37; box-shadow: 0 4px 16px rgba(0,0,0,.4); }
+    body.sel-mode .stat { color: #f5e6b8; }
+    body.sel-mode .stage { background: linear-gradient(180deg, #1b2a44 0%, #14203a 100%); border-color: #d4af37; box-shadow: 0 8px 28px rgba(0,0,0,.5); }
+    body.sel-mode .overlay { background: rgba(16,26,46,0.97); }
+    body.sel-mode .ov-title { color: #f5d77a; }
+    body.sel-mode .ov-title-en, body.sel-mode .ov-desc, body.sel-mode .ov-label { color: #c9b06b; }
+    body.sel-mode .pick-btn { background: #16233b; color: #f5e6b8; border-color: #5b6b8c; }
+    body.sel-mode .pick-btn.active { background: #d4af37; color: #0d1626; border-color: #d4af37; }
+    body.sel-mode .result-box { background: #16233b; border-color: #5b6b8c; }
+    body.sel-mode .result-row { color: #f5e6b8; }
+    body.sel-mode .scenario { color: #f5d77a; margin-bottom: 6px; }
+    body.sel-mode .clue-box { background: #0f1a2e; border-color: #3d4f75; }
+    body.sel-mode .question { color: #fff; }
+    body.sel-mode .animal-btn { background: #16233b; color: #f5e6b8; border-color: #5b6b8c; }
+    body.sel-mode .animal-btn:hover { background: #22365a; }
+    body.sel-mode .reveal { color: #f5e6b8; }
+    .s-tag { display: inline-block; font-size: .78rem; font-weight: 900; letter-spacing: 1px; color: #0d1626; background: #d4af37; border-radius: 999px; padding: 2px 10px; margin-bottom: 10px; }
+    .s-clue { font-size: 1.05rem; font-weight: 800; color: #f5e6b8; padding: 5px 0; line-height: 1.4; }
+    .s-clue .num { color: #d4af37; margin-right: 4px; }
+    .s-ko { display: block; font-size: .8rem; font-weight: 700; color: #8fa0c0; }
+    .stmt-list { display: flex; flex-direction: column; gap: 8px; width: min(100%, 560px); margin-bottom: 10px; }
+    .stmt-btn { display: flex; gap: 10px; align-items: flex-start; text-align: left; padding: 10px 14px; background: #16233b; border: 2px solid #5b6b8c; border-radius: 14px; color: #f5e6b8; font: 800 1rem 'Nunito', sans-serif; cursor: pointer; touch-action: manipulation; }
+    .stmt-btn .L { flex: none; width: 26px; height: 26px; border-radius: 50%; background: #d4af37; color: #0d1626; display: flex; align-items: center; justify-content: center; font-weight: 900; }
+    .stmt-btn:hover { background: #22365a; }
+    .stmt-btn:disabled { cursor: default; }
+    .stmt-btn.right { background: #2f7a3a; border-color: #7EC850; color: #fff; }
+    .stmt-btn.wrong { background: #8a2a2a; border-color: #F08080; color: #fff; animation: shake 0.3s; }
+    .s-explain { margin-top: 6px; font-size: .95rem; line-height: 1.5; }
+    .s-rows { margin: 8px auto 0; display: inline-block; text-align: left; background: #0f1a2e; border: 1px solid #3d4f75; border-radius: 12px; padding: 8px 14px; }
+    .s-row { font-size: 1.15rem; padding: 2px 0; }
+    .s-mark { display: inline-block; width: 22px; color: #d4af37; font-size: .95rem; }
+    .s-range { font-size: .75rem; color: #8fa0c0; margin-top: 4px; }
+    .sel-note { display: none; font-size: .82rem; font-weight: 800; color: #c9b06b; margin: -10px 0 10px; }
+    body.sel-mode .sel-note { display: block; }
+    .timer-opt { display: none; align-items: center; gap: 6px; font-weight: 800; color: #c9b06b; margin: -8px 0 16px; cursor: pointer; }
+    body.sel-mode .timer-opt { display: flex; }
+    #timer-stat.low { color: #ff8a8a; }
+    .big-btn.s-next { margin-top: 12px; font-size: 1.1rem; padding: 10px 30px; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="title">논리 탐정</div>
+    <div class="title-en">Logic Detective</div>
+    <div class="sel-badge">🔥 SELECTIVE CHALLENGE</div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat"><span class="stat-icon">⭐</span><span id="score">0</span></div>
+    <div class="stat"><span class="stat-icon">🧾</span><span id="round">1</span>/10</div>
+    <div class="stat"><span class="stat-icon">✅</span><span id="correct">0</span></div>
+    <div class="stat" id="timer-stat" style="display:none;"><span class="stat-icon">⏱</span><span id="timer">60</span></div>
+  </div>
+
+  <div class="stage-wrap">
+    <div class="stage" id="stage">
+      <div id="round-area" style="display:flex;flex-direction:column;align-items:center;width:100%;"></div>
+
+      <!-- Start overlay -->
+      <div class="overlay" id="start-overlay">
+        <div class="ov-emoji">🕵️</div>
+        <div class="ov-title">논리 탐정</div>
+        <div class="ov-title-en">Logic Detective</div>
+        <div class="ov-desc">단서를 읽고 누가 더 빠른지, 큰지, 나이가 많은지 추리하세요!<br>Read the clues and work out the order</div>
+        <div class="ov-label">난이도 · Level</div>
+        <div class="pick-grid" id="level-grid">
+          <button class="pick-btn active" data-level="easy">동물 3마리 Easy</button>
+          <button class="pick-btn" data-level="hard">동물 4마리 Hard</button>
+          <button class="pick-btn sel-pick" data-level="sel">🔥 셀렉 Selective</button>
+        </div>
+        <div class="sel-note">Y5~Y6 도전 단계 · Challenge for Years 5–6</div>
+        <label class="timer-opt" id="timer-opt"><input type="checkbox" id="timer-chk"> ⏱ 한 문제 1분 · 1 min per question</label>
+        <button class="big-btn" id="start-btn">시작 · Start</button>
+      </div>
+
+      <!-- End overlay -->
+      <div class="overlay hidden" id="over-overlay">
+        <div class="ov-emoji" id="over-emoji">🕵️</div>
+        <div class="ov-title" id="over-title">수사 종료!</div>
+        <div class="ov-title-en" id="over-title-en">Case Closed</div>
+        <div class="record-badge" id="record-badge">신기록! New Record!</div>
+        <div class="result-box">
+          <div class="result-row"><span>난이도 · Level</span><span id="final-level"></span></div>
+          <div class="result-row"><span>점수 · Score</span><span id="final-score">0</span></div>
+          <div class="result-row"><span>맞힌 문제 · Correct</span><span id="final-correct">0</span></div>
+          <div class="result-row"><span>내 최고 기록 · Best</span><span id="final-best">0</span></div>
+          <div class="result-row"><span>누적 맞힌 문제 · Total</span><span id="final-total">0</span></div>
+        </div>
+        <button class="big-btn" id="retry-btn">다시 하기 · Retry 🔄</button>
+      </div>
+    </div>
+  </div>
+
+<script id="sel-core">
+// ═══════════════════════════════════════════════════════
+//  [2026-11-11] 셀렉 단계 — 문제 만들기(화면과 떨어진 순수 함수)
+//   동물 5마리 · 단서 3~6개(앞뒤 · 바로 앞 · 1등 아님 · 꼴찌 아님)
+//   묻는 꼴 넷: must(반드시 참) · could(참일 수도) · cannot(참일 수 없음) · unique(순서가 하나로 정해짐 → 몇 등?)
+//   120가지 순서를 모두 대 보고 정답이 꼭 하나인 것만 낸다.
+//   시험: 따로 짠 검사기가 이 블록만 떼어 불러 수천 판을 다시 센다.
+// ═══════════════════════════════════════════════════════
+window.SelCore = (function () {
+  'use strict';
+  const N = 5;
+  const irnd = n => Math.floor(Math.random() * n);
+  const pick = a => a[irnd(a.length)];
+  const shuffle = arr => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = irnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  function perms(arr) {
+    if (arr.length <= 1) return [arr];
+    const out = [];
+    arr.forEach((x, i) => perms([...arr.slice(0, i), ...arr.slice(i + 1)]).forEach(p => out.push([x, ...p])));
+    return out;
+  }
+  const ORDERS = perms([...Array(N).keys()]);                 // order[자리] = 동물 (자리 0 = 1등)
+  const posOf = o => { const p = Array(N); o.forEach((a, i) => { p[a] = i; }); return p; };
+  const ALLPOS = ORDERS.map(posOf);                           // pos[동물] = 자리
+
+  function holdsClue(c, p) {
+    switch (c.t) {
+      case 'before':   return p[c.a] < p[c.b];
+      case 'just':     return p[c.b] === p[c.a] + 1;
+      case 'notFirst': return p[c.a] !== 0;
+      case 'notLast':  return p[c.a] !== N - 1;
+    }
+    return false;
+  }
+  function holdsStmt(s, p) {
+    return s.t === 'before' ? p[s.a] < p[s.b] : p[s.a] === s.r;
+  }
+  const hasPair = c => c.t === 'before' || c.t === 'just';
+  function dupClue(c, d) {
+    if (hasPair(c) || hasPair(d)) {
+      return hasPair(c) && hasPair(d) &&
+        ((c.a === d.a && c.b === d.b) || (c.a === d.b && c.b === d.a));
+    }
+    return c.t === d.t && c.a === d.a;
+  }
+  // 단서를 그대로 다시 말한 보기(정답이 되면 너무 쉽다)
+  function restates(s, clues) {
+    return s.t === 'before' && clues.some(c => hasPair(c) && c.a === s.a && c.b === s.b);
+  }
+  // 단서 하나와 바로 부딪히는 보기(오답으로 쓰면 너무 쉽다)
+  function plainContradiction(s, clues) {
+    if (s.t === 'before') return clues.some(c => hasPair(c) && c.a === s.b && c.b === s.a);
+    if (s.r === 0)     return clues.some(c => c.t === 'notFirst' && c.a === s.a);
+    if (s.r === N - 1) return clues.some(c => c.t === 'notLast' && c.a === s.a);
+    return false;
+  }
+  // 보기 둘이 서로 뒤집힌 꼴이면 하나가 답인 게 드러난다
+  function clash(s, t) {
+    if (s.t === 'before' && t.t === 'before') return (s.a === t.b && s.b === t.a) || (s.a === t.a && s.b === t.b);
+    if (s.t === 'rank' && t.t === 'rank') return s.a === t.a && s.r === t.r;
+    return false;
+  }
+  const STMTS = [];
+  for (let a = 0; a < N; a++) for (let b = 0; b < N; b++) if (a !== b) STMTS.push({ t: 'before', a, b });
+  for (let a = 0; a < N; a++) for (let r = 0; r < N; r++) STMTS.push({ t: 'rank', a, r });
+
+  function generate(qType, allowJust) {
+    for (let tries = 0; tries < 800; tries++) {
+      const truth = shuffle([...Array(N).keys()]);
+      const tp = posOf(truth);
+      const cand = [];
+      for (let a = 0; a < N; a++) for (let b = 0; b < N; b++) if (a !== b && tp[a] < tp[b]) cand.push({ t: 'before', a, b });
+      if (allowJust) for (let i = 0; i < N - 1; i++) cand.push({ t: 'just', a: truth[i], b: truth[i + 1] });
+      for (let a = 0; a < N; a++) {
+        if (tp[a] !== 0) cand.push({ t: 'notFirst', a });
+        if (tp[a] !== N - 1) cand.push({ t: 'notLast', a });
+      }
+      const k = qType === 'unique' ? 4 + irnd(3) : 3 + irnd(3);
+      const clues = [];
+      for (const c of shuffle(cand)) {
+        if (clues.length >= k) break;
+        if (clues.some(d => dupClue(c, d))) continue;
+        clues.push(c);
+      }
+      if (clues.length < k) continue;
+      if (clues.every(c => c.t === 'before')) continue;          // 셀렉다운 단서를 하나는 섞는다
+      const S = ALLPOS.filter(p => clues.every(c => holdsClue(c, p)));
+
+      if (qType === 'unique') {
+        if (S.length !== 1) continue;
+        const r = 1 + irnd(N - 2);                                // 가운데 등수만 묻는다(1등·꼴찌는 쉽다)
+        const order = ORDERS[ALLPOS.indexOf(S[0])];
+        return { qType, clues, S, ask: r, answer: order[r] };
+      }
+
+      if (S.length < 2 || S.length > 8) continue;
+      const must = [], could = [], never = [];
+      for (const s of STMTS) {
+        const n = S.filter(p => holdsStmt(s, p)).length;
+        if (n === S.length) { if (!restates(s, clues)) must.push(s); }
+        else if (n === 0)   { if (!plainContradiction(s, clues)) never.push(s); }
+        else could.push(s);
+      }
+      let correct, pool;
+      if (qType === 'must') {
+        if (!must.length || could.length < 2) continue;
+        correct = pick(must); pool = shuffle(could).concat(shuffle(never));
+      } else if (qType === 'could') {
+        if (!could.length) continue;
+        correct = pick(could); pool = shuffle(never);
+      } else {
+        if (!never.length) continue;
+        correct = pick(never); pool = shuffle(could).concat(shuffle(must));
+      }
+      const opts = [correct];
+      for (const d of pool) {
+        if (opts.length === 4) break;
+        if (opts.some(o => clash(o, d))) continue;
+        opts.push(d);
+      }
+      if (opts.length < 4) continue;
+      const options = shuffle(opts);
+      return { qType, clues, S, options, answer: options.indexOf(correct) };
+    }
+    return null;
+  }
+
+  return { N, ORDERS, ALLPOS, generate, holdsClue, holdsStmt };
+})();
+</script>
+
+<script>
+(() => {
+  'use strict';
+
+  const roundArea = document.getElementById('round-area');
+  const startOverlay = document.getElementById('start-overlay');
+  const overOverlay  = document.getElementById('over-overlay');
+
+  const TOTAL_ROUNDS = 10;
+  const irnd = n => Math.floor(Math.random() * n);
+  const pick = arr => arr[irnd(arr.length)];
+  const shuffle = arr => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = irnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+  /* ── 사운드 ── */
+  let audioCtx = null;
+  function beep(freq, dur, type = 'sine', gain = 0.15) {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = type; o.frequency.value = freq;
+      g.gain.setValueAtTime(gain, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(); o.stop(audioCtx.currentTime + dur);
+    } catch (e) { /* 무시 */ }
+  }
+  const sndOk = () => { beep(660, 0.12, 'triangle'); beep(990, 0.18, 'triangle', 0.1); };
+  const sndNo = () => beep(220, 0.2, 'square', 0.08);
+
+  /* ── 기록 저장 ── */
+  const STORE_KEY = 'logicStats';
+  function loadStats() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch (e) { return {}; }
+  }
+  function saveStats(s) {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(s)); } catch (e) { /* 무시 */ }
+  }
+
+  /* ── 상태 ── */
+  let level = 'easy';
+  let round = 0, score = 0, correctCount = 0;
+
+  const LEVEL_LABEL = { easy: '동물 3마리', hard: '동물 4마리', sel: '셀렉 Selective' };
+
+  document.querySelectorAll('#level-grid .pick-btn').forEach(b => b.addEventListener('click', () => {
+    level = b.dataset.level;
+    document.querySelectorAll('#level-grid .pick-btn').forEach(x => x.classList.toggle('active', x === b));
+    // 셀렉을 고르는 순간 화면이 밤 탐정 분위기로 바뀐다
+    document.body.classList.toggle('sel-mode', level === 'sel');
+  }));
+
+  /* ── 시나리오 데이터 ── */
+  const ANIMALS = [
+    ['🐨', 'Koala', '코알라'], ['🦘', 'Kangaroo', '캥거루'], ['🐰', 'Rabbit', '토끼'],
+    ['🐢', 'Turtle', '거북이'], ['🦊', 'Fox', '여우'], ['🐻', 'Bear', '곰'],
+    ['🐱', 'Cat', '고양이'], ['🐶', 'Dog', '강아지'],
+  ];
+  // 받침 유무에 따라 조사 선택 (곰→곰이, 토끼→토끼가)
+  const josa = (w, withBatchim, without) => {
+    const c = w.charCodeAt(w.length - 1);
+    const has = c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 > 0;
+    return w + (has ? withBatchim : without);
+  };
+
+  const SCENARIOS = [
+    {
+      title: '🏃 달리기 시합 · The Big Race',
+      sj: ['이', '가'],
+      cmpKo: (s, o) => `${s} ${o}보다 빨라요.`,
+      cmpEn: (x, y) => `${x} is faster than ${y}.`,
+      rankKo: ['가장 빠른', '두 번째로 빠른', '세 번째로 빠른', '가장 느린'],
+      rankEn: ['the fastest', 'the 2nd fastest', 'the 3rd fastest', 'the slowest'],
+      rank5Ko: ['가장 빠른', '두 번째로 빠른', '세 번째로 빠른', '네 번째로 빠른', '가장 느린'],
+      rank5En: ['the fastest', 'the 2nd fastest', 'the 3rd fastest', 'the 4th fastest', 'the slowest'],
+      notFirstKo: s => `${s} 가장 빠르지 않아요.`,  notFirstEn: x => `${x} is not the fastest.`,
+      notLastKo:  s => `${s} 가장 느리지 않아요.`,  notLastEn:  x => `${x} is not the slowest.`,
+      justKo: (s, o) => `${s} ${o} 바로 앞에 들어왔어요.`,
+      justEn: (x, y) => `${x} finished right before ${y}.`,
+    },
+    {
+      title: '📏 키 재기 · Measuring Heights',
+      sj: ['은', '는'],
+      cmpKo: (s, o) => `${s} ${o}보다 키가 커요.`,
+      cmpEn: (x, y) => `${x} is taller than ${y}.`,
+      rankKo: ['가장 키가 큰', '두 번째로 키가 큰', '세 번째로 키가 큰', '가장 키가 작은'],
+      rankEn: ['the tallest', 'the 2nd tallest', 'the 3rd tallest', 'the shortest'],
+      rank5Ko: ['가장 키가 큰', '두 번째로 키가 큰', '세 번째로 키가 큰', '네 번째로 키가 큰', '가장 키가 작은'],
+      rank5En: ['the tallest', 'the 2nd tallest', 'the 3rd tallest', 'the 4th tallest', 'the shortest'],
+      notFirstKo: s => `${s} 가장 키가 크지 않아요.`,  notFirstEn: x => `${x} is not the tallest.`,
+      notLastKo:  s => `${s} 가장 키가 작지 않아요.`,  notLastEn:  x => `${x} is not the shortest.`,
+    },
+    {
+      title: '🎂 생일 파티 · Birthday Party',
+      sj: ['은', '는'],
+      cmpKo: (s, o) => `${s} ${o}보다 나이가 많아요.`,
+      cmpEn: (x, y) => `${x} is older than ${y}.`,
+      rankKo: ['가장 나이가 많은', '두 번째로 나이가 많은', '세 번째로 나이가 많은', '가장 어린'],
+      rankEn: ['the oldest', 'the 2nd oldest', 'the 3rd oldest', 'the youngest'],
+      rank5Ko: ['가장 나이가 많은', '두 번째로 나이가 많은', '세 번째로 나이가 많은', '네 번째로 나이가 많은', '가장 어린'],
+      rank5En: ['the oldest', 'the 2nd oldest', 'the 3rd oldest', 'the 4th oldest', 'the youngest'],
+      notFirstKo: s => `${s} 가장 나이가 많지 않아요.`,  notFirstEn: x => `${x} is not the oldest.`,
+      notLastKo:  s => `${s} 가장 어리지 않아요.`,      notLastEn:  x => `${x} is not the youngest.`,
+    },
+  ];
+
+  /* ── 단서 생성: 유일해가 되는 비교 단서 뽑기 ── */
+  function permutations(arr) {
+    if (arr.length <= 1) return [arr];
+    const out = [];
+    arr.forEach((x, i) => {
+      permutations([...arr.slice(0, i), ...arr.slice(i + 1)]).forEach(p => out.push([x, ...p]));
+    });
+    return out;
+  }
+
+  function genPuzzle(n) {
+    // order[0]이 1등
+    const chars = shuffle(ANIMALS).slice(0, n);
+    const order = shuffle([...Array(n).keys()]);
+    const rank = Array(n);                    // rank[동물idx] = 등수(0=1등)
+    order.forEach((charIdx, r) => rank[charIdx] = r);
+
+    // 모든 쌍 (이긴 쪽, 진 쪽)
+    const pairs = [];
+    for (let i = 0; i < n; i++)
+      for (let j = 0; j < n; j++)
+        if (rank[i] < rank[j]) pairs.push([i, j]);
+
+    const need = n - 1;
+    const perms = permutations([...Array(n).keys()]);
+    const satisfies = (perm, clues) => clues.every(([w, l]) => perm.indexOf(w) < perm.indexOf(l));
+
+    // 유일해가 나올 때까지 무작위 부분집합 시도, 실패 시 인접 사슬(항상 유일해)
+    let clues = null;
+    for (let t = 0; t < 40 && !clues; t++) {
+      const cand = shuffle(pairs).slice(0, need);
+      const solutions = perms.filter(p => satisfies(p, cand));
+      if (solutions.length === 1) clues = cand;
+    }
+    if (!clues) {
+      clues = [];
+      for (let r = 0; r < n - 1; r++) clues.push([order[r], order[r + 1]]);
+    }
+    return { chars, order, rank, clues: shuffle(clues) };
+  }
+
+  /* ── 라운드 ── */
+  let judged = false;
+
+  function renderRound() {
+    if (level === 'sel') { renderSelRound(); return; }
+    judged = false;
+    const n = level === 'easy' ? 3 : 4;
+    const sc = pick(SCENARIOS);
+    const pz = genPuzzle(n);
+
+    // 질문: 1등 또는 꼴찌 (hard는 중간 등수도)
+    const askPool = level === 'easy' ? [0, n - 1] : [0, 1, n - 1];
+    const askRank = pick(askPool);
+    const answerIdx = pz.order[askRank];
+    const rkKo = sc.rankKo[askRank === n - 1 ? 3 : askRank];
+    const rkEn = sc.rankEn[askRank === n - 1 ? 3 : askRank];
+
+    const koSubj = i => `${pz.chars[i][0]} ${josa(pz.chars[i][2], sc.sj[0], sc.sj[1])}`;
+    const koName = i => `${pz.chars[i][0]} ${pz.chars[i][2]}`;
+    const clueHtml = pz.clues.map(([w, l]) => `
+      <div class="clue">${sc.cmpKo(koSubj(w), koName(l))}
+        <span class="en">${sc.cmpEn(pz.chars[w][1], pz.chars[l][1])}</span>
+      </div>`).join('');
+
+    roundArea.innerHTML = `
+      <div class="scenario">${sc.title}</div>
+      <div class="clue-box">${clueHtml}</div>
+      <div class="question">${rkKo} 동물은 누구일까요?<br><span class="en">Who is ${rkEn}?</span></div>
+      <div class="opt-row">
+        ${shuffle([...Array(n).keys()]).map(i => `
+          <button class="animal-btn" data-i="${i}">
+            <span class="emoji">${pz.chars[i][0]}</span>${pz.chars[i][1]}
+          </button>`).join('')}
+      </div>
+      <div class="reveal" id="reveal"></div>`;
+
+    roundArea.querySelectorAll('.animal-btn').forEach(b => b.addEventListener('click', () => {
+      if (judged) return;
+      judged = true;
+      const i = parseInt(b.dataset.i, 10);
+      roundArea.querySelectorAll('.animal-btn').forEach(x => {
+        x.disabled = true;
+        if (parseInt(x.dataset.i, 10) === answerIdx) x.classList.add('right');
+      });
+      const ok = i === answerIdx;
+      if (ok) { score += 10; correctCount++; sndOk(); }
+      else { b.classList.add('wrong'); sndNo(); }
+
+      const orderStr = pz.order.map((ci, r) => `${r + 1}등 ${pz.chars[ci][0]}`).join(' → ');
+      document.getElementById('reveal').innerHTML =
+        `${ok ? '✅ 정답! +10' : '❌ 아쉬워요!'}<div class="order">${orderStr}</div>`;
+      updateStats();
+      setTimeout(nextRound, 2200);
+    }));
+  }
+
+  /* ══ 셀렉 단계 화면 [2026-11-11] ══ */
+  const SEL_TIME = 60;
+  let timerId = null, timeLeft = 0;
+  const timerStat = document.getElementById('timer-stat');
+  const timerEl   = document.getElementById('timer');
+  const timerChk  = document.getElementById('timer-chk');
+
+  function stopTimer() { if (timerId) { clearInterval(timerId); timerId = null; } }
+  function startTimer(onEnd) {
+    stopTimer();
+    const on = level === 'sel' && timerChk.checked;
+    timerStat.style.display = on ? '' : 'none';
+    if (!on) return;
+    timeLeft = SEL_TIME;
+    const show = () => { timerEl.textContent = timeLeft; timerStat.classList.toggle('low', timeLeft <= 10); };
+    show();
+    timerId = setInterval(() => {
+      timeLeft--; show();
+      if (timeLeft <= 0) { stopTimer(); onEnd(); }
+    }, 1000);
+  }
+
+  const Q_TEXT = {
+    must:   { tag: 'MUST BE TRUE',   en: 'Which statement <u>must</u> be true?',   ko: '반드시 참인 것은 무엇일까요?' },
+    could:  { tag: 'COULD BE TRUE',  en: 'Which statement <u>could</u> be true?',  ko: '참일 수도 있는 것은 무엇일까요?' },
+    cannot: { tag: 'CANNOT BE TRUE', en: 'Which statement <u>cannot</u> be true?', ko: '참일 수 없는 것은 무엇일까요?' },
+    unique: { tag: 'FIND THE ORDER' }
+  };
+
+  function renderSelRound() {
+    judged = false;
+    const sc = pick(SCENARIOS);
+    const ch = shuffle(ANIMALS).slice(0, SelCore.N);
+    let pz = null;
+    for (let t = 0; t < 5 && !pz; t++) pz = SelCore.generate(pick(['must', 'must', 'could', 'cannot', 'unique']), !!sc.justEn);
+    // 「하나로 정해짐」 꼴은 드물게(검사 1천 번에 4번꼴) 못 만든다 → 그때는 「반드시 참」으로(검사 3천 번 실패 0)
+    while (!pz) pz = SelCore.generate('must', !!sc.justEn);
+
+    const enN = i => `${ch[i][0]} ${ch[i][1]}`;
+    const ko  = i => ch[i][2];
+    const koT = i => josa(ko(i), '은', '는');
+    const beforeText = (a, b) => ({ en: sc.cmpEn(enN(a), enN(b)), ko: sc.cmpKo(josa(ko(a), sc.sj[0], sc.sj[1]), ko(b)) });
+    const clueText = c => {
+      switch (c.t) {
+        case 'before':   return beforeText(c.a, c.b);
+        case 'just':     return { en: sc.justEn(enN(c.a), enN(c.b)), ko: sc.justKo(koT(c.a), ko(c.b)) };
+        case 'notFirst': return { en: sc.notFirstEn(enN(c.a)), ko: sc.notFirstKo(koT(c.a)) };
+        case 'notLast':  return { en: sc.notLastEn(enN(c.a)),  ko: sc.notLastKo(koT(c.a)) };
+      }
+    };
+    const stmtText = s => s.t === 'before'
+      ? beforeText(s.a, s.b)
+      : { en: `${enN(s.a)} is ${sc.rank5En[s.r]}.`, ko: `${koT(s.a)} ${sc.rank5Ko[s.r]} 동물이에요.` };
+
+    const q = Q_TEXT[pz.qType];
+    const qEn = pz.qType === 'unique' ? `Who is ${sc.rank5En[pz.ask]}?` : q.en;
+    const qKo = pz.qType === 'unique' ? `${sc.rank5Ko[pz.ask]} 동물은 누구일까요?` : q.ko;
+
+    const clueHtml = pz.clues.map((c, i) => {
+      const t = clueText(c);
+      return `<div class="s-clue"><span class="num">${i + 1}.</span>${t.en}<span class="s-ko">${t.ko}</span></div>`;
+    }).join('');
+
+    const optHtml = pz.qType === 'unique'
+      ? `<div class="opt-row">${shuffle([...Array(SelCore.N).keys()]).map(i => `
+          <button class="animal-btn" data-i="${i}"><span class="emoji">${ch[i][0]}</span>${ch[i][1]}</button>`).join('')}</div>`
+      : `<div class="stmt-list">${pz.options.map((s, i) => {
+          const t = stmtText(s);
+          return `<button class="stmt-btn" data-i="${i}"><span class="L">${'ABCD'[i]}</span><span>${t.en}<span class="s-ko">${t.ko}</span></span></button>`;
+        }).join('')}</div>`;
+
+    roundArea.innerHTML = `
+      <div class="scenario">${sc.title}</div>
+      <div class="s-tag">${q.tag}</div>
+      <div class="clue-box">${clueHtml}</div>
+      <div class="question">${qEn}<span class="s-ko">${qKo}</span></div>
+      ${optHtml}
+      <div class="reveal" id="reveal"></div>`;
+
+    const judge = choice => {
+      if (judged) return;
+      judged = true;
+      stopTimer();
+      roundArea.querySelectorAll('[data-i]').forEach(x => {
+        x.disabled = true;
+        if (parseInt(x.dataset.i, 10) === pz.answer) x.classList.add('right');
+      });
+      const ok = choice === pz.answer;
+      if (ok) { score += 10; correctCount++; sndOk(); }
+      else {
+        const b = choice >= 0 && roundArea.querySelector(`[data-i="${choice}"]`);
+        if (b) b.classList.add('wrong');
+        sndNo();
+      }
+
+      // 까닭: 단서에 맞는 순서를 모두 펼쳐 보인다
+      const L = 'ABCD'[pz.answer];
+      const n = pz.S.length;
+      const rows = pz.S.map(p => {
+        const order = []; p.forEach((place, a) => { order[place] = a; });
+        const mark = pz.qType === 'unique' ? '' : (SelCore.holdsStmt(pz.options[pz.answer], p) ? '✔' : '✘');
+        return `<div class="s-row"><span class="s-mark">${mark}</span>${order.map(a => ch[a][0]).join(' → ')}</div>`;
+      }).join('');
+      const why = {
+        must:   `${L} is true in <b>all ${n}</b> possible orders.<span class="s-ko">${L}는 가능한 ${n}가지 순서 모두에서 참이에요.</span>`,
+        could:  `${L} is true in at least one possible order (✔).<span class="s-ko">${L}가 참인 순서가 있어요 (✔).</span>`,
+        cannot: `${L} is not true in <b>any</b> possible order.<span class="s-ko">${L}가 참인 순서는 하나도 없어요.</span>`,
+        unique: `Only one order fits all the clues.<span class="s-ko">단서에 맞는 순서는 하나뿐이에요.</span>`
+      }[pz.qType];
+      const head = ok ? '✅ 정답! Correct! +10' : (choice < 0 ? "⏰ 시간 끝! Time's up!" : '❌ 아쉬워요! Not quite.');
+      const last = round + 1 >= TOTAL_ROUNDS;
+      document.getElementById('reveal').innerHTML = `
+        ${head}
+        <div class="s-explain">${why}</div>
+        <div class="s-rows">${rows}</div>
+        <div class="s-range">${sc.rank5En[0]} → ${sc.rank5En[SelCore.N - 1]}</div>
+        <button class="big-btn s-next" id="next-btn">${last ? '결과 보기 · Results' : '다음 · Next →'}</button>`;
+      document.getElementById('next-btn').addEventListener('click', nextRound);
+      updateStats();
+    };
+
+    roundArea.querySelectorAll('[data-i]').forEach(b =>
+      b.addEventListener('click', () => judge(parseInt(b.dataset.i, 10))));
+    startTimer(() => judge(-1));
+  }
+
+  function nextRound() {
+    round++;
+    if (round >= TOTAL_ROUNDS) { gameOver(); return; }
+    document.getElementById('round').textContent = round + 1;
+    renderRound();
+  }
+
+  function updateStats() {
+    document.getElementById('score').textContent = score;
+    document.getElementById('correct').textContent = correctCount;
+  }
+
+  /* ── 시작/종료 ── */
+  function startGame() {
+    round = 0; score = 0; correctCount = 0;
+    updateStats();
+    document.getElementById('round').textContent = 1;
+    startOverlay.classList.add('hidden');
+    overOverlay.classList.add('hidden');
+    renderRound();
+  }
+
+  function gameOver() {
+    stopTimer();
+    timerStat.style.display = 'none';
+    const stats = loadStats();
+    stats.best = stats.best || {};
+    const prevBest  = stats.best[level] || 0;
+    const newRecord = correctCount > 0 && score > prevBest;
+    if (newRecord) stats.best[level] = score;
+    stats.totalCorrect = (stats.totalCorrect || 0) + correctCount;
+    stats.totalGames   = (stats.totalGames   || 0) + 1;
+    saveStats(stats);
+
+    document.getElementById('final-level').textContent   = LEVEL_LABEL[level];
+    document.getElementById('final-score').textContent   = score;
+    document.getElementById('final-correct').textContent = correctCount + ' / ' + TOTAL_ROUNDS;
+    document.getElementById('final-best').textContent    = Math.max(prevBest, score);
+    document.getElementById('final-total').textContent   = stats.totalCorrect + '개';
+    document.getElementById('record-badge').classList.toggle('show', newRecord);
+
+    const emoji = correctCount >= 9 ? '🏆' : correctCount >= 6 ? '🌟' : '🕵️';
+    const title = correctCount >= 9 ? '명탐정!' : correctCount >= 6 ? '잘했어요!' : '수사 종료!';
+    const titleEn = correctCount >= 9 ? 'Master Detective!' : correctCount >= 6 ? 'Great Job!' : 'Case Closed';
+    document.getElementById('over-emoji').textContent    = emoji;
+    document.getElementById('over-title').textContent    = title;
+    document.getElementById('over-title-en').textContent = titleEn;
+    roundArea.innerHTML = '';
+    overOverlay.classList.remove('hidden');
+  }
+
+  document.getElementById('start-btn').addEventListener('click', startGame);
+  document.getElementById('retry-btn').addEventListener('click', () => {
+    overOverlay.classList.add('hidden');
+    startOverlay.classList.remove('hidden');
+  });
+})();
+</script>
+
+<!-- [2026-11-11] 숙제로 돌아가기 — 게임은 숙제 화면에서 새 탭으로 열린다(window.open).
+     그래서 이 탭을 닫으면 숙제 화면이 그대로 다시 보인다. 탭을 못 닫으면(주소를 직접 연 경우) 첫 화면으로 간다. -->
+<style>
+  .back-hw-corner{position:fixed;top:10px;left:10px;z-index:9999;background:#fff;color:#1e3a5f;border:2px solid #1e3a5f;border-radius:999px;padding:6px 12px;font:800 13px 'Nunito',sans-serif;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15);}
+  .back-hw-corner:hover{background:#1e3a5f;color:#fff;}
+  .back-hw-big{margin-top:8px;padding-top:8px !important;padding-bottom:8px !important;font-size:15px !important;background:#fff !important;color:#1e3a5f !important;border:2px solid #1e3a5f !important;}
+</style>
+<script>
+(function () {
+  function backToHomework() {
+    try { if (window.opener && !window.opener.closed) { window.opener.focus(); } } catch (e) {}
+    try { window.close(); } catch (e) {}
+    // 닫히지 않았으면(직접 연 탭) 홈페이지 첫 화면으로
+    setTimeout(function () { if (!window.closed) location.href = '../'; }, 300);
+  }
+  var corner = document.createElement('button');
+  corner.type = 'button';
+  corner.className = 'back-hw-corner';
+  corner.textContent = '← 숙제';
+  corner.title = 'Back to Homework';
+  corner.addEventListener('click', backToHomework);
+  document.body.appendChild(corner);
+
+  var retry = document.getElementById('retry-btn');
+  if (retry && retry.parentNode) {
+    var big = document.createElement('button');
+    big.type = 'button';
+    big.className = retry.className + ' back-hw-big';
+    big.textContent = '← 숙제로 · Homework';
+    big.addEventListener('click', backToHomework);
+    retry.parentNode.insertBefore(big, retry.nextSibling);
+  }
+})();
+</script>
+</body>
+</html>
