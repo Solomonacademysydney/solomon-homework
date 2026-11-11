@@ -708,5 +708,40 @@
   });
 })();
 </script>
+
+<!-- [2026-11-11] 숙제로 돌아가기 — 게임은 숙제 화면에서 새 탭으로 열린다(window.open).
+     그래서 이 탭을 닫으면 숙제 화면이 그대로 다시 보인다. 탭을 못 닫으면(주소를 직접 연 경우) 첫 화면으로 간다. -->
+<style>
+  .back-hw-corner{position:fixed;top:10px;left:10px;z-index:9999;background:#fff;color:#1e3a5f;border:2px solid #1e3a5f;border-radius:999px;padding:6px 12px;font:800 13px 'Nunito',sans-serif;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15);}
+  .back-hw-corner:hover{background:#1e3a5f;color:#fff;}
+  .back-hw-big{margin-top:8px;padding-top:8px !important;padding-bottom:8px !important;font-size:15px !important;background:#fff !important;color:#1e3a5f !important;border:2px solid #1e3a5f !important;}
+</style>
+<script>
+(function () {
+  function backToHomework() {
+    try { if (window.opener && !window.opener.closed) { window.opener.focus(); } } catch (e) {}
+    try { window.close(); } catch (e) {}
+    // 닫히지 않았으면(직접 연 탭) 홈페이지 첫 화면으로
+    setTimeout(function () { if (!window.closed) location.href = '../'; }, 300);
+  }
+  var corner = document.createElement('button');
+  corner.type = 'button';
+  corner.className = 'back-hw-corner';
+  corner.textContent = '← 숙제';
+  corner.title = 'Back to Homework';
+  corner.addEventListener('click', backToHomework);
+  document.body.appendChild(corner);
+
+  var retry = document.getElementById('retry-btn');
+  if (retry && retry.parentNode) {
+    var big = document.createElement('button');
+    big.type = 'button';
+    big.className = retry.className + ' back-hw-big';
+    big.textContent = '← 숙제로 · Homework';
+    big.addEventListener('click', backToHomework);
+    retry.parentNode.insertBefore(big, retry.nextSibling);
+  }
+})();
+</script>
 </body>
 </html>
