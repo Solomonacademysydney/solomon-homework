@@ -222,6 +222,53 @@
     }
     .result-row { display: flex; justify-content: space-between; gap: 30px; font-size: 1.1rem; font-weight: 800; color: #9C2F1B; padding: 3px 0; }
     .result-row span:last-child { color: #E8850C; }
+
+    /* ══ 셀렉 단계 [2026-11-11] — 논리 탐정·시계와 같은 남색 + 금색 ══ */
+    .pick-btn.sel-pick { background: #1b2a44; color: #f5d77a; border-color: #d4af37; }
+    .pick-btn.sel-pick:hover { background: #22365a; }
+    .pick-btn.sel-pick.active { background: #d4af37; color: #0d1626; border-color: #d4af37; }
+    .sel-badge { display: none; margin-top: 6px; font-size: .78rem; font-weight: 900; letter-spacing: 2px; color: #0d1626; background: #d4af37; border-radius: 999px; padding: 3px 12px; }
+    body.sel-mode {
+      background: #0d1626;
+      background-image:
+        radial-gradient(circle at 15% 15%, rgba(212,175,55,0.16) 0%, transparent 45%),
+        radial-gradient(circle at 85% 85%, rgba(90,140,255,0.14) 0%, transparent 45%);
+    }
+    body.sel-mode .sel-badge { display: inline-block; }
+    body.sel-mode #mode-grid, body.sel-mode #mode-label { display: none; }
+    body.sel-mode .title { color: #f5d77a; }
+    body.sel-mode .title-en { color: #c9b06b; }
+    body.sel-mode .stats-bar { background: #16233b; border-color: #d4af37; box-shadow: 0 4px 16px rgba(0,0,0,.4); }
+    body.sel-mode .stat { color: #f5e6b8; }
+    body.sel-mode .stage { background: linear-gradient(180deg, #1b2a44 0%, #14203a 100%); border-color: #d4af37; box-shadow: 0 8px 28px rgba(0,0,0,.5); }
+    body.sel-mode .overlay { background: rgba(16,26,46,0.97); }
+    body.sel-mode .ov-title { color: #f5d77a; }
+    body.sel-mode .ov-title-en, body.sel-mode .ov-desc, body.sel-mode .ov-label { color: #c9b06b; }
+    body.sel-mode .pick-btn { background: #16233b; color: #f5e6b8; border-color: #5b6b8c; }
+    body.sel-mode .pick-btn.active { background: #d4af37; color: #0d1626; border-color: #d4af37; }
+    body.sel-mode .result-box { background: #16233b; border-color: #5b6b8c; }
+    body.sel-mode .result-row { color: #f5e6b8; }
+    body.sel-mode .question { color: #fff; max-width: 560px; text-align: left; font-size: 1.08rem; line-height: 1.8; }
+    body.sel-mode .ans-btn { background: #16233b; color: #f5e6b8; border-color: #5b6b8c; font-size: 1.1rem; }
+    body.sel-mode .ans-btn:hover { background: #22365a; }
+    body.sel-mode .ans-btn.right { background: #2f7a3a; border-color: #7EC850; color: #fff; }
+    body.sel-mode .ans-btn.wrong { background: #8a2a2a; border-color: #F08080; color: #fff; }
+    .s-tag { display: inline-block; font-size: .78rem; font-weight: 900; letter-spacing: 1px; color: #0d1626; background: #d4af37; border-radius: 999px; padding: 2px 10px; margin-bottom: 10px; }
+    .s-ko { display: block; font-size: .8rem; font-weight: 700; color: #8fa0c0; margin-top: 4px; line-height: 1.7; }
+    .s-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: min(88vw, 420px); }
+    .s-opts .ans-btn { min-height: 64px; }
+    /* 쌓은 분수 — 시험지처럼 (분자 / 줄 / 분모) */
+    .sf { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; line-height: 1.1; font-size: .92em; margin: 0 3px; }
+    .sf .n { border-bottom: 2px solid currentColor; padding: 0 3px; }
+    .sf .d { padding: 0 3px; }
+    .s-reveal { margin-top: 12px; text-align: center; color: #f5e6b8; font-weight: 900; font-size: 1.05rem; max-width: 560px; }
+    .s-explain { margin-top: 6px; font-size: .95rem; line-height: 2; font-weight: 800; background: #0f1a2e; border: 1px solid #3d4f75; border-radius: 12px; padding: 8px 14px; text-align: left; }
+    .sel-note { display: none; font-size: .82rem; font-weight: 800; color: #c9b06b; margin: -10px 0 10px; }
+    body.sel-mode .sel-note { display: block; }
+    .timer-opt { display: none; align-items: center; gap: 6px; font-weight: 800; color: #c9b06b; margin: -8px 0 16px; cursor: pointer; }
+    body.sel-mode .timer-opt { display: flex; }
+    #timer-stat.low { color: #ff8a8a; }
+    .big-btn.s-next { margin-top: 12px; font-size: 1.1rem; padding: 10px 30px; }
   </style>
 </head>
 <body>
@@ -229,12 +276,14 @@
   <div class="header">
     <div class="title">분수 피자집</div>
     <div class="title-en">Fraction Pizzeria</div>
+    <div class="sel-badge">🔥 SELECTIVE CHALLENGE</div>
   </div>
 
   <div class="stats-bar">
     <div class="stat"><span class="stat-icon">⭐</span><span id="score">0</span></div>
     <div class="stat"><span class="stat-icon">🧾</span><span id="round">1</span>/10</div>
     <div class="stat"><span class="stat-icon">✅</span><span id="correct">0</span></div>
+    <div class="stat" id="timer-stat" style="display:none;"><span class="stat-icon">⏱</span><span id="timer">60</span></div>
   </div>
 
   <div class="stage-wrap">
@@ -247,7 +296,7 @@
         <div class="ov-title">분수 피자집</div>
         <div class="ov-title-en">Fraction Pizzeria</div>
         <div class="ov-desc">주문받은 분수만큼 피자를 잘라 서빙하세요<br>Cut and serve pizza by fractions</div>
-        <div class="ov-label">놀이 방법 · Mode</div>
+        <div class="ov-label" id="mode-label">놀이 방법 · Mode</div>
         <div class="pick-grid" id="mode-grid">
           <button class="pick-btn active" data-mode="serve">주문 서빙 Serve</button>
           <button class="pick-btn" data-mode="compare">크기 비교 Compare</button>
@@ -257,7 +306,10 @@
         <div class="pick-grid" id="level-grid">
           <button class="pick-btn active" data-level="easy">쉬움 Easy</button>
           <button class="pick-btn" data-level="hard">어려움 Hard</button>
+          <button class="pick-btn sel-pick" data-level="sel">🔥 셀렉 Selective</button>
         </div>
+        <div class="sel-note">Y5~Y6 도전 단계 · Challenge for Years 5–6</div>
+        <label class="timer-opt" id="timer-opt"><input type="checkbox" id="timer-chk"> ⏱ 한 문제 1분 · 1 min per question</label>
         <button class="big-btn" id="start-btn">시작 · Start</button>
       </div>
 
@@ -278,6 +330,206 @@
       </div>
     </div>
   </div>
+
+<script id="sel-core">
+// ═══════════════════════════════════════════════════════
+//  [2026-11-11] 셀렉 단계 — 분수 문장제 만들기(화면과 떨어진 순수 함수)
+//   꼴 일곱: rest(남은 것의 분수) · of_qty(여러 걸음 개수) · reverse(부분 → 전체) · add_unlike(분모 다른 덧셈)
+//            biggest(가장 큰/작은 분수) · round_up(올림 나눗셈) · of_frac(분수의 분수)
+//   셈은 모두 약분한 정수 쌍 [분자, 분모]로 — 소수 어림을 쓰지 않는다.
+//   오답은 아이들이 실제로 하는 실수로(전체의 분수로 착각 · 분자끼리 분모끼리 더하기 · 올림 대신 버림 …).
+//   시험: 따로 짠 검사기가 이 블록만 떼어 불러 params 로 답을 다시 셈한다.
+// ═══════════════════════════════════════════════════════
+window.FracSel = (function () {
+  'use strict';
+  const irnd = n => Math.floor(Math.random() * n);
+  const pick = a => a[irnd(a.length)];
+  const shuffle = arr => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = irnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const gcd = (a, b) => (b ? gcd(b, a % b) : Math.abs(a));
+  const lcm = (a, b) => a / gcd(a, b) * b;
+  const F = (n, d) => { if (d < 0) { n = -n; d = -d; } const g = gcd(Math.abs(n), d) || 1; return [n / g, d / g]; };
+  const ONE = [1, 1];
+  const add = (a, b) => F(a[0] * b[1] + b[0] * a[1], a[1] * b[1]);
+  const sub = (a, b) => F(a[0] * b[1] - b[0] * a[1], a[1] * b[1]);
+  const mul = (a, b) => F(a[0] * b[0], a[1] * b[1]);
+  const less = (a, b) => a[0] * b[1] < b[0] * a[1];
+  const proper = f => f[0] > 0 && f[0] < f[1];
+
+  // 쌓은 분수 HTML
+  const sf = f => (f[1] === 1 ? `${f[0]}` : `<span class="sf"><span class="n">${f[0]}</span><span class="d">${f[1]}</span></span>`);
+  function mixed(f) {                       // 9/2 → 4 ½ 꼴
+    const w = Math.floor(f[0] / f[1]), r = f[0] % f[1];
+    if (!r) return `${w}`;
+    return (w ? `${w} ` : '') + sf([r, f[1]]);
+  }
+
+  const NAMES = ['Mia', 'Leo', 'Ava', 'Noah', 'Ella', 'Jack', 'Ruby', 'Oscar', 'Zoe', 'Liam'];
+  const twoNames = () => { const s = shuffle(NAMES); return [s[0], s[1]]; };
+
+  // 정답 + 오답 후보 → 값이 서로 다른 4개 (o = {f:[n,d]} 또는 {i:정수} 또는 {name, f})
+  const keyOf = o => (o.name ? 'n' + o.name : o.f ? 'f' + o.f[0] + '/' + o.f[1] : 'i' + o.i);
+  function choose(correct, wrongs, valid) {
+    const out = [correct], keys = [keyOf(correct)];
+    for (const w of wrongs) {
+      if (out.length === 4) break;
+      if (!w || (valid && !valid(w))) continue;
+      const k = keyOf(w);
+      if (keys.indexOf(k) !== -1) continue;
+      out.push(w); keys.push(k);
+    }
+    if (out.length < 4) return null;
+    const opts = shuffle(out);
+    return { opts, answer: opts.indexOf(correct) };
+  }
+  const fo = f => ({ f });
+  const io = i => (Number.isInteger(i) && i > 0 ? { i } : null);
+  const fracOk = o => proper(o.f);
+
+  const MAKERS = {
+    rest() {
+      const a = pick([[1, 3], [1, 4], [2, 5], [1, 2], [3, 8], [1, 6], [2, 3]]);
+      const b = pick([[1, 4], [1, 3], [1, 2], [2, 3], [3, 4], [1, 5]]);
+      const r1 = sub(ONE, a), eaten2 = mul(b, r1), ans = sub(r1, eaten2);
+      const [n1, n2] = twoNames();
+      const r = choose(fo(ans), shuffle([fo(sub(r1, b)), fo(eaten2), fo(sub(ONE, b)), fo(add(a, b)), fo(mul(a, b))]), fracOk);
+      if (!r) return null;
+      return {
+        type: 'rest', params: { a, b }, ...r,
+        en: `${n1} ate ${sf(a)} of a pizza. Then ${n2} ate ${sf(b)} of <b>what was left</b>. What fraction of the whole pizza is left now?`,
+        ko: `한 아이가 피자의 ${sf(a)}만큼 먹고, 다른 아이가 <b>남은 것</b>의 ${sf(b)}만큼 먹었어요. 처음 피자 전체의 얼마가 남았을까요?`,
+        explain: `Left after ${n1}: 1 − ${sf(a)} = ${sf(r1)}<br>${n2} ate ${sf(b)} × ${sf(r1)} = ${sf(eaten2)}<br>Left: ${sf(r1)} − ${sf(eaten2)} = <b>${sf(ans)}</b>`
+          + `<span class="s-ko">「남은 것의」 ${sf(b)}만큼이니, 전체가 아니라 남은 ${sf(r1)}에 곱해요.</span>`
+      };
+    },
+
+    of_qty() {
+      const a = pick([[1, 2], [1, 3], [2, 3], [1, 4], [3, 4], [2, 5], [3, 5]]);
+      const b = pick([[1, 2], [1, 3], [1, 4], [2, 3], [3, 4]]);
+      const ks = [1, 2, 3, 4, 5].filter(k => { const N = a[1] * b[1] * k; return N >= 12 && N <= 60; });
+      if (!ks.length) return null;
+      const N = a[1] * b[1] * pick(ks);
+      const L = N * a[0] / a[1], R = N - L, D = R * b[0] / b[1], ans = R - D;
+      const r = choose(io(ans), shuffle([io(N - L - N * b[0] / b[1]), io(D), io(R), io(N - N * b[0] / b[1]), io(ans + b[1]), io(ans - 1)]));
+      if (!r) return null;
+      return {
+        type: 'of_qty', params: { a, b, N }, ...r,
+        en: `A pizzeria baked ${N} pizzas. ${sf(a)} of them were sold at lunch, and ${sf(b)} of <b>the rest</b> were sold at dinner. How many pizzas were not sold?`,
+        ko: `피자 ${N}판을 구웠어요. 점심에 ${sf(a)}만큼 팔고, 저녁에 <b>나머지</b>의 ${sf(b)}만큼 팔았어요. 팔리지 않은 피자는 몇 판일까요?`,
+        explain: `Lunch: ${sf(a)} × ${N} = ${L}<br>The rest: ${N} − ${L} = ${R}<br>Dinner: ${sf(b)} × ${R} = ${D}<br>Not sold: ${R} − ${D} = <b>${ans}</b>`
+          + `<span class="s-ko">저녁 몫은 처음 ${N}판이 아니라 나머지 ${R}판에서 셈해요.</span>`
+      };
+    },
+
+    reverse() {
+      const f = pick([[3, 8], [2, 5], [3, 4], [2, 3], [5, 6], [3, 5], [4, 7], [5, 8]]);
+      const k = 2 + irnd(7);
+      const part = f[0] * k, total = f[1] * k;
+      const r = choose(io(total), shuffle([io(k), io(part * f[1]), io(total - part), io(total + f[1]), io(part + f[1])]));
+      if (!r) return null;
+      return {
+        type: 'reverse', params: { f, part }, ...r,
+        en: `At a party, ${sf(f)} of the pizzas were vegetarian. There were ${part} vegetarian pizzas. How many pizzas were there altogether?`,
+        ko: `파티 피자의 ${sf(f)}만큼이 채소 피자였어요. 채소 피자가 ${part}판이었다면 피자는 모두 몇 판일까요?`,
+        explain: `${f[0]} parts = ${part}, so 1 part = ${part} ÷ ${f[0]} = ${k}<br>All ${f[1]} parts = ${f[1]} × ${k} = <b>${total}</b>`
+          + `<span class="s-ko">분자 ${f[0]}칸이 ${part}판 → 한 칸을 먼저 구하고, 분모 ${f[1]}칸으로 늘려요.</span>`
+      };
+    },
+
+    add_unlike() {
+      const pool = [[1, 2], [1, 3], [2, 3], [1, 4], [3, 4], [1, 5], [2, 5], [1, 6], [1, 8], [3, 8]];
+      const a = pick(pool), b = pick(pool);
+      if (a[1] === b[1]) return null;
+      const ans = add(a, b);
+      if (!proper(ans)) return null;
+      const L = lcm(a[1], b[1]);
+      const [n1, n2] = twoNames();
+      const r = choose(fo(ans), shuffle([
+        fo(F(a[0] + b[0], a[1] + b[1])), fo(F(a[0] + b[0], a[1] * b[1])), fo(sub(ONE, ans)),
+        fo(add(ans, [1, L])), fo(sub(ans, [1, L]))
+      ]), fracOk);
+      if (!r) return null;
+      const x = a[0] * L / a[1], y = b[0] * L / b[1];
+      return {
+        type: 'add_unlike', params: { a, b }, ...r,
+        en: `${n1} ate ${sf(a)} of a pizza and ${n2} ate ${sf(b)} of the same pizza. What fraction of the pizza did they eat altogether?`,
+        ko: `한 아이가 피자의 ${sf(a)}, 다른 아이가 같은 피자의 ${sf(b)}만큼 먹었어요. 둘이 먹은 것은 모두 얼마일까요?`,
+        explain: `Same bottom number: ${L}<br>${sf(a)} = ${sf([x, L])}, ${sf(b)} = ${sf([y, L])}<br>${sf([x, L])} + ${sf([y, L])} = ${sf([x + y, L])}`
+          + (x + y !== ans[0] || L !== ans[1] ? ` = <b>${sf(ans)}</b>` : ` → <b>${sf(ans)}</b>`)
+          + `<span class="s-ko">분자끼리, 분모끼리 더하면 안 돼요 — 분모를 먼저 같게 만들어요.</span>`
+      };
+    },
+
+    biggest() {
+      const most = Math.random() < 0.6;
+      const dens = shuffle([3, 4, 5, 6, 8, 10, 12]).slice(0, 4);
+      const fs = dens.map(d => F(Math.max(1, Math.round(d * (0.45 + Math.random() * 0.4))), d));
+      if (fs.some(f => !proper(f))) return null;
+      for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++) if (!less(fs[i], fs[j]) && !less(fs[j], fs[i])) return null;
+      const names = shuffle(NAMES).slice(0, 4);
+      const people = names.map((name, i) => ({ name, f: fs[i] }));
+      let best = people[0];
+      for (const p of people) if (most ? less(best.f, p.f) : less(p.f, best.f)) best = p;
+      const r = choose(best, shuffle(people.filter(p => p !== best)));
+      if (!r) return null;
+      const L = fs.reduce((acc, f) => lcm(acc, f[1]), 1);
+      return {
+        type: 'biggest', params: { people, most }, ...r,
+        en: `Four friends each had a pizza of the same size. ${people.map(p => `${p.name} ate ${sf(p.f)}`).join(', ')}. Who ate the <b>${most ? 'most' : 'least'}</b>?`,
+        ko: `같은 크기 피자를 한 판씩 받았어요. 누가 <b>${most ? '가장 많이' : '가장 적게'}</b> 먹었을까요?`,
+        explain: `Make the bottom numbers the same (${L}):<br>${people.map(p => `${p.name} ${sf([p.f[0] * L / p.f[1], L])}`).join(' · ')}<br>${most ? 'Most' : 'Least'}: <b>${best.name}</b>`
+          + `<span class="s-ko">분모가 크다고 큰 분수가 아니에요 — 분모를 같게 해서 견줘요.</span>`
+      };
+    },
+
+    round_up() {
+      const f = pick([[3, 8], [1, 3], [2, 5], [3, 4], [2, 3], [1, 4], [5, 8], [3, 5]]);
+      const kids = [];
+      for (let c = 5; c <= 16; c++) if ((c * f[0]) % f[1] !== 0) kids.push(c);
+      const c = pick(kids);
+      const need = Math.ceil(c * f[0] / f[1]);
+      const r = choose(io(need), shuffle([io(need - 1), io(need + 1), io(c * f[0]), io(Math.round(c * f[1] / f[0])), io(c)]));
+      if (!r) return null;
+      return {
+        type: 'round_up', params: { f, c }, ...r,
+        en: `Each child at a party eats ${sf(f)} of a pizza. There are ${c} children. Pizzas only come whole. What is the <b>smallest</b> number of pizzas needed?`,
+        ko: `아이 한 명이 피자 ${sf(f)}판씩 먹어요. 아이가 ${c}명이에요. 피자는 한 판 단위로만 살 수 있어요. 적어도 몇 판이 있어야 할까요?`,
+        explain: `${c} × ${sf(f)} = ${sf([c * f[0], f[1]])} = ${mixed(F(c * f[0], f[1]))} pizzas<br>Not a whole number → round <b>up</b>: <b>${need}</b>`
+          + `<span class="s-ko">조금이라도 모자라면 안 되니, 버리지 말고 올려요.</span>`
+      };
+    },
+
+    of_frac() {
+      const a = pick([[2, 3], [3, 4], [1, 2], [3, 5], [5, 6], [4, 5]]);
+      const b = pick([[1, 2], [1, 3], [3, 4], [2, 3], [1, 4], [2, 5]]);
+      const ans = mul(a, b);
+      const name = pick(NAMES);
+      const r = choose(fo(ans), shuffle([
+        fo(sub(a, ans)), fo(b), fo(sub(a, b)), fo(F(a[0] + b[0], a[1] + b[1])), fo(sub(ONE, ans))
+      ]), fracOk);
+      if (!r) return null;
+      return {
+        type: 'of_frac', params: { a, b }, ...r,
+        en: `After a party, ${sf(a)} of a pizza was left. ${name} ate ${sf(b)} of the leftover pizza. What fraction of a <b>whole</b> pizza did ${name} eat?`,
+        ko: `파티가 끝나고 피자가 ${sf(a)}판 남았어요. 남은 피자의 ${sf(b)}만큼 먹었다면, 피자 <b>한 판 전체</b>의 얼마를 먹은 걸까요?`,
+        explain: `${sf(b)} of ${sf(a)} = ${sf(b)} × ${sf(a)} = ${sf([a[0] * b[0], a[1] * b[1]])}`
+          + (a[0] * b[0] !== ans[0] ? ` = <b>${sf(ans)}</b>` : ` → <b>${sf(ans)}</b>`)
+          + `<span class="s-ko">「~의」 분수는 곱하기예요.</span>`
+      };
+    }
+  };
+
+  const TYPES = ['rest', 'of_qty', 'reverse', 'add_unlike', 'biggest', 'round_up', 'of_frac'];
+  function generate(type) {
+    type = type || pick(TYPES);
+    for (let t = 0; t < 300; t++) {
+      const q = MAKERS[type]();
+      if (q) return q;
+    }
+    return null;
+  }
+  return { TYPES, generate, sf };
+})();
+</script>
 
 <script>
 (() => {
@@ -324,7 +576,7 @@
   let round = 0, score = 0, correctCount = 0;
 
   const MODE_LABEL  = { serve: '주문 서빙 Serve', compare: '크기 비교 Compare', match: '같은 분수 Match' };
-  const LEVEL_LABEL = { easy: '쉬움', hard: '어려움' };
+  const LEVEL_LABEL = { easy: '쉬움', hard: '어려움', sel: '셀렉 Selective' };
 
   document.querySelectorAll('#mode-grid .pick-btn').forEach(b => b.addEventListener('click', () => {
     mode = b.dataset.mode;
@@ -333,6 +585,8 @@
   document.querySelectorAll('#level-grid .pick-btn').forEach(b => b.addEventListener('click', () => {
     level = b.dataset.level;
     document.querySelectorAll('#level-grid .pick-btn').forEach(x => x.classList.toggle('active', x === b));
+    // 셀렉을 고르는 순간 남색·금색 도전 화면으로 (놀이 방법 칸은 셀렉에선 숨긴다 — 문장제만 나온다)
+    document.body.classList.toggle('sel-mode', level === 'sel');
   }));
 
   /* ── 피자 SVG (d조각, selected 집합 색칠) ── */
@@ -371,6 +625,7 @@
 
   /* ── 라운드 ── */
   function renderRound() {
+    if (level === 'sel') { renderSelRound(); return; }
     if (mode === 'serve')   renderServe();
     if (mode === 'compare') renderCompare();
     if (mode === 'match')   renderMatch();
@@ -386,6 +641,73 @@
     else sndNo();
     updateStats();
     setTimeout(nextRound, 1500);
+  }
+
+  /* ══ 셀렉 단계 화면 [2026-11-11] ══ */
+  const SEL_TIME = 60;
+  let timerId = null, timeLeft = 0;
+  const timerStat = document.getElementById('timer-stat');
+  const timerEl   = document.getElementById('timer');
+  const timerChk  = document.getElementById('timer-chk');
+  function stopTimer() { if (timerId) { clearInterval(timerId); timerId = null; } }
+  function startTimer(onEnd) {
+    stopTimer();
+    const on = level === 'sel' && timerChk.checked;
+    timerStat.style.display = on ? '' : 'none';
+    if (!on) return;
+    timeLeft = SEL_TIME;
+    const show = () => { timerEl.textContent = timeLeft; timerStat.classList.toggle('low', timeLeft <= 10); };
+    show();
+    timerId = setInterval(() => {
+      timeLeft--; show();
+      if (timeLeft <= 0) { stopTimer(); onEnd(); }
+    }, 1000);
+  }
+
+  const SEL_TAG = {
+    rest: 'FRACTION OF THE REST', of_qty: 'MULTI-STEP', reverse: 'FIND THE WHOLE', add_unlike: 'ADD FRACTIONS',
+    biggest: 'COMPARE FRACTIONS', round_up: 'ROUND UP', of_frac: 'FRACTION OF A FRACTION'
+  };
+  const optHtml = o => (o.name ? `${o.name} (${FracSel.sf(o.f)})` : o.f ? FracSel.sf(o.f) : `${o.i}`);
+
+  function renderSelRound() {
+    let judged = false;
+    const q = FracSel.generate();
+    roundArea.innerHTML = `
+      <div class="s-tag">${SEL_TAG[q.type]}</div>
+      <div class="question">🍕 ${q.en}<span class="s-ko">${q.ko}</span></div>
+      <div class="s-opts">
+        ${q.opts.map((o, i) => `<button class="ans-btn" data-i="${i}">${optHtml(o)}</button>`).join('')}
+      </div>
+      <div class="s-reveal" id="reveal"></div>`;
+
+    const judge = choice => {
+      if (judged) return;
+      judged = true;
+      stopTimer();
+      roundArea.querySelectorAll('.ans-btn').forEach(x => {
+        x.disabled = true;
+        if (parseInt(x.dataset.i, 10) === q.answer) x.classList.add('right');
+      });
+      const ok = choice === q.answer;
+      if (ok) { score += 10; correctCount++; sndOk(); }
+      else {
+        const b = choice >= 0 && roundArea.querySelector(`.ans-btn[data-i="${choice}"]`);
+        if (b) b.classList.add('wrong');
+        sndNo();
+      }
+      const head = ok ? '✅ 정답! Correct! +10' : (choice < 0 ? "⏰ 시간 끝! Time's up!" : '❌ 아쉬워요! Not quite.');
+      const last = round + 1 >= TOTAL_ROUNDS;
+      document.getElementById('reveal').innerHTML = `
+        ${head}
+        <div class="s-explain">${q.explain}</div>
+        <button class="big-btn s-next" id="next-btn">${last ? '결과 보기 · Results' : '다음 · Next →'}</button>`;
+      document.getElementById('next-btn').addEventListener('click', nextRound);
+      updateStats();
+    };
+    roundArea.querySelectorAll('.ans-btn').forEach(b =>
+      b.addEventListener('click', () => judge(parseInt(b.dataset.i, 10))));
+    startTimer(() => judge(-1));
   }
 
   function nextRound() {
@@ -599,7 +921,9 @@
   }
 
   function gameOver() {
-    const key = `${mode}_${level}`;
+    stopTimer();
+    timerStat.style.display = 'none';
+    const key = level === 'sel' ? 'sel' : `${mode}_${level}`;
     const stats = loadStats();
     stats.best = stats.best || {};
     const prevBest  = stats.best[key] || 0;
@@ -609,7 +933,7 @@
     stats.totalGames   = (stats.totalGames   || 0) + 1;
     saveStats(stats);
 
-    document.getElementById('final-mode').textContent    = `${MODE_LABEL[mode]} · ${LEVEL_LABEL[level]}`;
+    document.getElementById('final-mode').textContent    = level === 'sel' ? LEVEL_LABEL.sel : `${MODE_LABEL[mode]} · ${LEVEL_LABEL[level]}`;
     document.getElementById('final-score').textContent   = score;
     document.getElementById('final-correct').textContent = correctCount + ' / ' + TOTAL_ROUNDS;
     document.getElementById('final-best').textContent    = Math.max(prevBest, score);
