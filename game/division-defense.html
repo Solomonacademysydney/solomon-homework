@@ -316,6 +316,19 @@
     }
     .result-row { display: flex; justify-content: space-between; gap: 30px; font-size: 1.1rem; font-weight: 800; color: #4B3A8F; padding: 3px 0; }
     .result-row span:last-child { color: #E8850C; }
+    /* [2026-11-11] 끝 화면이 판보다 길면 잘리지 않고 밀어 볼 수 있게 — 넉넉할 땐 지금처럼 가운데 */
+    #over-overlay { overflow-y: auto; justify-content: flex-start; -webkit-overflow-scrolling: touch; }
+    #over-overlay > :first-child { margin-top: auto; }
+    #over-overlay > :last-child { margin-bottom: auto; }
+    @media (max-width: 600px), (max-height: 760px) {
+      #over-overlay { padding: 12px; }
+      #over-overlay .ov-emoji { font-size: 2.2rem; margin-bottom: 2px; }
+      #over-overlay .ov-title { font-size: 1.5rem; }
+      #over-overlay .result-box { padding: 8px 18px; margin-bottom: 10px; }
+      #over-overlay .result-row { font-size: .92rem; padding: 1px 0; gap: 16px; }
+      #over-overlay .big-btn { padding-top: 9px; padding-bottom: 9px; font-size: 1.1rem; }
+      #over-overlay .ov-title-en { margin-bottom: 4px; }
+    }
   </style>
 </head>
 <body>
