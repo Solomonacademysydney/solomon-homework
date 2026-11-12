@@ -17710,18 +17710,21 @@ function _stripKatexForAnswer(ans) {
 // 예: "\text{Solve } 3x > 14 \text{ or } 5x \leq 4" → "Solve \(3x > 14\) or \(5x \leq 4\)"
 // 예: "\text{coins worth \$8.00} \quad 10f+50(40-f)=800" → "coins worth $8.00 \(10f+50(40-f)=800\)"
 function _katexToMixed(katex) {
+  // [2026-11-12 원장 · 흠 299문항의 뿌리] 「9\ \text{students}」처럼 \text 앞 수식이 **띄움 명령(\ \, \; \quad…)으로 끝나면**
+  //   trim 뒤 끝에 역슬래시만 남아 「\(9\\) students」가 됐다(아이 화면에서 수식이 빨갛게 깨짐). 감싸기 전에 앞뒤 띄움 명령을 걷어 낸다.
+  const _trimSp = (x) => x.replace(/^(?:\s|\\[ ,;:!]|\\q?quad\b)+/, '').replace(/(?:\s|\\[ ,;:!]|\\q?quad\b)+$/, '');
   const parts = [];
   let remaining = katex;
   while (remaining.length > 0) {
     const m = remaining.match(/\\text\{([^}]*)\}/);
     if (!m) {
       // 남은 부분은 전부 수식 → \(...\) 로 감쌈
-      const math = remaining.trim();
+      const math = _trimSp(remaining);
       if (math) parts.push('\\(' + math + '\\)');
       break;
     }
     // \text 앞에 수식이 있으면 → \(...\) 로 감쌈
-    const before = remaining.substring(0, m.index).trim();
+    const before = _trimSp(remaining.substring(0, m.index));
     if (before) parts.push('\\(' + before + '\\)');
     // \text 내용은 plain text, \$ → $ 로 변환
     const plainText = m[1].trim().replace(/\\\$/g, '$');
