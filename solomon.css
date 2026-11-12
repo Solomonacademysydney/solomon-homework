@@ -569,3 +569,111 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
   .ts-day-view { padding: 12px !important; }
   .ts-day-view button { min-height: 48px; }
 }
+
+/* ── MR 숙제 풀이 화면 v1 (2026-11-12 · 지시서 v5) — 새 이름표는 전부 .mrq 로 시작 · 기존 줄은 고치지 않음 ── */
+.mrq{color:#0f1e40;font-family:'Noto Sans KR',sans-serif;padding-bottom:96px;}
+.mrq-top{display:flex;align-items:center;gap:14px;min-height:60px;padding:0 18px 0 8px;background:#162040;color:#fff;border-radius:14px;margin-bottom:20px;box-sizing:border-box;}
+.mrq-back{width:44px;height:44px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:transparent;border:0;padding:0;border-radius:10px;cursor:pointer;}
+.mrq-back:hover{background:rgba(255,255,255,.12);}
+.mrq-title{flex:1;min-width:0;font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mrq-prog{display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.mrq-prog-track{width:200px;height:8px;background:#3b4a70;border-radius:4px;overflow:hidden;}
+.mrq-prog-fill{height:8px;background:#e5c158;border-radius:4px;transition:width .3s;}
+.mrq-answered{font-size:16px;font-weight:900;color:#e5c158;white-space:nowrap;}
+.mrq-body{display:flex;gap:20px;align-items:flex-start;}
+.mrq-card{flex:1;min-width:0;background:#fff;border-radius:18px;padding:28px 32px;box-shadow:0 1px 4px rgba(15,30,64,.08);display:flex;flex-direction:column;gap:20px;box-sizing:border-box;}
+.mrq-card-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.mrq-num{width:40px;height:40px;border-radius:10px;background:#162040;color:#fff;font-weight:900;font-size:17px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.mrq-text{font-size:19px;font-weight:500;line-height:1.65;color:#0f1e40;overflow-wrap:anywhere;}
+.mrq .hl{background:#fff1a8;padding:0 4px;border-radius:4px;font-weight:700;color:inherit;}
+.mrq-fig{max-width:100%;overflow-x:auto;}
+.mrq-fig svg,.mrq-fig img{max-width:100%;height:auto;}
+.mrq-opts{display:flex;flex-direction:column;gap:10px;}
+.mrq-opt{display:flex;align-items:center;gap:14px;width:100%;min-height:56px;padding:8px 18px;background:#fff;border:2px solid #e2e8f0;border-radius:13px;font:500 18px 'Noto Sans KR',sans-serif;color:#0f1e40;text-align:left;cursor:pointer;box-sizing:border-box;transition:border-color .15s,background .15s;}
+.mrq-opt:hover:not([disabled]){border-color:#94a3b8;}
+.mrq-opt[disabled]{cursor:default;}
+.mrq-opt-l{width:32px;height:32px;flex-shrink:0;border-radius:50%;background:#eef2f7;color:#334155;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;}
+.mrq-opt.on{background:#162040;border-color:#162040;color:#fff;font-weight:700;}
+.mrq-opt.on .mrq-opt-l{background:#e5c158;color:#162040;}
+.mrq-ox{flex-direction:row;}
+.mrq-ox .mrq-opt{flex:1;justify-content:center;}
+.mrq-sa-lbl{font-size:13px;font-weight:700;color:#475569;margin-bottom:-12px;}
+.mrq-sa{width:100%;max-width:360px;height:56px;padding:0 16px;border:2px solid #e2e8f0;border-radius:13px;font:500 18px 'Noto Sans KR',sans-serif;color:#0f1e40;outline:none;box-sizing:border-box;}
+.mrq-sa:focus{border-color:#162040;}
+.mrq-side{width:300px;flex-shrink:0;display:flex;flex-direction:column;gap:16px;}
+.mrq-mapcard{background:#fff;border-radius:18px;padding:20px;box-shadow:0 1px 4px rgba(15,30,64,.08);display:flex;flex-direction:column;gap:14px;}
+.mrq-h{font-size:15px;font-weight:900;}
+.mrq-map{display:grid;grid-template-columns:repeat(5,44px);gap:8px;justify-content:space-between;}
+.mrq-m{width:44px;height:44px;border-radius:10px;border:1.5px solid #cbd5e1;background:#fff;color:#334155;font:700 14px 'Noto Sans KR',sans-serif;padding:0;cursor:pointer;flex-shrink:0;}
+.mrq-m.a{background:#dbeafe;color:#1e40af;border-color:#93c5fd;}
+.mrq-m.ok{background:#dcfce7;color:#166534;border-color:#16a34a;}
+.mrq-m.no{background:#ffedd5;color:#9a3412;border-color:#ea580c;}
+.mrq-m.c{background:#162040;color:#fff;border-color:#162040;}
+.mrq-legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:13px;color:#334155;border-top:1px solid #e2e8f0;padding-top:12px;}
+.mrq-legend span{display:flex;align-items:center;gap:6px;}
+.mrq-legend i{width:14px;height:14px;border-radius:4px;border:1.5px solid #cbd5e1;background:#fff;display:inline-block;box-sizing:border-box;}
+.mrq-legend i.a{background:#dbeafe;border-color:#93c5fd;}
+.mrq-legend i.ok{background:#dcfce7;border-color:#16a34a;}
+.mrq-legend i.no{background:#ffedd5;border-color:#ea580c;}
+.mrq-mallow{background:#fff8e7;border-radius:18px;padding:16px 18px;display:flex;align-items:center;gap:14px;}
+.mrq-mallow svg{flex-shrink:0;}
+.mrq-mallow-txt{display:flex;flex-direction:column;gap:4px;}
+.mrq-mallow-msg{font-size:14px;font-weight:700;color:#374151;line-height:1.5;}
+.mrq-mallow-st{font-size:13px;font-weight:900;color:#b45309;}
+.mrq-foot{position:fixed;left:0;right:0;bottom:0;min-height:72px;background:#fff;border-top:1px solid #e2e8f0;z-index:50;}
+.mrq-foot-in{max-width:1000px;min-height:72px;margin:0 auto;padding:8px 24px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.mrq-mid{font-size:14px;color:#475569;}
+.mrq-btn{height:48px;padding:0 24px;border-radius:12px;font:700 16px 'Noto Sans KR',sans-serif;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.mrq-prev{background:#fff;border:2px solid #162040;color:#162040;}
+.mrq-prev[disabled]{opacity:.35;cursor:default;}
+.mrq-primary{background:#162040;border:0;color:#fff;padding:0 32px;}
+.mrq-primary:hover{background:#0d1526;}
+.mrq-submit{background:#e5c158;border:0;color:#162040;padding:0 32px;}
+.mrq-submit[disabled]{background:#e2e8f0;color:#64748b;cursor:default;}
+.mrq-right{display:flex;align-items:center;gap:14px;}
+.mrq-gu{display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
+.mrq-gu[hidden]{display:none;}
+.mrq-link{background:none;border:0;padding:4px 0;min-height:32px;font:700 14px 'Noto Sans KR',sans-serif;color:#162040;text-decoration:underline;cursor:pointer;}
+.mrq-hint{font-size:12px;color:#475569;}
+.mrq-foot.band-ok{background:#dcfce7;border-top:2px solid #16a34a;}
+.mrq-foot.band-no{background:#ffedd5;border-top:2px solid #ea580c;}
+.mrq-foot.band-saved{background:#eef2f7;border-top:2px solid #94a3b8;}
+.mrq-band-msg{font-size:17px;font-weight:800;line-height:1.4;}
+.mrq-foot.band-ok .mrq-band-msg{color:#166534;}
+.mrq-foot.band-no .mrq-band-msg{color:#9a3412;}
+.mrq-foot.band-saved .mrq-band-msg{color:#162040;}
+@media (max-width:959px){
+  .mrq-body{flex-direction:column;align-items:stretch;}
+  .mrq-side{width:auto;}
+  .mrq-map{display:flex;overflow-x:auto;gap:8px;padding-bottom:4px;}
+  body.mrq-typing .mrq-foot{position:static;margin-top:16px;border-radius:14px;}
+}
+@media (max-width:600px){
+  .mrq-top{flex-wrap:wrap;padding:8px 14px 10px 4px;row-gap:4px;}
+  .mrq-title{flex-basis:calc(100% - 60px);}
+  .mrq-prog{width:100%;padding-left:10px;box-sizing:border-box;}
+  .mrq-prog-track{flex:1;width:auto;}
+  .mrq-card{padding:20px 18px;}
+  .mrq-text{font-size:17px;}
+  .mrq-foot-in{padding:8px 12px;}
+  .mrq-mid{display:none;}
+  .mrq-btn{padding:0 16px;}
+  .mrq-primary,.mrq-submit{padding:0 20px;}
+  .mrq-band-msg{font-size:14px;}
+  .mrq-prev{padding:0 14px;}
+  .mrq-prev-t{display:none;}
+  .mrq-hint{display:none;}
+  .mrq-link{white-space:nowrap;}
+  .mrq-right{gap:10px;}
+}
+/* 마시멜로 반응 (2026-11-12 원장) — 평소 눈 깜빡 · 맞힘 폴짝 · 틀림 끄덕 · 3연속 춤 */
+.mrq-mallow-fig{width:64px;height:64px;flex-shrink:0;transform-origin:50% 90%;}
+.mrq-mallow-fig .mallow-eyes{transform-box:fill-box;transform-origin:center;animation:mrq-blink 5s infinite;}
+@keyframes mrq-blink{0%,93%,100%{transform:scaleY(1);}96%{transform:scaleY(.1);}}
+.mrq-mallow-fig.mrq-anim-ok{animation:mrq-jump .7s ease-out 2;}
+@keyframes mrq-jump{0%,100%{transform:translateY(0) scale(1,1);}20%{transform:translateY(0) scale(1.12,.88);}50%{transform:translateY(-18px) scale(.94,1.06);}80%{transform:translateY(0) scale(1.06,.94);}}
+.mrq-mallow-fig.mrq-anim-no{animation:mrq-nod .6s ease-in-out 2;}
+@keyframes mrq-nod{0%,100%{transform:translateY(0) rotate(0);}50%{transform:translateY(5px) rotate(-4deg);}}
+.mrq-mallow-fig.mrq-anim-streak{animation:mrq-dance 1.4s ease-in-out 1;}
+@keyframes mrq-dance{0%,100%{transform:rotate(0) translateY(0) scale(1);}12%{transform:rotate(-15deg) translateY(-10px);}25%{transform:rotate(15deg) translateY(0);}37%{transform:rotate(-15deg) translateY(-10px);}50%{transform:rotate(15deg) translateY(0);}70%{transform:translateY(-22px) scale(1.12);}85%{transform:translateY(0) scale(.95,1.05);}}
+@media (prefers-reduced-motion:reduce){.mrq-mallow-fig,.mrq-mallow-fig .mallow-eyes{animation:none !important;}}
