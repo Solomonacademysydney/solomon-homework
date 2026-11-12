@@ -8281,15 +8281,16 @@ function renderStudent() {
   if (!hasSets && !hasTS) {
     const isCurrentP = periodGte(p, store.currentPeriod) && periodGte(store.currentPeriod, p);
     document.getElementById('mainContent').innerHTML = `
-      <div class="exam-wrap">
-        ${renderPeriodNav(p, store.currentPeriod)}
+      <div class="sth">
+        ${sthTopBand(p)}
         <div class="empty" style="background:#fff;border-radius:var(--radius);padding:60px;box-shadow:0 2px 10px rgba(0,0,0,.06);">
-          <div style="font-size:48px;margin-bottom:16px;">📭</div>
+          <div style="margin-bottom:16px;color:#94a3b8;">${sthIcon(STH_ICON_INBOX, 48)}</div>
           <div style="font-size:18px;font-weight:800;color:var(--navy);">No homework assigned for ${periodLabel(p)}</div>
           <div style="margin-top:8px;color:var(--muted);">${isCurrentP ? "Your teacher will post homework here when it's ready!" : 'Try another week.'}</div>
         </div>
+        ${sthGamesRow()}
       </div>`;
-    document.getElementById('mainContent').innerHTML += renderGameCard() + renderMyAccountCard();
+    document.getElementById('mainContent').innerHTML += renderMyAccountCard();   // [학생 첫 화면 v1] 위쪽 띠 · 새 게임 줄
     return;
   }
 
@@ -8300,17 +8301,10 @@ function renderStudent() {
   if (currentSetIdx !== null) {
     // (아래 기존 코드로 fall-through)
   } else {
-    // home choice screen: 둘 다 있으면 선택, 하나만 있으면 바로 이동
-    if (hasSets && hasTS && studentView === null) {
-      renderStudentHome(hw, store, p);
-      return;
-    }
-    if (studentView === 'ts' || (!hasSets && hasTS)) {
-      renderTSView(hw.ts, store, p);
-      return;
-    }
-    // 'mr' 또는 TS 없는 경우
-    renderSetList(hw || { sets: [] }, store, p);
+    // [학생 첫 화면 v1 · 원장 결정 2] 과목이 하나뿐인 주에도 늘 첫 화면을 먼저
+    if (studentView === 'ts' && hasTS) { renderTSView(hw.ts, store, p); return; }
+    if (studentView === 'mr' && hasSets) { renderSetList(hw, store, p); return; }
+    renderStudentHome(hw, store, p);
     return;
   }
 
@@ -8744,54 +8738,233 @@ function renderPeriodNav(p, currentP) {
     </div>`;
 }
 
+// ── [학생 첫 화면 v1 · 2026-11-12 · 2차 작업지시서 v5] 새 이름표는 전부 .sth 로 시작 ──
+// 첫 화면·세트 목록은 읽기만 한다(저장 함수를 부르지 않는다). 숫자는 이미 있는 데이터로 계산.
+
+// 게임 학년 표(원장 결정 · 숫자만 고치면 된다). 표에 없는 학년은 그 게임을 안 보인다. Y7 이상은 줄 자체가 없다.
+const STH_GAME_YEARS = {
+  'Times Table Defense':    ['K', '1', '2', '3', '4'],
+  'Clock Master':           ['K', '1', '2', '3', '4'],
+  'Division Earth Defense': ['3', '4', '5', '6'],
+  'Fraction Pizzeria':      ['3', '4', '5', '6'],
+  'Logic Detective':        ['4', '5', '6'],
+};
+const STH_GAMES = [
+  { name: 'Times Table Defense',    url: 'game/gugudan-rain.html',      desc: 'Times tables · beat your best score',
+    icon: '<path d="M6 6l12 12M18 6L6 18"/>' },
+  { name: 'Clock Master',           url: 'game/clock-master.html',      desc: 'Reading clocks and elapsed time',
+    icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>' },
+  { name: 'Division Earth Defense', url: 'game/division-defense.html',  desc: 'Division · defend the Earth',
+    icon: '<path d="M5 12h14"/><circle cx="12" cy="6.5" r="1.4" fill="currentColor"/><circle cx="12" cy="17.5" r="1.4" fill="currentColor"/>' },
+  { name: 'Fraction Pizzeria',      url: 'game/fraction-pizza.html',    desc: 'Fractions · cut and serve the orders',
+    icon: '<circle cx="12" cy="12" r="9"/><path d="M12 3v18M3.6 9l16.8 6"/>' },
+  { name: 'Logic Detective',        url: 'game/logic-detective.html',   desc: 'Use clues to work out the order',
+    icon: '<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/>' },
+];
+function sthIcon(paths, size) {
+  const s = size || 24;
+  return `<svg aria-hidden="true" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+}
+const STH_ICON_BOOK  = '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5"/><path d="M9 7h6"/>';
+const STH_ICON_BRAIN = '<path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 1V5a3 3 0 0 0-3-1z"/><path d="M15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-6 1"/>';
+const STH_ICON_LOCK  = '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>';
+const STH_ICON_CHECK = '<path d="M5 12.5l4.5 4.5L19 7.5"/>';
+const STH_ICON_INBOX = '<path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1.5 2.5h5L16 13h5"/>';
+
+// 위쪽 띠 — 이름·학년 / 주 이름 / 주 이동(고정 주 게스트는 없음)
+function sthTopBand(p) {
+  const fixed = _isFixedWeekGuest(currentUser);
+  const today = getTodayPeriod();
+  const isLatest = periodGte(p, today) && periodGte(today, p);
+  const nav = fixed ? '' : `
+      <div class="sth-top-nav">
+        <button type="button" class="sth-wk" aria-label="Previous week" onclick="navigateStudentPeriod(-1)">${sthIcon('<path d="M15 5l-7 7 7 7"/>', 22)}</button>
+        <button type="button" class="sth-wk" aria-label="Next week" onclick="navigateStudentPeriod(1)" ${isLatest ? 'disabled' : ''}>${sthIcon('<path d="M9 5l7 7-7 7"/>', 22)}</button>
+      </div>`;
+  return `
+    <div class="sth-top">
+      <div class="sth-top-who"><span class="sth-top-name" translate="no">${escHtml(englishName(currentUser.id))}</span><span class="sth-top-yr">Year ${escHtml(String(currentUser.year))}</span></div>
+      <div class="sth-top-wk">${escHtml(periodLabel(p))}</div>${nav}
+    </div>`;
+}
+
+// MR 세트 하나의 상태 — 세트 목록과 같은 판정
+//   끝남 = 제출(예전 숙제 기록 아님) · 원장 처리 완료(isManualDone = submitted + 깃발)도 여기 든다
+//   잠김 = 앞 세트 미제출(세트 목록의 prevOk 그대로)
+function sthSetState(store, set, idx, p) {
+  const sub = store.submissions[subKey(currentUser.id, p, idx)];
+  const prevOk = idx === 0 || !!store.submissions[subKey(currentUser.id, p, idx - 1)]?.submitted;
+  const stale = subIsStale(store, sub, currentUser.year, currentUser.country || 'AU', p, currentUser.group);
+  const done = !!sub?.submitted && !stale;
+  const qs = set.questions || [];
+  const auto = qs.filter(q => q.type !== 'written');
+  const ans = (sub && !stale) ? (sub.answers || {}) : {};
+  const answered = auto.filter(q => mrqIsAnswered(ans, q.id)).length;
+  const anyAnswer = Object.keys(ans).some(k => mrqIsAnswered(ans, k));
+  let firstOpen = qs.findIndex(q => q.type !== 'written' && !mrqIsAnswered(ans, q.id));
+  if (firstOpen < 0) firstOpen = 0;
+  return {
+    sub, stale, done, manual: done && isManualDone(sub),
+    locked: !prevOk && !done,
+    total: auto.length, answered, anyAnswer,
+    allAnswered: auto.length > 0 && answered === auto.length,
+    firstOpen, lastQ: Math.max(0, qs.length - 1),
+  };
+}
+
+// TS 상태 — renderTSBlock() 과 같은 셈(day{d}.completed · 답 개수 · 앞 Day 완료)
+function sthTSState(ts, store, p) {
+  const prog = store.submissions[tsSubKey(currentUser.id, p)] || {};
+  const totalDays = ts?.day_config?.total_days || 0;
+  const days = [];
+  let completed = 0;
+  for (let d = 1; d <= totalDays; d++) {
+    const dd = prog[`day${d}`];
+    const c = !!dd?.completed;
+    if (c) completed++;
+    const prevDone = d === 1 || !!prog[`day${d - 1}`]?.completed;
+    const answeredCount = dd?.answers ? Object.keys(dd.answers).length : 0;
+    days.push({ d, completed: c, locked: !prevDone && !c, inProgress: !c && answeredCount > 0 });
+  }
+  return { totalDays, completed, days };
+}
+
+function sthGoMr(idx, startQ) {
+  studentView = 'mr';
+  startSet(idx, (startQ === undefined || startQ === null) ? { withCountdown: true } : { withCountdown: true, startQ });
+}
+function sthGoTs(day) { studentView = 'ts'; openTSDay(day); }
+
+// Up next 의 MR 줄 고르기(§2-2)
+function sthMrNext(sets, states) {
+  let i = states.findIndex(s => !s.done && !s.stale && !s.locked && s.allAnswered);
+  if (i >= 0) return { kind: 'ready', idx: i };
+  i = states.findIndex(s => !s.done && !s.stale && !s.locked && (s.answered > 0 || s.anyAnswer));
+  if (i >= 0) return { kind: 'continue', idx: i };
+  i = states.findIndex(s => !s.done && !s.locked);
+  if (i >= 0) return { kind: 'start', idx: i };
+  if (states.length && states.every(s => s.done)) return { kind: 'done' };
+  return { kind: 'list' };
+}
+function sthTSNext(tsSt) {
+  let x = tsSt.days.find(d => d.inProgress);
+  if (x) return { kind: 'continue', day: x.d };
+  x = tsSt.days.find(d => !d.completed && !d.locked);
+  if (x) return { kind: 'start', day: x.d };
+  if (tsSt.totalDays > 0 && tsSt.completed >= tsSt.totalDays) return { kind: 'done' };
+  return { kind: 'list' };
+}
+
+// Brain Games 줄(첫 화면 · 숙제 없는 주 화면에만) · 게임 잠금은 없다(원장 결정 13)
+function sthGamesRow() {
+  if (!currentUser || currentUser.role !== 'student') return '';
+  const y = String(currentUser.year).toUpperCase();
+  if (y !== 'K' && !(parseInt(y) <= 6)) return '';
+  const list = STH_GAMES.filter(g => (STH_GAME_YEARS[g.name] || []).indexOf(y) >= 0);
+  if (!list.length) return '';
+  return `
+    <section class="sth-games" aria-label="Brain Games">
+      <div class="sth-h">Brain Games</div>
+      <div class="sth-games-row">
+        ${list.map(g => `<button type="button" class="sth-game" title="${escHtml(g.desc)}" onclick="window.open('${g.url}','_blank')">${sthIcon(g.icon, 30)}<span>${escHtml(g.name)}</span></button>`).join('')}
+      </div>
+    </section>`;
+}
+
 function renderStudentHome(hw, store, p) {
-  const sets = hw.sets || [];
-  const tsData = hw.ts;
-  const tsKey = tsSubKey(currentUser.id, p);
-  const tsProgress = store.submissions[tsKey] || {};
-  const totalDays = tsData.day_config?.total_days || 0;
-  let tsCompleted = 0;
-  for (let d = 1; d <= totalDays; d++) { if (tsProgress[`day${d}`]?.completed) tsCompleted++; }
-  const tsPct = totalDays > 0 ? Math.round(tsCompleted / totalDays * 100) : 0;
+  const sets = (hw && hw.sets) || [];
+  const tsData = hw && hw.ts;
+  const hasSets = sets.length > 0;
+  const hasTS = !!(tsData?.enabled && tsData?.questions?.length > 0);
+  const states = sets.map((s, i) => sthSetState(store, s, i, p));
+  const mrDone = states.filter(s => s.done).length;
+  const tsSt = hasTS ? sthTSState(tsData, store, p) : null;
+  const mrN = hasSets ? sthMrNext(sets, states) : null;
+  const tsN = hasTS ? sthTSNext(tsSt) : null;
 
-  let mrCompleted = 0;
-  sets.forEach((set, idx) => {
-    if (store.submissions[subKey(currentUser.id, p, idx)]?.submitted) mrCompleted++;
-  });
-  const mrPct = sets.length > 0 ? Math.round(mrCompleted / sets.length * 100) : 0;
+  // ── Up next ──
+  const rows = [];
+  if (mrN) {
+    const t = (i) => `Math Reasoning · ${escHtml(sets[i].title || `Set ${i + 1}`)}`;
+    if (mrN.kind === 'ready') {
+      const s = states[mrN.idx];
+      rows.push(`<div class="sth-next-row"><div class="sth-next-txt"><div class="sth-next-t">${t(mrN.idx)}</div><div class="sth-next-s">Ready to submit</div></div>
+        <button type="button" class="sth-btn sth-btn-gold" onclick="sthGoMr(${mrN.idx}, ${s.lastQ})">Review &amp; submit →</button></div>`);
+    } else if (mrN.kind === 'continue') {
+      const s = states[mrN.idx];
+      const pct = s.total ? Math.round(s.answered / s.total * 100) : 0;
+      rows.push(`<div class="sth-next-row"><div class="sth-next-txt"><div class="sth-next-t">${t(mrN.idx)}</div>
+          <div class="sth-bar sth-bar-dark"><i style="width:${pct}%"></i></div><div class="sth-next-s">${s.answered} of ${s.total} answered</div></div>
+        <button type="button" class="sth-btn sth-btn-gold" onclick="sthGoMr(${mrN.idx}, ${s.firstOpen})">Continue →</button></div>`);
+    } else if (mrN.kind === 'start') {
+      const s = states[mrN.idx];
+      rows.push(`<div class="sth-next-row"><div class="sth-next-txt"><div class="sth-next-t">${t(mrN.idx)}</div><div class="sth-next-s">${s.total} question${s.total === 1 ? '' : 's'}</div></div>
+        <button type="button" class="sth-btn sth-btn-gold" onclick="sthGoMr(${mrN.idx})">Start →</button></div>`);
+    } else if (mrN.kind === 'done') {
+      rows.push(`<div class="sth-next-row sth-next-done"><div class="sth-next-txt"><div class="sth-next-t">Math Reasoning · All sets done</div></div><span class="sth-ok">${sthIcon(STH_ICON_CHECK, 22)}</span></div>`);
+    } else {
+      rows.push(`<div class="sth-next-row"><div class="sth-next-txt"><div class="sth-next-t">Math Reasoning</div></div>
+        <button type="button" class="sth-btn sth-btn-gold" onclick="studentView='mr';renderStudent()">Open sets →</button></div>`);
+    }
+  }
+  if (tsN) {
+    if (tsN.kind === 'continue') {
+      rows.push(`<div class="sth-next-row"><div class="sth-next-txt"><div class="sth-next-t">Thinking Skills · Day ${tsN.day}</div><div class="sth-next-s">In progress</div></div>
+        <button type="button" class="sth-btn sth-btn-ts" onclick="sthGoTs(${tsN.day})">Continue →</button></div>`);
+    } else if (tsN.kind === 'start') {
+      rows.push(`<div class="sth-next-row"><div class="sth-next-txt"><div class="sth-next-t">Thinking Skills · Day ${tsN.day}</div><div class="sth-next-s">Next TS day</div></div>
+        <button type="button" class="sth-btn sth-btn-ts" onclick="sthGoTs(${tsN.day})">Start →</button></div>`);
+    } else if (tsN.kind === 'done') {
+      rows.push(`<div class="sth-next-row sth-next-done"><div class="sth-next-txt"><div class="sth-next-t">Thinking Skills · All days done</div></div><span class="sth-ok">${sthIcon(STH_ICON_CHECK, 22)}</span></div>`);
+    } else {
+      rows.push(`<div class="sth-next-row"><div class="sth-next-txt"><div class="sth-next-t">Thinking Skills</div></div>
+        <button type="button" class="sth-btn sth-btn-ts" onclick="studentView='ts';renderStudent()">Open days →</button></div>`);
+    }
+  }
+  const allDone = (!mrN || mrN.kind === 'done') && (!tsN || tsN.kind === 'done');
+  const nextCard = allDone
+    ? `<section class="sth-next sth-next-all"><span class="sth-ok">${sthIcon(STH_ICON_CHECK, 26)}</span><div class="sth-next-t">All done for this week — great work!</div></section>`
+    : `<section class="sth-next" aria-label="Up next"><div class="sth-next-h">UP NEXT</div>${rows.join('')}</section>`;
 
-  const html = `<div class="exam-wrap">
-    ${renderPeriodNav(p, store.currentPeriod)}
-    <div style="text-align:center;margin-bottom:28px;">
-      <div style="font-size:22px;font-weight:900;color:var(--navy);" translate="no">${englishName(currentUser.id)}</div>
-      <div style="font-size:13px;color:var(--muted);">Year ${currentUser.year} · ${periodLabel(p)}</div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:560px;margin:0 auto;">
-      <div onclick="studentView='mr';renderStudent()" style="background:#fff;border-radius:20px;padding:28px 20px;text-align:center;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.08);border:2px solid transparent;transition:transform .15s,border-color .15s;"
-           onmouseover="this.style.transform='translateY(-3px)';this.style.borderColor='var(--navy)';"
-           onmouseout="this.style.transform='none';this.style.borderColor='transparent';">
-        <div style="font-size:40px;margin-bottom:12px;">📚</div>
-        <div style="font-size:16px;font-weight:900;color:var(--navy);margin-bottom:6px;">Math Reasoning</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">${sets.length} set${sets.length>1?'s':''}</div>
-        <div style="background:#f1f5f9;border-radius:99px;height:6px;overflow:hidden;">
-          <div style="background:var(--navy);height:100%;border-radius:99px;width:${mrPct}%;transition:width .5s;"></div>
-        </div>
-        <div style="font-size:12px;font-weight:700;color:var(--navy);margin-top:6px;">${mrPct}% complete</div>
-      </div>
-      <div onclick="studentView='ts';renderStudent()" style="background:linear-gradient(135deg,#1e1b4b,#4c1d95);border-radius:20px;padding:28px 20px;text-align:center;cursor:pointer;box-shadow:0 4px 20px rgba(79,70,229,.3);border:2px solid transparent;transition:transform .15s,border-color .15s;"
-           onmouseover="this.style.transform='translateY(-3px)';this.style.borderColor='#a5b4fc';"
-           onmouseout="this.style.transform='none';this.style.borderColor='transparent';">
-        <div style="font-size:40px;margin-bottom:12px;">🧠</div>
-        <div style="font-size:16px;font-weight:900;color:#e0e7ff;margin-bottom:6px;">Thinking Skills</div>
-        <div style="font-size:12px;color:#a5b4fc;margin-bottom:14px;">${totalDays} days</div>
-        <div style="background:rgba(255,255,255,.15);border-radius:99px;height:6px;overflow:hidden;">
-          <div style="background:linear-gradient(90deg,#fbbf24,#f59e0b);height:100%;border-radius:99px;width:${tsPct}%;transition:width .5s;"></div>
-        </div>
-        <div style="font-size:12px;font-weight:700;color:#fbbf24;margin-top:6px;">${tsPct}% complete</div>
-      </div>
-    </div>
+  // ── 과목 카드 ──
+  let subj = '';
+  if (hasSets) {
+    const pct = Math.round(mrDone / sets.length * 100);
+    subj += `<button type="button" class="sth-subj sth-subj-mr" onclick="studentView='mr';renderStudent()">
+        <span class="sth-subj-ic">${sthIcon(STH_ICON_BOOK, 26)}</span>
+        <span class="sth-subj-t">Math Reasoning</span>
+        <span class="sth-subj-s">${mrDone}/${sets.length} sets done</span>
+        <span class="sth-bar"><i style="width:${pct}%"></i></span></button>`;
+  }
+  if (hasTS) {
+    const pct = tsSt.totalDays ? Math.round(tsSt.completed / tsSt.totalDays * 100) : 0;
+    subj += `<button type="button" class="sth-subj sth-subj-ts" onclick="studentView='ts';renderStudent()">
+        <span class="sth-subj-ic">${sthIcon(STH_ICON_BRAIN, 26)}</span>
+        <span class="sth-subj-t">Thinking Skills</span>
+        <span class="sth-subj-s">Day ${tsSt.completed}/${tsSt.totalDays}</span>
+        <span class="sth-bar"><i style="width:${pct}%"></i></span></button>`;
+  }
+
+  // ── 마시멜로 카드(gm_kidMode · Y7 이상 없음) — 세는 주 = 화면이 보여 주는 주 p ──
+  let mm = '';
+  if (typeof gm_kidMode !== 'function' || gm_kidMode()) {
+    const started = mrDone > 0 || states.some(s => s.answered > 0 || s.anyAnswer) || (tsSt && tsSt.days.some(d => d.completed || d.inProgress));
+    const msg = allDone ? 'You finished everything this week!' : started ? 'Nice progress — keep going!' : 'Ready when you are!';
+    const fig = (typeof GM_SOLOMON_SVG !== 'undefined' && GM_SOLOMON_SVG.default) ? GM_SOLOMON_SVG.default : '';
+    mm = `<section class="sth-mm">
+        ${fig ? `<div class="sth-mm-fig" aria-hidden="true">${fig}</div>` : ''}
+        <div class="sth-mm-txt"><div class="sth-mm-msg">${msg}</div>${mrDone > 0 ? `<div class="sth-mm-st">${mrDone} set${mrDone === 1 ? '' : 's'} submitted</div>` : ''}</div>
+      </section>`;
+  }
+
+  const html = `<div class="sth">
+    ${sthTopBand(p)}
+    ${nextCard}
+    <div class="sth-subjs${(hasSets && hasTS) ? '' : ' sth-subjs-one'}">${subj}</div>
+    ${mm}
+    ${sthGamesRow()}
   </div>`;
-  document.getElementById('mainContent').innerHTML = html + renderGameCard() + renderMyAccountCard();
+  document.getElementById('mainContent').innerHTML = html + renderMyAccountCard();
 }
 
 function renderTSView(tsData, store, p) {
@@ -8801,105 +8974,55 @@ function renderTSView(tsData, store, p) {
     ${backBtn}
     ${renderTSBlock(tsData, store, p)}
   </div>`;
-  document.getElementById('mainContent').innerHTML = html + renderGameCard() + renderMyAccountCard();
+  document.getElementById('mainContent').innerHTML = html + renderMyAccountCard()   /* [학생 첫 화면 v1] 게임 줄은 첫 화면에만 */;
 }
 
 function renderSetList(hw, store, p) {
+  // [학생 첫 화면 v1 · 2026-11-12] 새 모양(.sth) — 판정은 sthSetState(세트 목록·Up next 같은 판정) · 누르면 지금과 같은 함수
   const sets = hw.sets || [];
-  const tsData = hw?.ts;
-  const hasTS = tsData?.enabled && tsData?.questions?.length > 0;
-  const backBtn = hasTS ? `<button class="btn-nav" style="margin-bottom:16px;" onclick="studentView=null;renderStudent()">← Back</button>` : '';
-  let html = `<div class="exam-wrap">
-    ${renderPeriodNav(p, store.currentPeriod)}
-    ${backBtn}
-    <div class="exam-header-card" style="margin-bottom:20px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;">
-        <div>
-          <div class="exam-title">📚 ${periodLabel(p)} Homework</div>
-          <div class="exam-sub">${sets.length} set${sets.length>1?'s':''} assigned</div>
-        </div>
-        <div style="text-align:right;">
-          <div style="font-size:20px;font-weight:900;color:var(--gold);" translate="no">${englishName(currentUser.id)}</div>
-          <div style="font-size:12px;opacity:.7;">Year ${currentUser.year}</div>
-        </div>
-      </div>
-    </div>
-    <div class="set-list">`;
+  let html = `<div class="sth">
+    ${sthTopBand(p)}
+    <button type="button" class="sth-back" onclick="studentView=null;renderStudent()">← Back</button>
+    <div class="sth-list">`;
 
   sets.forEach((set, idx) => {
-    const key     = subKey(currentUser.id, p, idx);
-    const sub     = store.submissions[key];
-    const prevKey = idx > 0 ? subKey(currentUser.id, p, idx-1) : null;
-    const prevOk  = idx === 0 || store.submissions[prevKey]?.submitted;
-    // ★ [2026-09-05] 어긋난 기록은 '제출 완료'로 잠그지 않는다 — 아이가 갇히면 안 된다.
-    const _stale  = subIsStale(store, sub, currentUser.year, currentUser.country||'AU', p, currentUser.group);
-    const isSubmitted = !!sub?.submitted && !_stale;
-    const _answered = sub?.answers ? Object.keys(sub.answers).length : 0;
-    const _total = set.questions.filter(q=>q.type!=='written').length;
-
-    let statusBadge = '';
-    if (_total === 0) {
-      if (isSubmitted) {
-        statusBadge = `<div style="background:#dcfce7;color:#166534;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;margin-bottom:8px;">✅ 제출 완료</div>`;
-      } else if (_answered > 0) {
-        statusBadge = `<div style="background:#fef3c7;color:#b45309;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;margin-bottom:8px;">✏️ 풀이 중</div>`;
-      } else {
-        statusBadge = `<div style="background:#f1f5f9;color:#64748b;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;margin-bottom:8px;">⏳ 시작 전</div>`;
-      }
-    } else if (isSubmitted) {
-      statusBadge = `<div style="background:#dcfce7;color:#166534;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;margin-bottom:8px;">✅ 제출 완료</div>`;
-    } else if (_answered === 0) {
-      statusBadge = `<div style="background:#f1f5f9;color:#64748b;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;margin-bottom:8px;">⏳ 시작 전</div>`;
-    } else if (_answered < _total) {
-      statusBadge = `<div style="background:#fef3c7;color:#b45309;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;margin-bottom:8px;">✏️ 풀이 중 (${_answered}/${_total})</div>`;
+    const st = sthSetState(store, set, idx, p);
+    const title = escHtml(set.title || `Set ${idx + 1}`);
+    const nq = `${st.total} question${st.total === 1 ? '' : 's'}`;
+    let badge, cls = '', onclick = `startSet(${idx}, {withCountdown:true})`;
+    if (st.locked) {
+      const prevT = escHtml(sets[idx - 1]?.title || `Set ${idx}`);
+      badge = `<span class="sth-badge sth-b-grey">${sthIcon(STH_ICON_LOCK, 14)} Finish ${prevT} first</span>`;
+      cls = ' sth-set-locked'; onclick = '';
+    } else if (st.stale) {
+      badge = `<span class="sth-badge sth-b-yellow">Earlier record found — tap to start the new set</span>`;
+    } else if (st.manual) {
+      badge = `<span class="sth-badge sth-b-green">Done (by teacher)</span>`;
+      onclick = `startSet(${idx})`;
+    } else if (st.done) {
+      const autoQs = set.questions.filter(q => q.type !== 'written');
+      const correct = autoQs.filter(q => normAns(st.sub.answers?.[q.id]) === normAns(q.answer)).length;
+      const pct = autoQs.length > 0 ? Math.round(correct / autoQs.length * 100) : 0;
+      badge = `<span class="sth-badge sth-b-green">Done · ${pct}%</span>`;
+      onclick = `startSet(${idx})`;
+    } else if (st.total === 0) {
+      badge = st.anyAnswer ? `<span class="sth-badge sth-b-yellow">In progress</span>` : `<span class="sth-badge sth-b-grey">Not started</span>`;
+    } else if (st.allAnswered) {
+      badge = `<span class="sth-badge sth-b-orange">Ready to submit</span>`;
+    } else if (st.answered > 0 || st.anyAnswer) {
+      badge = `<span class="sth-badge sth-b-yellow">In progress · ${st.answered}/${st.total}</span>`;
     } else {
-      statusBadge = `<div style="background:#fee2e2;color:#b91c1c;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:800;display:inline-block;margin-bottom:8px;animation:pulse 2s infinite;">⚠️ 답 다 썼어요! 제출하세요</div>`;
+      badge = `<span class="sth-badge sth-b-grey">Not started</span>`;
     }
-
-    // ★ [2026-09-05] 어긋난 기록이면 딱지를 갈아 끼운다(옛 답 개수도 세지 않는다).
-    if (_stale) {
-      statusBadge = `<div style="background:#fef3c7;color:#b45309;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;margin-bottom:8px;">⚠️ 예전 숙제 기록이 있어요 — 새 숙제를 풀 수 있어요</div>`;
-    }
-
-    const isLocked    = !prevOk && !isSubmitted;
-    const answered    = (sub && !_stale) ? Object.keys(sub.answers||{}).length : 0;
-
-    let iconClass, iconEmoji, cardClass, statusText, scoreHtml='';
-    if (isLocked) {
-      iconClass='set-icon-locked'; iconEmoji='🔒'; cardClass='locked';
-      statusText='Complete the previous set to unlock';
-    } else if (isSubmitted && isManualDone(sub)) {
-      // [2-B] 원장 처리 — 점수 없이 완료
-      iconClass='set-icon-done'; iconEmoji='✅'; cardClass='done';
-      statusText='Completed · 완료 (원장 처리)';
-    } else if (isSubmitted) {
-      const autoQs = set.questions.filter(q=>q.type!=='written');
-      const correct = autoQs.filter(q=>normAns(sub.answers?.[q.id])===normAns(q.answer)).length;
-      const pct = autoQs.length>0 ? Math.round(correct/autoQs.length*100) : 0;
-      const cls = pct>=80?'pill-a':pct>=60?'pill-b':'pill-c';
-      iconClass='set-icon-done'; iconEmoji='✅'; cardClass='done';
-      statusText='Completed';
-      scoreHtml=`<span class="score-pill ${cls}" style="margin-left:8px;">${pct}%</span>`;
-    } else {
-      iconClass='set-icon-open'; iconEmoji=answered>0?'📝':'📖'; cardClass='unlocked';
-      statusText = answered>0 ? `In progress (${answered}/${set.questions.length} questions)` : `${set.questions.length} questions`;
-    }
-
     html += `
-      <div class="set-card ${cardClass}" ${!isLocked ? `onclick="startSet(${idx}, {withCountdown:true})"` : ''}>
-        <div class="set-icon ${iconClass}" style="color:${isLocked?'#94a3b8':isSubmitted?'#fff':'var(--gold)'};">${iconEmoji}</div>
-        <div class="set-info">
-          ${!isLocked ? statusBadge : ''}
-          <div class="set-name">${set.title}</div>
-          <div class="set-meta">${statusText}${scoreHtml}</div>
-        </div>
-        ${!isLocked && !isSubmitted ? `<button class="btn-sm btn-navy" onclick="event.stopPropagation();startSet(${idx}, {withCountdown:true})">${answered>0?'Continue →':'Start →'}</button>` : ''}
-        ${isSubmitted ? `<button class="btn-sm" style="background:#dcfce7;color:#166534;" onclick="event.stopPropagation();startSet(${idx})">View Results</button>` : ''}
-      </div>`;
+      <button type="button" class="sth-set${cls}" ${onclick ? `onclick="${onclick}"` : 'disabled aria-disabled="true"'}>
+        <span class="sth-set-l"><span class="sth-set-t">${title}</span><span class="sth-set-n">${nq}</span></span>
+        ${badge}
+      </button>`;
   });
 
   html += `</div></div>`;
-  document.getElementById('mainContent').innerHTML = html + renderGameCard() + renderMyAccountCard();
+  document.getElementById('mainContent').innerHTML = html + renderMyAccountCard();
 }
 
 // ★★★ [2026-09-05 션 사고] 어긋난 칸 안내 화면 ────────────────────────────
@@ -8966,6 +9089,13 @@ function startSet(idx, opts) {
   opts = opts || {};
   currentSetIdx = idx;
   qIdx = 0;
+  // [학생 첫 화면 v1 · 원장 결정 3] 시작 문제 번호 — 없거나 범위 밖이면 지금처럼 1번
+  if (Number.isInteger(opts.startQ) && opts.startQ > 0) {
+    const _st = getStore();
+    const _hw = hwLookup(_st, currentUser.year, currentUser.country||'AU', studentPeriod||_st.currentPeriod, currentUser.group);
+    const _n = (_hw?.sets?.[idx]?.questions || []).length;
+    if (opts.startQ < _n) qIdx = opts.startQ;
+  }
   // gamify-lab Tier 4: 각 셋 시작 시 gm state 리셋 (세션 휘발, Firebase 무영향)
   if (typeof _gmState !== 'undefined') {
     _gmState.score = 0;
