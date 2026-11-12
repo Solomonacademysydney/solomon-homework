@@ -8991,8 +8991,7 @@ function renderSetList(hw, store, p) {
     const nq = `${st.total} question${st.total === 1 ? '' : 's'}`;
     let badge, cls = '', onclick = `startSet(${idx}, {withCountdown:true})`;
     if (st.locked) {
-      const prevT = escHtml(sets[idx - 1]?.title || `Set ${idx}`);
-      badge = `<span class="sth-badge sth-b-grey">${sthIcon(STH_ICON_LOCK, 14)} Finish ${prevT} first</span>`;
+      badge = `<span class="sth-badge sth-b-grey">${sthIcon(STH_ICON_LOCK, 14)} Finish the set above first</span>`;   // [원장 2026-11-12] 실제 세트 제목이 길어 짧게
       cls = ' sth-set-locked'; onclick = '';
     } else if (st.stale) {
       badge = `<span class="sth-badge sth-b-yellow">Earlier record found — tap to start the new set</span>`;
