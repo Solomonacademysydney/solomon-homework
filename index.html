@@ -7323,6 +7323,18 @@ async function doSave() {
     const yrStudents = store.users.filter(u=>u.role==='student' && u.status!=='inactive' && !u.isTest && u.year===selectedYear && (u.country||'AU')===selectedCountry && (u.group||'')===selectedGroup);
     const qs = parsedQuestions.map((q,i) => ({ ...q, id:`q${i}` }));
 
+    // ★ [숙제 문지기 · 2026-11-12 원장] 세트 수정 화면 저장도 JSON 등록과 같은 문지기를 지난다.
+    //   서버에 손대기 **전**이라 멈춰도 남는 것이 없다(아래 finally 가 버튼을 되돌린다).
+    {
+      const _흠 = [];
+      qs.forEach((q, i) => { const pr = hwItemProblems(q, 'mr'); if (pr.length) _흠.push(`${i + 1}번: ${pr.join(', ')}`); });
+      if (_흠.length) {
+        alert(`⛔ 저장을 멈췄습니다 — 아이 화면에서 깨져 보일 문항 ${_흠.length}개\n\n` + _흠.slice(0, 15).join('\n') +
+          (_흠.length > 15 ? `\n… 외 ${_흠.length - 15}개` : '') + '\n\n고친 뒤 다시 저장해 주세요. 아무것도 저장하지 않았습니다.');
+        return;
+      }
+    }
+
     // Phase C: auto-tag questions before save
     let tagResult = { skipped: true };
     if (AUTO_TAG_ENABLED && window.TAXONOMY_MR) {   // [2026-10-01] 자동 분류 꺼짐
