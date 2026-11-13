@@ -1,0 +1,100 @@
+/* kakao-report.css — 카톡 카드. 모든 규칙은 #kakaoReport 또는 .kr-scope 아래에만 걸린다(기존 홈페이지 스타일과 섞이지 않게).
+   카드 디자인 기준: 바탕화면 리포트카드_디자인_1부.html (nth-of-type 규칙 → 카드 종류 클래스로 바꿈 · .s.mid2 → 색 하나로 합침) */
+
+/* ── 교사 화면 틀 ── */
+#kakaoReport .kr-bar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:10px 0 12px; }
+#kakaoReport .kr-bar select, #kakaoReport .kr-set select { padding:6px 10px; border:2px solid var(--border,#ddd); border-radius:8px; font-family:'Noto Sans KR',sans-serif; font-size:13px; }
+#kakaoReport .kr-set { font-size:13px; color:#475569; margin-bottom:12px; display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+#kakaoReport .kr-msgline { padding:30px; text-align:center; color:#475569; font-size:15px; background:#f8fafc; border-radius:12px; }
+#kakaoReport .kr-err { color:#b45309; }
+#kakaoReport .kr-wrap { display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap; }
+#kakaoReport .kr-side { flex:0 0 360px; max-width:100%; display:flex; flex-direction:column; gap:10px; }
+#kakaoReport .kr-f { display:flex; flex-direction:column; gap:4px; font-size:13px; font-weight:700; color:#1e2b4f; }
+#kakaoReport .kr-f textarea { font-family:'Noto Sans KR',sans-serif; font-size:13px; padding:8px; border:2px solid #e2e8f0; border-radius:8px; resize:vertical; }
+#kakaoReport .kr-chk { font-weight:500; color:#475569; margin-left:8px; cursor:pointer; }
+#kakaoReport .kr-f textarea:disabled { background:#f1f5f9; color:#94a3b8; }
+#kakaoReport .kr-warn { background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; border-radius:10px; padding:10px 12px; font-size:12px; line-height:1.6; }
+#kakaoReport .kr-guard { color:#b45309; font-size:13px; font-weight:700; }
+#kakaoReport .kr-help { font-size:12px; color:#64748b; line-height:1.6; }
+#kakaoReport #krSave:disabled { opacity:.45; cursor:not-allowed; }
+#kakaoReport .kr-cards { flex:1; display:flex; gap:14px; flex-wrap:wrap; min-width:0; }
+/* 미리보기: 카드는 1080×1350 그대로 짓고 0.4배로 보인다(레이아웃 크기는 그대로라 넘침 재기가 맞다) */
+#kakaoReport .kr-frame { width:432px; height:540px; overflow:hidden; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,.12); flex:0 0 auto; }
+#kakaoReport .kr-scale { transform:scale(.4); transform-origin:0 0; width:1080px; height:1350px; }
+/* 찍기용: 화면 밖에 변환 없이 놓는다 */
+.kr-capture { position:fixed; left:-12000px; top:0; width:1080px; height:1350px; }
+
+/* ── 카드 ── */
+.kr-scope .kr-card { width:1080px; height:1350px; background:#faf7f0; position:relative; overflow:hidden; display:flex; flex-direction:column;
+  font-family:'Noto Sans KR',sans-serif; color:#1f2a44; box-sizing:border-box; word-break:keep-all; overflow-wrap:break-word; }
+.kr-scope .kr-card * { box-sizing:border-box; margin:0; padding:0; }
+.kr-scope .kr-top { color:#fff; padding:44px 72px 36px; position:relative; }
+.kr-scope .kr-brand { color:#d4a73c; letter-spacing:6px; font-size:24px; font-weight:700; }
+.kr-scope .kr-top h1 { font-size:56px; margin-top:14px; font-weight:900; line-height:1.2; }
+.kr-scope .kr-sub { font-size:30px; color:#c8cfe0; margin-top:8px; }
+.kr-scope .kr-pg { position:absolute; top:50px; right:72px; color:#d4a73c; font-size:26px; font-weight:700; }
+.kr-scope .kr-part { display:inline-block; background:#d4a73c; color:#1e2b4f; font-size:24px; font-weight:900; padding:4px 16px; border-radius:8px; margin-top:14px; }
+.kr-scope .kr-body { padding:34px 72px; flex:1; display:flex; flex-direction:column; gap:20px; overflow:hidden; min-height:0; }
+.kr-scope .kr-h { font-size:38px; font-weight:900; color:#1e2b4f; border-left:10px solid #d4a73c; padding-left:22px; }
+.kr-scope .kr-box { background:#fff; border-radius:28px; padding:24px 44px; }
+.kr-scope .kr-one { font-size:36px; line-height:1.55; font-weight:700; }
+.kr-scope .kr-row { display:flex; justify-content:space-between; align-items:center; font-size:32px; padding:12px 0; border-bottom:2px solid #f0ebe0; gap:16px; }
+.kr-scope .kr-row:last-child { border:0; }
+.kr-scope .kr-s { font-weight:900; font-size:36px; white-space:nowrap; }
+.kr-scope ul { list-style:none; }
+.kr-scope li { font-size:29px; line-height:1.5; padding:4px 0 4px 44px; position:relative; }
+.kr-scope li:before { content:"•"; position:absolute; left:10px; color:#d4a73c; font-weight:900; }
+.kr-scope li b { color:#1e2b4f; }
+.kr-scope .kr-nx { font-size:28px; padding:16px 40px; }
+.kr-scope .kr-fill { border:3px dashed #e3a24a; background:#fff8ec; color:#a35a00; }
+.kr-scope .kr-msg { font-size:28px; line-height:1.5; padding:18px 40px; }
+.kr-scope .kr-ph { background:#ffe9c7; }
+.kr-scope .kr-hint { font-size:.7em; font-weight:500; color:#888; }
+.kr-scope .kr-sign { text-align:right; font-weight:900; color:#1f2a44; margin-top:4px; }
+.kr-scope .kr-note { font-size:22px; color:#888; margin-top:8px; }
+.kr-scope .kr-foot { padding:26px 72px; font-size:24px; color:#999; display:flex; justify-content:space-between; border-top:2px solid #ece5d4; }
+
+/* 1번 요약 — 2×2 */
+.kr-scope .kr-card-summary .kr-body { gap:16px; }
+.kr-scope .kr-grid { display:flex; flex-direction:column; gap:14px; }
+.kr-scope .kr-srow { background:#fff; border-radius:28px; padding:14px 28px 16px; display:flex; flex-wrap:wrap; align-items:center; }
+.kr-scope .kr-sname-wrap { flex-basis:100%; margin-bottom:10px; }
+.kr-scope .kr-sname { color:#fff; font-size:26px; font-weight:900; padding:4px 18px; border-radius:10px; display:inline-block; }
+.kr-scope .kr-cell { display:flex; align-items:center; gap:18px; flex:1; }
+.kr-scope .kr-cell.kr-big { flex:1.2; }
+.kr-scope .kr-ct { font-size:26px; color:#666; }
+.kr-scope .kr-st { font-size:36px; font-weight:900; white-space:nowrap; }
+.kr-scope .kr-d { font-size:24px; color:#888; }
+
+/* 2번 Math */
+.kr-scope .kr-card-math .kr-row { padding:10px 0; }
+.kr-scope .kr-card-math .kr-body { gap:16px; }
+
+/* 3번 Thinking Skills */
+.kr-scope .kr-card-ts .kr-body { gap:12px; padding-top:26px; }
+.kr-scope .kr-card-ts .kr-box { padding:12px 40px; }
+.kr-scope .kr-card-ts .kr-h { font-size:34px; }
+.kr-scope .kr-card-ts .kr-row { padding:8px 0; }
+.kr-scope .kr-card-ts .kr-row .kr-s { font-size:30px; }
+.kr-scope .kr-lv { font-size:28px; }
+.kr-scope .kr-lvname { flex:1; min-width:0; }
+.kr-scope .kr-lvname small { font-size:21px; color:#888; margin-left:12px; }
+.kr-scope .kr-dots { color:#d4a73c; font-size:28px; letter-spacing:4px; white-space:nowrap; }
+.kr-scope .kr-lvn { font-size:24px; color:#666; white-space:nowrap; min-width:72px; }
+
+/* 글이 넘칠 때 단계적으로 줄이기 */
+.kr-scope .kr-card.kr-fs1 .kr-body { gap:12px; }
+.kr-scope .kr-card.kr-fs1 .kr-one, .kr-scope .kr-card.kr-fs1 .kr-row { font-size:28px; }
+.kr-scope .kr-card.kr-fs1 li, .kr-scope .kr-card.kr-fs1 .kr-msg, .kr-scope .kr-card.kr-fs1 .kr-nx { font-size:26px; }
+.kr-scope .kr-card.kr-fs1 .kr-h { font-size:32px; }
+.kr-scope .kr-card.kr-fs2 .kr-body { gap:10px; padding-top:20px; padding-bottom:20px; }
+.kr-scope .kr-card.kr-fs2 .kr-one, .kr-scope .kr-card.kr-fs2 .kr-row { font-size:26px; padding-top:6px; padding-bottom:6px; }
+.kr-scope .kr-card.kr-fs2 li, .kr-scope .kr-card.kr-fs2 .kr-msg, .kr-scope .kr-card.kr-fs2 .kr-nx { font-size:24px; }
+.kr-scope .kr-card.kr-fs2 .kr-h { font-size:30px; }
+.kr-scope .kr-card.kr-fs2 .kr-row .kr-s { font-size:28px; }
+.kr-scope .kr-card.kr-fs3 .kr-body { gap:8px; padding-top:16px; padding-bottom:16px; }
+.kr-scope .kr-card.kr-fs3 .kr-one, .kr-scope .kr-card.kr-fs3 .kr-row { font-size:24px; padding-top:4px; padding-bottom:4px; }
+.kr-scope .kr-card.kr-fs3 li, .kr-scope .kr-card.kr-fs3 .kr-msg, .kr-scope .kr-card.kr-fs3 .kr-nx { font-size:22px; }
+.kr-scope .kr-card.kr-fs3 .kr-h { font-size:28px; }
+.kr-scope .kr-card.kr-fs3 .kr-row .kr-s { font-size:26px; }
+.kr-scope .kr-card.kr-fs3 .kr-box { padding-top:10px; padding-bottom:10px; }
