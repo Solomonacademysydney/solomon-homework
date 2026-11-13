@@ -356,6 +356,43 @@ function pairJson(names) {
   return out;
 }
 
+/**
+ * [11-13 카톡 카드 2단계] 프로젝트가 교재와 함께 저장하는 「…_수업요약.json」을 읽어 DB 에 올릴 꼴로 다듬는다.
+ *   꼴(프로젝트 지침과 같아야 한다 · 바탕화면 「프로젝트_지침_수업요약_추가.md」):
+ *   { type:'solomon_lesson_summary', version:1, studentIds:['Stella07'], lessonDate:'2026-11-09', topic:'…',
+ *     learned:[{title,desc}], test:{title, questions:[{n, unit}]} | null, homework:['…'] }
+ *   틀리면 { ok:false, problems:[…] } — 일꾼은 올리지 않고 기록만 한다.
+ */
+const SID_RE = /^[A-Za-z0-9]{2,30}$/;
+function lessonSummaryOf(raw, guessSids) {
+  const p = [];
+  const s = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
+  if (!raw || typeof raw !== 'object') return { ok: false, problems: ['JSON 이 객체가 아님'] };
+  if (raw.type !== 'solomon_lesson_summary') p.push('type 이 solomon_lesson_summary 가 아님');
+  let sids = Array.isArray(raw.studentIds) ? raw.studentIds : (raw.studentId ? [raw.studentId] : []);
+  sids = sids.map(x => s(x, 30)).filter(x => SID_RE.test(x));
+  if (!sids.length && guessSids && guessSids.length) sids = guessSids.slice();
+  if (!sids.length) p.push('studentIds 없음(학생 로그인 ID)');
+  const date = s(raw.lessonDate, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) p.push('lessonDate 가 YYYY-MM-DD 가 아님');
+  const learned = (Array.isArray(raw.learned) ? raw.learned : []).slice(0, 8)
+    .map(x => typeof x === 'string' ? { title: '', desc: s(x, 300) } : { title: s(x && x.title, 60), desc: s(x && x.desc, 300) })
+    .filter(x => x.title || x.desc);
+  if (!learned.length) p.push('learned(배운 내용) 없음');
+  let test = null;
+  if (raw.test && typeof raw.test === 'object') {
+    const qs = (Array.isArray(raw.test.questions) ? raw.test.questions : []).slice(0, 80)
+      .map((q, i) => ({ n: Number.isInteger(+(q && q.n)) && +q.n > 0 ? +q.n : i + 1, unit: s(q && q.unit, 60) || '기타' }));
+    const ns = qs.map(q => q.n);
+    if (new Set(ns).size !== ns.length) p.push('test.questions 번호(n)가 겹침');
+    if (!qs.length) p.push('test.questions 비어 있음');
+    test = { title: s(raw.test.title, 80) || '오늘 본 테스트', questions: qs };
+  }
+  const homework = (Array.isArray(raw.homework) ? raw.homework : []).slice(0, 8).map(x => s(x, 200)).filter(Boolean);
+  if (p.length) return { ok: false, problems: p };
+  return { ok: true, value: { studentIds: sids, lessonDate: date, topic: s(raw.topic, 80), learned, test, homework } };
+}
+
 /** [6단계] 초안에 담을 문항 내용 — 원장 화면에서 미리 보고 고를 수 있게(교사·서버만 읽는 자리) */
 function itemsForDraft(slots, mr, ts) {
   const o = {};
@@ -377,5 +414,5 @@ function applyMrEdit(it, e) {
   return n;
 }
 
-module.exports = { guessStudents, pairJson, itemsForDraft, applyMrEdit, driveDest, driveFileName, schoolFileNews, periodOfYmd, dateFolder, lessonDir, ymdOfFolder, KNOWN_TYPES, LEASE_MS, canon, sha256, specHash, draftIdFor, apportion, slotsFromSpec, sampleSlots, valueOf, evalExact, sameAnswer,
+module.exports = { lessonSummaryOf, guessStudents, pairJson, itemsForDraft, applyMrEdit, driveDest, driveFileName, schoolFileNews, periodOfYmd, dateFolder, lessonDir, ymdOfFolder, KNOWN_TYPES, LEASE_MS, canon, sha256, specHash, draftIdFor, apportion, slotsFromSpec, sampleSlots, valueOf, evalExact, sameAnswer,
   resolveChoice, checkMrItems, compareSolve, leaseDecision, usageTokens, overCap, itemIdFor, buildManifest, checkPdfText, archivePlan, safeName };

@@ -11,6 +11,9 @@
 #kakaoReport .kr-side { flex:0 0 360px; max-width:100%; display:flex; flex-direction:column; gap:10px; }
 #kakaoReport .kr-f { display:flex; flex-direction:column; gap:4px; font-size:13px; font-weight:700; color:#1e2b4f; }
 #kakaoReport .kr-f textarea { font-family:'Noto Sans KR',sans-serif; font-size:13px; padding:8px; border:2px solid #e2e8f0; border-radius:8px; resize:vertical; }
+#kakaoReport .kr-sec { font-size:13px; font-weight:900; color:#fff; background:#1e2b4f; border-radius:6px; padding:4px 10px; margin-top:4px; }
+#kakaoReport .kr-f select, #kakaoReport .kr-f input:not([type=checkbox]) { font-family:'Noto Sans KR',sans-serif; font-size:13px; padding:7px 8px; border:2px solid #e2e8f0; border-radius:8px; }
+#kakaoReport .kr-f input:disabled { background:#f1f5f9; color:#94a3b8; }
 #kakaoReport .kr-chk { font-weight:500; color:#475569; margin-left:8px; cursor:pointer; }
 #kakaoReport .kr-f textarea:disabled { background:#f1f5f9; color:#94a3b8; }
 #kakaoReport .kr-warn { background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; border-radius:10px; padding:10px 12px; font-size:12px; line-height:1.6; }
@@ -42,8 +45,8 @@
 .kr-scope .kr-row:last-child { border:0; }
 .kr-scope .kr-s { font-weight:900; font-size:36px; white-space:nowrap; }
 .kr-scope ul { list-style:none; }
-.kr-scope li { font-size:29px; line-height:1.5; padding:4px 0 4px 44px; position:relative; }
-.kr-scope li:before { content:"•"; position:absolute; left:10px; color:#d4a73c; font-weight:900; }
+.kr-scope .kr-card li { font-size:29px; line-height:1.5; padding:4px 0 4px 44px; position:relative; }
+.kr-scope .kr-card li:before { content:"•"; position:absolute; left:10px; color:#d4a73c; font-weight:900; }
 .kr-scope li b { color:#1e2b4f; }
 .kr-scope .kr-nx { font-size:28px; padding:16px 40px; }
 .kr-scope .kr-fill { border:3px dashed #e3a24a; background:#fff8ec; color:#a35a00; }
@@ -81,6 +84,11 @@
 .kr-scope .kr-lvname small { font-size:21px; color:#888; margin-left:12px; }
 .kr-scope .kr-dots { color:#d4a73c; font-size:28px; letter-spacing:4px; white-space:nowrap; }
 .kr-scope .kr-lvn { font-size:24px; color:#666; white-space:nowrap; min-width:72px; }
+
+/* 2부 · 수업 */
+.kr-scope .kr-card-lesson .kr-body, .kr-scope .kr-card-wrap .kr-body { gap:16px; }
+.kr-scope .kr-unit { font-size:28px; padding:8px 0; }
+.kr-scope .kr-fillchip { border:3px dashed #e3a24a; background:#fff8ec; border-radius:10px; padding:2px 14px; }
 
 /* 글이 넘칠 때 단계적으로 줄이기 */
 .kr-scope .kr-card.kr-fs1 .kr-body { gap:12px; }

@@ -300,13 +300,25 @@ function compute(inp) {
   if (ts) lines.push({ subj: 'Thinking Skills', text: checkSentence(ts) });
   const nextMath = math ? nextText(nextHw, false) : '';
   const nextTs = ts ? nextText(nextHw, true) : '';
+  // [3단계] 2부(현장 수업) — 일꾼이 올린 수업 요약(lessonSummaries) 하나. 없으면 1부만.
+  const L = inp.lesson && inp.lesson.lessonDate ? inp.lesson : null;
+  const part2 = L ? {
+    date: L.lessonDate, dateText: koDate(L.lessonDate), topic: L.topic || '',
+    test: L.test && L.test.questions && L.test.questions.length ? { title: L.test.title || '오늘 본 테스트', questions: L.test.questions } : null
+  } : null;
+  const weekHw = [];
+  if (L) {
+    (L.homework || []).forEach(h => weekHw.push(h));
+    if (math && nextMath !== '배정 예정') weekHw.push('홈페이지 Math 숙제 · ' + nextMath);
+    if (ts && nextTs !== '배정 예정') weekHw.push('홈페이지 Thinking Skills 숙제 · ' + nextTs);
+  }
   const msg = [];
   if (math && math.band) msg.push('Math ' + planSentence(math));
   if (ts && ts.band) msg.push('Thinking Skills ' + planSentence(ts));
   return {
     student: { name: st.name || st.id, year: st.year, online },
     periodText: inp.periodText, periodKey: inp.periodKey,
-    math, ts, warn,
+    math, ts, warn, part2,
     edit: {
       check: lines.map(l => l.subj + ' ' + l.text).join('\n'),
       praise: math ? math.praise : '',
@@ -315,9 +327,50 @@ function compute(inp) {
       // [11-13 원장] 다음 주 숙제 칸은 원장이 넣고 뺀다 — 처음엔 배정돼 있으면 넣고, 「배정 예정」이면 뺀다
       showNextMath: !!math && nextMath !== '배정 예정',
       showNextTs: !!ts && nextTs !== '배정 예정',
-      message: (msg.length ? msg.join('\n') + ' ' : '') + '[원장님 관찰 추가]'
+      message: (msg.length ? msg.join('\n') + ' ' : '') + '[원장님 관찰 추가]',
+      // 2부 편집 칸
+      learned: L ? (L.learned || []).map(x => (x.title ? x.title + ': ' : '') + (x.desc || '')).join('\n') : '',
+      testWrong: '', testScore: '', showTest: !!(part2 && part2.test),
+      weekHw: weekHw.join('\n')
     }
   };
+}
+
+function koDate(ymd) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(ymd || ''));
+  if (!m) return String(ymd || '');
+  const d = new Date(+m[1], +m[2] - 1, +m[3], 12);
+  return `${+m[2]}월 ${+m[3]}일(${'일월화수목금토'[d.getDay()]})`;
+}
+
+/**
+ * 2부 테스트 — 원장이 넣은 「틀린 번호」·「점수」로 단원별 결과를 낸다(저장 안 함).
+ *   틀린 번호 칸이 비면 아직 안 넣은 것(entered:false). 「0」·「없음」 = 다 맞음.
+ */
+function testResult(test, wrongText, scoreText) {
+  if (!test) return null;
+  const nums = new Set(test.questions.map(q => q.n));
+  const raw = String(wrongText || '').trim();
+  const entered = raw !== '';
+  const wrong = new Set(), bad = [];
+  if (entered && !/^(0|없음|없다|none)$/i.test(raw)) {
+    for (const t of raw.split(/[\s,·、/]+/).filter(Boolean)) {
+      const n = +t;
+      if (Number.isInteger(n) && nums.has(n)) wrong.add(n); else bad.push(t);
+    }
+  }
+  const total = test.questions.length;
+  const sc = String(scoreText || '').trim();
+  const score = sc !== '' && /^\d+(\.\d+)?$/.test(sc) ? +sc : (entered ? total - wrong.size : null);
+  const units = {};
+  for (const q of test.questions) {
+    const u = units[q.unit] = units[q.unit] || { name: q.unit, correct: 0, total: 0 };
+    u.total++; if (!wrong.has(q.n)) u.correct++;
+  }
+  const list = Object.values(units).sort((a, b) => (a.correct / a.total) - (b.correct / b.total) || b.total - a.total);
+  const worst = list.filter(u => u.correct < u.total).sort((a, b) => (b.total - b.correct) - (a.total - a.correct))[0];
+  const note = !entered ? '' : worst ? `다시 볼 단원: ${worst.name} (오답 ${worst.total - worst.correct}문항)` : '모든 문항을 맞혔습니다.';
+  return { entered, total, score, wrong: [...wrong].sort((a, b) => a - b), bad, units: list, note };
 }
 
 const PLACEHOLDER = '[원장님 관찰 추가]';
@@ -392,23 +445,28 @@ function messageBox(e) {
 /** 카드 HTML 배열(1080×1350 그대로). */
 function renderCards(m) {
   const e = m.edit, cards = [];
-  const n = 1 + (m.math ? 1 : 0) + (m.ts ? 1 : 0);
+  const p2 = m.part2 || null;
+  const n = 1 + (m.math ? 1 : 0) + (m.ts ? 1 : 0) + (p2 ? 2 : 0);
   const pg = i => `${i} / ${n}`;
   const who = esc(m.student.name) + ' · ' + (m.student.online ? '온라인' : ('Y' + esc(m.student.year)));
+  const badge1 = p2 ? '1부 · 숙제' : '숙제 리포트';
+  // 2부가 있으면 원장 한마디·다음 주 숙제는 2부 마지막 장으로 간다
+  const e1 = p2 ? Object.assign({}, e, { showNextMath: false, showNextTs: false }) : e;
+  const lastOf1 = !p2;
   // 1 요약
-  cards.push(`<div class="kr-card kr-card-summary">${head(C.navy, who, '주간 학습 리포트 · 숙제 (' + esc(m.periodText) + ')', '숙제 리포트', '', pg(1))}`
+  cards.push(`<div class="kr-card kr-card-summary">${head(C.navy, who, '주간 학습 리포트 · 숙제 (' + esc(m.periodText) + ')', badge1, '', pg(1))}`
     + `<div class="kr-body"><div class="kr-h">이번 주 숙제 점검</div><div class="kr-box kr-one">${subjLines(e.check)}</div>`
     + `<div class="kr-h">숙제 요약</div><div class="kr-grid">`
     + (m.math ? summaryRow('Math', C.navy, m.math) : '') + (m.ts ? summaryRow('Thinking Skills', C.ts, m.ts) : '')
     + `</div></div>${foot(m, false)}</div>`);
   let i = 2;
   if (m.math) {
-    const last = !m.ts;
+    const last = !m.ts && lastOf1;
     cards.push(`<div class="kr-card kr-card-math">${head(C.navy, 'Math 숙제 결과', subjSub(m.math), 'Math', 'background:#e6e9f2', pg(i))}`
       + `<div class="kr-body"><div class="kr-box">${setRows(m.math)}</div>`
       + `<div class="kr-h">잘한 점 · 다시 볼 점</div><div class="kr-box"><ul>`
       + `<li><b>잘한 점:</b> ${esc(e.praise)}</li><li><b>다시 볼 점:</b> ${esc(e.review)}</li></ul></div>`
-      + (e.showNextMath !== false ? `<div class="kr-h">다음 주 Math 숙제</div><div class="kr-box kr-nx">${esc(e.nextMath)}</div>` : '')
+      + (e1.showNextMath !== false ? `<div class="kr-h">다음 주 Math 숙제</div><div class="kr-box kr-nx">${esc(e.nextMath)}</div>` : '')
       + (last ? messageBox(e) : '') + `</div>${foot(m, last)}</div>`);
     i++;
   }
@@ -421,13 +479,41 @@ function renderCards(m) {
     cards.push(`<div class="kr-card kr-card-ts">${head(C.tsHead, 'Thinking Skills 숙제 결과', subjSub(m.ts), 'Thinking Skills', 'background:#d9f0ef;color:#0f6f6f', pg(i))}`
       + `<div class="kr-body"><div class="kr-box">${setRows(m.ts)}${m.ts.hint ? '<div class="kr-note">힌트: 막혔을 때 실마리를 보고 맞힌 문제</div>' : ''}</div>`
       + (m.ts.areas.length ? `<div class="kr-h">이번 주 Thinking Skills 영역별 결과</div><div class="kr-box">${areas}<div class="kr-note">단계: 1(기초)~5(시험 최상위) · 이번 주 푼 문항 기준</div></div>` : '')
-      + (e.showNextTs !== false ? `<div class="kr-box kr-nx"><b>다음 주 숙제</b> · ${esc(e.nextTs)}</div>` : '')
+      + (e1.showNextTs !== false ? `<div class="kr-box kr-nx"><b>다음 주 숙제</b> · ${esc(e.nextTs)}</div>` : '')
+      + (lastOf1 ? messageBox(e) : '') + `</div>${foot(m, lastOf1)}</div>`);
+    i++;
+  }
+  if (p2) {
+    const sub = esc(p2.dateText) + (p2.topic ? ' · ' + esc(p2.topic) : '');
+    const learned = String(e.learned || '').split('\n').map(s => s.trim()).filter(Boolean).map(line => {
+      const k = line.indexOf(':');
+      return k > 0 && k < 40 ? `<li><b>${esc(line.slice(0, k))}:</b> ${esc(line.slice(k + 1).trim())}</li>` : `<li>${esc(line)}</li>`;
+    }).join('');
+    let testHtml = '';
+    if (p2.test && e.showTest !== false) {
+      const r = testResult(p2.test, e.testWrong, e.testScore);
+      const scoreTxt = r.score == null ? `__ / ${r.total}` : `${r.score} / ${r.total}`;
+      const sc = r.score == null ? C.gray : (BANDS[r.score / r.total >= 0.75 ? 'good' : r.score / r.total >= 0.5 ? 'mid' : 'low'].color);
+      const rows = r.entered ? r.units.slice(0, 5).map(u => {
+        const q = u.correct / u.total, col = q >= 0.75 ? C.green : q >= 0.5 ? C.yellow : C.orange;
+        return `<div class="kr-row kr-unit"><span>${esc(u.name)}</span><span class="kr-s" style="color:${col}">${u.correct}/${u.total}</span></div>`;
+      }).join('') : '';
+      testHtml = `<div class="kr-h">오늘 본 테스트</div><div class="kr-box"><div class="kr-row"><span><b>${esc(p2.test.title)}</b> (${r.total}문항)</span>`
+        + `<span class="kr-s${r.score == null ? ' kr-fillchip' : ''}" style="color:${sc}">${scoreTxt}</span></div>${rows}`
+        + (r.note ? `<div class="kr-note">${esc(r.note)}</div>` : '') + `</div>`;
+    }
+    cards.push(`<div class="kr-card kr-card-lesson">${head(C.navy, '오늘 수업', sub, '2부 · 수업', '', pg(i))}`
+      + `<div class="kr-body"><div class="kr-h">오늘 배운 내용</div><div class="kr-box"><ul>${learned}</ul></div>${testHtml}</div>${foot(m, false)}</div>`);
+    i++;
+    const hw = String(e.weekHw || '').split('\n').map(s => s.trim()).filter(Boolean).map(s => `<li>${esc(s)}</li>`).join('');
+    cards.push(`<div class="kr-card kr-card-wrap">${head(C.navy, '이번 주 숙제 · 원장 한마디', sub, '2부 · 수업', '', pg(i))}`
+      + `<div class="kr-body">` + (hw ? `<div class="kr-h">이번 주 숙제</div><div class="kr-box"><ul>${hw}</ul></div>` : '')
       + messageBox(e) + `</div>${foot(m, true)}</div>`);
   }
   return cards;
 }
 
-const KR = { compute, computeMath, computeTs, renderCards, setSubunit, shortSetTitle, band, BANDS, TS_AREAS, MATH_STRANDS, PLACEHOLDER, josa, subjLines };
+const KR = { compute, computeMath, computeTs, renderCards, testResult, koDate, setSubunit, shortSetTitle, band, BANDS, TS_AREAS, MATH_STRANDS, PLACEHOLDER, josa, subjLines };
 if (typeof module !== 'undefined' && module.exports) { module.exports = KR; return; }
 root.KR = KR;
 
@@ -445,6 +531,7 @@ function _ownerOk() {
 /** 학생을 바꾸거나 로그아웃하면 이전 미리보기·편집 문장을 지운다(1-C). */
 function krReset() {
   S.sid = ''; S.period = null; S.data = null; S.model = null; S.edit = null; S.dirty = false; S.err = '';
+  S.store = null; S.lessons = []; S.lessonId = '';
   const el = document.getElementById('kakaoReport'); if (el) el.innerHTML = '';
 }
 root.krReset = krReset;
@@ -492,7 +579,7 @@ function _students(store) {
     .sort((a, b) => String(a.name).localeCompare(String(b.name), 'ko'));
 }
 
-function _build(store, student, p) {
+function _build(store, student, p, lesson) {
   const country = student.country || 'AU';
   const hw = root.hwLookup(store, student.year, country, p, student.group);
   const subs = {}, stale = {};
@@ -509,8 +596,43 @@ function _build(store, student, p) {
     hw, subs, stale,
     tsProgress: store.submissions[root.tsSubKey(student.id, p)],
     nextHw: root.hwLookup(store, student.year, country, root.nextPeriod(p), student.group),
-    normAns: root.normAns, personal
+    normAns: root.normAns, personal, lesson: lesson || null
   });
+}
+
+/** [3단계] 이 학생의 수업 요약들(일꾼이 올린 것) — 원장 계정만 읽는다. 못 읽으면 빈 목록(1부만). */
+async function krLoadLessons(sid) {
+  try {
+    const v = (await root.FB_REF.root.child('sol_prep_v1/lessonSummaries/' + sid).once('value')).val() || {};
+    return Object.keys(v).map(id => Object.assign({ id }, v[id])).filter(x => x && x.lessonDate)
+      .sort((a, b) => String(b.lessonDate).localeCompare(String(a.lessonDate)) || String(b.foundAt || '').localeCompare(String(a.foundAt || '')));
+  } catch (e) { console.warn('[카톡 카드] 수업 요약 못 읽음:', e && (e.code || e.message)); return null; }
+}
+/** 숙제 주(p)의 「다음 주」(카드를 보내는 주) 월~일에 든 수업 — 가장 늦은 것 */
+function _defaultLesson(lessons, p) {
+  try {
+    const q = root.nextPeriod(p);
+    const mon = root._getMondayOfWeek(q.year, q.month, q.week);
+    if (!mon) return null;
+    const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const a = ymd(mon), b = ymd(new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6));
+    return (lessons || []).find(x => x.lessonDate >= a && x.lessonDate <= b) || null;
+  } catch (e) { return null; }
+}
+/** 2부 수업 고르기 — 1부 편집은 그대로 두고 2부 칸만 새로 채운다 */
+function krPickLesson(el) {
+  const id = el.value;
+  const lesson = (S.lessons || []).find(x => x.id === id) || null;
+  const st = S.store.users.find(u => u.id === S.sid);
+  const keep = S.edit;
+  S.lessonId = lesson ? lesson.id : '';
+  S.model = _build(S.store, st, S.period, lesson);
+  const fresh = S.model.edit || {};
+  S.edit = Object.assign({}, fresh, keep ? {
+    check: keep.check, praise: keep.praise, review: keep.review, nextMath: keep.nextMath, nextTs: keep.nextTs,
+    showNextMath: keep.showNextMath, showNextTs: keep.showNextTs, message: keep.message } : {});
+  S.dirty = true;
+  krRender();
 }
 
 async function krOpen() {
@@ -526,7 +648,12 @@ async function krOpen() {
     const store = await krLoad([p, root.nextPeriod(p)]);
     if (S.sid !== sid || S.period !== p) return;           // 그새 바뀌었다
     const st = store.users.find(u => u.id === sid);
-    S.model = _build(store, st, p);
+    // [3단계] 1부+2부 학생이면 수업 요약을 읽어 다음 주(보내는 주) 수업을 2부로
+    S.lessons = (st.reportParts || 'both') === 'part1' ? [] : await krLoadLessons(sid);
+    if (S.sid !== sid || S.period !== p) return;
+    const lesson = _defaultLesson(S.lessons, p);
+    S.store = store; S.lessonId = lesson ? lesson.id : '';
+    S.model = _build(store, st, p, lesson);
     S.edit = S.model.edit ? Object.assign({}, S.model.edit) : null;
   } catch (e) {
     S.err = (e && e.message) === 'LIST-FAIL' || (e && e.message) === 'NO-LEAN'
@@ -551,7 +678,7 @@ function _nextField(key, showKey, label) {
 }
 function krToggle(el) {
   S.edit[el.dataset.k] = el.checked; S.dirty = true;
-  const ta = el.closest('.kr-f').querySelector('textarea'); if (ta) ta.disabled = !el.checked;
+  el.closest('.kr-f').querySelectorAll('textarea, input:not([type=checkbox])').forEach(x => { x.disabled = !el.checked; });
   _paintCards();
 }
 
@@ -580,6 +707,13 @@ function _paintGuard() {
   const why = [];
   if (Object.values(S.edit).some(v => typeof v === 'string' && v.includes(PLACEHOLDER))) why.push(`「${PLACEHOLDER}」 자리를 채워 주세요.`);
   if (S.overflow && S.overflow.length) why.push(`글이 깁니다 — ${S.overflow.join(', ')}번 카드에서 글이 넘칩니다. 문장을 줄여 주세요.`);
+  const p2 = S.model && S.model.part2;
+  if (p2 && p2.test && S.edit.showTest !== false) {
+    const r = testResult(p2.test, S.edit.testWrong, S.edit.testScore);
+    if (!r.entered) why.push('오늘 테스트의 틀린 번호를 넣어 주세요(다 맞았으면 0). 테스트를 빼려면 「카드에 넣기」를 끄세요.');
+    if (r.bad.length) why.push(`테스트에 없는 번호: ${r.bad.join(', ')}`);
+    if (r.score != null && (r.score < 0 || r.score > r.total)) why.push(`점수가 0~${r.total} 밖입니다.`);
+  }
   g.innerHTML = why.map(w => `<div>⚠️ ${esc(w)}</div>`).join('');
   btn.disabled = why.length > 0;
 }
@@ -653,11 +787,30 @@ function krRender() {
     + (S.model.warn.length ? `<div class="kr-warn">${S.model.warn.map(w => '<div>• ' + esc(w) + '</div>').join('')}</div>` : '');
   else if (S.model) {
     const m = S.model;
+    const both = st && (st.reportParts || 'both') !== 'part1';
+    let lessonPick = '';
+    if (both) {
+      if (S.lessons === null) lessonPick = `<div class="kr-warn">2부 수업 요약을 읽지 못했습니다 — 1부만 만듭니다.</div>`;
+      else {
+        const opts = [`<option value="">2부 빼기 (1부만)</option>`].concat((S.lessons || []).slice(0, 12).map(x =>
+          `<option value="${esc(x.id)}"${x.id === S.lessonId ? ' selected' : ''}>${esc(KR.koDate(x.lessonDate))}${x.topic ? ' · ' + esc(x.topic) : ''}</option>`)).join('');
+        lessonPick = `<label class="kr-f"><span>2부 수업 (수업 요약에서 고르기)</span><select onchange="krPickLesson(this)">${opts}</select></label>`
+          + (!(S.lessons || []).length ? `<div class="kr-help">아직 들어온 수업 요약이 없습니다. 프로젝트가 교재와 함께 「…_수업요약.json」을 저장하면 여기에 나타납니다.</div>`
+            : (!S.lessonId ? `<div class="kr-help">보내는 주에 든 수업 요약이 없어 2부를 뺐습니다. 위에서 고르면 넣을 수 있습니다.</div>` : ''));
+      }
+    }
+    const p2 = m.part2;
+    const testBox = p2 && p2.test ? `<label class="kr-f"><span>오늘 테스트 — ${esc(p2.test.title)} (${p2.test.questions.length}문항) <label class="kr-chk"><input type="checkbox" data-k="showTest"${S.edit.showTest !== false ? ' checked' : ''} onchange="krToggle(this)"> 카드에 넣기</label></span>`
+      + `<input data-k="testWrong" placeholder="틀린 번호 (예: 3, 7, 12 · 다 맞았으면 0)" value="${esc(S.edit.testWrong)}" oninput="krEdit(this)"${S.edit.showTest !== false ? '' : ' disabled'}>`
+      + `<input data-k="testScore" placeholder="점수 (비우면 문항 수 − 틀린 수)" value="${esc(S.edit.testScore)}" oninput="krEdit(this)"${S.edit.showTest !== false ? '' : ' disabled'}></label>` : '';
     body = `<div class="kr-wrap"><div class="kr-side">`
       + (m.warn.length ? `<div class="kr-warn"><b>교사 화면에만 보이는 알림</b>${m.warn.map(w => '<div>• ' + esc(w) + '</div>').join('')}</div>` : '')
+      + lessonPick
+      + `<div class="kr-sec">1부 · 숙제</div>`
       + _field('check', '이번 주 숙제 점검 (줄마다 과목)', 3)
-      + (m.math ? _field('praise', '잘한 점', 2) + _field('review', '다시 볼 점', 2) + _nextField('nextMath', 'showNextMath', '다음 주 Math 숙제') : '')
-      + (m.ts ? _nextField('nextTs', 'showNextTs', '다음 주 Thinking Skills 숙제') : '')
+      + (m.math ? _field('praise', '잘한 점', 2) + _field('review', '다시 볼 점', 2) + (p2 ? '' : _nextField('nextMath', 'showNextMath', '다음 주 Math 숙제')) : '')
+      + (m.ts && !p2 ? _nextField('nextTs', 'showNextTs', '다음 주 Thinking Skills 숙제') : '')
+      + (p2 ? `<div class="kr-sec">2부 · 수업 (${esc(p2.dateText)})</div>` + _field('learned', '오늘 배운 내용 (한 줄에 하나 · 「제목: 설명」)', 4) + testBox + _field('weekHw', '이번 주 숙제 (한 줄에 하나)', 3) : '')
       + _field('message', '원장 선생님 한마디', 4)
       + `<div id="krGuard" class="kr-guard"></div>`
       + `<button id="krSave" class="btn-sm btn-navy" style="font-size:15px;padding:10px 18px" onclick="krSave()">🖼 카드 이미지 저장</button>`
@@ -682,5 +835,5 @@ function krMount() { krRender(); }
 
 window.addEventListener('beforeunload', ev => { if (S.dirty) { ev.preventDefault(); ev.returnValue = ''; } });
 
-Object.assign(root, { krMount, krRender, krOpen, krEdit, krToggle, krSave, krSaveSettings, krWeekOpts });
+Object.assign(root, { krMount, krRender, krOpen, krEdit, krToggle, krPickLesson, krSave, krSaveSettings, krWeekOpts });
 })(typeof window !== 'undefined' ? window : globalThis);

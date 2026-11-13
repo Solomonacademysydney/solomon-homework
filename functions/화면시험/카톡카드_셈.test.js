@@ -138,5 +138,32 @@ console.log('\n── 숙제 없는 주 · 비공개 · 장 수');
 }
 재기('조사(받침)', [KR.josa('분수', '은', '는'), KR.josa('도형', '은', '는')], ['는', '은']);
 
+console.log('\n── [3단계] 2부 · 수업 (수업 요약 · 테스트 틀린 번호)');
+{
+  const lesson = { lessonDate: '2026-11-09', topic: '좌표평면 복습', learned: [{ title: '좌표와 사분면', desc: '점의 위치 읽기' }, { title: '', desc: '거리와 중점' }],
+    test: { title: '복습 테스트', questions: [1, 2, 3, 4, 5, 6].map(n => ({ n, unit: n <= 3 ? '좌표' : '거리' })) }, homework: ['틀린 문제 다시 풀기'] };
+  const nextHw = { sets: [mset('Set 1 (Selective Prep · Fractions · Set 1)', 10)] };
+  const m = KR.compute({ student: ST, hw: { sets: [mset('Set 1 (A)', 10)] }, subs: { 0: msub(10, 9) }, stale: {}, normAns, periodText: 'x', periodKey: 'k', nextHw, lesson });
+  const cards = KR.renderCards(m);
+  재기('Math + 2부 → 4장', cards.length, 4);
+  재기('2부가 있으면 1부에 한마디·다음 주 숙제 없음', [/원장 선생님 한마디/.test(cards[1]), /다음 주 Math 숙제/.test(cards[1])], [false, false]);
+  재기('1부 표지 꼬리표', /1부 · 숙제/.test(cards[0]), true);
+  재기('오늘 수업 카드: 날짜·주제·배운 내용', [/11월 9일\(월\) · 좌표평면 복습/.test(cards[2]), /<b>좌표와 사분면:<\/b> 점의 위치 읽기/.test(cards[2]), /<li>거리와 중점<\/li>/.test(cards[2])], [true, true, true]);
+  재기('틀린 번호 안 넣었으면 「__ / 6」', /__ \/ 6/.test(cards[2]), true);
+  재기('이번 주 숙제 = 요약 숙제 + 홈페이지 숙제', m.edit.weekHw, '틀린 문제 다시 풀기\n홈페이지 Math 숙제 · 1세트 · Fractions');
+  재기('마지막 장에 한마디·연락처', [/원장 선생님 한마디/.test(cards[3]), /0424 743 564/.test(cards[3])], [true, true]);
+  const r = KR.testResult(lesson.test, '2, 5 6', '');
+  재기('틀린 2·5·6 → 3/6 · 좌표 2/3 · 거리 1/3', [r.score, r.units.map(u => u.name + u.correct + '/' + u.total).join(' ')], [3, '거리1/3 좌표2/3']);
+  재기('다시 볼 단원 문장', r.note, '다시 볼 단원: 거리 (오답 2문항)');
+  재기('「0」 = 다 맞음', [KR.testResult(lesson.test, '0', '').score, KR.testResult(lesson.test, '0', '').note], [6, '모든 문항을 맞혔습니다.']);
+  재기('없는 번호는 따로', KR.testResult(lesson.test, '3, 9', '').bad, ['9']);
+  재기('점수 직접 넣으면 그 점수', KR.testResult(lesson.test, '1', '4.5').score, 4.5);
+  const m2 = KR.compute({ student: ST, hw: { sets: [mset('Set 1 (A)', 10)] }, subs: {}, stale: {}, normAns, lesson: null });
+  재기('수업 요약 없으면 1부만(2장)', KR.renderCards(m2).length, 2);
+  const m3 = KR.compute({ student: ST, hw: { sets: [mset('Set 1 (A)', 10)] }, subs: {}, stale: {}, normAns, lesson: Object.assign({}, lesson, { test: null }) });
+  재기('테스트 없는 수업 → 테스트 칸 없음', [/오늘 본 테스트/.test(KR.renderCards(m3).join('')), m3.edit.showTest], [false, false]);
+  재기('날짜 글', KR.koDate('2026-11-13'), '11월 13일(금)');
+}
+
 console.log(`\n── 셈 — 통과 ${통과} · 실패 ${실패}`);
 process.exit(실패 ? 1 : 0);

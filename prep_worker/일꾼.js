@@ -644,6 +644,62 @@ async function 결과물찾기(cfg, fb) {
 }
 
 /**
+ * [11-13 카톡 카드 2단계] 수업 요약 찾기 — 프로젝트가 교재와 같은 폴더에 둔 「…_수업요약.json」을
+ *   sol_prep_v1/lessonSummaries/<학생 id>/<id> 에 올린다. 홈페이지 「카톡 리포트」 2부 카드가 읽는다.
+ *   자리는 결과물찾기와 같다(옛 `<월>/<날>/` · 새 `<월>/W<n>/<날(요일)>/<학생>/`). 같은 파일(이름+크기)은 한 번만.
+ *   ⛔ 드라이브는 읽기만 · 꼴이 틀리면 올리지 않고 기록만(lessonSummaryOf)
+ */
+async function 수업요약찾기(cfg, fb) {
+  const 바탕 = 교재보관(cfg.drive);
+  if (!바탕 || !fs.existsSync(바탕)) return { skipped: '교재보관 폴더 없음' };
+  const 며칠 = (cfg.importDays || 30), 끝 = new Date(Date.now() - 며칠 * 86400000).toISOString().slice(0, 10);
+  const 상태파일 = cfg.summaryState || 'C:/솔로몬제작/수업요약_상태.json';
+  const 본 = fs.existsSync(상태파일) ? JSON.parse(fs.readFileSync(상태파일, 'utf8')) : {};
+  const 디렉 = (p) => { try { return fs.statSync(p).isDirectory(); } catch (e) { return false; } };
+  const 자리들 = [];
+  for (const 달 of fs.readdirSync(바탕).filter(x => /^\d{4}-\d{2}$/.test(x)).sort()) {
+    for (const x of fs.readdirSync(path.join(바탕, 달)).sort()) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(x) && x >= 끝 && 디렉(path.join(바탕, 달, x))) 자리들.push({ 폴더: path.join(바탕, 달, x), rel: 달 + '/' + x, 학생폴더: null });
+      else if (/^W\d{1,2}$/.test(x) && 디렉(path.join(바탕, 달, x))) {
+        for (const 날폴더 of fs.readdirSync(path.join(바탕, 달, x)).sort()) {
+          const 날 = C.ymdOfFolder(날폴더);
+          if (!날 || 날 < 끝 || !디렉(path.join(바탕, 달, x, 날폴더))) continue;
+          for (const 학생 of fs.readdirSync(path.join(바탕, 달, x, 날폴더)).sort()) {
+            const p = path.join(바탕, 달, x, 날폴더, 학생);
+            if (디렉(p)) 자리들.push({ 폴더: p, rel: 달 + '/' + x + '/' + 날폴더 + '/' + 학생, 학생폴더: 학생 });
+          }
+        }
+      }
+    }
+  }
+  const 올림 = [], 실패 = [];
+  let 연결 = null;
+  for (const 자리 of 자리들) {
+    for (const n of fs.readdirSync(자리.폴더).filter(n => /_수업요약\.json$/i.test(n))) {
+      const fp = path.join(자리.폴더, n), 크기 = fs.statSync(fp).size;
+      const id = C.sha256('ls|' + n + '|' + 크기).slice(0, 16);
+      if (본[id]) continue;
+      let raw;
+      try { raw = JSON.parse(fs.readFileSync(fp, 'utf8').replace(/^\uFEFF/, '')); }
+      catch (e) { 실패.push(n + ': JSON 아님'); 본[id] = '실패 JSON'; continue; }
+      if (자리.학생폴더 && 연결 === null) { try { 연결 = (await fb.get(ROOT + '/driveFolders')) || {}; } catch (e) { 연결 = {}; } }
+      const 추측 = 자리.학생폴더 && 연결 && 연결[자리.학생폴더] ? [String(연결[자리.학생폴더])] : C.guessStudents(n, cfg.importNames);
+      const r = C.lessonSummaryOf(raw, 추측);
+      if (!r.ok) { 실패.push(n + ': ' + r.problems.join(' · ')); 본[id] = '실패 ' + r.problems.join(' · '); continue; }
+      const 자료 = Object.assign({}, r.value, { file: n, folder: 자리.rel, foundAt: iso(), worker: cfg.workerId });
+      for (const sid of r.value.studentIds) {
+        try { await fb.put(ROOT + '/lessonSummaries/' + sid + '/' + id, 자료); }
+        catch (e) { if (e.status === 401 || e.status === 403) continue; throw e; }
+      }
+      본[id] = 자리.rel + ' ' + n; 올림.push(n);
+    }
+  }
+  fs.writeFileSync(상태파일, JSON.stringify(본));
+  if (올림.length || 실패.length) 기록(cfg, { msg: '수업 요약 찾음', 올림, 실패 });
+  return { 올림, 실패 };
+}
+
+/**
  * [10-02] 드라이브 파일 주소 채우기 — /prep/ 의 PDF 링크가 「검색」 대신 파일로 바로 가게 한다.
  *   기다림 목록(C:/솔로몬제작/주소_대기.json · {파일 이름: 담긴 폴더}) 을 드라이브 앱 로컬 목록에서 찾아
  *   sol_prep_v1/driveIds/<열쇠> = id 로 올린다. 못 찾은 것(아직 동기화 전)은 남겨 다음 바퀴에 또 찾는다(최대 3일).
@@ -683,6 +739,7 @@ async function 한바퀴(cfg, fb, opts) {
   if (!opts.noScan) { try { const s = await 학교자료찾기(cfg, fb); if (s.적음 && (s.적음.length || s.미연결.length)) console.log('학교 자료: ' + JSON.stringify(s)); } catch (e) { 기록(cfg, { msg: '학교 자료 찾기 실패', error: e.message }); } }
   if (!opts.noScan) { try { await 주소채우기(cfg, fb); } catch (e) { 기록(cfg, { msg: '드라이브 주소 채우기 실패', error: e.message }); } }
   if (!opts.noScan) { try { const g = await 결과물찾기(cfg, fb); if (g.올림 && (g.올림.length || g.실패.length)) console.log('결과물: ' + JSON.stringify(g)); } catch (e) { 기록(cfg, { msg: '결과물 찾기 실패', error: e.message }); } }
+  if (!opts.noScan) { try { const v = await 수업요약찾기(cfg, fb); if (v.올림 && (v.올림.length || v.실패.length)) console.log('수업 요약: ' + JSON.stringify(v)); } catch (e) { 기록(cfg, { msg: '수업 요약 찾기 실패', error: e.message }); } }
   if (!opts.noScan) { try { const k = await 툴체인챙기기(cfg, fb, false); if (k.rev) console.log('툴체인: ' + JSON.stringify(k)); } catch (e) { 기록(cfg, { msg: '툴체인 챙기기 실패', error: e.message }); } }
   if (opts.noOrders) return [];   // [10-02] 완전 자동이 꺼져도 드라이브 훑기(결과물·툴체인·학교 사진)는 계속 — 주문만 멈춘다
   const jobs = (await fb.get(ROOT + '/jobs')) || {};
@@ -772,5 +829,5 @@ async function main() {
   console.log(JSON.stringify(r, null, 1));
 }
 
-module.exports = { 주소채우기, 주소대기에, 주소열쇠, 결과물찾기, 툴체인챙기기, 학교자료찾기, 폴더이름, 답모으기, 처리, 한바퀴, 설정읽기, 보관, 자동켜짐, 프롬프트, 스키마, 정리 };
+module.exports = { 수업요약찾기, 주소채우기, 주소대기에, 주소열쇠, 결과물찾기, 툴체인챙기기, 학교자료찾기, 폴더이름, 답모으기, 처리, 한바퀴, 설정읽기, 보관, 자동켜짐, 프롬프트, 스키마, 정리 };
 if (require.main === module) main().catch(e => { console.error('⛔ ' + (e && e.stack || e)); process.exit(1); });

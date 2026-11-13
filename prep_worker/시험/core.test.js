@@ -131,5 +131,21 @@ console.log('\n── 재풀이가 풀이째 답을 보낼 때 (10-02 별이 교
   재기('분수·소수 값이 같으면 일치(3/8 = 0.375)', t('3/8', '0.375') === 'verified-agree');
 }
 
+console.log('\n── [11-13] 수업 요약 꼴 (카톡 카드 2부)');
+{
+  const ok = C.lessonSummaryOf({ type: 'solomon_lesson_summary', version: 1, studentIds: ['Stella07', 'RYAN'], lessonDate: '2026-11-09', topic: '좌표평면 복습',
+    learned: [{ title: '좌표와 사분면', desc: '점의 위치를 (x, y)로 읽기' }, '거리와 중점'], test: { title: '복습 테스트', questions: [{ n: 1, unit: '좌표' }, { n: 2, unit: '거리' }, { n: 3 }] }, homework: ['틀린 문제 다시 풀기'] });
+  재기('바른 꼴 → ok · 학생 둘 · 배운 내용 둘', ok.ok && ok.value.studentIds.length === 2 && ok.value.learned.length === 2);
+  재기('글자만 쓴 배운 내용도 받는다', ok.ok && ok.value.learned[1].desc === '거리와 중점');
+  재기('단원 빈 문항 → 「기타」', ok.ok && ok.value.test.questions[2].unit === '기타');
+  const bad = C.lessonSummaryOf({ type: 'x', lessonDate: '11/9', learned: [] });
+  재기('틀린 꼴 → 올리지 않음(까닭 넷)', !bad.ok && bad.problems.length === 4, bad.problems && bad.problems.join(' · '));
+  const g = C.lessonSummaryOf({ type: 'solomon_lesson_summary', lessonDate: '2026-11-09', learned: ['a'] }, ['Hayley04']);
+  재기('학생 ID 없으면 폴더·파일 이름 추측으로', g.ok && g.value.studentIds[0] === 'Hayley04' && g.value.test === null);
+  const d = C.lessonSummaryOf({ type: 'solomon_lesson_summary', studentIds: ['A1'], lessonDate: '2026-11-09', learned: ['a'], test: { questions: [{ n: 1 }, { n: 1 }] } });
+  재기('테스트 번호가 겹치면 막음', !d.ok);
+  재기('이상한 ID(경로 글자)는 버림', C.lessonSummaryOf({ type: 'solomon_lesson_summary', studentIds: ['../x'], lessonDate: '2026-11-09', learned: ['a'] }).ok === false);
+}
+
 console.log('\n셈 — 통과 ' + 통과 + ' · 실패 ' + 실패);
 process.exit(실패 ? 1 : 0);
